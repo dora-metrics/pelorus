@@ -21,7 +21,7 @@
       retries: 60
     - name: Create Gitea Admin
       shell: >
-        oc rsh $(oc get pods -l=app=gitea -o jsonpath='{.items[0].metadata.name}') /bin/bash -c "USER=gitea /home/gitea/gitea admin create-user --name {{ gitea_admin_user }} --admin --password {{ gitea_admin_password }} --email {{ gitea_admin_email }} -c /home/gitea/conf/app.ini" 
+        oc rsh -n {{ k8s_namespace }} $(oc get pods -n {{ k8s_namespace }} -l=app=gitea -o jsonpath='{.items[0].metadata.name}') /bin/bash -c "USER=gitea /home/gitea/gitea admin create-user --name {{ gitea_admin_user }} --admin --password {{ gitea_admin_password }} --email {{ gitea_admin_email }} -c /home/gitea/conf/app.ini"
       register: create_mdt_admin
       failed_when: create_mdt_admin.rc !=0 and ('user already exists' not in create_mdt_admin.stderr)
     - name: Check if Organization Exists
