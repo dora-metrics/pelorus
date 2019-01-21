@@ -1,0 +1,36 @@
+---
+
+# General
+temp_directory_name: temp
+mdt_git_repositories:
+  - name: containers-quickstarts
+    uri: https://github.com/redhat-cop/containers-quickstarts.git
+    branch: master
+  - name: docker-openshift-gitea
+    uri: https://github.com/wkulhanek/docker-openshift-gitea.git
+    branch: master
+
+# Hygieia
+hygieia_user: admin
+hygieia_password: redhatmdt
+hygieia_api_token_name: hygieiajenkins
+hygieia_token_file: hygieia_token.txt
+hygieia_expiration_date_days: 90
+hygieia_jenkins_remote_secret: remote-jenkins-client-secret
+hygieia_jenkins_build_collector: hygieia-jenkins-build-collector
+
+# Jenkins
+jenkins_service_account: jenkins
+
+# Hygieia Dashboard
+hygieia_dashboard_team_name: Metrics Driven Transformation
+hygieia_dashboard_team_title: Metrics Driven Transformation
+
+# Gitea
+gitea_admin_user: giteaadmin
+gitea_admin_password: redhatmdt
+gitea_admin_email: mdt@redhat.com
+gitea_org_name: mdt
+gitea_sample_repository_name: mdt-example
+gitea_sample_repository_url: https://github.com/redhat-cop/spring-rest.git
+gitea_repo_file: gitea_repo.txt

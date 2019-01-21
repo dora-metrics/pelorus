@@ -1,0 +1,67 @@
+- hosts: localhost
+  connection: local
+  vars_files:
+    - ../vars/mdt.yml
+  tasks:
+    - name: Get Jenkins Service Account Token
+      command: > 
+        oc serviceaccounts get-token -n {{ k8s_namespace }} {{ jenkins_service_account }}
+      register: jenkins_service_account_result
+    - name: Delete Jenkins Service Account
+      command: > 
+        oc delete secret -n {{ k8s_namespace }} {{ hygieia_jenkins_remote_secret }}
+      ignore_errors: true
+    - name: Create Jenkins Service Account
+      command: >
+        oc create secret generic remote-jenkins-client-secret -n {{ k8s_namespace }} --from-literal=token={{ jenkins_service_account_result.stdout }}
+    - name: Rollout Build Collector
+      command: >
+        oc rollout -n {{ k8s_namespace }} latest dc/{{ hygieia_jenkins_build_collector }}
+    - name: Get Hygieia hostname
+      command: >
+        oc get routes -n {{ k8s_namespace }} ui-route -o=json
+      register: hygieia_route_result
+    - name: Set Facts
+      set_fact:
+        hygieia_host: "{{ (hygieia_route_result.stdout | from_json)['spec']['tls'] is defined | ternary('https','http')  }}://{{ (hygieia_route_result.stdout | from_json).spec.host }}"
+    - name: Hygieia Login
+      uri:
+        url: "{{ hygieia_host }}/api/login"
+        body_format: form-urlencoded
+        method: POST
+        return_content: true
+        body:
+          username: "{{ hygieia_user }}"
+          password: "{{ hygieia_password }}"
+        headers:
+          Content-Type: "application/x-www-form-urlencoded"
+        status:
+          - 200
+      register: login_result
+    - name: Set Auth Token
+      set_fact:
+        hygieia_auth_token: "{{ login_result['x_authentication_token'] }}"
+    - name: Create Team Dashboard
+      uri:
+        url: "{{ hygieia_host }}/api/dashboard"
+        body_format: json
+        method: POST
+        return_content: true
+        body:
+          template: "widgets"
+          title: "{{ hygieia_dashboard_team_title }}"
+          type: "team"
+          applicationName: "{{ hygieia_dashboard_team_name }}"
+          componentName: "{{ hygieia_dashboard_team_name }}"
+          scoreEnabled: false
+          scoreDisplay: "HEADER"
+          activeWidgets:
+            - "repo"
+            - "build"
+            - "deploy"
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ hygieia_auth_token }}"
+        status_code:
+          - 201
+      register: hygieia_dashboard_create_token_result
