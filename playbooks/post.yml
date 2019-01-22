@@ -4,19 +4,16 @@
     - ../vars/mdt.yml
   tasks:
     - name: Get Jenkins Service Account Token
-      command: > 
+      command: >
         oc serviceaccounts get-token -n {{ jenkins_namespace }} {{ jenkins_service_account }}
       register: jenkins_service_account_result
     - name: Delete Jenkins Service Account Secret
-      command: > 
+      command: >
         oc delete secret -n {{ k8s_namespace }} {{ hygieia_jenkins_remote_secret }}
       ignore_errors: true
     - name: Create Jenkins Service Account
       command: >
         oc create secret generic remote-jenkins-client-secret -n {{ k8s_namespace }} --from-literal=token={{ jenkins_service_account_result.stdout }}
-    - name: Rollout Build Collector
-      command: >
-        oc rollout -n {{ k8s_namespace }} latest dc/{{ hygieia_jenkins_build_collector }}
     - name: Get Hygieia hostname
       command: >
         oc get routes -n {{ k8s_namespace }} ui-route -o=json
