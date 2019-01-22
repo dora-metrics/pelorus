@@ -2,11 +2,13 @@
 set -e
 
 SCRIPT_BASE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-DEFAULT_JENKINS_NAMESPACE=hygieia
+DEFAULT_JENKINS_NAMESPACE=basic-spring-boot-build
 DEFAULT_HYGIEIA_NAMESPACE=hygieia
 TEMP_DIRECTORY=temp
 HYGIEIA_TOKEN_FILE=hygieia_token.txt
 GITEA_REPO_URL_FILE=gitea_repo.txt
+SAMPLE_REPO_NAME="mdt-example"
+GITEA_ORG_NAME="mdt"
 
 # Process Input
 for i in "$@"
@@ -84,13 +86,25 @@ echo
 ANSIBLE_JINJA2_NATIVE=true ansible-playbook -i localhost, "${SCRIPT_BASE_DIR}/playbooks/gitea.yml" -e k8s_namespace="${HYGIEIA_NAMESPACE}"
 
 echo
+echo "Deploying Application Projects..."
+echo
+
+ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/container-pipelines/basic-spring-boot/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e filter_tags=project
+
+echo
 echo "Deploying Jenkins..."
 echo
 
-ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/containers-quickstarts/jenkins-masters/hygieia-plugin/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e hygieia_token=$(cat "${SCRIPT_BASE_DIR}/${TEMP_DIRECTORY}/${HYGIEIA_TOKEN_FILE}") -e hygieia_url="http://hygieia.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}"  -e namespace="${HYGIEIA_NAMESPACE}"
+ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/containers-quickstarts/jenkins-masters/hygieia-plugin/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e hygieia_token=$(cat "${SCRIPT_BASE_DIR}/${TEMP_DIRECTORY}/${HYGIEIA_TOKEN_FILE}") -e hygieia_url="http://hygieia.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}"  -e namespace="${JENKINS_NAMESPACE}"
+
+echo
+echo "Deploying Application..."
+echo
+
+ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/container-pipelines/basic-spring-boot/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e sb_application_repository_url="http://gitea.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}/${GITEA_ORG_NAME}/${SAMPLE_REPO_NAME}.git"
 
 echo
 echo "Running Post Deployment Steps..."
 echo
 
-ansible-playbook -i localhost, "${SCRIPT_BASE_DIR}/playbooks/post.yml" -e k8s_namespace="${HYGIEIA_NAMESPACE}"
+ansible-playbook -i localhost, "${SCRIPT_BASE_DIR}/playbooks/post.yml" -e k8s_namespace="${HYGIEIA_NAMESPACE}" -e jenkins_namespace="${JENKINS_NAMESPACE}"

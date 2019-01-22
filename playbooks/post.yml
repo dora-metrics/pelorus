@@ -5,9 +5,9 @@
   tasks:
     - name: Get Jenkins Service Account Token
       command: > 
-        oc serviceaccounts get-token -n {{ k8s_namespace }} {{ jenkins_service_account }}
+        oc serviceaccounts get-token -n {{ jenkins_namespace }} {{ jenkins_service_account }}
       register: jenkins_service_account_result
-    - name: Delete Jenkins Service Account
+    - name: Delete Jenkins Service Account Secret
       command: > 
         oc delete secret -n {{ k8s_namespace }} {{ hygieia_jenkins_remote_secret }}
       ignore_errors: true
@@ -37,6 +37,9 @@
           Content-Type: "application/x-www-form-urlencoded"
         status:
           - 200
+      until: login_result.status == 200
+      delay: 5
+      retries: 5
       register: login_result
     - name: Set Auth Token
       set_fact:
@@ -64,4 +67,7 @@
           Authorization: "Bearer {{ hygieia_auth_token }}"
         status_code:
           - 201
+      until: hygieia_dashboard_create_token_result.status == 201
+      delay: 5
+      retries: 5
       register: hygieia_dashboard_create_token_result
