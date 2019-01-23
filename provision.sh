@@ -95,7 +95,9 @@ echo
 echo "Deploying Jenkins..."
 echo
 
-ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/containers-quickstarts/jenkins-masters/hygieia-plugin/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e hygieia_token=$(cat "${SCRIPT_BASE_DIR}/${TEMP_DIRECTORY}/${HYGIEIA_TOKEN_FILE}") -e hygieia_url="http://hygieia.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}"  -e namespace="${JENKINS_NAMESPACE}"
+repo_url=$(cat vars/mdt.yml | yq '.mdt_git_repositories[] | select(.name == "containers-quickstarts") | .uri')
+repo_branch=$(cat vars/mdt.yml | yq '.mdt_git_repositories[] | select(.name == "containers-quickstarts") | .branch')
+ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/containers-quickstarts/jenkins-masters/hygieia-plugin/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e hygieia_token=$(cat "${SCRIPT_BASE_DIR}/${TEMP_DIRECTORY}/${HYGIEIA_TOKEN_FILE}") -e hygieia_url="http://hygieia.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}/api/"  -e namespace="${JENKINS_NAMESPACE}" -e source_code_url=${repo_url} -e source_code_ref=${repo_branch}
 
 echo
 echo "Deploying Application..."
