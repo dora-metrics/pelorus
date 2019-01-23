@@ -37,7 +37,7 @@ done
 if [ -z "${OCP_SUBDOMAIN}" ]; then
   echo "Error: OpenShift domain must be provided using the `-s` flag!"
   exit 1
-fi 
+fi
 
 if [ -z "${GITHUB_TOKEN}" ]; then
   echo "Error: GitHub token must be provided using the `-g` flag!"
@@ -52,7 +52,7 @@ if [ -z "${HYGIEIA_NAMESPACE}" ]; then
   HYGIEIA_NAMESPACE="${DEFAULT_HYGIEIA_NAMESPACE}"
 fi
 
-echo 
+echo
 echo "## Provisioning MDT ##"
 echo
 
@@ -101,7 +101,7 @@ echo
 echo "Deploying Application..."
 echo
 
-ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/container-pipelines/basic-spring-boot/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e sb_application_repository_url="http://gitea.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}/${GITEA_ORG_NAME}/${SAMPLE_REPO_NAME}.git"
+ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/container-pipelines/basic-spring-boot/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e sb_application_repository_url="http://gitea.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}/${GITEA_ORG_NAME}/${SAMPLE_REPO_NAME}.git" -e sb_pipeline_script=Jenkinsfile.hygieia
 
 echo
 echo "Running Post Deployment Steps..."
