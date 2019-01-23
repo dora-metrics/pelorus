@@ -34,6 +34,9 @@
         status_code:
           - 200
           - 404
+      until: org_result.status == 200 or org_result.status == 404
+      delay: 5
+      retries: 5
       register: org_result
     - name: Create Organization
       uri:
@@ -49,7 +52,10 @@
           username: "{{ gitea_org_name }}"
         status_code:
           - 201
-      register: org_result
+      until: new_org_result.status == 201
+      delay: 5
+      retries: 5
+      register: new_org_result
       when: org_result.status != 200
     - name: Check if Repository Exists
       uri:
@@ -61,6 +67,9 @@
         status_code:
           - 200
           - 404
+      until: repo_result.status == 200 or repo_result.status == 404
+      delay: 5
+      retries: 5
       register: repo_result
     - name: Migrate Repository
       uri:
@@ -73,11 +82,14 @@
         headers:
           Content-Type: "application/json"
         body:
-          uid: "{{ org_result.json.id | int }}"
+          uid: "{{ (new_org_result.json.id if org_result.status == 404 else org_result.json.id) | int }}"
           clone_addr: "{{ gitea_sample_repository_url }}"
           repo_name: "{{ gitea_sample_repository_name }}"
         status_code:
           - 201
+      until: repo_result.status == 201
+      delay: 5
+      retries: 5
       register: repo_result
       when: repo_result.status != 200
     - name: Create Temporary Directory

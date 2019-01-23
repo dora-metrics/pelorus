@@ -18,7 +18,7 @@ The following table describes the various configuration options:
 | -------------------- | --------------------- | ----------- | ------- |
 | `OCP_SUBDOMAIN`      | `-s` or `--subdomain` | OpenShift default subdomain (ie: apps.openshift.example.com) |  |
 | `GITHUB_TOKEN`       | `-g` or `--github-token` | GitHub client token |  |
-| `JENKINS_NAMESPACE`  | `-j` or `--jenkins-namespace` | Project to deploy Jenkins | `hygieia` |
+| `JENKINS_NAMESPACE`  | `-j` or `--jenkins-namespace` | Project to deploy Jenkins | `basic-spring-boot-build` |
 | `HYGIEIA_NAMESPACE`  | `-h` or `--namespace` | Project to deploy all other resources | `hygieia` |
 
 ## Provision

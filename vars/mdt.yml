@@ -9,6 +9,9 @@ mdt_git_repositories:
   - name: docker-openshift-gitea
     uri: https://github.com/wkulhanek/docker-openshift-gitea.git
     branch: master
+  - name: container-pipelines
+    uri: https://github.com/redhat-cop/container-pipelines.git
+    branch: master
 
 # Hygieia
 hygieia_user: admin

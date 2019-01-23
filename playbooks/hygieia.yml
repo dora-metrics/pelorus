@@ -35,6 +35,9 @@
         status_code:
           - 200
           - 401
+      until: login_result.status == 200 or login_result.status == 401
+      delay: 10
+      retries: 120
       register: login_result
     - name: Set Auth Token
       set_fact:
@@ -55,6 +58,9 @@
               Content-Type: "application/json"
             status_code:
               - 200
+          until: hygieia_create_user_result.status == 200
+          delay: 5
+          retries: 5
           register: hygieia_create_user_result
         - name: Set Auth Token (Create User Path)
           set_fact:
@@ -70,6 +76,9 @@
           Authorization: "Bearer {{ hygieia_auth_token }}"
         status_code:
           - 200
+      until: hygieia_api_tokens_result.status == 200
+      delay: 5
+      retries: 5
       register: hygieia_api_tokens_result
     - name: Admin API Token
       block:
@@ -87,6 +96,9 @@
               Authorization: "Bearer {{ hygieia_auth_token }}"
             status_code:
               - 200
+          until: hygieia_api_create_token_result.status == 200
+          delay: 5
+          retries: 5
           register: hygieia_api_create_token_result
         - name: Set API Token (Create API)
           set_fact:
