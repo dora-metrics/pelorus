@@ -74,6 +74,7 @@
         return_content: true
         headers:
           Authorization: "Bearer {{ hygieia_auth_token }}"
+          Content-Length: 0
         status_code:
           - 200
       until: hygieia_api_tokens_result.status == 200

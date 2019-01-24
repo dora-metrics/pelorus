@@ -6,9 +6,6 @@ mdt_git_repositories:
   - name: containers-quickstarts
     uri: https://github.com/redhat-cop/containers-quickstarts.git
     branch: master
-  - name: docker-openshift-gitea
-    uri: https://github.com/wkulhanek/docker-openshift-gitea.git
-    branch: master
   - name: container-pipelines
     uri: https://github.com/redhat-cop/container-pipelines.git
     branch: master
@@ -29,11 +26,6 @@ jenkins_service_account: jenkins
 hygieia_dashboard_team_name: Metrics Driven Transformation
 hygieia_dashboard_team_title: Metrics Driven Transformation
 
-# Gitea
-gitea_admin_user: giteaadmin
-gitea_admin_password: redhatmdt
-gitea_admin_email: mdt@redhat.com
-gitea_org_name: mdt
-gitea_sample_repository_name: mdt-example
-gitea_sample_repository_url: https://github.com/redhat-cop/spring-rest.git
-gitea_repo_file: gitea_repo.txt
+# App
+sample_app_repo_url: http://github.com/redhat-cop/spring-rest.git
+sample_app_repo_ref: master
