@@ -74,18 +74,6 @@ echo
 ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/containers-quickstarts/hygieia/.applier" "${SCRIPT_BASE_DIR}/playbooks/hygieia.yml" -e filter_tags=all -e k8s_namespace="${HYGIEIA_NAMESPACE}" -e jenkins_namespace="${JENKINS_NAMESPACE}" -e openshift_default_subdomain="${OCP_SUBDOMAIN}" -e github_personal_access_token="${GITHUB_TOKEN}"
 
 echo
-echo "Deploying Gitea Server..."
-echo
-
-ansible-playbook -i "${SCRIPT_BASE_DIR}/.applier/gitea" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e k8s_namespace="${HYGIEIA_NAMESPACE}" -e openshift_default_subdomain="${OCP_SUBDOMAIN}"
-
-echo
-echo "Configuring Gitea Server..."
-echo
-
-ANSIBLE_JINJA2_NATIVE=true ansible-playbook -i localhost, "${SCRIPT_BASE_DIR}/playbooks/gitea.yml" -e k8s_namespace="${HYGIEIA_NAMESPACE}"
-
-echo
 echo "Deploying Application Projects..."
 echo
 
@@ -95,13 +83,19 @@ echo
 echo "Deploying Jenkins..."
 echo
 
-ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/containers-quickstarts/jenkins-masters/hygieia-plugin/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e hygieia_token=$(cat "${SCRIPT_BASE_DIR}/${TEMP_DIRECTORY}/${HYGIEIA_TOKEN_FILE}") -e hygieia_url="http://hygieia.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}"  -e namespace="${JENKINS_NAMESPACE}"
+repo_url=$(cat vars/mdt.yml | yq '.mdt_git_repositories[] | select(.name == "containers-quickstarts") | .uri')
+repo_branch=$(cat vars/mdt.yml | yq '.mdt_git_repositories[] | select(.name == "containers-quickstarts") | .branch')
+ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/containers-quickstarts/jenkins-masters/hygieia-plugin/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e hygieia_token=$(cat "${SCRIPT_BASE_DIR}/${TEMP_DIRECTORY}/${HYGIEIA_TOKEN_FILE}") -e hygieia_url="http://hygieia.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}/api/"  -e namespace="${JENKINS_NAMESPACE}" -e source_code_url=${repo_url} -e source_code_ref=${repo_branch}
 
 echo
 echo "Deploying Application..."
 echo
 
-ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/container-pipelines/basic-spring-boot/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e sb_application_repository_url="http://gitea.${HYGIEIA_NAMESPACE}.${OCP_SUBDOMAIN}/${GITEA_ORG_NAME}/${SAMPLE_REPO_NAME}.git" -e sb_pipeline_script=Jenkinsfile.hygieia
+repo_url=$(cat vars/mdt.yml | yq '.mdt_git_repositories[] | select(.name == "container-pipelines") | .uri')
+repo_branch=$(cat vars/mdt.yml | yq '.mdt_git_repositories[] | select(.name == "container-pipelines") | .branch')
+app_repo_url=$(cat vars/mdt.yml | yq '.sample_app_repo_url')
+app_repo_branch=$(cat vars/mdt.yml | yq '.sample_app_repo_ref')
+ansible-playbook -i "${SCRIPT_BASE_DIR}/dependencies/container-pipelines/basic-spring-boot/.applier" "${SCRIPT_BASE_DIR}/dependencies/openshift-applier/playbooks/openshift-cluster-seed.yml" -e sb_application_repository_url=${app_repo_url} -e sb_application_repository_ref=${app_repo_branch} -e sb_source_repository_url=${repo_url} -e sb_source_repository_ref=${repo_branch} -e sb_pipeline_script=Jenkinsfile.hygieia
 
 echo
 echo "Running Post Deployment Steps..."

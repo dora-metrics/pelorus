@@ -7,6 +7,8 @@ Assets to rapidly demonstrate Metrics Driven Transformation (MDT) on the OpenShi
 * Ansible 2.7+
 * OpenShift Environment
 * OpenShift Command Line Tool
+* [JQ](https://stedolan.github.io/jq/)
+* [YQ](https://yq.readthedocs.io/en/latest/)
 
 ## Configuration
 
