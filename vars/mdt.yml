@@ -25,6 +25,9 @@ jenkins_service_account: jenkins
 # Hygieia Dashboard
 hygieia_dashboard_team_name: Metrics Driven Transformation
 hygieia_dashboard_team_title: Metrics Driven Transformation
+hygieia_dashboard_product_name: Spring Rest
+hygieia_dashboard_product_title: mdtdemo
+
 
 # App
 sample_app_repo_url: http://github.com/redhat-cop/spring-rest.git
