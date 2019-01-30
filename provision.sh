@@ -23,7 +23,7 @@ do
     -j=*|--jenkins-namespace-=*)
       JENKINS_NAMESPACE="${i#*=}"
       shift;;
-    -n=*|--namespace=*)
+    -h=*|--namespace=*)
       HYGIEIA_NAMESPACE="${i#*=}"
       shift;;
     * )

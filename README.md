@@ -25,7 +25,7 @@ The following table describes the various configuration options:
 
 ## Provision
 
-Execute the followig command to provision the environment:
+Execute the following command to provision the environment:
 
 ```
 $ ./provision.sh -s=<subdomain> -g=<github_token>
