@@ -52,8 +52,8 @@
         status_code:
           - 200
       until: hygieia_general_config_result.status == 200 and (hygieia_general_config_result.json | length >= 3)
-      delay: 10
-      retries: 300
+      delay: 20
+      retries: 3000
       register: hygieia_general_config_result
     - name: Create Team Dashboard
       uri:
