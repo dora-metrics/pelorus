@@ -1,0 +1,151 @@
+---
+- name: Set secret facts
+  set_fact:
+    es_tls_cacert: "{{ oc }} -n openshift-logging get secret logging-elasticsearch -o jsonpath='{.data.admin-ca}'"
+    es_tls_clientcert: "{{ oc }} -n openshift-logging get secret logging-elasticsearch -o jsonpath='{.data.admin-cert}'"
+    es_tls_clientkey: "{{ oc }} -n openshift-logging get secret logging-elasticsearch -o jsonpath='{.data.admin-key}'"
+  when: state != 'absent'
+
+- name: Get Prometheus encrypted password from existing grafana-datasources secret
+  shell: 'secret=$("{{ oc }}" get -n openshift-monitoring -o yaml secrets grafana-datasources | grep prometheus) && clearsecret=${secret#*: } && echo $clearsecret | base64 -d '
+  register: grafana_ds
+  when: state != 'absent'
+
+- name: Set basicAuthPassword fact
+  set_fact:
+    prometheus_basicAuthPassword: "{{ grafana_ds.stdout | from_json | json_query('datasources[0].basicAuthPassword')  }}"
+  when: grafana_ds is defined and state != 'absent'
+
+- name: Replace vars in datasources.yml
+  template:
+    src: "{{ role_path }}/secrets/datasources.yml"
+    dest: "/tmp/datasources.yml"
+  when: state != 'absent'
+
+- name: Create AWS credentials file
+  template:
+    src: "{{ role_path }}/secrets/credentials"
+    dest: "/tmp/credentials"
+  when: state != 'absent'
+
+- name: Create cloudwatch-credentials secret
+  shell: "{{ oc }} create secret generic cloudwatch-credentials-{{ project_name }} --from-file=/tmp/credentials -n openshift-monitoring || echo cloudwatch-credentials-{{ project_name }} exists, skipping creation"
+  when: state != 'absent'
+
+- name: Label cloudwatch-credentials secret
+  command: "{{ oc }} label secret cloudwatch-credentials-{{ project_name }} grafana-custom={{ project_name }} --overwrite"
+  when: state != 'absent'
+
+- name: Delete resources with label grafana-custom={{ project_name }}
+  command: "{{ oc }} delete all -l grafana-custom={{ project_name }} -n openshift-monitoring"
+  when: state == 'absent'
+
+- name: Delete secrets with label grafana-custom={{ project_name }}
+  command: "{{ oc }} delete secrets -l grafana-custom={{ project_name }} -n openshift-monitoring"
+  when: state == 'absent'
+
+- name: Clean-up temporary credentials file
+  command: rm -f /tmp/credentials
+  when: state != 'absent'
+
+- name: Create grafana-datasources secret
+  shell: "{{ oc }} create secret generic grafana-datasources-{{ project_name }} --from-file=/tmp/datasources.yml -n openshift-monitoring || echo grafana-datasources-{{ project_name }} exists, skipping creation"
+  when: state != 'absent'
+
+- name: Label grafana-datasources secret
+  command: "{{ oc }} label secret grafana-datasources-{{ project_name }} grafana-custom={{ project_name }} --overwrite"
+  when: state != 'absent'
+
+
+- name: Clean-up temporary datasources.yml
+  command: rm -f /tmp/datasources.yml
+  when: state != 'absent'
+
+- name: Create temporary directory
+  command: "mktemp -d"
+  register: tempdir
+
+- name: Set temp dir for templates
+  set_fact:
+    templates_path: "{{tempdir.stdout}}"
+
+- name: Copy templates
+  template:
+    src: "{{ role_path }}/templates/{{ item }}"
+    dest: "{{ templates_path }}/"
+  loop:
+    - 'deploymentTemplate.yml'
+    - 'serviceTemplate.yml'
+    - 'routeTemplate.yml'
+    - 'saTemplate.yml'
+  when: state != 'absent'
+
+- name: Delete existing custom deployment (if necessary)
+  command: "{{ oc }} delete deployment -l grafana-custom={{ project_name }} -n openshift-monitoring"
+
+- name: Apply templates
+  command: "{{ oc }} apply -f {{ templates_path }}/{{ item }} -n openshift-monitoring"
+  loop:
+    - 'deploymentTemplate.yml'
+    - 'serviceTemplate.yml'
+    - 'routeTemplate.yml'
+#    - 'saTemplate.yml'
+  when: state != 'absent'
+
+- name: Add annotation to grafana service account
+  command: "{{ oc }} annotate --overwrite -n openshift-monitoring sa grafana serviceaccounts.openshift.io/oauth-redirectreference.grafana-{{ project_name }}='{\"kind\":\"OAuthRedirectReference\", \"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"grafana-{{ project_name }}\"}}'"
+  when: state != 'absent'
+
+- name: Remove annotation from grafana service account
+  command: "{{ oc }} annotate -n openshift-monitoring sa grafana serviceaccounts.openshift.io/oauth-redirectreference.grafana-{{ project_name }}-"
+  when: state == 'absent'
+
+- name: Label created resources
+  command: "{{ oc }} label {{ item}} grafana-custom={{ project_name }} --overwrite -n openshift-monitoring"
+  loop:
+    - "deployment grafana-{{ project_name }}"
+    - "route grafana-{{ project_name }}"
+    - "service grafana-{{ project_name }}"
+  when: state != 'absent'
+
+- name: Clean-up templates
+  command: rm -f {{ templates_path }}/{{ item }}
+  loop:
+    - 'deploymentTemplate.yml'
+    - 'serviceTemplate.yml'
+    - 'routeTemplate.yml'
+    - 'saTemplate.yml'
+  when: state != 'absent'
+
+- name: Flush secret facts from memory
+  set_fact:
+    es_tls_cacert: null
+    es_tls_clientkey: null
+    es_tls_clientcert: null
+    aws_access_key: null
+    aws_secret_key: null
+
+- name: Update dashboards (create/update)
+  include_tasks: update_dashboards.yaml
+  vars:
+    delete_dashboards: true
+  when: state != 'absent' and update_dashboards | default (true) | bool
+
+- name: Check if it was the last custom deployment
+  command: "{{ oc }} get deployment -l grafana-custom -n openshift-monitoring"
+  when: state == 'absent'
+  register: deployment_list
+
+- name: Delete all custom configmaps if it was the last deployment
+  include_tasks: update_dashboards.yaml
+  vars:
+    delete_dashboards: true
+    update_dashboards: false
+  when: state == 'absent' and 'No resources found.' in deployment_list.stderr
+
+- name: Add dashboard volumes
+  command: "{{ oc }} set volume deployment/grafana-{{ project_name }} --add --name=grafana-dashboard-k8s-{{ item.path.split('.')[0] }} -t configmap --configmap-name=grafana-dashboard-k8s-{{ item.path.split('.')[0] }} -m /grafana-dashboard-definitions/0/custom/k8s-{{ item.path.split('.')[0] }} --overwrite --containers=grafana --default-mode=420 -n openshift-monitoring"
+  with_filetree:
+    - "{{ role_path }}/dashboards/"
+  when: state != 'absent'
+...

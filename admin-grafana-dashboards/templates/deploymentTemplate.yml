@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  generation: 1
+  labels:
+    app: grafana-{{ project_name }}
+  name: grafana-{{ project_name }}
+  selfLink: /apis/apps/v1/namespaces/openshift-monitoring/deployments/grafana-{{ project_name }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: grafana-{{ project_name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: grafana-{{ project_name }}
+    spec:
+      containers:
+      - args:
+        - -config=/etc/grafana/grafana.ini
+        image: registry.redhat.io/openshift3/grafana:v3.11.69
+        imagePullPolicy: IfNotPresent
+        name: grafana
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /usr/share/grafana/
+          name: cloudwatch-credentials-{{ project_name }}
+        - mountPath: /etc/grafana/provisioning/datasources/
+          name: grafana-datasources-{{ project_name }}
+        - mountPath: /var/lib/grafana
+          name: grafana-storage
+        - mountPath: /etc/grafana/provisioning/dashboards
+          name: grafana-dashboards
+        - mountPath: /grafana-dashboard-definitions/0/k8s-cluster-rsrc-use
+          name: grafana-dashboard-k8s-cluster-rsrc-use
+        - mountPath: /grafana-dashboard-definitions/0/k8s-node-rsrc-use
+          name: grafana-dashboard-k8s-node-rsrc-use
+        - mountPath: /grafana-dashboard-definitions/0/k8s-resources-cluster
+          name: grafana-dashboard-k8s-resources-cluster
+        - mountPath: /grafana-dashboard-definitions/0/k8s-resources-namespace
+          name: grafana-dashboard-k8s-resources-namespace
+        - mountPath: /grafana-dashboard-definitions/0/k8s-resources-pod
+          name: grafana-dashboard-k8s-resources-pod
+        - mountPath: /etc/grafana
+          name: grafana-config
+      - args:
+        - -provider=openshift
+        - -https-address=:3000
+        - -http-address=
+        - -email-domain=*
+        - -upstream=http://localhost:3001
+        - '-openshift-sar={"resource": "namespaces", "verb": "get"}'
+        - '-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get"}}'
+        - -tls-cert=/etc/tls/private/tls.crt
+        - -tls-key=/etc/tls/private/tls.key
+        - -client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
+        - -cookie-secret-file=/etc/proxy/secrets/session_secret
+        - -openshift-service-account=grafana
+        - -openshift-ca=/etc/pki/tls/cert.pem
+        - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        - -skip-auth-regex=^/metrics
+        image: registry.redhat.io/openshift3/oauth-proxy:v3.11.69
+        imagePullPolicy: IfNotPresent
+        name: grafana-proxy
+        ports:
+        - containerPort: 3000
+          name: https
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/tls/private
+          name: secret-grafana-tls
+        - mountPath: /etc/proxy/secrets
+          name: secret-grafana-proxy
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        node-role.kubernetes.io/infra: "true"
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: grafana
+      serviceAccountName: grafana
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: grafana-storage
+      - name: cloudwatch-credentials-{{ project_name }}
+        secret:
+          defaultMode: 420
+          secretName: cloudwatch-credentials-{{ project_name }}
+      - name: grafana-datasources-{{ project_name }}
+        secret:
+          defaultMode: 420
+          secretName: grafana-datasources-{{ project_name }}
+      - configMap:
+          defaultMode: 420
+          name: grafana-dashboards
+        name: grafana-dashboards
+      - configMap:
+          defaultMode: 420
+          name: grafana-dashboard-k8s-cluster-rsrc-use
+        name: grafana-dashboard-k8s-cluster-rsrc-use
+      - configMap:
+          defaultMode: 420
+          name: grafana-dashboard-k8s-node-rsrc-use
+        name: grafana-dashboard-k8s-node-rsrc-use
+      - configMap:
+          defaultMode: 420
+          name: grafana-dashboard-k8s-resources-cluster
+        name: grafana-dashboard-k8s-resources-cluster
+      - configMap:
+          defaultMode: 420
+          name: grafana-dashboard-k8s-resources-namespace
+        name: grafana-dashboard-k8s-resources-namespace
+      - configMap:
+          defaultMode: 420
+          name: grafana-dashboard-k8s-resources-pod
+        name: grafana-dashboard-k8s-resources-pod
+      - name: grafana-config
+        secret:
+          defaultMode: 420
+          secretName: grafana-config
+      - name: secret-grafana-tls
+        secret:
+          defaultMode: 420
+          secretName: grafana-{{ project_name }}-tls
+      - name: secret-grafana-proxy
+        secret:
+          defaultMode: 420
+          secretName: grafana-proxy
+status: {}

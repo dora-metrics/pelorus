@@ -1,0 +1,19 @@
+---
+oc: /usr/bin/oc --config /etc/origin/master/admin.kubeconfig -n openshift-monitoring
+oc_dev: /usr/bin/oc -n openshift-monitoring
+
+templates_path: /home/{{ ansible_user }}
+
+dashboards:
+  - overview
+  - remediation
+  - storage
+  - latency
+  - stability
+
+es_tls_cacert: ''
+es_tls_clientcert: ''
+es_tls_clientkey: ''
+
+state: ''
+...

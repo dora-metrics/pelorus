@@ -1,0 +1,17 @@
+---
+- name: Delete configmaps (if necessary)
+  command: "{{ oc }} delete configmap -l dashboards=grafana-custom -n openshift-monitoring"
+  when: delete_dashboards | default (false) | bool
+
+- name: Recreate configmaps
+  command: "{{ oc }} create configmap grafana-dashboard-k8s-{{ item.path.split('.')[0] }} --from-file={{role_path}}/dashboards/{{ item.path }} -n openshift-monitoring"
+  with_filetree:
+    - "{{ role_path }}/dashboards/"
+  when: state != 'absent' and update_dashboards | default (true) | bool
+
+- name: Label configmaps with custom dashboards
+  command: "{{ oc }} label configmap grafana-dashboard-k8s-{{ item.path.split('.')[0] }} dashboards=grafana-custom -n openshift-monitoring --overwrite"
+  with_filetree:
+    - "{{ role_path }}/dashboards/"
+  when: state != 'absent' and update_dashboards | default (true) | bool
+...

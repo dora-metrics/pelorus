@@ -1,0 +1,20 @@
+---
+- hosts: localhost 
+  gather_facts: false
+  become: false
+  vars_files:
+    - vars/installer-vault.yml
+  tasks:
+    - import_role: 
+        name: ot1_vault
+        tasks_from: login
+    - import_role:
+        name: ot1_vault
+        tasks_from: get_ocp_install_secrets
+
+- hosts: localhost
+  become: false
+  gather_facts: false
+  roles:
+    - role: ot1_grafana
+...

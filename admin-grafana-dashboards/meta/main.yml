@@ -1,0 +1,10 @@
+galaxy_info:
+  author: Brian Tomlinson
+  description: Deploy custom grafana dashboards as admin.
+  company: Red Hat, Inc. 
+
+  license: Reserved
+
+  min_ansible_version: 2.4
+
+dependencies: []

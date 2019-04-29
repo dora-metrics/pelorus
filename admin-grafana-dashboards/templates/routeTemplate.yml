@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    openshift.io/host.generated: "true"
+  name: grafana-{{ project_name }}
+  namespace: openshift-monitoring
+spec:
+  port:
+    targetPort: https
+  tls:
+    termination: reencrypt
+  to:
+    kind: Service
+    name: grafana-{{ project_name }}
+    weight: 100
+  wildcardPolicy: None
+
