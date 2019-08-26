@@ -7,26 +7,18 @@ Assets to rapidly demonstrate Metrics Driven Transformation (MDT) on the OpenShi
 * Ansible 2.7+
 * OpenShift Environment
 * OpenShift Command Line Tool
-* [JQ](https://stedolan.github.io/jq/)
-* [YQ](https://yq.readthedocs.io/en/latest/)
-
-## Configuration
-
-A bash script is used in combination with Ansible playbooks (some leveraging the [openshift-applier](https://github.com/redhat-cop/openshift-applier)) to build and provision the environment. The script makes use of several required parameters that must be provided either as environment variables or as script arguments.
-
-The following table describes the various configuration options:
-
-| Environment Variable | Command line Argument | Description | Default |
-| -------------------- | --------------------- | ----------- | ------- |
-| `OCP_SUBDOMAIN`      | `-s` or `--subdomain` | OpenShift default subdomain (ie: apps.openshift.example.com) |  |
-| `GITHUB_TOKEN`       | `-g` or `--github-token` | GitHub client token |  |
-| `JENKINS_NAMESPACE`  | `-j` or `--jenkins-namespace` | Project to deploy Jenkins | `basic-spring-boot-build` |
-| `HYGIEIA_NAMESPACE`  | `-h` or `--namespace` | Project to deploy all other resources | `hygieia` |
 
 ## Provision
 
 Execute the following command to provision the environment:
 
 ```
-$ ./provision.sh -s=<subdomain> -g=<github_token>
+# Install dependencies
+ansible-galaxy install -r requirements.yml -p galaxy
+
+# Install prerequisite infrastructure
+ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.appler galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=infrastructure
+
+# Deploy MDT Tool
+ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml
 ```
