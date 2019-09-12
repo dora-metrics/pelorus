@@ -1,5 +1,5 @@
 # From 'openshift-applier'
 - src: https://github.com/redhat-cop/openshift-applier
   version: v2.1.1
-- src: https://github.com/openshift-toolkit
+- src: https://github.com/redhat-cop/openshift-toolkit
   version: master
