@@ -1,6 +1,8 @@
-# Metrics Driven Transormation Quickstart
+# Metrics Driven Transormation
 
-Assets to rapidly demonstrate Metrics Driven Transformation (MDT) on the OpenShift Container Platform
+This repository contains tooling to help organizations measure Software Delivery and Value Stream metrics.
+
+![Software Delivery Metrics Dashboard](media/sdm-dashboard.png)
 
 ## Prerequisites
 
