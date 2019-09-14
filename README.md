@@ -1,16 +1,35 @@
-# Metrics Driven Transformation Quickstart
+# Metrics Driven Transformation
 
-Assets to rapidly demonstrate Metrics Driven Transformation (MDT) on the OpenShift Container Platform
+This repository contains tooling to help organizations measure Software Delivery and Value Stream metrics.
 
-## Prerequisites
+## Features
 
-* Ansible 2.7+
-* OpenShift Environment
-* OpenShift Command Line Tool
+* [Software Delivey Metrics Dashboard](#software-delivery-metrics-dashboard)
+* Platform Adoption Dashboard (Planned Feature)
+* Value Stream Metrics Dashboard (Planned Feature)
 
-## Provision
+### Software Delivery Metrics Dashboard
 
-Execute the following command to provision the environment:
+The Software Delivery Metrics Dashboard is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides and organizational level view of
+
+![Software Delivery Metrics Dashboard](media/sdm-dashboard.png)
+
+## Installation
+
+The following will walk through the deployment of the MDT tooling.
+
+### Prerequisites
+
+Before deploying the tooling, you must have the following prepared
+
+* An OpenShift 3.11 or higher Environment
+* A machine from which to run the install (usually your laptop)
+  * The OpenShift Command Line Tool (oc)
+  * Ansible 2.7+
+
+### Deployment Instructions
+
+Execute the following command to provision the tool:
 
 ```
 # Install dependencies
