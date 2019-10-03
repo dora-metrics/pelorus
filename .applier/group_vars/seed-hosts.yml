@@ -3,13 +3,13 @@ openshift_cluster_content:
     content:
       - name: Software Delivery Metrics Dashboard
         file: "{{ inventory_dir }}/../dashboard-sdm.yml"
-        namespace: "openshift-monitoring"
+        namespace: "tph-monitoring"
         tags:
           - dashboard-sdm
       - name: Mount Software Delivery Dashboard to Grafana
         action: patch
         file: "{{ inventory_dir }}/../grafana-deployment.yml"
         params: "{{ inventory_dir }}/../sdm-volume-patch.yml"
-        namespace: "openshift-monitoring"
+        namespace: "tph-monitoring"
         tags:
           - dashboard-sdm
