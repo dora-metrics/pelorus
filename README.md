@@ -36,8 +36,20 @@ Execute the following command to provision the tool:
 ansible-galaxy install -r requirements.yml -p galaxy
 
 # Install prerequisite infrastructure
-ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.appler galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=infrastructure
+ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=infrastructure
 
 # Deploy MDT Tool
 ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml
+```
+
+### Cleaning Up
+
+If you would like to undo the changes above:
+
+```
+# Install prerequisite infrastructure
+ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=infrastructure -e provision=false
+
+# Deploy MDT Tool
+ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e provision=false
 ```
