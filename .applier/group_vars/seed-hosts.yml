@@ -1,15 +1,16 @@
+dashboard_namespace: tph-monitoring
 openshift_cluster_content:
   - object: Dashboards - DevOps
     content:
       - name: Software Delivery Metrics Dashboard
         file: "{{ inventory_dir }}/../dashboard-sdm.yml"
-        namespace: "tph-monitoring"
+        namespace: "{{ dashboard_namespace }}"
         tags:
           - dashboard-sdm
       - name: Mount Software Delivery Dashboard to Grafana
         action: patch
         file: "{{ inventory_dir }}/../grafana-deployment.yml"
         params: "{{ inventory_dir }}/../sdm-volume-patch.yml"
-        namespace: "tph-monitoring"
+        namespace: "{{ dashboard_namespace }}"
         tags:
           - dashboard-sdm
