@@ -2,4 +2,4 @@
 - src: https://github.com/redhat-cop/openshift-applier
   version: v2.1.1
 - src: https://github.com/ramius345/openshift-toolkit
-  version: namespace_mods
+  version: merge_prepare
