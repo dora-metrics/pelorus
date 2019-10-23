@@ -42,6 +42,28 @@ ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/o
 ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml
 ```
 
+### Adding extra prometheus instances
+
+Add a extra_prometheus_hosts variable to the '.applier/group_vars/seed_hosts.yml'.  This variable is an array of hashes with the following elements:
+
+* id - a description of the prometheus host (this will be used as a label to select metrics in the federated instance).
+* hostname - the fully qualified domain name or ip address of the host with the extra prometheus instance
+* password - the password used for the 'internal' basic auth account (this is provided by the k8s metrics prometheus instances in a secret).
+
+For example:
+
+```
+extra_prometheus_hosts:
+  - id: "ci-1"
+    hostname: "prometheus-k8s-openshift-monitoring.apps.ci-1.cop.rht-labs.com"
+    password: "<redacted>"
+
+dashboard_namespace: custom-dashboards
+openshift_cluster_content:
+  - ...
+```
+
+
 ### Cleaning Up
 
 If you would like to undo the changes above:
