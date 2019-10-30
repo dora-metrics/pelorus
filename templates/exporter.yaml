@@ -62,7 +62,7 @@ objects:
         containers:
         - envFrom:
           - secretRef:
-              name: github-secret
+              name: ${ENV_SECRET_NAME}
           imagePullPolicy: Always
           name: ${APP_NAME}
           ports:
@@ -114,3 +114,5 @@ parameters:
   value: master
 - name: SOURCE_URL
   value: https://github.com/redhat-cop/mdt-quickstart.git
+- name: ENV_SECRET_NAME
+  value: github-secret
