@@ -47,6 +47,7 @@ objects:
       app: ${APP_NAME}
     name: ${APP_NAME}
   spec:
+    replicas: 1
     revisionHistoryLimit: 10
     selector:
       app: ${APP_NAME}
