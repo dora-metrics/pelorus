@@ -87,7 +87,10 @@ spec:
           name: secret-grafana-proxy
       dnsPolicy: ClusterFirst
       nodeSelector:
+        #This allowed the code to deploy in a different namespace, not sure how to get
+        #regular namespaces to deploy to infranodes yet
         node-role.kubernetes.io/infra: "true"
+        #node-role.kubernetes.io/compute: "true"
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
