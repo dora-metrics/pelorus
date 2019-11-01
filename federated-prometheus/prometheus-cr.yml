@@ -34,7 +34,7 @@ spec:
     - -openshift-ca=/etc/pki/tls/cert.pem
     - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
     - -skip-auth-regex=^/metrics
-    image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:64279a4762f987de90db0310f285079247730c582e7af01b5cb2f0d70c1e8e60
+    image: registry.redhat.io/openshift3/oauth-proxy:v3.11
     name: prometheus-proxy
     ports:
     - containerPort: 9091
