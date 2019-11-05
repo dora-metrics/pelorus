@@ -72,6 +72,30 @@
             federated_job: "federated-prometheus-local"
 
 
+- name: Scan for extra prometheus hosts secret
+  k8s_facts:
+    api_version: v1
+    kind: Secret
+    namespace: "{{ dashboard_namespace }}"
+    name: extra-prometheus-secrets
+  register: extra_prometheus_secret_data_b64
+
+- name: Convert extra prometheus host secret b64
+  set_fact:
+    extra_prometheus_secret_data: "{{ extra_prometheus_secret_data_b64.resources[0]['data']['extra_prometheus_hosts'] | b64decode | from_yaml }}"
+  when: 
+    - extra_prometheus_secret_data_b64 is defined
+    - extra_prometheus_secret_data_b64.resources[0] is defined
+    - extra_prometheus_secret_data_b64.resources[0]['data'] is defined
+    - extra_prometheus_secret_data_b64.resources[0]['data']['extra_prometheus_hosts'] is defined
+
+
+- name: Set extra_prometheus_hosts if the secret exists
+  set_fact:
+    extra_prometheus_hosts: "{{ extra_prometheus_secret_data['extra_prometheus_hosts'] }}"
+  when: extra_prometheus_secret_data is defined
+
+
 - name: Setup additional prometheus instance configurations loop
   set_fact: 
     additional_host:
