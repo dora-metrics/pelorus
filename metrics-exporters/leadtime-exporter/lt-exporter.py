@@ -87,7 +87,19 @@ def convert_timestamp_to_date_time(timestamp):
 def generate_ld_metrics_list(projects):
 
     urllib3.disable_warnings()
-    k8s_client = config.new_client_from_config()
+    if "OPENSHIFT_BUILD_NAME" in os.environ:
+        config.load_incluster_config()
+        file_namespace = open(
+            "/run/secrets/kubernetes.io/serviceaccount/namespace", "r"
+        )
+        if file_namespace.mode == "r":
+            namespace = file_namespace.read()
+            print("namespace: %s\n" %(namespace))
+    else:
+        config.load_kube_config()
+
+    k8s_config = client.Configuration()
+    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
     dyn_client = DynamicClient(k8s_client)
 
     metrics = []
