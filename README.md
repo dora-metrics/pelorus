@@ -55,7 +55,7 @@ For example:
 ```
 extra_prometheus_hosts:
   - id: "ci-1"
-    hostname: "prometheus-k8s-openshift-monitoring.apps.ci-1.cop.rht-labs.com"
+    hostname: "prometheus-k8s-openshift-monitoring.apps.example.com"
     password: "<redacted>"
 
 dashboard_namespace: custom-dashboards
