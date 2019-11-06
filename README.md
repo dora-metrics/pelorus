@@ -58,7 +58,7 @@ extra_prometheus_hosts:
     hostname: "prometheus-k8s-openshift-monitoring.apps.example.com"
     password: "<redacted>"
 ```
-Once you are finished adding your extra hosts, base64 encode the content:
+Once you are finished adding your extra hosts, apply the file as the secret 'extra-prometheus-secrets'.
 
 ```
 oc create secret generic extra-prometheus-secrets --from-file extra_prometheus_hosts.yml
