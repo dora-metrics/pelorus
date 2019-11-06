@@ -61,13 +61,9 @@ extra_prometheus_hosts:
 Once you are finished adding your extra hosts, base64 encode the content:
 
 ```
-cat extra_prometheus_hosts.yml | base64 -w 0
+oc create secret generic extra-prometheus-secrets --from-file extra_prometheus_hosts.yml
 ```
 
-Copy this output into the extra_prometheus_hosts variable in the extra_prometheus_secrets.yml.  Apply the secret file into your custom-dashboard (or other namespace where your mdt prometheus is running).
-
-```
-oc apply -f extra_prometheus_secrets.yml
 ```
 
 ### Cleaning Up
