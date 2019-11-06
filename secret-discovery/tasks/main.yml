@@ -87,7 +87,7 @@
     - extra_prometheus_secret_data_b64 is defined
     - extra_prometheus_secret_data_b64.resources[0] is defined
     - extra_prometheus_secret_data_b64.resources[0]['data'] is defined
-    - extra_prometheus_secret_data_b64.resources[0]['data']['extra_prometheus_hosts'] is defined
+    - extra_prometheus_secret_data_b64.resources[0]['data']['extra_prometheus_hosts.yml'] is defined
 
 
 - name: Set extra_prometheus_hosts if the secret exists
