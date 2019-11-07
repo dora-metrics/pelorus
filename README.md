@@ -42,6 +42,30 @@ ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/o
 ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml
 ```
 
+### Adding extra prometheus instances
+
+Edit the extra_prometheus_hosts.yml file.  It is a yaml file with an array of entries with the following parameters:
+
+* id - a description of the prometheus host (this will be used as a label to select metrics in the federated instance).
+* hostname - the fully qualified domain name or ip address of the host with the extra prometheus instance
+* password - the password used for the 'internal' basic auth account (this is provided by the k8s metrics prometheus instances in a secret).
+
+For example:
+
+```
+extra_prometheus_hosts:
+  - id: "ci-1"
+    hostname: "prometheus-k8s-openshift-monitoring.apps.example.com"
+    password: "<redacted>"
+```
+Once you are finished adding your extra hosts, apply the file as the secret 'extra-prometheus-secrets'.
+
+```
+oc create secret generic extra-prometheus-secrets --from-file extra_prometheus_hosts.yml
+```
+
+```
+
 ### Cleaning Up
 
 If you would like to undo the changes above:

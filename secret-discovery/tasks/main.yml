@@ -1,0 +1,138 @@
+---
+- name: Fetch k8s prometheus htpasswd config
+  k8s_facts:
+    api_version: v1
+    kind: Secret
+    namespace: openshift-monitoring
+    name: prometheus-k8s-htpasswd
+  register: prometheus_k8s_htpasswd_data
+
+- name: Set mdt prometheus htpasswd secret fact
+  set_fact: 
+    mdt_prometheus_htpasswd_auth: "{{ prometheus_k8s_htpasswd_data.resources[0]['data']['auth'] }}"
+
+- name: Fetch monitoring grafana datasources configuration
+  k8s_facts:
+    api_version: v1
+    kind: Secret
+    namespace: openshift-monitoring
+    name: grafana-datasources
+  register: grafana_datasources_data
+
+- name: Decode grafana datasources data
+  set_fact:
+    orig_grafana_datasources_with_prometheus: "{{ grafana_datasources_data.resources[0]['data']['prometheus.yaml'] | b64decode }}"
+
+- name: Get internal prometheus basic auth password
+  set_fact:
+    internal_prometheus_basic_auth_pass: "{{ orig_grafana_datasources_with_prometheus['datasources'][0]['basicAuthPassword'] }}"
+
+- name: Setup new grafana datasources config
+  set_fact:
+    new_grafana_datasources_mdt_data_yaml:
+      apiVersion: 1
+      datasources:
+        - access: "proxy"
+          basicAuth: true
+          basicAuthPassword: "{{ internal_prometheus_basic_auth_pass }}"
+          basicAuthUser: "internal"
+          editable: false
+          jsonData:
+            tlsSkipVerify: true
+          name: "prometheus"
+          orgId: 1
+          type: "prometheus"
+          url: "https://prometheus-mdt.{{ dashboard_namespace }}.svc:9091"
+          version: 1
+
+- name: Setup new grafana datasources config encoded
+  set_fact:
+    new_grafana_datasources_mdt_data: "{{ new_grafana_datasources_mdt_data_yaml | to_nice_json | b64encode }}"
+
+- name: Generate internal prometheus connection
+  set_fact:
+    internal_prometheus_list:
+    - job_name: "federated-prometheus-local"
+      scrape_interval: 15s
+      honor_labels: true
+      metrics_path: '/federate'
+      params:
+        'match[]':
+          - '{job="openshift-state-metrics"}'
+      scheme: "https"
+      basic_auth:
+        username: 'internal'
+        password: "{{ internal_prometheus_basic_auth_pass }}"
+      tls_config:
+        insecure_skip_verify: true
+      static_configs:
+        - targets:
+            - "prometheus-k8s.openshift-monitoring.svc.cluster.local:9091"
+          labels:
+            federated_job: "federated-prometheus-local"
+
+
+- name: Scan for extra prometheus hosts secret
+  k8s_facts:
+    api_version: v1
+    kind: Secret
+    namespace: "{{ dashboard_namespace }}"
+    name: extra-prometheus-secrets
+  register: extra_prometheus_secret_data_b64
+
+- name: Convert extra prometheus host secret b64
+  set_fact:
+    extra_prometheus_secret_data: "{{ extra_prometheus_secret_data_b64.resources[0]['data']['extra_prometheus_hosts.yml'] | b64decode | from_yaml }}"
+  when: 
+    - extra_prometheus_secret_data_b64 is defined
+    - extra_prometheus_secret_data_b64.resources[0] is defined
+    - extra_prometheus_secret_data_b64.resources[0]['data'] is defined
+    - extra_prometheus_secret_data_b64.resources[0]['data']['extra_prometheus_hosts.yml'] is defined
+
+
+- name: Set extra_prometheus_hosts if the secret exists
+  set_fact:
+    extra_prometheus_hosts: "{{ extra_prometheus_secret_data['extra_prometheus_hosts'] }}"
+  when: extra_prometheus_secret_data is defined
+
+
+- name: Setup additional prometheus instance configurations loop
+  set_fact: 
+    additional_host:
+      job_name: "federated-prometheus-{{ item.id }}"
+      scrape_interval: 15s
+      honor_labels: true
+      metrics_path: '/federate'
+      params:
+        'match[]':
+          - '{job="openshift-state-metrics"}'
+      scheme: "https"
+      basic_auth:
+        username: 'internal'
+        password: "{{ item.password }}"
+      tls_config:
+        insecure_skip_verify: true
+      static_configs:
+        - targets:
+            - "{{ item.hostname }}"
+          labels:
+            federated_job: "federated-prometheus-{{ item.id }}"
+  loop: "{{ extra_prometheus_hosts }}"
+  register: loop_result
+  when: extra_prometheus_hosts is defined
+
+- name: Setup additional prometheus instance process list
+  set_fact:
+    additional_hosts: "{{ loop_result.results | map(attribute='ansible_facts.additional_host') | list }}"
+  when: extra_prometheus_hosts is defined
+
+- name: Setup MDT prometheus scrape config with additional hosts
+  set_fact:
+    prometheus_scrape_config: "{{ internal_prometheus_list + additional_hosts }}"
+  when: extra_prometheus_hosts is defined
+
+- name: Setup MDT prometheus scrape config
+  set_fact:
+    prometheus_scrape_config: "{{ internal_prometheus_list }}"
+  when: extra_prometheus_hosts is not defined
+
