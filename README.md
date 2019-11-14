@@ -64,6 +64,9 @@ Once you are finished adding your extra hosts, apply the file as the secret 'ext
 oc create secret generic extra-prometheus-secrets --from-file extra_prometheus_hosts.yml
 ```
 
+After creating this secret, make sure to re-run the following applier command:
+```
+ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=exporters
 ```
 
 ### Cleaning Up
@@ -77,3 +80,23 @@ ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/o
 # Deploy MDT Tool
 ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e provision=false
 ```
+
+
+### Deploying Exporters
+
+To deploy the exporters, first setup the following environment variables and create the following secret:
+
+```
+export GITHUB_REPOS=redhat-cop/mdt-quickstart
+export GITHUB_USER=<your github user name>
+export GITHUB_TOKEN=<your github token>
+oc process -f templates/github-secret.yaml -p GITHUB_USER=${GITHUB_USER} -p GITHUB_TOKEN=${GITHUB_TOKEN} -p GITHUB_REPOS=${GITHUB_REPOS}  | oc apply -f-
+```
+
+
+Once this is done, run the following ansible command to deploy the exporters:
+
+```
+ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=exporters
+```
+

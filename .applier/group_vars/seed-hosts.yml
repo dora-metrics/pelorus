@@ -1,4 +1,5 @@
 dashboard_namespace: custom-dashboards
+exporter_namespace: custom-exporters
 
 openshift_cluster_content:
   - galaxy_requirements: 
@@ -69,3 +70,42 @@ openshift_cluster_content:
         namespace: "{{ dashboard_namespace }}"
         tags:
           - dashboard-sdm
+  - object: Metrics Exporters
+    content:
+      - name: Exporters Namespace
+        file: "{{ inventory_dir }}/../exporters-yaml/namespace.yaml.j2"
+        tags:
+          - exporters
+      - name: Commit Time Exporter
+        file: "{{ inventory_dir }}/../exporters-yaml/exporter.yaml.j2"
+        namespace: "{{ exporter_namespace }}"
+        jinja_vars:
+          app_name: commit-time-exporter
+          source_context_dir: metrics-exporters/commit-time-exporter
+          source_ref: master
+          source_url: https://github.com/redhat-cop/mdt-quickstart.git
+          env_secret_name: github-secret
+        tags:
+          - exporters
+      - name: Lead Time Exporter Service Account
+        file: "{{ inventory_dir }}/../exporters-yaml/sa.yaml"
+        namespace: "{{ exporter_namespace }}"
+        tags:
+          - exporters
+      - name: Lead Time Exporter Role Binding
+        file: "{{ inventory_dir }}/../exporters-yaml/rolebinding.yaml"
+        namespace: "{{ exporter_namespace }}"
+        tags:
+          - exporters
+      - name: Lead Time Exporter
+        file: "{{ inventory_dir }}/../exporters-yaml/exporter.yaml.j2"
+        namespace: "{{ exporter_namespace }}"
+        jinja_vars:
+          app_name: leadtime-exporter
+          source_context_dir: metrics-exporters/leadtime-exporter
+          source_ref: master
+          source_url: https://github.com/redhat-cop/mdt-quickstart.git
+          env_secret_name: github-secret
+          service_account: robot
+        tags:
+          - exporters

@@ -1,0 +1,114 @@
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app: {{ app_name }}
+    deploymentconfig: {{ app_name }}
+  strategy:
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: {{ app_name }}
+        deploymentconfig: {{ app_name }}
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: {{ env_secret_name }}
+        imagePullPolicy: Always
+        name: {{ app_name }}
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+{% if service_account is defined %}
+      serviceAccount: {{ service_account }}
+      serviceAccountName: {{ service_account }}
+{% endif %}
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - {{ app_name }}
+      from:
+        kind: ImageStreamTag
+        name: {{ app_name }}:latest
+    type: ImageChange
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}
+spec:
+  failedBuildsHistoryLimit: 5
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ app_name }}:latest
+  source:
+    contextDir: {{ source_context_dir }}
+    git:
+      ref: {{ source_ref }}
+      uri: {{ source_url }}
+    type: Git
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: python:3.6
+        namespace: openshift
+    type: Source
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - github:
+      secretReference:
+        name: github-secret
+    type: GitHub
+  - type: ConfigChange
+  - type: ImageChange
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: {{ app_name }}
+    deploymentconfig: {{ app_name }}
+  type: ClusterIP
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}
+spec:
+  port:
+    targetPort: 8080-tcp
+  to:
+    kind: Service
+    name: {{ app_name }}
