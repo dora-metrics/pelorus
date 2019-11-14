@@ -49,9 +49,7 @@ class mdt_metric:
         url_tokens = myurl.split("/")
         url = _prefix + url_tokens[3] + "/" +url_tokens[4].split(".")[0] +_suffix+self.commit_hash
         response = requests.get(url, auth=(username, token))
-#        print(username, token)
         commit = response.json()
-#        print(commit)
         self.commit_time = commit['commit']['committer']['date']
         self.commit_timestamp = convert_date_time_to_timestamp(self.commit_time)
     def calculate_lead_time(self):
@@ -108,13 +106,12 @@ def generate_ld_metrics_list(projects):
         projects = [ project.metadata.name for project in v1_projects.get().items ]
 
     for project in projects:    
-        v1_builds = dyn_client.resources.get(api_version='v1',  kind='Build')
+        v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1',  kind='Build')
         builds = v1_builds.get(namespace=project)
 
         v1_replicationControllers = dyn_client.resources.get(api_version='v1',  kind='ReplicationController')
         replicationControllers = v1_replicationControllers.get(namespace=project)
 
-        print ('Builds Count = ' , len(builds.items))
         for build in builds.items:
             if build['spec']['source']['type'] == 'Git':
                 if build['status']['phase'] =='Complete':
@@ -148,6 +145,6 @@ if __name__ == "__main__":
         projects = [ proj.strip() for proj in os.environ.get('PROJECTS').split(",") ]
     apps = None
     REGISTRY.register(CommitCollector(username, token, projects, apps))
-    start_http_server(9118)
+    start_http_server(8080)
     while True: time.sleep(1)
 

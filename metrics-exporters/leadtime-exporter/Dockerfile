@@ -9,9 +9,9 @@ COPY requirements.txt exporter/
 
 RUN pip install --no-cache-dir -r exporter/requirements.txt
 
-COPY lt-exporter.py exporter/app.py
+COPY app.py exporter/app.py
 
-EXPOSE 9118
+EXPOSE 8080
 
 ENTRYPOINT ["python", "exporter/app.py" ]
 
