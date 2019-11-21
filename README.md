@@ -10,7 +10,7 @@ This repository contains tooling to help organizations measure Software Delivery
 
 ### Software Delivery Metrics Dashboard
 
-The Software Delivery Metrics Dashboard is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides and organizational level view of
+The Software Delivery Metrics Dashboard is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides and organizational level view of the [four critical measures of software delivery performance](https://blog.openshift.com/exploring-a-metrics-driven-approach-to-transformation/).
 
 ![Software Delivery Metrics Dashboard](media/sdm-dashboard.png)
 
