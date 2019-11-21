@@ -80,8 +80,8 @@ Once you are finished adding your extra hosts, apply the file as the secret 'ext
 
 If you would like to undo the changes above:
 
-    # Install prerequisite infrastructure
+    # Remove dashboarding stack
     ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=infrastructure -e provision=false
 
-    # Deploy MDT Tool
+    # Remove Dashboard
     ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e provision=false
