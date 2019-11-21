@@ -26,6 +26,23 @@ Before deploying the tooling, you must have the following prepared
 * A machine from which to run the install (usually your laptop)
   * The OpenShift Command Line Tool (oc)
   * Ansible 2.7+
+* The `openshift` Python module installed locally.
+
+  On RHEL:
+
+        # Python 2
+        yum install -y python2-openshift
+
+        # Python 3
+        yum install -y python3-openshift
+
+  On Fedora:
+
+        # Python 2
+        dnf install -y python2-openshift
+
+        # Python 3
+        dnf install -y python3-openshift
 
 ### Deployment Instructions
 
