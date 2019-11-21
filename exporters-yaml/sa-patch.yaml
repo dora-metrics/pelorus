@@ -13,4 +13,4 @@ objects:
         serviceAccountName: ${ACCOUNT_NAME}
 parameters:
   - name: ACCOUNT_NAME
-    value: robot
+    value: exporter-robot

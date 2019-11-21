@@ -93,7 +93,7 @@ openshift_cluster_content:
         tags:
           - exporters
       - name: Lead Time Exporter Role Binding
-        file: "{{ inventory_dir }}/../exporters-yaml/rolebinding.yaml"
+        file: "{{ inventory_dir }}/../exporters-yaml/rolebinding.yaml.j2"
         namespace: "{{ exporter_namespace }}"
         tags:
           - exporters
@@ -105,7 +105,7 @@ openshift_cluster_content:
           source_context_dir: metrics-exporters/leadtime-exporter
           source_ref: master
           source_url: https://github.com/redhat-cop/mdt-quickstart.git
-          env_secret_name: github-secret
-          service_account: robot
+          env_cm_name: leadtime-env
+          service_account: exporter-robot
         tags:
           - exporters

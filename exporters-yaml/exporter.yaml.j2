@@ -29,7 +29,11 @@ spec:
       containers:
       - envFrom:
         - secretRef:
-            name: {{ env_secret_name }}
+            name: github-secret
+{% if env_cm_name is defined %}
+        - configMapRef:
+            name: {{ env_cm_name }}
+{% endif %}
         imagePullPolicy: Always
         name: {{ app_name }}
         ports:

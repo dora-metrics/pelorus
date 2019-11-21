@@ -7,7 +7,7 @@ roleRef:
   name: admin
 subjects:
 - kind: ServiceAccount
-  name: robot
-  namespace: exporters
+  name: exporter-robot
+  namespace: {{ exporter_namespace }}
 userNames:
-- system:serviceaccount:exporters:robot
+- system:serviceaccount:{{ exporter_namespace }}:exporter-robot
