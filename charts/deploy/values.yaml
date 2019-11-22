@@ -1,0 +1,9 @@
+# Default values for deploy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+mdt_prometheus_htpasswd_auth: changeme
+prometheus_scrape_config: |
+  key: value
+
+new_grafana_datasources_mdt_data: a2V5OiB2YWx1ZQo=

@@ -25,37 +25,20 @@ Before deploying the tooling, you must have the following prepared
 * An OpenShift 3.11 or higher Environment
 * A machine from which to run the install (usually your laptop)
   * The OpenShift Command Line Tool (oc)
-  * Ansible 2.7+
-* The `openshift` Python module installed locally.
-
-  On RHEL:
-
-        # Python 2
-        yum install -y python2-openshift
-
-        # Python 3
-        yum install -y python3-openshift
-
-  On Fedora:
-
-        # Python 2
-        dnf install -y python2-openshift
-
-        # Python 3
-        dnf install -y python3-openshift
+  * Helm 3
 
 ### Deployment Instructions
 
-Execute the following command to provision the tool:
+The following process can be followed to deploy the tool.
 
-    # Install dependencies
-    ansible-galaxy install -r requirements.yml -p galaxy
+First, we must collect some information from the cluster to feed to our templates.
 
-    # Install prerequisite infrastructure
-    ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=infrastructure
+    PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
+    ORIG_GRAFANA_DATASOURCES_WITH_PROMETHEUS=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}')
 
-    # Deploy MDT Tool
-    ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml
+    #TODO: Finish data gathering
+
+    helm template --namespace pelorus pelorus ./charts/deploy/ | oc apply -f - -n pelorus
 
 ### Adding extra prometheus instances
 
