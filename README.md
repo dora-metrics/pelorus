@@ -34,7 +34,8 @@ The following process can be followed to deploy the tool.
 First, we must collect some information from the cluster to feed to our templates.
 
     PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
-    ORIG_GRAFANA_DATASOURCES_WITH_PROMETHEUS=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}')
+    GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 -d | jq .datasources[0].basicAuthPassword)
+
 
     #TODO: Finish data gathering
 

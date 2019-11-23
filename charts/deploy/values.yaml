@@ -7,3 +7,5 @@ prometheus_scrape_config: |
   key: value
 
 new_grafana_datasources_mdt_data: a2V5OiB2YWx1ZQo=
+
+internal_prometheus_basic_auth_pass: password
