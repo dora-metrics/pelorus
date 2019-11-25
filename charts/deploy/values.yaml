@@ -3,5 +3,4 @@
 # Declare variables to be passed into your templates.
 
 openshift_prometheus_htpasswd_auth: changeme
-
-internal_prometheus_basic_auth_pass: changeme
+openshift_prometheus_basic_auth_pass: changeme

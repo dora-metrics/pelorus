@@ -41,6 +41,7 @@ First, we must collect some information from the cluster to feed to our template
 
     helm template --namespace pelorus pelorus ./charts/deploy/ \
       --set openshift_prometheus_htpasswd_auth=${PROMETHEUS_HTPASSWD_AUTH} \
+      --set openshift_prometheus_basic_auth_pass=${GRAFANA_DATASOURCE_PASSWORD} \
       | oc apply -f - -n pelorus
 
 ### Adding extra prometheus instances
