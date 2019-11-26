@@ -1,0 +1,19 @@
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    openshift.io/host.generated: "true"
+  creationTimestamp: null
+  name: thanos-mdt
+spec:
+  port:
+    targetPort: thanos
+  subdomain: ""
+  to:
+    kind: Service
+    name: thanos-mdt
+    weight: 100
+  wildcardPolicy: None
+status:
+  ingress: null
