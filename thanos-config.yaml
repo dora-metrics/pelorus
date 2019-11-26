@@ -1,0 +1,8 @@
+type: s3
+config:
+  bucket: thanos
+  endpoint: s3.noobaa.svc
+  access_key: VYnG2CXyiTD6MWCQb6ij
+  secret_key: Y+5Zqne5RRYmEpwHvNX/n2y2px2sAhV0YMm3IWZZ
+  http_config:
+    insecure_skip_verify: true

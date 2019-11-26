@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-query
+  labels:
+    app: thanos-query
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: thanos-query
+  template:
+    metadata:
+      labels:
+        app: thanos-query
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "10902"
+    spec:
+      containers:
+      - name: thanos-query
+        image: quay.io/thanos/thanos:v0.8.1
+        args:
+        - "query"
+        - "--log.level=info"
+        - "--http-address=:10902"
+        - "--grpc-address=:10901"
+        - "--store=thanos-mdt-sidecar:10901"
+        - "--store=thanos-mdt-store:10901"
+        ports:
+        - name: query-http
+          containerPort: 10902
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: query-http

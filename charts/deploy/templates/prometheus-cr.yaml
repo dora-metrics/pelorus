@@ -5,7 +5,13 @@ metadata:
   labels:
     prometheus: prometheus-mdt
 spec:
-  replicas: 2
+  thanos:
+    baseImage: quay.io/thanos/thanos
+    version: v0.8.1
+    objectStorageConfig:
+      key: thanos.yaml
+      name: thanos-objstore-config
+  replicas: 1
   serviceAccountName: prometheus-mdt
   serviceMonitorSelector:
     matchLabels:
