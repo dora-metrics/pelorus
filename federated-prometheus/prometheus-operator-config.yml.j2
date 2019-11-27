@@ -117,6 +117,7 @@ spec:
         - --logtostderr=true
         - --config-reloader-image=quay.io/coreos/configmap-reload:v0.0.1
         - --prometheus-config-reloader=quay.io/coreos/prometheus-config-reloader:v0.33.0
+        - --namespaces={{ dashboard_namespace }}
         image: quay.io/coreos/prometheus-operator:v0.33.0
         name: prometheus-operator-mdt
         ports:
