@@ -1,0 +1,20 @@
+---
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDataSource
+metadata:
+  name: prometheus-grafana-datasource
+spec:
+  name: prometheus.yaml
+  datasources:
+    - access: "proxy"
+      basicAuth: true
+      basicAuthPassword: {{ .Values.openshift_prometheus_basic_auth_pass }}
+      basicAuthUser: "internal"
+      editable: false
+      jsonData:
+        tlsSkipVerify: true
+      name: "prometheus"
+      orgId: 1
+      type: "prometheus"
+      url: "https://prometheus-mdt.{{ .Release.Name }}.svc:9091"
+      version: 1

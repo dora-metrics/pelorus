@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: grafana-proxy
+  name: grafana-proxy
+  annotations:
+    service.alpha.openshift.io/serving-cert-secret-name: grafana-proxy-tls
+spec:
+  ports:
+  - name: web
+    port: 3000
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: grafana-proxy
+  sessionAffinity: None
+  type: ClusterIP
