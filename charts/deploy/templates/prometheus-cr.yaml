@@ -1,0 +1,47 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus-mdt
+  labels:
+    prometheus: prometheus-mdt
+spec:
+  replicas: 2
+  serviceAccountName: prometheus-mdt
+  serviceMonitorSelector:
+    matchLabels:
+      junk: junk
+  additionalScrapeConfigs:
+    name: additional-scrape-configs
+    key: prometheus-additional.yml
+  secrets:
+    - prometheus-mdt-tls
+    - prometheus-mdt-htpasswd
+  containers:
+  - args:
+    - -provider=openshift
+    - -https-address=:9091
+    - -http-address=
+    - -email-domain=*
+    - -upstream=http://localhost:9090
+    - -htpasswd-file=/etc/proxy/htpasswd/auth
+    - -openshift-service-account=prometheus-mdt
+    - '-openshift-sar={"resource": "namespaces", "verb": "get"}'
+    - '-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get"}}'
+    - -tls-cert=/etc/tls/private/tls.crt
+    - -tls-key=/etc/tls/private/tls.key
+    - -client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
+    - -cookie-secret=bacon
+    - -openshift-ca=/etc/pki/tls/cert.pem
+    - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    - -skip-auth-regex=^/metrics
+    image: registry.redhat.io/openshift3/oauth-proxy:v3.11
+    name: prometheus-proxy
+    ports:
+    - containerPort: 9091
+      name: web-tls
+    resources: {}
+    volumeMounts:
+    - mountPath: /etc/tls/private
+      name: secret-prometheus-mdt-tls
+    - mountPath: /etc/proxy/htpasswd
+      name: secret-prometheus-mdt-htpasswd
