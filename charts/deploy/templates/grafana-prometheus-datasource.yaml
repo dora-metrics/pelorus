@@ -16,5 +16,5 @@ spec:
       name: "prometheus"
       orgId: 1
       type: "prometheus"
-      url: "https://prometheus-mdt.{{ .Release.Name }}.svc:9091"
+      url: "https://prometheus-pelorus.{{ .Release.Name }}.svc:9091"
       version: 1

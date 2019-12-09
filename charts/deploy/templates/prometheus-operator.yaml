@@ -4,20 +4,20 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/component: controller
-    app.kubernetes.io/name: prometheus-operator-mdt
+    app.kubernetes.io/name: prometheus-operator-pelorus
     app.kubernetes.io/version: v0.33.0
-  name: prometheus-operator-mdt
+  name: prometheus-operator-pelorus
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/component: controller
-      app.kubernetes.io/name: prometheus-operator-mdt
+      app.kubernetes.io/name: prometheus-operator-pelorus
   template:
     metadata:
       labels:
         app.kubernetes.io/component: controller
-        app.kubernetes.io/name: prometheus-operator-mdt
+        app.kubernetes.io/name: prometheus-operator-pelorus
         app.kubernetes.io/version: v0.33.0
     spec:
       containers:
@@ -28,7 +28,7 @@ spec:
         - --prometheus-config-reloader=quay.io/coreos/prometheus-config-reloader:v0.33.0
         - --namespaces={{ .Release.Namespace }}
         image: quay.io/coreos/prometheus-operator:v0.33.0
-        name: prometheus-operator-mdt
+        name: prometheus-operator-pelorus
         ports:
         - containerPort: 8080
           name: http
@@ -41,4 +41,4 @@ spec:
             memory: 100Mi
         securityContext:
           allowPrivilegeEscalation: false
-      serviceAccountName: prometheus-operator-mdt
+      serviceAccountName: prometheus-operator-pelorus

@@ -10,4 +10,4 @@ helm template \
     pelorus \
     --set openshift_prometheus_htpasswd_auth=$PROMETHEUS_HTPASSWD_AUTH \
     --set openshift_prometheus_basic_auth_pass=$GRAFANA_DATASOURCE_PASSWORD \
-    ./charts/deploy/  | oc apply -f - -n pelorus
+    ./charts/deploy/  | tee | oc apply -f - -n pelorus
