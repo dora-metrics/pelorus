@@ -29,20 +29,11 @@ Before deploying the tooling, you must have the following prepared
 
 ### Deployment Instructions
 
-The following process can be followed to deploy the tool.
+To deploy pelorus, run the following script from within the root repository directory
 
-First, we must collect some information from the cluster to feed to our templates.
-
-    PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
-    GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 -d | jq .datasources[0].basicAuthPassword)
-
-
-    #TODO: Finish data gathering
-
-    helm template --namespace pelorus pelorus ./charts/deploy/ \
-      --set openshift_prometheus_htpasswd_auth=${PROMETHEUS_HTPASSWD_AUTH} \
-      --set openshift_prometheus_basic_auth_pass=${GRAFANA_DATASOURCE_PASSWORD} \
-      | oc apply -f - -n pelorus
+```
+./runhelm.sh
+```
 
 ### Adding extra prometheus instances
 
