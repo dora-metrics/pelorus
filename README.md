@@ -60,10 +60,6 @@ Once you are finished adding your extra hosts, you can update your stack by re-r
 
 ### Cleaning Up
 
-If you would like to undo the changes above:
+Cleaning up Pelorus is very simple.
 
-    # Remove dashboarding stack
-    ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=infrastructure -e provision=false
-
-    # Remove Dashboard
-    ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e provision=false
+    helm template --namespace pelorus pelorus ./charts/deploy/ | oc delete -f-
