@@ -1,0 +1,32 @@
+---
+apiVersion: integreatly.org/v1alpha1
+kind: Grafana
+metadata:
+  name: grafana-pelorus
+  labels:
+    app: grafana
+spec:
+  service:
+    labels:
+      app: grafana
+  config:
+    log:
+      mode: "console"
+      level: "debug"
+    auth:
+      disable_login_form: True
+      disable_signout_menu: True
+    auth.basic:
+      enabled: False
+    auth.proxy:
+      auto_sign_up: True
+      enabled: True
+      header_name: X-Forwarded-User
+    users:
+      allow_sign_up: True
+      auto_assign_org: True
+      auto_assign_org_role: Admin
+  dashboardLabelSelector:
+    - matchLabels:
+        app: grafana
+    

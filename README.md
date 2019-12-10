@@ -29,26 +29,17 @@ Before deploying the tooling, you must have the following prepared
 
 ### Deployment Instructions
 
-The following process can be followed to deploy the tool.
+To deploy pelorus, run the following script from within the root repository directory
 
-First, we must collect some information from the cluster to feed to our templates.
-
-    PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
-    GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 -d | jq .datasources[0].basicAuthPassword)
-
-
-    #TODO: Finish data gathering
-
-    helm template --namespace pelorus pelorus ./charts/deploy/ \
-      --set openshift_prometheus_htpasswd_auth=${PROMETHEUS_HTPASSWD_AUTH} \
-      --set openshift_prometheus_basic_auth_pass=${GRAFANA_DATASOURCE_PASSWORD} \
-      | oc apply -f - -n pelorus
+```
+./runhelm.sh
+```
 
 ### Adding extra prometheus instances
 
 By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, we need to point the Pelorus instance at these other clusters.
 
-To do this, creat a new variables file , `extra_prometheus_hosts.yaml`.  It is a yaml file with an array of entries with the following parameters:
+To do this, create a new variables file , `extra_prometheus_hosts.yaml`.  It is a yaml file with an array of entries with the following parameters:
 
 * id - a description of the prometheus host (this will be used as a label to select metrics in the federated instance).
 * hostname - the fully qualified domain name or ip address of the host with the extra prometheus instance
@@ -61,13 +52,11 @@ For example:
         hostname: "prometheus-k8s-openshift-monitoring.apps.ci-1.example.com"
         password: "<redacted>"
 
-Once you are finished adding your extra hosts, you can update your stack by re-running the helm command above, passing your values file with `--value extra-prometheus-hosts.yaml`
+Once you are finished adding your extra hosts, you can update your stack by re-running the helm command above, passing your values file with `--values extra-prometheus-hosts.yaml`
 
-    helm template --namespace pelorus pelorus ./charts/deploy/ \
-      --set openshift_prometheus_htpasswd_auth=${PROMETHEUS_HTPASSWD_AUTH} \
-      --set openshift_prometheus_basic_auth_pass=${GRAFANA_DATASOURCE_PASSWORD} \
-      --values extra-prometheus-hosts.yaml \
-      | oc apply -f - -n pelorus
+```
+./runhelm.sh --values extra-prometheus-hosts.yaml
+```
 
 ### Cleaning Up
 

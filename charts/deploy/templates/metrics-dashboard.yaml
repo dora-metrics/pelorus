@@ -1,7 +1,13 @@
 ---
-apiVersion: v1
-data:
-  devops.json: |
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDashboard
+metadata:
+  name: metrics-dashboard
+  labels:
+    app: grafana
+spec:
+  name: devops.json
+  json: >-
     {
       "annotations": {
         "list": [
@@ -1090,7 +1096,3 @@ data:
       "uid": "",
       "version": 11
     }
-kind: ConfigMap
-metadata:
-  creationTimestamp: null
-  name: {{ .Release.Name }}-sdm

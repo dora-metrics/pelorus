@@ -4,16 +4,16 @@ kind: Route
 metadata:
   annotations:
     openshift.io/host.generated: "true"
-  name: prometheus-pelorus
+  name: grafana-proxy
 spec:
   port:
-    targetPort: web-tls
+    targetPort: web
   host: ""
   tls:
     insecureEdgeTerminationPolicy: Redirect
     termination: reencrypt
   to:
     kind: Service
-    name: prometheus-pelorus
+    name: grafana-proxy
     weight: 100
   wildcardPolicy: None
