@@ -1,4 +1,0 @@
-extra_prometheus_hosts:
-  - id: "ci-1"
-    hostname: "prometheus-k8s-openshift-monitoring.apps.example.com"
-    password: "password here"
