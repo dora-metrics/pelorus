@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pelorus-test
+spec:
+  parallelism: 1    
+  completions: 1    
+  template:         
+    metadata:
+      name: pi
+    spec:
+      containers:
+      - name: selenium
+        image: joyzoursky/python-chromedriver:3.7-selenium
+        command: ["python",  "/runner/pelorus_test_runner.py"]
+        volumeMounts:
+        - mountPath: /runner
+          name: pelorus-test-runner
+      restartPolicy: Never
+      volumes:
+      - name: pelorus-test-runner
+        configMap:
+          name: pelorus-test-runner
