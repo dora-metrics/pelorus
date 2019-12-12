@@ -12,9 +12,9 @@ spec:
       containers:
       - name: selenium
         image: joyzoursky/python-chromedriver:3.7-selenium
-        command: ["python",  "/runner/pelorus_test_runner.py"]
+        command: ["/bin/sh","-c","python -m unittest /tests/*"]
         volumeMounts:
-        - mountPath: /runner
+        - mountPath: /tests
           name: pelorus-test-runner
       restartPolicy: Never
       volumes:

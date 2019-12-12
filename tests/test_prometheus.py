@@ -42,5 +42,5 @@ class PrometheusTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestTemplate)
+    suite = unittest.TestLoader().loadTestsFromTestCase(PrometheusTests)
     result = unittest.TextTestRunner(verbosity=2).run(suite)

@@ -1,6 +1,6 @@
 #!/bin/bash
 oc delete cm pelorus-test-runner || true
-oc create cm pelorus-test-runner --from-file=pelorus_test_runner.py
+oc create cm pelorus-test-runner $(find test_* | sed 's/^\(.*\)$/--from-file=\1/' | sed -e :a -e '$!N; s/\n/ /; ta')
 oc apply -f pelorus-test-job.yml
 while [ $(oc get pods | grep pelorus-test | grep -c Completed) -ne 1 ]; do
     echo "Waiting for test job to complete"
