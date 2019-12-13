@@ -5,10 +5,12 @@ A test runner to check grafana is functioning properly
 import unittest
 import urllib3
 import json
+import time
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 import openshift_login_page
+import grafana_home_page
 
 class GrafanaTests(unittest.TestCase):
     """Include test cases on a given url"""
@@ -30,7 +32,6 @@ class GrafanaTests(unittest.TestCase):
         url = ""
         http = urllib3.HTTPSConnectionPool('kubernetes.default.svc.cluster.local', port=443, cert_reqs='CERT_NONE', assert_hostname=False)
         r = http.request('GET','/api') 
-        print("Status: " + str(r.status))
         if r.status == 200:
             jsondata = json.loads(r.data)
             lburl = jsondata['serverAddressByClientCIDRs'][0]['serverAddress']
@@ -42,15 +43,24 @@ class GrafanaTests(unittest.TestCase):
     def test_case_grafana(self):
         """Find the prometheus targets and make sure they are up"""
         try:
-            url = self._get_grafana_url()
-            print(url)
-            self.driver.get(url)
+            grafana_url = self._get_grafana_url()
+            self.driver.get(grafana_url)
 
             loginPages = openshift_login_page.OpenshiftLoginPages(self.driver)
             loginPages.login_to_openshift()
 
-            #print("Next page source:")
-            #print(self.driver.page_source)
+            homePage = grafana_home_page.GrafanaHomePage(self.driver)
+            homePage.click_home_dropdown()
+            
+            time.sleep(2)
+
+            homePage.click_on_dashboard("DevOps / Software Delivery Metrics")
+            
+            time.sleep(2)
+
+            print("Next page source:")
+            print(self.driver.page_source)
+
 
         except NoSuchElementException as ex:
             self.fail(ex.msg)
