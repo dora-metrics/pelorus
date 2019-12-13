@@ -12,7 +12,7 @@ while [ $(oc get pods | grep pelorus-test | grep -c Completed) -ne 1 ]; do
         oc logs $JOB_POD | tee status.txt
         oc delete job pelorus-test
         STATUS=$(tac status.txt | head -n 1)
-        #rm -f status.txt
+        rm -f status.txt
         exit 1
     fi
 done
@@ -20,7 +20,7 @@ JOB_POD=$(oc get pods | grep pelorus-test | head -n 1 | awk '{print $1}')
 oc logs $JOB_POD | tee status.txt
 oc delete job pelorus-test
 STATUS=$(tac status.txt | head -n 1)
-#rm -f status.txt
+rm -f status.txt
 if [ "$STATUS" != "OK" ]; then
     exit 1
 fi

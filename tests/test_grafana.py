@@ -11,6 +11,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 import openshift_login_page
 import grafana_home_page
+import grafana_dashboard_page
 
 class GrafanaTests(unittest.TestCase):
     """Include test cases on a given url"""
@@ -58,8 +59,14 @@ class GrafanaTests(unittest.TestCase):
             
             time.sleep(2)
 
-            print("Next page source:")
-            print(self.driver.page_source)
+            metricsDashPage = grafana_dashboard_page.GrafanaDashboardPage(self.driver)
+            self.assertTrue( metricsDashPage.has_panel("Change Failure Rate") )
+            self.assertTrue( metricsDashPage.has_panel("Mean Time to Restore") )
+            self.assertTrue( metricsDashPage.has_panel("Deployment Frequency") )
+            self.assertTrue( metricsDashPage.has_panel("Average Lead Time") )
+
+            # print("Next page source:")
+            # print(self.driver.page_source)
 
 
         except NoSuchElementException as ex:
