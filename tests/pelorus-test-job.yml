@@ -7,17 +7,24 @@ spec:
   completions: 1    
   template:         
     metadata:
-      name: pi
+      name: pelorus-test
     spec:
       containers:
       - name: selenium
         image: joyzoursky/python-chromedriver:3.7-selenium
-        command: ["/bin/sh","-c","python -m unittest /tests/*"]
+        command: ["/bin/sh","-c","python -m unittest /tests/test_*.py"]
+        workingDir: /tests
         volumeMounts:
         - mountPath: /tests
           name: pelorus-test-runner
+        - mountPath: /login
+          name: pelorus-test-login
       restartPolicy: Never
       volumes:
       - name: pelorus-test-runner
         configMap:
           name: pelorus-test-runner
+      - name: pelorus-test-login
+        secret:
+          secretName: pelorus-test-login
+          
