@@ -9,7 +9,13 @@ This directory contains selenium tests to verify that the dashboard is functioni
 
 ## Running
 
-Run the run_test.sh script in this directory.  This will deploy a job to the cluster that will run the selenium tests.
+First, you need to create a secret with a cluster login capable of viewing the dashboards.  Edit login.json with your credentials, then run:
+
+```
+oc create secret generic pelorus-test-login --from-file=login.json
+```
+
+Then run the run_test.sh script in this directory.  This will deploy a job to the cluster that will run the selenium tests.
 
 ## Creating tests
 
