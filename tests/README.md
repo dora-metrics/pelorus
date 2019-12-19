@@ -15,6 +15,8 @@ First, you need to create a secret with a cluster login capable of viewing the d
 oc create secret generic pelorus-test-login --from-file=login.json
 ```
 
+NOTE: the tests assume that the user has logged into prometheus and grafana once with the user and accepted the oauth permissions.  The tests will fail without this.
+
 Then run the run_test.sh script in this directory.  This will deploy a job to the cluster that will run the selenium tests.
 
 ## Creating tests
