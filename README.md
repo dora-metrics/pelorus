@@ -29,7 +29,41 @@ Before deploying the tooling, you must have the following prepared
 
 ### Deployment Instructions
 
-To deploy pelorus, run the following script from within the root repository directory
+Pelorus requires a github secret and exporters configmap to be configured before deployment
+
+
+To create the github-secret, first setup the following environment variables and create the following secret:
+
+```
+export GITHUB_REPOS=redhat-cop/mdt-quickstart
+export GITHUB_USER=<your github user name>
+export GITHUB_TOKEN=<your github token>
+oc process -f templates/github-secret.yaml -p GITHUB_USER=${GITHUB_USER} -p GITHUB_TOKEN=${GITHUB_TOKEN} -p GITHUB_REPOS=${GITHUB_REPOS}  | oc apply -f-
+```
+
+Example:
+
+```
+export GITHUB_REPOS=redhat-cop/mdt-quickstart
+export GITHUB_USER=<your github user name>
+export GITHUB_TOKEN=<your github token>
+oc process -f templates/github-secret.yaml -p GITHUB_USER=${GITHUB_USER} -p GITHUB_TOKEN=${GITHUB_TOKEN} -p GITHUB_REPOS=${GITHUB_REPOS}  | oc apply -f- -n pelorus
+```
+
+Next, select which projects the leadtime exporter will monitor by creating a configmap with the PROJECTS environment variable, this is a comma separated list.
+
+```
+oc create configmap leadtime-env --from-literal=PROJECTS=<project a>,<project b>
+```
+
+Example:
+
+```
+oc create configmap leadtime-env --from-literal=PROJECTS=custom-exporters
+```
+
+
+Finally, to deploy pelorus, run the following script from within the root repository directory
 
 ```
 ./runhelm.sh

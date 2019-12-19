@@ -1,0 +1,34 @@
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: lead-time-exporter
+  name: lead-time-exporter
+spec:
+  failedBuildsHistoryLimit: 5
+  output:
+    to:
+      kind: ImageStreamTag
+      name: lead-time-exporter:latest
+  source:
+    contextDir: metrics-exporters/leadtime-exporter
+    git:
+      ref: master
+      uri: https://github.com/redhat-cop/pelorus.git
+    type: Git
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: python:3.6
+        namespace: openshift
+    type: Source
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - github:
+      secretReference:
+        name: github-secret
+    type: GitHub
+  - type: ConfigChange
+  - type: ImageChange

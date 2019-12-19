@@ -1,0 +1,13 @@
+apiVersion: authorization.openshift.io/v1
+groupNames: null
+kind: RoleBinding
+metadata:
+  name: admin-robot-rolebinding
+roleRef:
+  name: admin
+subjects:
+- kind: ServiceAccount
+  name: exporter-robot
+  namespace: {{ .Release.Namespace }}
+userNames:
+- system:serviceaccount:{{ .Release.Namespace }}:exporter-robot

@@ -1,0 +1,44 @@
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: lead-time-exporter
+  name: lead-time-exporter
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app: lead-time-exporter
+    deploymentconfig: lead-time-exporter
+  strategy:
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: lead-time-exporter
+        deploymentconfig: lead-time-exporter
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: github-secret
+        - configMapRef:
+            name: leadtime-env
+        imagePullPolicy: Always
+        name: lead-time-exporter
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+      serviceAccount: exporter-robot
+      serviceAccountName: exporter-robot
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - lead-time-exporter
+      from:
+        kind: ImageStreamTag
+        name: lead-time-exporter:latest
+    type: ImageChange

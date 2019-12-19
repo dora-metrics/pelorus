@@ -1,0 +1,40 @@
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: commit-time-exporter
+  name: commit-time-exporter
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app: commit-time-exporter
+    deploymentconfig: commit-time-exporter
+  strategy:
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: commit-time-exporter
+        deploymentconfig: commit-time-exporter
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: github-secret
+        imagePullPolicy: Always
+        name: commit-time-exporter
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - commit-time-exporter
+      from:
+        kind: ImageStreamTag
+        name: commit-time-exporter:latest
+    type: ImageChange

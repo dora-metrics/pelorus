@@ -1,0 +1,7 @@
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app: lead-time-exporter
+  name: lead-time-exporter
