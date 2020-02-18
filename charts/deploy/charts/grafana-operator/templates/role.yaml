@@ -51,10 +51,12 @@ rules:
   - integreatly.org
   resources:
   - grafanas
+  - grafanas/status
   - grafanadashboards
   - grafanadatasources
   - grafanas/finalizers
   - grafanadashboards/finalizers
+  - grafanadashboards/status
   - grafanadatasources/finalizers
   verbs:
   - '*'

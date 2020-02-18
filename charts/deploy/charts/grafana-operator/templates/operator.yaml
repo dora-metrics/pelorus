@@ -20,7 +20,7 @@ spec:
           image: quay.io/integreatly/grafana-operator:latest
           args:
             - '--grafana-image=quay.io/openshift/origin-grafana'
-            - '--grafana-image-tag=4.2'
+            - '--grafana-image-tag=4.3'
           ports:
           - containerPort: 60000
             name: metrics
