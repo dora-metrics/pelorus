@@ -1,5 +1,5 @@
 ---
-#Based on https://raw.githubusercontent.com/integr8ly/grafana-operator/master/deploy/crds/GrafanaDataSource.yaml
+#NOTE: based on https://raw.githubusercontent.com/integr8ly/grafana-operator/master/deploy/crds/GrafanaDataSource.yaml	
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -12,6 +12,8 @@ spec:
     plural: grafanadatasources
     singular: grafanadatasource
   scope: Namespaced
+  subresources:
+    status: {}
   version: v1alpha1
   validation:
     openAPIV3Schema:
@@ -33,5 +35,3 @@ spec:
               items:
                 description: Grafana Datasource Object
                 type: object
-        status:
-          type: object

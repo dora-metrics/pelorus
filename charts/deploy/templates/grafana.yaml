@@ -2,31 +2,70 @@
 apiVersion: integreatly.org/v1alpha1
 kind: Grafana
 metadata:
-  name: grafana-pelorus
-  labels:
-    app: grafana
+  name: grafana-oauth
 spec:
-  service:
-    labels:
-      app: grafana
   config:
     log:
       mode: "console"
-      level: "debug"
+      level: "warn"
     auth:
-      disable_login_form: True
+      disable_login_form: False
       disable_signout_menu: True
     auth.basic:
-      enabled: False
-    auth.proxy:
-      auto_sign_up: True
       enabled: True
-      header_name: X-Forwarded-User
-    users:
-      allow_sign_up: True
-      auto_assign_org: True
-      auto_assign_org_role: Admin
+    auth.anonymous:
+      enabled: True
+  containers:
+    - args:
+        - '-provider=openshift'
+        - '-pass-basic-auth=false'
+        - '-https-address=:9091'
+        - '-http-address='
+        - '-email-domain=*'
+        - '-upstream=http://localhost:3000'
+        - '-openshift-sar={"resource": "namespaces", "verb": "get"}'
+        - '-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get"}}'
+        - '-tls-cert=/etc/tls/private/tls.crt'
+        - '-tls-key=/etc/tls/private/tls.key'
+        - '-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token'
+        - '-cookie-secret-file=/etc/proxy/secrets/session_secret'
+        - '-openshift-service-account=grafana-serviceaccount'
+        - '-openshift-ca=/etc/pki/tls/cert.pem'
+        - '-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+        - '-skip-auth-regex=^/metrics'
+      image: 'quay.io/openshift/origin-oauth-proxy:4.2'
+      name: grafana-proxy
+      ports:
+        - containerPort: 9091
+          name: grafana-proxy
+      resources: {}
+      volumeMounts:
+        - mountPath: /etc/tls/private
+          name: secret-grafana-k8s-tls
+          readOnly: false
+        - mountPath: /etc/proxy/secrets
+          name: secret-grafana-k8s-proxy
+          readOnly: false
+  secrets:
+    - grafana-k8s-tls
+    - grafana-k8s-proxy
+  service:
+    ports:
+      - name: grafana-proxy
+        port: 9091
+        protocol: TCP
+        targetPort: grafana-proxy
+    annotations:
+      service.alpha.openshift.io/serving-cert-secret-name: grafana-k8s-tls
+  ingress:
+    enabled: True
+    targetPort: grafana-proxy
+    termination: reencrypt
+  client:
+    preferService: True
+  serviceAccount:
+    annotations:
+      serviceaccounts.openshift.io/oauth-redirectreference.primary: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"grafana-route"}}'
   dashboardLabelSelector:
-    - matchLabels:
-        app: grafana
-    
+    - matchExpressions:
+        - { key: "app", operator: In, values: ['grafana'] }
