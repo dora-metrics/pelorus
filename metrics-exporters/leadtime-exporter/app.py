@@ -25,7 +25,7 @@ class CommitCollector(object):
         self._apps = apps
     def collect(self):
         ld_metric = GaugeMetricFamily('github_commit_timestamp', 'Commit timestamp', labels=['namespace', 'app', 'build', 'commit_hash'])
-        ld_metrics = generate_ld_metrics_list(projects)
+        ld_metrics = generate_ld_metrics_list(self._projects)
         for my_metric in ld_metrics:
             print("Namespace: ", my_metric.namespace, ", App: ", my_metric.name, ", Build: ", my_metric.build_name)
             ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.build_name, my_metric.commit_hash], my_metric.commit_timestamp)
@@ -110,9 +110,6 @@ def generate_ld_metrics_list(projects):
     else:
         print("Watching projects: %s\n" %(projects))
 
-    jsonpath_str = 'items[?metadata.labels.%s].metadata.labels.%s' % (get_app_label(), get_app_label())
-    jsonpath_expr = parse(jsonpath_str)
-    print("JSONPATH: " + jsonpath_str)
 
     for project in projects:
         # Initialized variables
@@ -127,7 +124,12 @@ def generate_ld_metrics_list(projects):
         v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1',  kind='Build')
         builds = v1_builds.get(namespace=project)
         # use a jsonpath expression to find all values for the app label
-        apps = [match.value for match in jsonpath_expr.find(builds)]
+        jsonpath_str = 'items[?metadata.labels.%s].metadata.labels.%s' % (get_app_label(), get_app_label())
+        jsonpath_expr = parse(jsonpath_str)
+        print("JSONPATH: " + jsonpath_str)
+
+        found = jsonpath_expr.find(builds)
+        apps = [match.value for match in found]
 
         print("Apps: " + pprint.pformat(apps))
 
