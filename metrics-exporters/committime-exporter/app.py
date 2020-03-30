@@ -1,15 +1,12 @@
 import json
 import os
-import pprint
 import requests
 import re
 import urllib3
-import sys
 import time
 import yaml
 from datetime import datetime, timezone
-from jsonpath_ng import jsonpath
-from jsonpath_ng.ext import parse
+from jsonpath_ng import jsonpath, parse
 from kubernetes import client, config
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
@@ -24,11 +21,11 @@ class CommitCollector(object):
         self._projects = projects
         self._apps = apps
     def collect(self):
-        ld_metric = GaugeMetricFamily('github_commit_timestamp', 'Commit timestamp', labels=['namespace', 'app', 'build', 'commit_hash'])
+        ld_metric = GaugeMetricFamily('github_commit_timestamp', 'Commit timestamp', labels=['namespace', 'app', 'build', 'commit_hash', 'commit_time'])
         ld_metrics = generate_ld_metrics_list(self._projects)
         for my_metric in ld_metrics:
             print("Namespace: ", my_metric.namespace, ", App: ", my_metric.name, ", Build: ", my_metric.build_name)
-            ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.build_name, my_metric.commit_hash], my_metric.commit_timestamp)
+            ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.build_name, my_metric.commit_hash, my_metric.commit_time], my_metric.commit_timestamp)
             yield ld_metric
 
 class CommitTimeMetric:
@@ -38,6 +35,7 @@ class CommitTimeMetric:
         self.repo_url = None
         self.commiter = None
         self.commit_hash = None
+        self.commit_time = None
         self.commit_timestamp = None
         self.build_name = None
         self.build_config_name = None
@@ -53,7 +51,8 @@ class CommitTimeMetric:
         url = _prefix + url_tokens[3] + "/" +url_tokens[4].split(".")[0] +_suffix+self.commit_hash
         response = requests.get(url, auth=(username, token))
         commit = response.json()
-        self.commit_timestamp = convert_date_time_to_timestamp(commit['commit']['committer']['date'])
+        self.commit_time = commit['commit']['committer']['date']
+        self.commit_timestamp = convert_date_time_to_timestamp(self.commit_time)
 
 def match_image_id(replicationController, image_hash):
     for container in replicationController.spec.template.spec.containers:
@@ -120,18 +119,17 @@ def generate_ld_metrics_list(projects):
         jenkins_builds = []
         code_builds = []
 
-        print("Checking namespace %s" % project)
         v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1',  kind='Build')
-        builds = v1_builds.get(namespace=project)
+        # only use builds that have the app label
+        builds = v1_builds.get(namespace=project, label_selector=get_app_label())
+
         # use a jsonpath expression to find all values for the app label
-        jsonpath_str = 'items[?metadata.labels.%s].metadata.labels.%s' % (get_app_label(), get_app_label())
+        jsonpath_str = 'items[*].metadata.labels.%s' % (get_app_label())
         jsonpath_expr = parse(jsonpath_str)
-        print("JSONPATH: " + jsonpath_str)
 
         found = jsonpath_expr.find(builds)
         apps = [match.value for match in found]
 
-        print("Apps: " + pprint.pformat(apps))
 
         if not apps:
             continue
@@ -139,25 +137,13 @@ def generate_ld_metrics_list(projects):
         apps = list(dict.fromkeys(apps))
         builds_by_app = {}
 
-        print("Found builds for apps: ")
-        pprint.pprint(apps)
-
         for app in apps:
             builds_by_app[app] = list(filter(lambda b: b.metadata.labels[get_app_label()] == app, builds.items))
-
-        #pprint.pprint(builds_by_app, indent=2, depth=2)
-
-        #v1_replicationControllers = dyn_client.resources.get(api_version='v1',  kind='ReplicationController')
-        #replicationControllers = v1_replicationControllers.get(namespace=project)
 
         for app in builds_by_app:
 
             builds = builds_by_app[app]
 
-            print("App: %s" % app)
-            #print("Builds: ")
-            #pprint.pprint(builds, depth=1)
-            
             # jsonpath to get commits
             jsonpath_expr = parse('*.spec.revision.git.commit')
             commits = [match.value for match in jsonpath_expr.find(builds)]
@@ -169,10 +155,7 @@ def generate_ld_metrics_list(projects):
             # then find associated s2i/docker builds from which to pull commit & image data
 
             if jenkins_builds:
-                #print(jenkins_builds)
                 # we will default to the repo listed in '.spec.source.git'
-                #pprint.pprint(jenkins_builds, depth=1)
-
                 repo_url = jenkins_builds[0].spec.source.git.uri
 
                 # however, in cases where the Jenkinsfile and source code are separate, we look for params
