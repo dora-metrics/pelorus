@@ -19,6 +19,17 @@ In order for proper collection, we require that all builds associated with a par
 
         python metrics-exporters/leadtime-exporter/app.py
 
+If the exporter is working properly, you will see log lines like this indicating it has detected builds.
+
+    Namespace:  basic-nginx-build , App:  basic-nginx-02190cdc9fcf4bcc9562230b629b00f4519a4e81 , Build:  basic-nginx-1
+    Namespace:  basic-nginx-build , App:  basic-nginx-02190cdc9fcf4bcc9562230b629b00f4519a4e81 , Build:  basic-nginx-2
+    Namespace:  basic-spring-boot-build , App:  basic-spring-boot-360105605616ffc296a74e59ff82a6f25b6554d4 , Build:  basic-spring-boot-1
+    Namespace:  basic-spring-boot-build , App:  basic-spring-boot-360105605616ffc296a74e59ff82a6f25b6554d4 , Build:  basic-spring-boot-2
+
+You should also be able to hit the metrics endpoint and see our custom guages.
+
+    $ curl localhost:8080/metrics/ | grep github_commit_timestamp
+
 ## Configuration
 
 This exporter supports several configuration options, passed via environment variables
