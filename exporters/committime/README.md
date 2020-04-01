@@ -35,7 +35,7 @@ You should also be able to hit the metrics endpoint and see our custom guages.
 This exporter supports several configuration options, passed via environment variables
 
 | Variable | Required | Explanation | Default Value |
-|---|---|---|---|---|
+|---|---|---|---|
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `application`  |
 | `PROJECTS` | no | Restricts the set of projects from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all projects |
 | `GITHUB_USER` | yes | User's github username | unset |
