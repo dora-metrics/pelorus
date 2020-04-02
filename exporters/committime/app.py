@@ -8,7 +8,7 @@ import yaml
 from datetime import datetime, timezone
 from jsonpath_ng import jsonpath, parse
 from kubernetes import client, config
-from lib import loader
+from lib_pelorus import loader
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import CounterMetricFamily,InfoMetricFamily,GaugeMetricFamily, REGISTRY

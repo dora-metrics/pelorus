@@ -4,6 +4,16 @@ The job of the commit time exporter is to find relevant builds in OpenShift and 
 
 In order for proper collection, we require that all builds associated with a particular application be labelled with the same `application=<app_name>` label.
 
+## Deploying to OpenShift
+
+Create a secret containing your GitHub token.
+
+    oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> -n pelorus
+
+Then deploy the chart.
+
+    helm template charts/exporter/ -f exporters/committime/values.yaml | oc apply -f- -n pelorus
+
 ## Running locally
 
 1. Install python deps:
@@ -17,7 +27,7 @@ In order for proper collection, we require that all builds associated with a par
 
 3. Then, you can simply run `app.py`
 
-        python metrics-exporters/leadtime-exporter/app.py
+        python exporters/committime/app.py
 
 If the exporter is working properly, you will see log lines like this indicating it has detected builds.
 
