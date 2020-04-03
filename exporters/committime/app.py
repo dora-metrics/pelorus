@@ -58,7 +58,7 @@ class CommitTimeMetric:
         response = requests.get(url, auth=(username, token))
         commit = response.json()
         self.commit_time = commit['commit']['committer']['date']
-        self.commit_timestamp = convert_date_time_to_timestamp(self.commit_time)
+        self.commit_timestamp = loader.convert_date_time_to_timestamp(self.commit_time)
 
 def match_image_id(replicationController, image_hash):
     for container in replicationController.spec.template.spec.containers:
@@ -150,10 +150,13 @@ def generate_ld_metrics_list(projects):
             for build in code_builds:
 
                 metric = CommitTimeMetric(app)
+
+                if build.spec.source.git:
+                    repo_url = build.spec.source.git.uri
                 metric.repo_url = repo_url
                 
                 metric.build_name=build.metadata.name
-                metric.build_config_name = build.metadata.labels.buildconfig                    
+                metric.build_config_name = build.metadata.labels.buildconfig
                 metric.namespace = build.metadata.namespace
                 labels = build.metadata.labels
                 metric.labels = json.loads(str(labels).replace("\'", "\""))
