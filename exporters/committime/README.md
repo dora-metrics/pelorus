@@ -47,6 +47,6 @@ This exporter supports several configuration options, passed via environment var
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `application`  |
-| `PROJECTS` | no | Restricts the set of projects from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all projects |
+| `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
 | `GITHUB_USER` | yes | User's github username | unset |
 | `GITHUB_TOKEN` | yes | User's Github API Token | unset |

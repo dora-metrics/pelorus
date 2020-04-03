@@ -21,14 +21,14 @@ dyn_client = DynamicClient(k8s_client)
 class CommitCollector(object):
     _prefix = "https://api.github.com/repos/"
     _suffix = "/commits"
-    def __init__(self, username, token, projects, apps):
+    def __init__(self, username, token, namespaces, apps):
         self._username = username
         self._token = token
-        self._projects = projects
+        self._namespaces = namespaces
         self._apps = apps
     def collect(self):
         ld_metric = GaugeMetricFamily('github_commit_timestamp', 'Commit timestamp', labels=['namespace', 'app', 'build', 'commit_hash', 'commit_time', 'image_sha'])
-        ld_metrics = generate_ld_metrics_list(self._projects)
+        ld_metrics = generate_ld_metrics_list(self._namespaces)
         for my_metric in ld_metrics:
             print("Namespace: ", my_metric.namespace, ", App: ", my_metric.name, ", Build: ", my_metric.build_name)
             ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.build_name, my_metric.commit_hash, my_metric.commit_time, my_metric.image_hash], my_metric.commit_timestamp)
@@ -81,18 +81,18 @@ def convert_timestamp_to_date_time(timestamp):
     date_time = datetime(timestamp)
     return datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-def generate_ld_metrics_list(projects):
+def generate_ld_metrics_list(namespaces):
 
     metrics = []
-    if not projects:
-        print("No projects specified, watching all projects\n")
-        v1_projects = dyn_client.resources.get(api_version='project.openshift.io/v1', kind='Project')
-        projects = [ project.metadata.name for project in v1_projects.get().items ]
+    if not namespaces:
+        print("No namespaces specified, watching all namespaces\n")
+        v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
+        namespaces = [ namespace.metadata.name for namespace in v1_namespaces.get().items ]
     else:
-        print("Watching projects: %s\n" %(projects))
+        print("Watching namespaces: %s\n" %(namespaces))
 
 
-    for project in projects:
+    for namespace in namespaces:
         # Initialized variables
         builds = []
         build = {}
@@ -103,7 +103,7 @@ def generate_ld_metrics_list(projects):
 
         v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1',  kind='Build')
         # only use builds that have the app label
-        builds = v1_builds.get(namespace=project, label_selector=loader.get_app_label())
+        builds = v1_builds.get(namespace=namespace, label_selector=loader.get_app_label())
 
         # use a jsonpath expression to find all values for the app label
         jsonpath_str = 'items[*].metadata.labels.%s' % (loader.get_app_label())
@@ -174,12 +174,12 @@ def generate_ld_metrics_list(projects):
 if __name__ == "__main__":
     username = os.environ.get('GITHUB_USER')
     token = os.environ.get('GITHUB_TOKEN')
-    projects = None
-    if os.environ.get('PROJECTS') is not None:
-        projects = [ proj.strip() for proj in os.environ.get('PROJECTS').split(",") ]
+    namespaces = None
+    if os.environ.get('NAMESPACES') is not None:
+        namespaces = [ proj.strip() for proj in os.environ.get('NAMESPACES').split(",") ]
     apps = None
     start_http_server(8080)
-    REGISTRY.register(CommitCollector(username, token, projects, apps))
+    REGISTRY.register(CommitCollector(username, token, namespaces, apps))
     while True:
         time.sleep(1)
 
