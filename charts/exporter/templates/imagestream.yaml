@@ -2,5 +2,9 @@ apiVersion: image.openshift.io/v1
 kind: ImageStream
 metadata:
   labels:
+<<<<<<< HEAD
     app.kubernetes.io/name: {{ .Values.app_name }}
+=======
+    app: {{ .Values.app_name }}
+>>>>>>> Add helm chart for deployment
   name: {{ .Values.app_name }}

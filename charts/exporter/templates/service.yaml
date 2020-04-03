@@ -2,16 +2,28 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+<<<<<<< HEAD
     app.kubernetes.io/name: {{ .Values.app_name }}
     k8s-app: {{ .Values.app_name }}
   name: {{ .Values.app_name }}
 spec:
   ports:
   - name: http
+=======
+    app: {{ .Values.app_name }}
+  name: {{ .Values.app_name }}
+spec:
+  ports:
+  - name: 8080-tcp
+>>>>>>> Add helm chart for deployment
     port: 8080
     protocol: TCP
     targetPort: 8080
   selector:
+<<<<<<< HEAD
     app.kubernetes.io/name: {{ .Values.app_name }}
+=======
+    app: {{ .Values.app_name }}
+>>>>>>> Add helm chart for deployment
     deploymentconfig: {{ .Values.app_name }}
   type: ClusterIP
