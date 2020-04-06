@@ -2,32 +2,23 @@ apiVersion: apps.openshift.io/v1
 kind: DeploymentConfig
 metadata:
   labels:
-<<<<<<< HEAD
     app.kubernetes.io/name: {{ .Values.app_name }}
-=======
     application: {{ .Values.app_name }}
->>>>>>> Add helm chart for deployment
   name: {{ .Values.app_name }}
 spec:
   replicas: 1
   revisionHistoryLimit: 10
   selector:
-<<<<<<< HEAD
     app.kubernetes.io/name: {{ .Values.app_name }}
-=======
     app: {{ .Values.app_name }}
->>>>>>> Add helm chart for deployment
     deploymentconfig: {{ .Values.app_name }}
   strategy:
     type: Rolling
   template:
     metadata:
       labels:
-<<<<<<< HEAD
         app.kubernetes.io/name: {{ .Values.app_name }}
-=======
         app: {{ .Values.app_name }}
->>>>>>> Add helm chart for deployment
         deploymentconfig: {{ .Values.app_name }}
     spec:
       containers:

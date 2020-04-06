@@ -2,19 +2,11 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   labels:
-<<<<<<< HEAD
     app.kubernetes.io/name: {{ .Values.app_name }}
   name: {{ .Values.app_name }}
 spec:
   port:
     targetPort: http
-=======
-    app: {{ .Values.app_name }}
-  name: {{ .Values.app_name }}
-spec:
-  port:
-    targetPort: 8080-tcp
->>>>>>> Add helm chart for deployment
   to:
     kind: Service
     name: {{ .Values.app_name }}
