@@ -35,6 +35,11 @@ To deploy pelorus, run the following script from within the root repository dire
 ./runhelm.sh
 ```
 
+Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
+
+* [Commit Time Exporter](exporters/committime/README.md)
+* Deploy Time (Coming Soon)
+
 ### Adding extra prometheus instances
 
 By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, we need to point the Pelorus instance at these other clusters.

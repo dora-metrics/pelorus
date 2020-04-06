@@ -2,7 +2,7 @@ apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
   labels:
-    app: {{ .Values.app_name }}
+    app.kubernetes.io/name: {{ .Values.app_name }}
   name: {{ .Values.app_name }}
 spec:
   failedBuildsHistoryLimit: 5

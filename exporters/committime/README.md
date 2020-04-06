@@ -12,7 +12,7 @@ Create a secret containing your GitHub token.
 
 Then deploy the chart.
 
-    helm template charts/exporter/ -f exporters/committime/values.yaml | oc apply -f- -n pelorus
+    helm template charts/exporter/ -f exporters/committime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
 
 ## Running locally
 

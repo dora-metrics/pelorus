@@ -3,4 +3,4 @@ kind: ServiceAccount
 metadata:
   annotations:
     serviceaccounts.openshift.io/oauth-redirectreference.prometheus-pelorus: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"prometheus-pelorus"}}'
-  name: prometheus-pelorus
+  name: pelorus-prometheus

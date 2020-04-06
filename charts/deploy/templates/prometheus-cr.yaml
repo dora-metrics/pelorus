@@ -6,10 +6,8 @@ metadata:
     prometheus: prometheus-pelorus
 spec:
   replicas: 2
-  serviceAccountName: prometheus-pelorus
-  serviceMonitorSelector:
-    matchLabels:
-      junk: junk
+  serviceAccountName: pelorus-prometheus
+  serviceMonitorSelector: {}
   additionalScrapeConfigs:
     name: additional-scrape-configs
     key: prometheus-additional.yml

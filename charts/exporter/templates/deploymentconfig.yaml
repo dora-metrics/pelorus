@@ -2,20 +2,20 @@ apiVersion: apps.openshift.io/v1
 kind: DeploymentConfig
 metadata:
   labels:
-    application: {{ .Values.app_name }}
+    app.kubernetes.io/name: {{ .Values.app_name }}
   name: {{ .Values.app_name }}
 spec:
   replicas: 1
   revisionHistoryLimit: 10
   selector:
-    app: {{ .Values.app_name }}
+    app.kubernetes.io/name: {{ .Values.app_name }}
     deploymentconfig: {{ .Values.app_name }}
   strategy:
     type: Rolling
   template:
     metadata:
       labels:
-        app: {{ .Values.app_name }}
+        app.kubernetes.io/name: {{ .Values.app_name }}
         deploymentconfig: {{ .Values.app_name }}
     spec:
       containers:
