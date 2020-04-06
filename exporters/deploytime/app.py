@@ -3,7 +3,7 @@ import re
 import time
 from jsonpath_ng import jsonpath, parse
 from kubernetes import client
-from lib import loader
+from lib_pelorus import loader
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
