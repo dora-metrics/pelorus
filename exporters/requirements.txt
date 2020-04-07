@@ -1,3 +1,4 @@
 requests
 prometheus_client
 openshift
+jsonpath_ng

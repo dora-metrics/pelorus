@@ -6,10 +6,8 @@ metadata:
     prometheus: prometheus-pelorus
 spec:
   replicas: 2
-  serviceAccountName: prometheus-pelorus
-  serviceMonitorSelector:
-    matchLabels:
-      junk: junk
+  serviceAccountName: pelorus-prometheus
+  serviceMonitorSelector: {}
   additionalScrapeConfigs:
     name: additional-scrape-configs
     key: prometheus-additional.yml
@@ -24,7 +22,7 @@ spec:
     - -email-domain=*
     - -upstream=http://localhost:9090
     - -htpasswd-file=/etc/proxy/htpasswd/auth
-    - -openshift-service-account=prometheus-pelorus
+    - -openshift-service-account=pelorus-prometheus
     - '-openshift-sar={"resource": "namespaces", "verb": "get"}'
     - '-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get"}}'
     - -tls-cert=/etc/tls/private/tls.crt
