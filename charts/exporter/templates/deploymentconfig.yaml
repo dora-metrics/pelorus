@@ -20,6 +20,7 @@ spec:
         app.kubernetes.io/name: {{ .Values.app_name }}
         app: {{ .Values.app_name }}
         deploymentconfig: {{ .Values.app_name }}
+        application: {{ .Values.app_name}}
     spec:
       containers:
       - name: {{ .Values.app_name }}

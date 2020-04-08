@@ -25,11 +25,12 @@ spec:
       "editable": true,
       "gnetId": null,
       "graphTooltip": 0,
-      "iteration": 1562706971070,
+      "id": 1,
       "links": [],
       "panels": [
         {
           "content": "# Average Lead Time",
+          "datasource": null,
           "gridPos": {
             "h": 2,
             "w": 5,
@@ -39,11 +40,13 @@ spec:
           "id": 39,
           "links": [],
           "mode": "markdown",
+          "options": {},
           "title": "",
           "type": "text"
         },
         {
           "content": "# Deployment Frequency",
+          "datasource": null,
           "gridPos": {
             "h": 2,
             "w": 5,
@@ -53,11 +56,13 @@ spec:
           "id": 40,
           "links": [],
           "mode": "markdown",
+          "options": {},
           "title": "",
           "type": "text"
         },
         {
           "content": "# Mean Time to Restore",
+          "datasource": null,
           "gridPos": {
             "h": 2,
             "w": 5,
@@ -67,11 +72,13 @@ spec:
           "id": 41,
           "links": [],
           "mode": "markdown",
+          "options": {},
           "title": "",
           "type": "text"
         },
         {
           "content": "# Change Failure Rate",
+          "datasource": null,
           "gridPos": {
             "h": 2,
             "w": 8,
@@ -81,6 +88,7 @@ spec:
           "id": 42,
           "links": [],
           "mode": "markdown",
+          "options": {},
           "title": "",
           "type": "text"
         },
@@ -125,6 +133,7 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -145,7 +154,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "avg((openshift_build_complete{build=~\".+pipeline.+\"} != 0) - openshift_build_start{build=~\".+pipeline.+\"})",
+              "expr": "avg (deploy_timestamp - on(image_sha) group_left github_commit_timestamp)",
               "format": "time_series",
               "intervalFactor": 1,
               "refId": "A"
@@ -153,7 +162,7 @@ spec:
           ],
           "thresholds": "",
           "timeFrom": null,
-          "title": "This Month",
+          "title": "Current interval",
           "type": "singlestat",
           "valueFontSize": "80%",
           "valueMaps": [
@@ -168,13 +177,17 @@ spec:
         {
           "cacheTimeout": null,
           "colorBackground": true,
+          "colorPostfix": false,
+          "colorPrefix": false,
           "colorValue": false,
           "colors": [
-            "#d44a3a",
+            "#299c46",
             "rgba(237, 129, 40, 0.89)",
-            "#299c46"
+            "#d44a3a"
           ],
           "datasource": "prometheus",
+          "decimals": 2,
+          "description": "The Lead Time from code commit to deployed in production. Negative numbers are good here.",
           "format": "percentunit",
           "gauge": {
             "maxValue": 100,
@@ -206,6 +219,7 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -226,14 +240,14 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "(scalar(avg((openshift_build_complete{build=~\".+pipeline.+\"} offset $interval != 0) - openshift_build_start{build=~\".+pipeline.+\"} offset $interval) - scalar(avg((openshift_build_complete{build=~\".+pipeline.+\"} != 0) - openshift_build_start{build=~\".+pipeline.+\"} ))) / scalar(avg((openshift_build_complete{build=~\".+pipeline.+\"} offset $interval != 0) - openshift_build_start{build=~\".+pipeline.+\"} offset $interval   )))",
+              "expr": "((sdp:lead_time:global) - (sdp:lead_time:global offset $__range)) / (sdp:lead_time:global offset $__range)",
               "format": "time_series",
               "intervalFactor": 1,
               "refId": "A"
             }
           ],
-          "thresholds": "-10,0,20",
-          "title": "Percent Change in Last 30 Minutes",
+          "thresholds": "0,.01",
+          "title": "Change since last interval",
           "type": "singlestat",
           "valueFontSize": "80%",
           "valueMaps": [
@@ -243,7 +257,7 @@ spec:
               "value": "null"
             }
           ],
-          "valueName": "avg"
+          "valueName": "current"
         },
         {
           "cacheTimeout": null,
@@ -287,6 +301,7 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -304,10 +319,10 @@ spec:
             "lineColor": "rgb(31, 120, 193)",
             "show": false
           },
-          "tableColumn": "Value",
+          "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(delta(openshift_apps_deploymentconfigs_complete_rollouts_total{phase=\"available\"}[$interval]))",
+              "expr": "count (deploy_timestamp)",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 1,
@@ -315,7 +330,7 @@ spec:
             }
           ],
           "thresholds": "",
-          "title": "Last $interval",
+          "title": "Current interval",
           "type": "singlestat",
           "valueFontSize": "80%",
           "valueMaps": [
@@ -329,21 +344,21 @@ spec:
         },
         {
           "cacheTimeout": null,
-          "colorBackground": false,
-          "colorValue": true,
+          "colorBackground": true,
+          "colorValue": false,
           "colors": [
             "#d44a3a",
             "rgba(237, 129, 40, 0.89)",
             "#299c46"
           ],
           "datasource": "prometheus",
-          "decimals": 0,
+          "decimals": 2,
           "description": "",
           "format": "percentunit",
           "gauge": {
-            "maxValue": 2,
-            "minValue": -2,
-            "show": true,
+            "maxValue": 100,
+            "minValue": 0,
+            "show": false,
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
@@ -370,6 +385,8 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
+          "pluginVersion": "6.4.3",
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -385,12 +402,14 @@ spec:
             "fillColor": "rgba(31, 118, 189, 0.18)",
             "full": false,
             "lineColor": "rgb(31, 120, 193)",
-            "show": true
+            "show": false,
+            "ymax": null,
+            "ymin": null
           },
-          "tableColumn": "Value",
+          "tableColumn": "",
           "targets": [
             {
-              "expr": "(sum(delta(openshift_apps_deploymentconfigs_complete_rollouts_total{phase=\"available\"}[$interval]))-sum(delta(openshift_apps_deploymentconfigs_complete_rollouts_total{phase=\"available\"}[$interval] offset $interval)))/sum(delta(openshift_apps_deploymentconfigs_complete_rollouts_total{phase=\"available\"}[$interval] offset $interval))",
+              "expr": "(count(deploy_timestamp) - count(deploy_timestamp offset $__range)) / count(deploy_timestamp offset $__range)",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -399,8 +418,8 @@ spec:
               "refId": "A"
             }
           ],
-          "thresholds": "0,0.2",
-          "title": "Change % in Last $interval",
+          "thresholds": "0,.1",
+          "title": "Change since last interval",
           "type": "singlestat",
           "valueFontSize": "80%",
           "valueMaps": [
@@ -453,6 +472,7 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -535,6 +555,7 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -552,7 +573,7 @@ spec:
             "lineColor": "rgb(31, 120, 193)",
             "show": true
           },
-          "tableColumn": "Value",
+          "tableColumn": "",
           "targets": [
             {
               "expr": "0",
@@ -623,6 +644,7 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -640,7 +662,7 @@ spec:
             "lineColor": "rgb(31, 120, 193)",
             "show": false
           },
-          "tableColumn": "endpoint",
+          "tableColumn": "",
           "targets": [
             {
               "expr": "\ncount(sum_over_time(openshift_build_status_phase{build_phase=~\"cancelled|error|failed\"} [$interval] ) > 0) / count(sum_over_time(openshift_build_status_phase{build_phase=~\"cancelled|error|failed|complete\"} [$interval] ) > 0)",
@@ -704,6 +726,7 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -778,6 +801,7 @@ spec:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
+          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -824,6 +848,7 @@ spec:
           "dashes": false,
           "datasource": "prometheus",
           "fill": 1,
+          "fillGradient": 0,
           "gridPos": {
             "h": 6,
             "w": 5,
@@ -844,6 +869,9 @@ spec:
           "linewidth": 1,
           "links": [],
           "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -854,14 +882,14 @@ spec:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "avg((openshift_build_complete{build=~\".+pipeline.+\"} != 0) - openshift_build_start{build=~\".+pipeline.+\"})",
+              "expr": "sdp:lead_time:global",
               "format": "time_series",
               "intervalFactor": 1,
               "refId": "A"
             }
           ],
           "thresholds": [],
-          "timeFrom": "$interval",
+          "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
           "title": "Lead Time for Change",
@@ -908,6 +936,92 @@ spec:
           "dashes": false,
           "datasource": "prometheus",
           "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 6,
+            "w": 5,
+            "x": 5,
+            "y": 6
+          },
+          "id": 62,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "count(deploy_timestamp)",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Panel Title",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "prometheus",
+          "fill": 1,
+          "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 8,
@@ -928,6 +1042,9 @@ spec:
           "linewidth": 1,
           "links": [],
           "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -987,83 +1104,14 @@ spec:
         }
       ],
       "refresh": false,
-      "schemaVersion": 16,
+      "schemaVersion": 20,
       "style": "dark",
       "tags": [],
       "templating": {
-        "list": [
-          {
-            "auto": false,
-            "auto_count": 30,
-            "auto_min": "10s",
-            "current": {
-              "text": "12h",
-              "value": "12h"
-            },
-            "hide": 0,
-            "label": "Interval",
-            "name": "interval",
-            "options": [
-              {
-                "selected": false,
-                "text": "1m",
-                "value": "1m"
-              },
-              {
-                "selected": false,
-                "text": "10m",
-                "value": "10m"
-              },
-              {
-                "selected": false,
-                "text": "30m",
-                "value": "30m"
-              },
-              {
-                "selected": false,
-                "text": "1h",
-                "value": "1h"
-              },
-              {
-                "selected": false,
-                "text": "6h",
-                "value": "6h"
-              },
-              {
-                "selected": true,
-                "text": "12h",
-                "value": "12h"
-              },
-              {
-                "selected": false,
-                "text": "1d",
-                "value": "1d"
-              },
-              {
-                "selected": false,
-                "text": "7d",
-                "value": "7d"
-              },
-              {
-                "selected": false,
-                "text": "14d",
-                "value": "14d"
-              },
-              {
-                "selected": false,
-                "text": "30d",
-                "value": "30d"
-              }
-            ],
-            "query": "1m,10m,30m,1h,6h,12h,1d,7d,14d,30d",
-            "refresh": 2,
-            "skipUrlSync": false,
-            "type": "interval"
-          }
-        ]
+        "list": []
       },
       "time": {
-        "from": "now-1h",
+        "from": "now-3h",
         "to": "now"
       },
       "timepicker": {
@@ -1092,7 +1140,7 @@ spec:
         ]
       },
       "timezone": "",
-      "title": "DevOps / Software Delivery Metrics",
-      "uid": "",
-      "version": 11
+      "title": "Software Delivery Performance",
+      "uid": "eVhhWFCWk",
+      "version": 6
     }

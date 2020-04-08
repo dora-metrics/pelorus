@@ -6,6 +6,8 @@ metadata:
     prometheus: prometheus-pelorus
 spec:
   replicas: 2
+  ruleNamespaceSelector: {}
+  ruleSelector: {}
   serviceAccountName: pelorus-prometheus
   serviceMonitorSelector: {}
   additionalScrapeConfigs:
