@@ -158,6 +158,10 @@ def generate_ld_metrics_list(namespaces):
 
                 if build.spec.source.git:
                     repo_url = build.spec.source.git.uri
+
+                if "github.com" not in repo_url:
+                    print("Only GitHub repos are currently supported. Skipping build %s" % build.metadata.name)
+
                 metric.repo_url = repo_url
                 
                 metric.build_name=build.metadata.name
