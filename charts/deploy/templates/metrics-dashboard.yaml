@@ -29,8 +29,9 @@ spec:
       "links": [],
       "panels": [
         {
-          "content": "# Average Lead Time",
+          "content": "# Lead Time for Change",
           "datasource": null,
+          "description": "Lead Time for Change: The time it takes to move from code commited to code deployed in production.",
           "gridPos": {
             "h": 2,
             "w": 5,
@@ -187,7 +188,7 @@ spec:
           ],
           "datasource": "prometheus",
           "decimals": 2,
-          "description": "The Lead Time from code commit to deployed in production. Negative numbers are good here.",
+          "description": "Negative numbers are good here.",
           "format": "percentunit",
           "gauge": {
             "maxValue": 100,
@@ -892,7 +893,7 @@ spec:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Lead Time for Change",
+          "title": "Lead Time for Change over time",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -977,7 +978,7 @@ spec:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Panel Title",
+          "title": "Deployments over time",
           "tooltip": {
             "shared": true,
             "sort": 0,
