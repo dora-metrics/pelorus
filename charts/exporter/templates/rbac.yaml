@@ -17,6 +17,7 @@ rules:
   - ""
   resources:
   - namespaces
+  - replicationcontrollers
   verbs:
   - list
 - apiGroups:
@@ -31,7 +32,7 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     app.kubernetes.io/component: pelorus-exporters
-    app.kubernetes.io/name: {{ .Values.app_name }}
+    app.kubernetes.io/name: exporters
     app.kubernetes.io/version: v1.2
   name: pelorus-exporter
 roleRef:

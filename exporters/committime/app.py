@@ -27,11 +27,11 @@ class CommitCollector(object):
         self._namespaces = namespaces
         self._apps = apps
     def collect(self):
-        ld_metric = GaugeMetricFamily('github_commit_timestamp', 'Commit timestamp', labels=['namespace', 'app', 'build', 'commit_hash', 'commit_time', 'image_sha'])
+        ld_metric = GaugeMetricFamily('github_commit_timestamp', 'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
         ld_metrics = generate_ld_metrics_list(self._namespaces)
         for my_metric in ld_metrics:
             print("Namespace: ", my_metric.namespace, ", App: ", my_metric.name, ", Build: ", my_metric.build_name)
-            ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.build_name, my_metric.commit_hash, my_metric.commit_time, my_metric.image_hash], my_metric.commit_timestamp)
+            ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash], my_metric.commit_timestamp)
             yield ld_metric
 
 class CommitTimeMetric:
@@ -158,6 +158,10 @@ def generate_ld_metrics_list(namespaces):
 
                 if build.spec.source.git:
                     repo_url = build.spec.source.git.uri
+
+                if "github.com" not in repo_url:
+                    print("Only GitHub repos are currently supported. Skipping build %s" % build.metadata.name)
+
                 metric.repo_url = repo_url
                 
                 metric.build_name=build.metadata.name
