@@ -3,13 +3,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: thanos-mdt
+  name: thanos-pelorus
 spec:
   ports:
-  - name: thanos
-    port: 10902
+  - name: web-tls
+    port: 9092
     protocol: TCP
-    targetPort: 10902
+    targetPort: web-tls
   selector:
     app: thanos-query
   sessionAffinity: ClientIP
@@ -21,7 +21,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: thanos-mdt-sidecar
+  name: thanos-pelorus-sidecar
 spec:
   ports:
   - name: thanos
@@ -43,7 +43,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: thanos-mdt-store
+  name: thanos-pelorus-store
 spec:
   ports:
   - name: thanos

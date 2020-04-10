@@ -6,16 +6,16 @@ metadata:
   annotations:
     openshift.io/host.generated: "true"
   creationTimestamp: null
-  name: thanos-mdt
+  name: thanos-pelorus
 spec:
   port:
-    targetPort: thanos
+    targetPort: web-tls
   subdomain: ""
+  tls:
+    termination: passthrough
   to:
     kind: Service
-    name: thanos-mdt
+    name: thanos-pelorus
     weight: 100
   wildcardPolicy: None
-status:
-  ingress: null
 {{- end }}

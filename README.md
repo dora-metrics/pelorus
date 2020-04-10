@@ -63,6 +63,32 @@ Once you are finished adding your extra hosts, you can update your stack by re-r
 ./runhelm.sh --values extra-prometheus-hosts.yaml
 ```
 
+### Long Term Storage
+
+The pelorus chart supports deploying a thanos instance for long term storage.  It can use either AWS or noobaa bucket providers.  To use the thaons instance, specify the three following variables:
+
+```
+./runhelm.sh --set bucket_access_point=$INTERNAL_S3_ENDPOINT --set bucket_access_key=$AWS_ACCESS_KEY --set bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY
+```
+
+The values can also be set in a values file:
+
+For example:
+
+bucket_access_point: s3.noobaa.svc
+bucket_access_key: <your access key>
+bucket_secret_access_key: <your secret access key>
+
+And then:
+
+```
+./runhelm.sh --values file_with_bucket_config.yaml
+```
+
+The above configuration is the default access endpoint when noobaa is installed into the noobaa namespace.  For installaing noobaa, see:
+
+https://github.com/noobaa/noobaa-core#deploy-to-kubernetes
+
 ### Cleaning Up
 
 Cleaning up Pelorus is very simple.
