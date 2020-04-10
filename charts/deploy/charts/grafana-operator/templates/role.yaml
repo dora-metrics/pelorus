@@ -1,0 +1,62 @@
+---
+#From: https://github.com/integr8ly/grafana-operator/blob/master/deploy/roles/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  name: grafana-operator
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  - serviceaccounts
+  verbs:
+  - '*'
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes
+  verbs:
+  - '*'
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+- apiGroups:
+    - extensions
+  resources:
+    - ingresses
+  verbs:
+    - '*'
+- apiGroups:
+  - integreatly.org
+  resources:
+  - grafanas
+  - grafanas/status
+  - grafanadashboards
+  - grafanadatasources
+  - grafanas/finalizers
+  - grafanadashboards/finalizers
+  - grafanadashboards/status
+  - grafanadatasources/finalizers
+  verbs:
+  - '*'

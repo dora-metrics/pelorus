@@ -27,26 +27,24 @@ Before deploying the tooling, you must have the following prepared
   * The OpenShift Command Line Tool (oc)
   * Helm 3
 
-### Deployment Instructions
-
-The following process can be followed to deploy the tool.
-
 First, we must collect some information from the cluster to feed to our templates.
 
-    PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
-    GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 -d | jq .datasources[0].basicAuthPassword)
+To deploy pelorus, run the following script from within the root repository directory
 
+```
+./runhelm.sh
+```
 
-    #TODO: Finish data gathering
+Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
 
-    helm template --namespace pelorus pelorus ./charts/deploy/ \
-      --set openshift_prometheus_htpasswd_auth=${PROMETHEUS_HTPASSWD_AUTH} \
-      --set openshift_prometheus_basic_auth_pass=${GRAFANA_DATASOURCE_PASSWORD} \
-      | oc apply -f - -n pelorus
+* [Commit Time Exporter](exporters/committime/README.md)
+* Deploy Time (Coming Soon)
 
 ### Adding extra prometheus instances
 
-Edit the extra_prometheus_hosts.yml file.  It is a yaml file with an array of entries with the following parameters:
+By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, we need to point the Pelorus instance at these other clusters.
+
+To do this, create a new variables file , `extra_prometheus_hosts.yaml`.  It is a yaml file with an array of entries with the following parameters:
 
 * id - a description of the prometheus host (this will be used as a label to select metrics in the federated instance).
 * hostname - the fully qualified domain name or ip address of the host with the extra prometheus instance
@@ -56,19 +54,17 @@ For example:
 
     extra_prometheus_hosts:
       - id: "ci-1"
-        hostname: "prometheus-k8s-openshift-monitoring.apps.example.com"
+        hostname: "prometheus-k8s-openshift-monitoring.apps.ci-1.example.com"
         password: "<redacted>"
 
-Once you are finished adding your extra hosts, apply the file as the secret 'extra-prometheus-secrets'.
+Once you are finished adding your extra hosts, you can update your stack by re-running the helm command above, passing your values file with `--values extra-prometheus-hosts.yaml`
 
-    oc create secret generic extra-prometheus-secrets --from-file extra_prometheus_hosts.yml
+```
+./runhelm.sh --values extra-prometheus-hosts.yaml
+```
 
 ### Cleaning Up
 
-If you would like to undo the changes above:
+Cleaning up Pelorus is very simple.
 
-    # Remove dashboarding stack
-    ansible-playbook -i galaxy/openshift-toolkit/custom-dashboards/.applier galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e include_tags=infrastructure -e provision=false
-
-    # Remove Dashboard
-    ansible-playbook -i .applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e provision=false
+    helm template --namespace pelorus pelorus ./charts/deploy/ | oc delete -f-

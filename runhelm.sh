@@ -1,24 +1,22 @@
 #!/bin/bash
-
-export PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
-export GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 -d | jq .datasources[0].basicAuthPassword)
-export PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
-
-NOOBA_INSTALLED=$(oc projects | grep -c nooba )
-echo "Nooba installed: $NOOBA_INSTALLED"
-if [ $NOOBA_INSTALLED -ne "1" ]; then
-    oc new-project noobaa
-    noobaa install | tee noobaa_install_details
-    export AWS_ACCESS_KEY_ID=$(cat noobaa_install_details | grep AWS_ACCESS_KEY_ID | sed 's/^.*: //')
-    export AWS_SECRET_ACCESS_KEY=$(cat noobaa_install_details | grep AWS_SECRET_ACCESS_KEY | sed 's/^.*: //')
-    export ENDPOINT=$(oc get routes -n noobaa | grep s3 | awk '{print $2}')
-    aws --endpoint https://$ENDPOINT --no-verify-ssl s3 mb s3://thanos
-    oc project default
+export GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 -d | jq .datasources[0].basicAuthPassword | sed 's/"//g' )
+if [ -z $GRAFANA_DATASOURCE_PASSWORD ]; then
+    echo "Could not find the Grafana datasource password in the openshift-monitoring namespace!"
+    exit 1
 fi
 
-export NOOBAA_AWS_ACCESS_KEY=$(cat noobaa_install_details | grep AWS_ACCESS_KEY_ID | sed 's/^.*: //')
-export NOOBAA_AWS_SECRET_ACCESS_KEY=$(cat noobaa_install_details | grep AWS_SECRET_ACCESS_KEY | sed 's/^.*: //')
+export PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
+if [ -z $PROMETHEUS_HTPASSWD_AUTH ]; then
+    echo "Could not find the prometheus htpasswd file secret in the openshift-monitoring namespace!"
+    exit 1
+fi
 
+#Allow passing a values file to override helm variables.
+if [ "$1" == "--values" ] && [ "x" != "x$2" ]; then
+    EXTRA_VALUES="$1 $2"
+fi
+
+set -o pipefail
 helm template \
     --namespace pelorus \
     pelorus \
@@ -27,3 +25,11 @@ helm template \
     --set noobaa_aws_access_key=$NOOBAA_AWS_ACCESS_KEY \
     --set noobaa_aws_secret_access_key=$NOOBAA_AWS_SECRET_ACCESS_KEY \
     ./charts/deploy/ | oc apply -f - -n pelorus
+
+HELM_STATUS=$?
+
+if [ $HELM_STATUS -ne 0 ]; then
+    echo "Error in template processing and application!"
+fi
+
+exit $HELM_STATUS

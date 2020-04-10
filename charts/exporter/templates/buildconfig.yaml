@@ -1,0 +1,35 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: {{ .Values.app_name }}
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    application: {{ .Values.app_name}}
+  name: {{ .Values.app_name }}
+spec:
+  failedBuildsHistoryLimit: 5
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ .Values.app_name }}:latest
+  source:
+    contextDir: {{ .Values.source_context_dir }}
+    git:
+      ref: {{ .Values.source_ref }}
+      uri: {{ .Values.source_url }}
+    type: Git
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: python:3.6
+        namespace: openshift
+    type: Source
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - github:
+      secretReference:
+        name: github-secret
+    type: GitHub
+  - type: ConfigChange
+  - type: ImageChange

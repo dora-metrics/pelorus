@@ -4,9 +4,9 @@ kind: Service
 metadata:
   labels:
     app.kubernetes.io/component: controller
-    app.kubernetes.io/name: prometheus-operator-mdt
+    app.kubernetes.io/name: prometheus-operator-pelorus
     app.kubernetes.io/version: v0.33.0
-  name: prometheus-operator-mdt
+  name: prometheus-operator-pelorus
 spec:
   clusterIP: None
   ports:
@@ -15,4 +15,4 @@ spec:
     targetPort: http
   selector:
     app.kubernetes.io/component: controller
-    app.kubernetes.io/name: prometheus-operator-mdt
+    app.kubernetes.io/name: prometheus-operator-pelorus

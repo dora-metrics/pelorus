@@ -4,7 +4,7 @@ kind: Route
 metadata:
   annotations:
     openshift.io/host.generated: "true"
-  name: prometheus-mdt
+  name: prometheus-pelorus
 spec:
   port:
     targetPort: web-tls
@@ -14,8 +14,6 @@ spec:
     termination: reencrypt
   to:
     kind: Service
-    name: prometheus-mdt
+    name: prometheus-pelorus
     weight: 100
   wildcardPolicy: None
-status:
-  ingress: null

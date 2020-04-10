@@ -1,0 +1,51 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    application: {{ .Values.app_name }}
+  name: {{ .Values.app_name }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    app: {{ .Values.app_name }}
+    deploymentconfig: {{ .Values.app_name }}
+  strategy:
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.app_name }}
+        app: {{ .Values.app_name }}
+        deploymentconfig: {{ .Values.app_name }}
+        application: {{ .Values.app_name}}
+    spec:
+      containers:
+      - name: {{ .Values.app_name }}
+        imagePullPolicy: Always
+      {{- if .Values.env_from_secrets }}
+        envFrom:
+        {{- range .Values.env_from_secrets }}  
+        - secretRef:
+            name: {{ . }}
+        {{- end}}
+      {{- end}}
+        env:
+        - name: APP_FILE
+          value: {{ .Values.app_file }}
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+      serviceAccount: pelorus-exporter
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - {{ .Values.app_name }}
+      from:
+        kind: ImageStreamTag
+        name: {{ .Values.app_name }}:latest
+    type: ImageChange

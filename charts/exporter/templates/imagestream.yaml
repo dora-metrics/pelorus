@@ -1,0 +1,7 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    app: {{ .Values.app_name }}
+  name: {{ .Values.app_name }}

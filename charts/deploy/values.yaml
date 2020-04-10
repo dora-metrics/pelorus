@@ -4,3 +4,10 @@
 
 openshift_prometheus_htpasswd_auth: changeme
 openshift_prometheus_basic_auth_pass: changeme
+extra_prometheus_hosts:
+
+deployment:
+  labels:
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/name: pelorus
+    app.kubernetes.io/version: v0.33.0
