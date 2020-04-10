@@ -1,3 +1,4 @@
+{{- if .Values.bucket_access_point }}
 ---
 apiVersion: v1
 kind: Service
@@ -60,3 +61,4 @@ spec:
     clientIP:
       timeoutSeconds: 10800
   type: ClusterIP
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if .Values.bucket_access_point }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -35,3 +36,4 @@ spec:
           httpGet:
             path: /-/healthy
             port: query-http
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if .Values.bucket_access_point }}
 ---
 apiVersion: route.openshift.io/v1
 kind: Route
@@ -17,3 +18,4 @@ spec:
   wildcardPolicy: None
 status:
   ingress: null
+{{- end }}
