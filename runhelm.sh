@@ -28,11 +28,6 @@ helm template \
     $EXTRA_VALUES \
     ./charts/deploy/ | oc apply -f - -n pelorus
 
-
-#    --set bucket_access_point=$INTERNAL_S3_ENDPOINT \
-#    --set bucket_access_key=$AWS_ACCESS_KEY \
-#    --set bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY \
-
 HELM_STATUS=$?
 
 if [ $HELM_STATUS -ne 0 ]; then
