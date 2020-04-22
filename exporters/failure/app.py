@@ -47,19 +47,15 @@ class AbstractFailureMetric(ABC):
         self.labels = labels
 
 class JiraFailureMetric(AbstractFailureMetric):
-    def __init__(self, jira_project, issue_number, creation_time, resolution_time = None, labels = []):
+    def __init__(self, jira_project, issue_number, time_stamp, labels = []):
         super().__init__(labels)
         self.jira_project = jira_project
         self.issue_number = issue_number
-        self.creation_time = creation_time
-        self.resolution_time = resolution_time
+        self.time_stamp = time_stamp
     
     def get_value(self):
-        """Returns the resolution time if !None, else it returns the creation time"""
-        if self.resolution_time:
-            return self.resolution_time
-        else:
-            return self.creation_time
+        """Returns the timestamp"""
+        return self.time_stamp
 
 
 class JiraFailureCollector(AbstractFailureCollector):
@@ -86,28 +82,38 @@ class JiraFailureCollector(AbstractFailureCollector):
             metric = GaugeMetricFamily('failure_timestamp', 'Failure timestamp', labels=['project', 'issue_number', 'issue_stage'])
             metrics = self.generate_metrics(self.project, critical_issues)
             for m in metrics:
-                metric.add_metric(m.labels, loader.convert_date_time_to_timestamp(m.get_value()))
+                metric.add_metric(m.labels, m.get_value())
                 yield(metric)
     
 
-    def convert_jira_time(self, date_time):
+    def convert_jira_timestamp(self, date_time):
         """Convert a Jira datetime with TZ to UTC """
         #The time retunred by Jira has a TZ, so convert to UTC
-        created_utc = datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(pytz.utc)
+        utc = datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(pytz.utc)
         #Change the datetime to a string
-        return created_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+        utc_string = utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+        #convert to timestamp
+        return loader.convert_date_time_to_timestamp(utc_string)
 
     def generate_metrics(self, project, issues):
         metrics = []
         for issue in issues:
             print('Found open issue: {}, {}: {}'.format(str(issue.fields.created), issue.key, issue.fields.summary))
             #Create the JiraFailureMetric
-            metric = JiraFailureMetric(project, issue.key, self.convert_jira_time(issue.fields.created), labels= [project, issue.key, "issue_creation"])
+            created_ts = self.convert_jira_timestamp(issue.fields.created)
+            metric = JiraFailureMetric(project, issue.key, created_ts, labels= [project, issue.key, "issue_creation_timestamp"])
             metrics.append(metric)
             #If the issue has a resolution date, then 
             if issue.fields.resolutiondate:
+                resolution_ts = self.convert_jira_timestamp(issue.fields.resolutiondate)
+                #Add the end metric
                 print('Found closed issue: {}, {}: {}'.format(str(issue.fields.resolutiondate), issue.key, issue.fields.summary))
-                metric = JiraFailureMetric(project, issue.key, self.convert_jira_time(issue.fields.created), self.convert_jira_time(issue.fields.resolutiondate), labels = [project, issue.key, "issue_resolution"])
+                metric = JiraFailureMetric(project, issue.key, resolution_ts, labels = [project, issue.key, "issue_resolution_timestamp"])
+                metrics.append(metric)
+                #Add the change metric
+                resolution_runtime = int(resolution_ts - created_ts)
+                print('Issue Resolution Time (in seconds): {}, {}: {}'.format(str(resolution_runtime), issue.key, issue.fields.summary))
+                metric = JiraFailureMetric(project, issue.key, resolution_runtime, labels = [project, issue.key, "issue_resolution_time_seconds"])
                 metrics.append(metric)
 
         return metrics
