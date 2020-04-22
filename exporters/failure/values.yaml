@@ -1,0 +1,6 @@
+# Values file for exporter helm chart
+app_name: failuare-exporter
+source_context_dir: failure/
+app_file: failure/app.py
+source_ref: master
+source_url: https://github.com/redhat-cop/mdt-quickstart.git
