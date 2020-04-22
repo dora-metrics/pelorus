@@ -47,11 +47,12 @@ class AbstractFailureMetric(ABC):
         self.labels = labels
 
 class JiraFailureMetric(AbstractFailureMetric):
-    def __init__(self, jira_project, issue_number, time_stamp, labels = []):
+    def __init__(self, jira_project, issue_number, time_stamp, is_resolution = False, labels = []):
         super().__init__(labels)
         self.jira_project = jira_project
         self.issue_number = issue_number
         self.time_stamp = time_stamp
+        self.is_resolution = is_resolution
     
     def get_value(self):
         """Returns the timestamp"""
@@ -79,11 +80,16 @@ class JiraFailureCollector(AbstractFailureCollector):
         #Query Jira and loop results if any are returned.
         critical_issues = jira.search_issues(query_string)
         if len(critical_issues) > 0:
-            metric = GaugeMetricFamily('failure_timestamp', 'Failure timestamp', labels=['project', 'issue_number', 'issue_stage'])
+            creation_metric = GaugeMetricFamily('failure_creation_timestamp', 'Failure Creation Timestamp', labels=['project', 'issue_number'])
+            failure_metric = GaugeMetricFamily('failure_resolution_timestamp', 'Failure Resolution Timestamp', labels=['project', 'issue_number'])
             metrics = self.generate_metrics(self.project, critical_issues)
             for m in metrics:
-                metric.add_metric(m.labels, m.get_value())
-                yield(metric)
+                if not m.is_resolution:
+                    creation_metric.add_metric(m.labels, m.get_value())
+                    yield(creation_metric)
+                else:
+                    failure_metric.add_metric(m.labels, m.get_value())
+                    yield(failure_metric)
     
 
     def convert_jira_timestamp(self, date_time):
@@ -98,23 +104,23 @@ class JiraFailureCollector(AbstractFailureCollector):
     def generate_metrics(self, project, issues):
         metrics = []
         for issue in issues:
-            print('Found open issue: {}, {}: {}'.format(str(issue.fields.created), issue.key, issue.fields.summary))
+            print('Found issue opened: {}, {}: {}'.format(str(issue.fields.created), issue.key, issue.fields.summary))
             #Create the JiraFailureMetric
             created_ts = self.convert_jira_timestamp(issue.fields.created)
-            metric = JiraFailureMetric(project, issue.key, created_ts, labels= [project, issue.key, "issue_creation_timestamp"])
+            metric = JiraFailureMetric(project, issue.key, created_ts, False, labels= [project, issue.key])
             metrics.append(metric)
             #If the issue has a resolution date, then 
             if issue.fields.resolutiondate:
                 resolution_ts = self.convert_jira_timestamp(issue.fields.resolutiondate)
                 #Add the end metric
-                print('Found closed issue: {}, {}: {}'.format(str(issue.fields.resolutiondate), issue.key, issue.fields.summary))
-                metric = JiraFailureMetric(project, issue.key, resolution_ts, labels = [project, issue.key, "issue_resolution_timestamp"])
+                print('Found issue close: {}, {}: {}'.format(str(issue.fields.resolutiondate), issue.key, issue.fields.summary))
+                metric = JiraFailureMetric(project, issue.key, resolution_ts, True, labels = [project, issue.key])
                 metrics.append(metric)
                 #Add the change metric
-                resolution_runtime = int(resolution_ts - created_ts)
-                print('Issue Resolution Time (in seconds): {}, {}: {}'.format(str(resolution_runtime), issue.key, issue.fields.summary))
-                metric = JiraFailureMetric(project, issue.key, resolution_runtime, labels = [project, issue.key, "issue_resolution_time_seconds"])
-                metrics.append(metric)
+                #resolution_runtime = int(resolution_ts - created_ts)
+                #print('Issue Resolution Time (in seconds): {}, {}: {}'.format(str(resolution_runtime), issue.key, issue.fields.summary))
+                #metric = JiraFailureMetric(project, issue.key, resolution_runtime, labels = [project, issue.key, "issue_resolution_time_seconds"])
+                #metrics.append(metric)
 
         return metrics
 
