@@ -3,7 +3,7 @@ app_name: failure-exporter
 source_context_dir: exporters/
 app_file: failure/app.py
 source_ref: failure-exporter
-source_url: https://github.com/redhat-cop/mdt-quickstart.git
+source_url: https://github.com/redhat-cop/pelorus.git
 #source_url: https://github.com/themoosman/pelorus.git
 env_from_secrets: 
 - jira-secret

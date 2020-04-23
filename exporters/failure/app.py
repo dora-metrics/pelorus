@@ -47,13 +47,12 @@ class AbstractFailureMetric(ABC):
         self.labels = labels
 
 class JiraFailureMetric(AbstractFailureMetric):
-    def __init__(self, jira_project, issue_number, time_stamp, is_resolution = False, is_runtime = False, labels = []):
+    def __init__(self, jira_project, issue_number, time_stamp, is_resolution = False, labels = []):
         super().__init__(labels)
         self.jira_project = jira_project
         self.issue_number = issue_number
         self.time_stamp = time_stamp
         self.is_resolution = is_resolution
-        self.is_runtime = is_runtime
     
     def get_value(self):
         """Returns the timestamp"""
@@ -83,19 +82,15 @@ class JiraFailureCollector(AbstractFailureCollector):
         if len(critical_issues) > 0:
             creation_metric = GaugeMetricFamily('failure_creation_timestamp', 'Failure Creation Timestamp', labels=['project', 'issue_number'])
             failure_metric = GaugeMetricFamily('failure_resolution_timestamp', 'Failure Resolution Timestamp', labels=['project', 'issue_number'])
-            restore_metric = GaugeMetricFamily('time_to_restore', 'Time To Restore', labels=['project', 'issue_number'])
             metrics = self.generate_metrics(self.project, critical_issues)
             for m in metrics:
                 if not m.is_resolution:
                     creation_metric.add_metric(m.labels, m.get_value())
                     yield(creation_metric)
-                elif m.is_resolution:
-                    if not m.is_runtime:
-                        failure_metric.add_metric(m.labels, m.get_value())
-                        yield(failure_metric)
-                    else:
-                        restore_metric.add_metric(m.labels, m.get_value())
-                        yield(restore_metric)
+                else:
+                    failure_metric.add_metric(m.labels, m.get_value())
+                    yield(failure_metric)
+
     
 
     def convert_jira_timestamp(self, date_time):
@@ -113,21 +108,15 @@ class JiraFailureCollector(AbstractFailureCollector):
             print('Found issue opened: {}, {}: {}'.format(str(issue.fields.created), issue.key, issue.fields.summary))
             #Create the JiraFailureMetric
             created_ts = self.convert_jira_timestamp(issue.fields.created)
-            metric = JiraFailureMetric(project, issue.key, created_ts, False, False, labels= [project, issue.key])
+            metric = JiraFailureMetric(project, issue.key, created_ts, False, labels= [project, issue.key])
             metrics.append(metric)
             #If the issue has a resolution date, then 
             if issue.fields.resolutiondate:
                 resolution_ts = self.convert_jira_timestamp(issue.fields.resolutiondate)
                 #Add the end metric
                 print('Found issue close: {}, {}: {}'.format(str(issue.fields.resolutiondate), issue.key, issue.fields.summary))
-                metric = JiraFailureMetric(project, issue.key, resolution_ts, True, False, labels = [project, issue.key])
+                metric = JiraFailureMetric(project, issue.key, resolution_ts, True, labels = [project, issue.key])
                 metrics.append(metric)
-                #Add the change metric
-                resolution_runtime = int(resolution_ts - created_ts)
-                print('Issue Resolution Time (in seconds): {}, {}: {}'.format(str(resolution_runtime), issue.key, issue.fields.summary))
-                metric = JiraFailureMetric(project, issue.key, resolution_runtime, True, True, labels = [project, issue.key])
-                metrics.append(metric)
-
         return metrics
 
 if __name__ == "__main__":
