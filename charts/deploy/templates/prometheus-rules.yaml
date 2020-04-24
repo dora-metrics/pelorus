@@ -17,3 +17,6 @@ spec:
     - record: fr:time_to_restore
       expr: >
         failure_resolution_timestamp - failure_creation_timestamp
+    - record: fr:time_to_restore:global
+      expr: >
+        avg(fr:time_to_restore)

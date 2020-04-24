@@ -16,7 +16,10 @@ Create a secret containing your Jira information.
 
 Deploying to OpenShift is done via the failure exporter Helm chart.
 
+**_NOTE:_** Be sure to update the appropiate values if `values.yaml` if necessary.
+
     helm template charts/exporter/ -f exporters/failure/values.yaml --namespace pelorus | oc apply -f-
+
 
 ## Running locally
 
@@ -48,13 +51,21 @@ You should also be able to hit the metrics endpoint and see our custom guages.
 
 The cURL should return a similar result.
 
-    # HELP failure_timestamp Failure timestamp
-    # TYPE failure_timestamp gauge
-    failure_timestamp{issue_number="MDT-1",issue_stage="issue_creation",project="mdt"} 1.587061882e+09
-    # HELP failure_timestamp Failure timestamp
-    # TYPE failure_timestamp gauge
-    failure_timestamp{issue_number="MDT-1",issue_stage="issue_creation",project="mdt"} 1.587061882e+09
-    failure_timestamp{issue_number="MDT-1",issue_stage="issue_resolution",project="mdt"} 1.587575097e+09
+    # HELP failure_creation_timestamp Failure Creation Timestamp
+    # TYPE failure_creation_timestamp gauge
+    failure_creation_timestamp{issue_number="MDT-2",project="mdt"} 1.5875882e+09
+    # HELP failure_resolution_timestamp Failure Resolution Timestamp
+    # TYPE failure_resolution_timestamp gauge
+    failure_resolution_timestamp{issue_number="MDT-2",project="mdt"} 1.587658112e+09
+    # HELP failure_creation_timestamp Failure Creation Timestamp
+    # TYPE failure_creation_timestamp gauge
+    failure_creation_timestamp{issue_number="MDT-2",project="mdt"} 1.5875882e+09
+    failure_creation_timestamp{issue_number="MDT-1",project="mdt"} 1.587061882e+09
+    # HELP failure_resolution_timestamp Failure Resolution Timestamp
+    # TYPE failure_resolution_timestamp gauge
+    failure_resolution_timestamp{issue_number="MDT-2",project="mdt"} 1.587658112e+09
+    failure_resolution_timestamp{issue_number="MDT-1",project="mdt"} 1.587575097e+09
+
 
 
 ## Configuration
