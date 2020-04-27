@@ -5,6 +5,14 @@ metadata:
   labels:
     prometheus: prometheus-pelorus
 spec:
+  {{- if .Values.bucket_access_point }}
+  thanos:
+    baseImage: quay.io/thanos/thanos
+    version: v0.8.1
+    objectStorageConfig:
+      key: thanos.yaml
+      name: thanos-objstore-config
+  {{- end }}
   replicas: 2
   ruleNamespaceSelector: {}
   ruleSelector: {}
@@ -45,3 +53,4 @@ spec:
       name: secret-prometheus-pelorus-tls
     - mountPath: /etc/proxy/htpasswd
       name: secret-prometheus-pelorus-htpasswd
+

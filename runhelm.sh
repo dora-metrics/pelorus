@@ -1,5 +1,4 @@
 #!/bin/bash
-
 export GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 -d | jq .datasources[0].basicAuthPassword | sed 's/"//g' )
 if [ -z $GRAFANA_DATASOURCE_PASSWORD ]; then
     echo "Could not find the Grafana datasource password in the openshift-monitoring namespace!"
@@ -12,9 +11,12 @@ if [ -z $PROMETHEUS_HTPASSWD_AUTH ]; then
     exit 1
 fi
 
-#Allow passing a values file to override helm variables.
 if [ "$1" == "--values" ] && [ "x" != "x$2" ]; then
+    #Allow passing a values file to override helm variables.
     EXTRA_VALUES="$1 $2"
+elif [ "$1" == "--set" ] &&  [ "x" != "x$2" ]; then
+    #Allow passing --set arguments to pass individual arguments
+    EXTRA_VALUES="$@"
 fi
 
 set -o pipefail
@@ -25,6 +27,7 @@ helm template \
     --set openshift_prometheus_basic_auth_pass=$GRAFANA_DATASOURCE_PASSWORD \
     $EXTRA_VALUES \
     ./charts/deploy/ | oc apply -f - -n pelorus
+
 HELM_STATUS=$?
 
 if [ $HELM_STATUS -ne 0 ]; then
