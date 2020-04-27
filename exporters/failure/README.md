@@ -18,7 +18,7 @@ Deploying to OpenShift is done via the failure exporter Helm chart.
 
 **_NOTE:_** Be sure to update the appropiate values if `values.yaml` if necessary.
 
-    helm template charts/exporter/ -f exporters/failure/values.yaml --namespace pelorus | oc apply -f-
+    helm template charts/exporter/ -f exporters/failure/values.yaml --namespace pelorus | oc apply -f- -n pelorus
 
 
 ## Running locally
