@@ -33,10 +33,16 @@ To deploy pelorus, run the following script from within the root repository dire
 ./runhelm.sh
 ```
 
+By default, pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
+
+```
+./runhelm.sh -n <my-namespace>
+```
+
 Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
 
 * [Commit Time Exporter](exporters/committime/README.md)
-* Deploy Time (Coming Soon)
+* [Deploy Time](exporters/deploytime/README.md)
 
 ### Adding extra prometheus instances
 
