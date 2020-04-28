@@ -8,7 +8,7 @@ In order for proper collection, we require that all deployments associated with 
 
 Deploying to OpenShift is done via the exporter chart.
 
-    helm template charts/exporter/ -f exporters/deploytime/values.yaml --namespace pelorus | oc apply -f-
+    helm template charts/exporter/ -f exporters/deploytime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
 
 ## Running locally
 
