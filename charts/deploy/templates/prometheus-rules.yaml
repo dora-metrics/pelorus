@@ -4,7 +4,7 @@ metadata:
   name: pelorus
 spec:
   groups:
-  - name: softwar-delivery-performance
+  - name: software-delivery-performance
     rules: 
     - record: sdp:lead_time:by_app
       expr: >
@@ -12,3 +12,9 @@ spec:
     - record: sdp:lead_time:global
       expr: >
         avg(sdp:lead_time:by_app)
+    - record: fr:time_to_restore
+      expr: >
+        failure_resolution_timestamp - failure_creation_timestamp
+    - record: fr:time_to_restore:global
+      expr: >
+        avg(fr:time_to_restore)
