@@ -56,7 +56,6 @@ class CommitTimeMetric:
         myurl = self.repo_url
         url_tokens = myurl.split("/")
         url = _prefix + url_tokens[3] + "/" +url_tokens[4].split(".")[0] +_suffix+self.commit_hash
-        print(url)
         response = requests.get(url, auth=(username, token))
         commit = response.json()
         try:
