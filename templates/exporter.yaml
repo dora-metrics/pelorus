@@ -114,6 +114,6 @@ parameters:
 - name: SOURCE_REF
   value: master
 - name: SOURCE_URL
-  value: https://github.com/redhat-cop/mdt-quickstart.git
+  value: https://github.com/redhat-cop/pelorus.git
 - name: ENV_SECRET_NAME
   value: github-secret

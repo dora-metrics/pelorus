@@ -1,4 +1,4 @@
-# Metrics Driven Transformation
+# Pelorus
 
 This repository contains tooling to help organizations measure Software Delivery and Value Stream metrics.
 
@@ -25,13 +25,16 @@ Before deploying the tooling, you must have the following prepared
 * An OpenShift 3.11 or higher Environment
 * A machine from which to run the install (usually your laptop)
   * The OpenShift Command Line Tool (oc)
-  * Helm 3
+  * jq
 
-To deploy pelorus, run the following script from within the root repository directory.
+### Deployment Instructions
+To deploy pelorus, run the following script from within the root repository directory
+
 
 ```
 ./runhelm.sh
 ```
+This script will create a namespace, pelorus, by default.
 
 By default, pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
 
