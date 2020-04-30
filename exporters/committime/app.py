@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 import json
 import os
 import requests
@@ -60,11 +59,11 @@ class CommitTimeMetric:
         commit = response.json()
         try:
             self.commit_time = commit['commit']['committer']['date']
-            self.commit_timestamp = loader.convert_date_time_to_timestamp(self.commit_time)
         except KeyError as ke:
             print("Failed processing commit time for build %s" % self.build_name)
             print(ke)
             print(commit)
+        self.commit_timestamp = loader.convert_date_time_to_timestamp(self.commit_time)
 
 def match_image_id(replicationController, image_hash):
     for container in replicationController.spec.template.spec.containers:
