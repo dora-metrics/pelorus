@@ -43,17 +43,24 @@ Before deploying the tooling, you must have the following prepared
 ** jq
   
 ### Deployment Instructions
-
 To deploy pelorus, run the following script from within the root repository directory
+
 
 ```
 ./runhelm.sh
 ```
+This script will create a namespace, pelorus, by default.
+
+By default, pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
+
+```
+./runhelm.sh -n <my-namespace>
+```
 
 Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
 
-* link:./exporters/committime/README.md[Commit Time Exporter]
-* Deploy Time (Coming Soon)
+* [Commit Time Exporter](exporters/committime/README.md)
+* [Deploy Time](exporters/deploytime/README.md)
 
 ### Adding extra prometheus instances
 
