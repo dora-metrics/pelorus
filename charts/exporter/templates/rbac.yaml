@@ -34,7 +34,7 @@ metadata:
     app.kubernetes.io/component: pelorus-exporters
     app.kubernetes.io/name: exporters
     app.kubernetes.io/version: v1.2
-  name: pelorus-exporter
+  name: {{ .Release.Namespace }}-pelorus-exporter
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

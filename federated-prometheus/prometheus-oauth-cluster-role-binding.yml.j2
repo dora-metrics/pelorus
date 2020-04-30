@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: prometheus-mdt-oauth-crb
+  name: {{ dashboard_namespace }}-prometheus-mdt-oauth-crb
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
