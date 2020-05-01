@@ -1,6 +1,6 @@
 # Installation
 
-The following will walk through the deployment of the MDT tooling.
+The following will walk through the deployment of Pelorus.
 
 ### Prerequisites
 
@@ -13,15 +13,13 @@ Before deploying the tooling, you must have the following prepared
   * jq
 
 ### Deployment Instructions
-To deploy pelorus, run the following script from within the root repository directory
+To deploy Pelorus, run the following script from within the root repository directory
 
 
 ```
 ./runhelm.sh
 ```
-This script will create a namespace, pelorus, by default.
-
-By default, pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
+By default, Pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
 
 ```
 ./runhelm.sh -n <my-namespace>
@@ -29,10 +27,10 @@ By default, pelorus will be installed in a namespace called `pelorus`. You can c
 
 Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
 
-* [Commit Time Exporter](exporters/committime/README.md)
-* [Deploy Time](exporters/deploytime/README.md)
+* [Commit Time Exporter](/docs/Configuration.md#commit-time-exporter)
+* [Deploy Time](/docs/Configuration.md#deploy-time-exporter)
 
-### Adding extra prometheus instances
+### Deploying Across Multiple Clusters
 
 By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, we need to point the Pelorus instance at these other clusters.
 
@@ -57,7 +55,7 @@ Once you are finished adding your extra hosts, you can update your stack by re-r
 
 ### Long Term Storage
 
-The pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
+The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
 
 ```
 bucket_access_point: s3.noobaa.svc
@@ -97,4 +95,5 @@ And then:
 
 Cleaning up Pelorus is very simple.
 
-    helm template --namespace pelorus pelorus ./charts/deploy/ | oc delete -f-
+    helm template --namespace pelorus pelorus ./charts/deploy/ | oc delete -f- -n pelorus
+
