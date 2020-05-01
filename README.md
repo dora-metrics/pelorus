@@ -16,5 +16,13 @@ The Software Delivery Metrics Dashboard is a Grafana dashboard that can easily b
 
 ## Installation
 
-A guide for installation can be found in the install doc found [here](./docs/Install.md)
+A guide for installation can be found in the install document found [here](./docs/Install.md)
 
+
+## Configuration
+
+A guide for configuration can be found in the configuration document found [here](./docs/Configuration.md)
+
+## Contributing to Pelorus
+
+If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found [here](./docs/CONTRIBUTING.md)
