@@ -31,11 +31,11 @@ Refer to the [Install Doc](./docs/Install.md) for the prerequisites on setting u
 ## Contributing Content
 
 Here is a link to the General Contribution Guidelines for the Red Hat Communities of Practice. It will cover some Do's and Dont's, such as forking a repo instead of creating a new branch.
-link:https://redhat-cop.github.io/contrib/[Contribution Guidelines]
+[Contribution Guidelines](https://redhat-cop.github.io/contrib/)
 
 If you’d like to contribute, start by searching through the GitHub
-https://github.com/redhat-cop/pelorus/issues[issues] and
-https://github.com/redhat-cop/pelorus/pulls[pull requests] to see
+[issues](https://github.com/redhat-cop/pelorus/issues) and
+[pull requests](https://github.com/redhat-cop/pelorus/pulls) to see
 whether someone else has raised a similar idea or question.
 
 If you don’t see your idea listed, and you think it fits into the goals
