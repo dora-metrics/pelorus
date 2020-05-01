@@ -6,7 +6,7 @@ metadata:
   {{- with .Values.deployment.labels }}
 {{ toYaml . | indent 4 }}
   {{- end }}  
-  name: pelorus-prometheus
+  name: {{ .Release.Namespace }}-pelorus-prometheus
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

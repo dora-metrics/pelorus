@@ -2,7 +2,7 @@
 apiVersion: authorization.openshift.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: grafana-proxy
+  name: {{ .Release.Namespace }}-grafana-proxy
 roleRef:
   name: grafana-proxy
 subjects:
