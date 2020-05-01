@@ -25,12 +25,13 @@ created as others will do so if they appreciate it.
 
 ## Getting set up for local development
 
+
 Refer to the [Install Doc](./docs/Install.md) for the prerequisites on setting up and installing Pelorus.
 
-    
 ## Contributing Content
 
 Here is a link to the General Contribution Guidelines for the Red Hat Communities of Practice. It will cover some Do's and Dont's, such as forking a repo instead of creating a new branch.
+<<<<<<< HEAD
 [Contribution Guidelines](https://redhat-cop.github.io/contrib/)
 
 If you’d like to contribute, start by searching through the GitHub
@@ -42,6 +43,19 @@ If you don’t see your idea listed, and you think it fits into the goals
 of this guide, do one of the following: **If your contribution is
 minor,** such as a typo fix, open a pull request. **If your contribution
 is major,** such as a new article or category, start by opening an issue
+=======
+link:https://redhat-cop.github.io/contrib/[Contribution Guidelines]
+
+If you’d like to contribute, start by searching through the GitHub
+https://github.com/redhat-cop/pelorus/issues[issues] and
+https://github.com/redhat-cop/pelorus/pulls[pull requests] to see
+whether someone else has raised a similar idea or question.
+
+If you don’t see your idea listed, and you think it fits into the goals
+of this guide, do one of the following: * *If your contribution is
+minor,* such as a typo fix, open a pull request. * *If your contribution
+is major,* such as a new article or category, start by opening an issue
+>>>>>>> 4b9bd39... Create CONTRIBUTING.md
 first. That way, other people can weigh in on the discussion before you
 do any work.
 
