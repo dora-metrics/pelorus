@@ -19,7 +19,8 @@ while getopts ":n:" opt; do
 done
 shift $((OPTIND -1))
 
-export GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 -d | jq .datasources[0].basicAuthPassword | sed 's/"//g' )
+export GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 --decode | jq .datasources[0].basicAuthPassword | sed 's/"//g' )
+
 if [ -z $GRAFANA_DATASOURCE_PASSWORD ]; then
     echo "Could not find the Grafana datasource password in the openshift-monitoring namespace!"
     exit 1
