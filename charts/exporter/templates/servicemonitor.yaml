@@ -14,4 +14,4 @@ spec:
     - {{ .Release.Namespace }}
   endpoints:
   - port: http
-    interval: 15s
+    interval: {{ .Values.scrapeInterval }}
