@@ -30,5 +30,3 @@ A guide for configuration can be found in the configuration document found in th
 ## Contributing to Pelorus
 
 If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found in the [contribution guide](./docs/CONTRIBUTING.md)
-
-
