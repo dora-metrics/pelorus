@@ -1,6 +1,6 @@
 # Installation
 
-The following will walk through the deployment of the MDT tooling.
+The following will walk through the deployment of Pelorus.
 
 ### Prerequisites
 
