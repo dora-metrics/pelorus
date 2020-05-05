@@ -19,9 +19,7 @@ To deploy Pelorus, run the following script from within the root repository dire
 ```
 ./runhelm.sh
 ```
-This script will create a namespace, pelorus, by default.
-
-By default, pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
+By default, Pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
 
 ```
 ./runhelm.sh -n <my-namespace>
