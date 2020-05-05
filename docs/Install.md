@@ -114,7 +114,7 @@ Before deploying the tooling, you must have the following prepared
   * jq
 
 ### Deployment Instructions
-To deploy pelorus, run the following script from within the root repository directory
+To deploy Pelorus, run the following script from within the root repository directory
 
 
 ```
