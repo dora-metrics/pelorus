@@ -57,7 +57,7 @@ Once you are finished adding your extra hosts, you can update your stack by re-r
 
 ### Long Term Storage
 
-The pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
+The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
 
 ```
 bucket_access_point: s3.noobaa.svc
