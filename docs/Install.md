@@ -30,7 +30,7 @@ Pelorus also has additional (optional) exporters that can be deployed to gather 
 * [Commit Time Exporter](exporters/committime/README.md)
 * [Deploy Time](exporters/deploytime/README.md)
 
-### Adding extra prometheus instances
+### Deploying Across Multiple Clusters
 
 By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, we need to point the Pelorus instance at these other clusters.
 
