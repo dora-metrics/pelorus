@@ -95,4 +95,4 @@ And then:
 
 Cleaning up Pelorus is very simple.
 
-    helm template --namespace pelorus pelorus ./charts/deploy/ | oc delete -f-
+    helm template --namespace pelorus pelorus ./charts/deploy/ | oc delete -f- -n pelorus
