@@ -4,4 +4,4 @@ The job of the commit time exporter is to find relevant builds in OpenShift and 
 
 In order for proper collection, we require that all builds associated with a particular application be labelled with the same `application=<app_name>` label.
 
-Configuration can be found in the [config guide](./docs/Configuration.md)
+Configuration can be found in the [config guide](/docs/Configuration.md)
