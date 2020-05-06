@@ -65,6 +65,7 @@ class CommitTimeMetric:
             print("Failed processing commit time for build %s" % self.build_name)
             print(ke)
             print(commit)
+        
 
 def match_image_id(replicationController, image_hash):
     for container in replicationController.spec.template.spec.containers:
