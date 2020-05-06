@@ -47,7 +47,13 @@ spec:
     ports:
     - containerPort: 9091
       name: web-tls
-    resources: {}
+    resources:
+      limits:
+        cpu: 200m
+        memory: 200Mi
+      requests:
+        cpu: 50m
+        memory: 100Mi
     volumeMounts:
     - mountPath: /etc/tls/private
       name: secret-prometheus-pelorus-tls
