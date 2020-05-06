@@ -1,6 +1,16 @@
+import logging
 import os
 from datetime import datetime, timezone
 from kubernetes import config
+
+loglevel = os.environ.get('LOG_LEVEL')
+if not loglevel:
+    loglevel = "INFO"
+numeric_level = getattr(logging, loglevel.upper(), None)
+if not isinstance(numeric_level, int):
+    raise ValueError('Invalid log level: %s' % loglevel)
+logging.basicConfig(level=numeric_level)
+print("Initializing Logger wit LogLevel: %s" % loglevel.upper())
 
 def load_kube_config():
     if "OPENSHIFT_BUILD_NAME" in os.environ:

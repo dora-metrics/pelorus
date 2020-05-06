@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import json
+import logging
 import os
 import requests
 import re
@@ -31,7 +32,7 @@ class CommitCollector(object):
         ld_metric = GaugeMetricFamily('github_commit_timestamp', 'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
         ld_metrics = generate_ld_metrics_list(self._namespaces)
         for my_metric in ld_metrics:
-            print("Namespace: ", my_metric.namespace, ", App: ", my_metric.name, ", Build: ", my_metric.build_name)
+            logging.info("Namespace: %s, App: %s, Build: %s" % (my_metric.namespace, my_metric.name, my_metric.build_name))
             ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash], my_metric.commit_timestamp)
             yield ld_metric
 
@@ -61,11 +62,9 @@ class CommitTimeMetric:
         try:
             self.commit_time = commit['commit']['committer']['date']
             self.commit_timestamp = loader.convert_date_time_to_timestamp(self.commit_time)
-        except KeyError as ke:
-            print("Failed processing commit time for build %s" % self.build_name)
-            print(ke)
-            print(commit)
-        
+        except KeyError:
+            logging.error("Failed processing commit time for build %s" % self.build_name, exc_info=True)
+            logging.debug(commit)
 
 def match_image_id(replicationController, image_hash):
     for container in replicationController.spec.template.spec.containers:
@@ -92,11 +91,11 @@ def generate_ld_metrics_list(namespaces):
 
     metrics = []
     if not namespaces:
-        print("No namespaces specified, watching all namespaces\n")
+        logging.info("No namespaces specified, watching all namespaces\n")
         v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
         namespaces = [ namespace.metadata.name for namespace in v1_namespaces.get().items ]
     else:
-        print("Watching namespaces: %s\n" %(namespaces))
+        logging.info("Watching namespaces: %s\n" %(namespaces))
 
 
     for namespace in namespaces:
@@ -156,29 +155,34 @@ def generate_ld_metrics_list(namespaces):
 
             for build in code_builds:
 
-                metric = CommitTimeMetric(app)
+                try:
+                    metric = CommitTimeMetric(app)
 
-                if build.spec.source.git:
-                    repo_url = build.spec.source.git.uri
+                    if build.spec.source.git:
+                        repo_url = build.spec.source.git.uri
 
-                if "github.com" not in repo_url:
-                    print("Only GitHub repos are currently supported. Skipping build %s" % build.metadata.name)
+                    if "github.com" not in repo_url:
+                        logging.warning("Only GitHub repos are currently supported. Skipping build %s" % build.metadata.name)
 
-                metric.repo_url = repo_url
-                
-                metric.build_name=build.metadata.name
-                metric.build_config_name = build.metadata.labels.buildconfig
-                metric.namespace = build.metadata.namespace
-                labels = build.metadata.labels
-                metric.labels = json.loads(str(labels).replace("\'", "\""))
-                
-                metric.commit_hash = build.spec.revision.git.commit
-                metric.name = app + '-' + build.spec.revision.git.commit
-                metric.commiter = build.spec.revision.git.author.name
-                metric.image_location = build.status.outputDockerImageReference
-                metric.image_hash = build.status.output.to.imageDigest
-                metric.getCommitTime()
-                metrics.append(metric)
+                    metric.repo_url = repo_url
+                    
+                    metric.build_name=build.metadata.name
+                    metric.build_config_name = build.metadata.labels.buildconfig
+                    metric.namespace = build.metadata.namespace
+                    labels = build.metadata.labels
+                    metric.labels = json.loads(str(labels).replace("\'", "\""))
+                    
+                    metric.commit_hash = build.spec.revision.git.commit
+                    metric.name = app + '-' + build.spec.revision.git.commit
+                    metric.commiter = build.spec.revision.git.author.name
+                    metric.image_location = build.status.outputDockerImageReference
+                    metric.image_hash = build.status.output.to.imageDigest
+                    metric.getCommitTime()
+                    metrics.append(metric)
+
+                except AttributeError as e:
+                    logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping." % (namespace, build.metadata.name, app))
+                    logging.debug(e, exc_info=True)
 
     return metrics
 
