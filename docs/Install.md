@@ -27,8 +27,8 @@ By default, Pelorus will be installed in a namespace called `pelorus`. You can c
 
 Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
 
-* [Commit Time Exporter](exporters/committime/README.md)
-* [Deploy Time](exporters/deploytime/README.md)
+* [Commit Time Exporter](/docs/Configuration.md#commit-time-exporter)
+* [Deploy Time](/docs/Configuration.md#deploy-time-exporter)
 
 ### Deploying Across Multiple Clusters
 
