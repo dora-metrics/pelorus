@@ -2,10 +2,16 @@
 
 namespace=pelorus
 
-while getopts ":n:" opt; do
+while getopts ":n:v:s:" opt; do
   case ${opt} in
     n )
       namespace=$OPTARG
+      ;;
+    v )
+      EXTRA_VALUES="${EXTRA_VALUES} --values ${OPTARG}"
+      ;;
+    s )
+      EXTRA_VALUES="${EXTRA_VALUES} --set ${OPTARG}"
       ;;
     \? )
       echo "Invalid option: $OPTARG" 1>&2
@@ -30,14 +36,6 @@ export PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n opens
 if [ -z $PROMETHEUS_HTPASSWD_AUTH ]; then
     echo "Could not find the prometheus htpasswd file secret in the openshift-monitoring namespace!"
     exit 1
-fi
-
-if [ "$1" == "--values" ] && [ "x" != "x$2" ]; then
-    #Allow passing a values file to override helm variables.
-    EXTRA_VALUES="$1 $2"
-elif [ "$1" == "--set" ] &&  [ "x" != "x$2" ]; then
-    #Allow passing --set arguments to pass individual arguments
-    EXTRA_VALUES="$@"
 fi
 
 set -o pipefail
