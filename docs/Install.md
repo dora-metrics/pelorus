@@ -50,7 +50,7 @@ For example:
 Once you are finished adding your extra hosts, you can update your stack by re-running the helm command above, passing your values file with `--values extra-prometheus-hosts.yaml`
 
 ```
-./runhelm.sh --values extra-prometheus-hosts.yaml
+./runhelm.sh -v extra-prometheus-hosts.yaml
 ```
 
 ### Long Term Storage
@@ -75,20 +75,20 @@ thanos_bucket_name: <bucket name here>
 Then pass this to runhelm.sh like this:
 
 ```
-./runhelm.sh --values values.yaml
+./runhelm.sh -v values.yaml
 ```
 
 The thanos instance can also be configured by setting the same variables as arguments to the installation script:
 
 ```
-./runhelm.sh --set bucket_access_point=$INTERNAL_S3_ENDPOINT --set bucket_access_key=$AWS_ACCESS_KEY --set bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY --set thanos_bucket_name=somebucket
+./runhelm.sh -s bucket_access_point=$INTERNAL_S3_ENDPOINT -s bucket_access_key=$AWS_ACCESS_KEY -s bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY -s thanos_bucket_name=somebucket
 ```
 
 
 And then:
 
 ```
-./runhelm.sh --values file_with_bucket_config.yaml
+./runhelm.sh -v file_with_bucket_config.yaml
 ```
 
 ### Cleaning Up
