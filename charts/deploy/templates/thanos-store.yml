@@ -25,6 +25,9 @@ spec:
       - name: thanos-config-store
         secret:
           secretName: thanos-objstore-config
+      - name: cert-volume
+        configMap:
+          name: trusted-certs
       containers:
       - name: thanos-store
         image: quay.io/thanos/thanos:v0.8.1
@@ -47,4 +50,7 @@ spec:
           name: thanos-store
         - mountPath: /thanos-config-store
           name: thanos-config-store
+        - mountPath: /etc/ssl/certs/service-ca.crt
+          subPath: service-ca.crt
+          name: cert-volume
 {{- end }}
