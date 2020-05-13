@@ -15,8 +15,6 @@ from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import CounterMetricFamily,InfoMetricFamily,GaugeMetricFamily, REGISTRY
 
-from jsonpath_ng.jsonpath import Fields
-from jsonpath_ng.jsonpath import Slice
 
 loader.load_kube_config()
 k8s_config = client.Configuration()
@@ -90,9 +88,6 @@ def convert_timestamp_to_date_time(timestamp):
     date_time = datetime(timestamp)
     return datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-#Function to take care of escaping special characters so json parse does not fail
-def jsonpathify(string):
-    return re.sub('[/]', lambda a: '\%s' % a.group(0), string)
 
 def generate_ld_metrics_list(namespaces):
 
