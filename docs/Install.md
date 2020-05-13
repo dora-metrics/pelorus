@@ -10,19 +10,23 @@ Before deploying the tooling, you must have the following prepared
 * A machine from which to run the install (usually your laptop)
   * The OpenShift Command Line Tool (oc)
   * [Helm3](https://github.com/helm/helm/releases)
-  * jq
 
 ### Deployment Instructions
-To deploy Pelorus, run the following script from within the root repository directory
-
-
-```
-./runhelm.sh
-```
-By default, Pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
+To deploy Pelorus, run the following `helm` command from within the root repository directory
 
 ```
-./runhelm.sh -n <my-namespace>
+helm template \
+  --namespace pelorus \
+  pelorus \
+  ./charts/deploy/ | oc apply -f - -n pelorus
+```
+This will install Pelorus in a namespace called `pelorus`. You can customize this by passing changing the `--namespace` and `-n` parameters like so:
+
+```
+helm template \
+  --namespace <my-namespace> \
+  pelorus \
+  ./charts/deploy/ | oc apply -f - -n <my-namespace>
 ```
 
 Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
@@ -47,15 +51,20 @@ For example:
         hostname: "prometheus-k8s-openshift-monitoring.apps.ci-1.example.com"
         password: "<redacted>"
 
-Once you are finished adding your extra hosts, you can update your stack by re-running the helm command above, passing your values file with `--values extra-prometheus-hosts.yaml`
+Once you are finished adding your extra hosts, you can update your stack by re-running the Helm command above, passing your values file with `--values extra-prometheus-hosts.yaml`
 
 ```
-./runhelm.sh -v extra-prometheus-hosts.yaml
+helm template \
+  --namespace pelorus \
+  pelorus \
+  --values extra-prometheus-hosts.yaml \
+  ./charts/deploy/ | oc apply -f - -n pelorus
+
 ```
 
 ### Long Term Storage
 
-The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
+The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a `values.yaml` file for noobaa with the local s3 service name:
 
 ```
 bucket_access_point: s3.noobaa.svc
@@ -72,23 +81,39 @@ bucket_secret_access_key: <your secret access key>
 thanos_bucket_name: <bucket name here>
 ```
 
-Then pass this to runhelm.sh like this:
+Then pass this to Helm like this:
 
 ```
-./runhelm.sh -v values.yaml
+helm template \
+  --namespace pelorus \
+  pelorus \
+  --values values.yaml \
+  ./charts/deploy/ | oc apply -f - -n pelorus
+
 ```
 
-The thanos instance can also be configured by setting the same variables as arguments to the installation script:
+The thanos instance can also be configured by setting the same variables as arguments to Helm:
 
 ```
-./runhelm.sh -s bucket_access_point=$INTERNAL_S3_ENDPOINT -s bucket_access_key=$AWS_ACCESS_KEY -s bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY -s thanos_bucket_name=somebucket
+helm template \
+  --namespace pelorus \
+  pelorus \
+  --set bucket_access_point=$INTERNAL_S3_ENDPOINT \
+  --set bucket_access_key=$AWS_ACCESS_KEY \
+  --set bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY \
+  --set thanos_bucket_name=somebucket \
+  ./charts/deploy/ | oc apply -f - -n pelorus
 ```
 
 
 And then:
 
 ```
-./runhelm.sh -v file_with_bucket_config.yaml
+helm template \
+  --namespace pelorus \
+  pelorus \
+  --values file_with_bucket_config.yaml \
+  ./charts/deploy/ | oc apply -f - -n pelorus
 ```
 
 ### Cleaning Up
