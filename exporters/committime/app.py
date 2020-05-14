@@ -115,7 +115,7 @@ def generate_ld_metrics_list(namespaces):
 
 
         # use a jsonpath expression to find all values for the app label
-        jsonpath_str = "$['items'][*]['metadata']['labels'][" + str(loader.get_app_label()) + "]"
+        jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(loader.get_app_label()) + "']"
         jsonpath_expr = parse(jsonpath_str)
 
 
