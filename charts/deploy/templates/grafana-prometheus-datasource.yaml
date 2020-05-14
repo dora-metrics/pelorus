@@ -18,9 +18,13 @@ spec:
       url: "https://prometheus-pelorus.{{ .Release.Namespace }}.svc:9091"
       version: 1
       {{ range $key, $value := (lookup "v1" "Secret" "openshift-monitoring" "grafana-datasources").data }}
-      {{ if eq $key "prometheus.yaml" }}
-      {{ range $k, $v := ($value | b64dec | fromJson).datasources }}
+        {{ if eq $key "prometheus.yaml" }}
+          {{ if eq $value "" }}
+      basicAuthPassword: ""
+          {{ else }}
+            {{ range $k, $v := ($value | b64dec | fromJson).datasources }}
       basicAuthPassword: {{ $v.basicAuthPassword | quote }}
-      {{ end }}
-      {{ end }}
+            {{ end }}
+          {{ end }}
+        {{ end }}
       {{ end }}
