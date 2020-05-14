@@ -13,16 +13,46 @@ Before deploying the tooling, you must have the following prepared
   * jq
 
 ### Deployment Instructions
-To deploy Pelorus, run the following script from within the root repository directory
 
+#### Deploy Long Term Storage
+
+##### 1. Add a security context to OpenShift
+
+[INSERT STEP FOR THIS]
+
+##### 2. Deploy Object Storage for Pelorus
+
+To retain Pelorus dashboard data in the long-term, we'll deploy an instance of [minio](https://github.com/helm/charts/tree/master/stable/minio).
 
 ```
-./runhelm.sh
+helm install --set "buckets[0].name=thanos,buckets[0].policy=none,buckets[0].purge=false,configPathmc=/tmp/minio/mc,DeploymentUpdate.type=\"Recreate\"" <my-release-name> stable/minio
 ```
+
+* We use recreate mode because RollingDeployments won't allow a single pod to be unavailable (and there's only one)
+* Configuration path path had to be changed to work with openshift
+
+##### 3. Secure Minio Object Storage
+
+We'll secure minio using an openshift self-signed certificate
+
+```
+helm upgrade --set "certsPath=/tmp/minio/certs,tls.enabled=true,tls.certSecret=<my-release-name>-tls,tls.privateKey=tls.key,tls.publicCrt=tls.crt,service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=<my-release-name>-tls,DeploymentUpdate.type=\"Recreate\"" <my-release-name> stable/minio
+```
+
+* Certificate path had to be changed to work with openshift user access
+
+#### Deploy Pelorus
+
+To deploy Pelorus with [long-term storage](/docs/Storage.md), run the following script from within the root repository directory
+
+```
+./runhelm.sh -s "bucket_access_point=<your-release-name>.<my-namespace>.svc:9000,bucket_access_key=AKIAIOSFODNN7EXAMPLE,bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+```
+
 By default, Pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
 
 ```
-./runhelm.sh -n <my-namespace>
+./runhelm.sh -n <my-namespace> -s "bucket_access_point=<my-release-name>.<my-namespace>.svc:9000,bucket_access_key=AKIAIOSFODNN7EXAMPLE,bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 ```
 
 Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
@@ -51,44 +81,6 @@ Once you are finished adding your extra hosts, you can update your stack by re-r
 
 ```
 ./runhelm.sh -v extra-prometheus-hosts.yaml
-```
-
-### Long Term Storage
-
-The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
-
-```
-bucket_access_point: s3.noobaa.svc
-bucket_access_key: <your access key>
-bucket_secret_access_key: <your secret access key>
-```
-
-The default bucket name is thanos.  It can be overriden by specifying an additional value for the bucket name as in:
-
-```
-bucket_access_point: s3.noobaa.svc
-bucket_access_key: <your access key>
-bucket_secret_access_key: <your secret access key>
-thanos_bucket_name: <bucket name here>
-```
-
-Then pass this to runhelm.sh like this:
-
-```
-./runhelm.sh -v values.yaml
-```
-
-The thanos instance can also be configured by setting the same variables as arguments to the installation script:
-
-```
-./runhelm.sh -s bucket_access_point=$INTERNAL_S3_ENDPOINT -s bucket_access_key=$AWS_ACCESS_KEY -s bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY -s thanos_bucket_name=somebucket
-```
-
-
-And then:
-
-```
-./runhelm.sh -v file_with_bucket_config.yaml
 ```
 
 ### Cleaning Up
