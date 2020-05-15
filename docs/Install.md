@@ -55,15 +55,6 @@ Other storage configuration can be found [here](/docs/Storage.md).
 ### Deploy Pelorus
 
 To deploy Pelorus, run the following script from within the root repository directory. Set `<my-namespace>` to the namespace where you deployed minio storage above.
-
-```
-./runhelm.sh -s "bucket_access_point=pelorus-minio.<my-namespace>.svc:9000" \
--s "bucket_access_key=AKIAIOSFODNN7EXAMPLE" \
--s "bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-```
-
-By default, Pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
-
 ```
 ./runhelm.sh -n <my-namespace> \
 -s "bucket_access_point=pelorus-minio.<my-namespace>.svc:9000" \
