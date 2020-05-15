@@ -15,6 +15,7 @@ from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import CounterMetricFamily,InfoMetricFamily,GaugeMetricFamily, REGISTRY
 
+
 loader.load_kube_config()
 k8s_config = client.Configuration()
 k8s_client = client.api_client.ApiClient(configuration=k8s_config)
@@ -87,6 +88,7 @@ def convert_timestamp_to_date_time(timestamp):
     date_time = datetime(timestamp)
     return datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
 
+
 def generate_ld_metrics_list(namespaces):
 
     metrics = []
@@ -111,11 +113,14 @@ def generate_ld_metrics_list(namespaces):
         # only use builds that have the app label
         builds = v1_builds.get(namespace=namespace, label_selector=loader.get_app_label())
 
+
         # use a jsonpath expression to find all values for the app label
-        jsonpath_str = 'items[*].metadata.labels.%s' % (loader.get_app_label())
+        jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(loader.get_app_label()) + "']"
         jsonpath_expr = parse(jsonpath_str)
 
+
         found = jsonpath_expr.find(builds)
+
         apps = [match.value for match in found]
 
 
