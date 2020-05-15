@@ -25,7 +25,9 @@ Before deploying the tooling, you must have the following prepared
 To retain Pelorus dashboard data in the long-term, we'll deploy an instance of [minio](https://github.com/helm/charts/tree/master/stable/minio).
 
 ```
-helm install --set "buckets[0].name=thanos,buckets[0].policy=none,buckets[0].purge=false,configPathmc=/tmp/minio/mc,DeploymentUpdate.type=\"Recreate\"" <my-release-name> stable/minio
+helm install --set "buckets[0].name=thanos,buckets[0].policy=none,buckets[0].purge=false" \
+--set "configPathmc=/tmp/minio/mc" \
+--set "DeploymentUpdate.type=\"Recreate\"" <my-release-name> stable/minio
 ```
 
 * We use recreate mode because RollingDeployments won't allow a single pod to be unavailable (and there's only one)
@@ -36,7 +38,12 @@ helm install --set "buckets[0].name=thanos,buckets[0].policy=none,buckets[0].pur
 We'll secure minio using an openshift self-signed certificate
 
 ```
-helm upgrade --set "certsPath=/tmp/minio/certs,tls.enabled=true,tls.certSecret=<my-release-name>-tls,tls.privateKey=tls.key,tls.publicCrt=tls.crt,service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=<my-release-name>-tls,DeploymentUpdate.type=\"Recreate\"" <my-release-name> stable/minio
+helm upgrade --set "certsPath=/tmp/minio/certs" \
+--set "tls.enabled=true" \
+--set "tls.certSecret=<my-release-name>-tls" \
+--set "tls.privateKey=tls.key,tls.publicCrt=tls.crt" \
+--set "service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=<my-release-name>-tls" \
+--set "DeploymentUpdate.type=\"Recreate\"" <my-release-name> stable/minio
 ```
 
 * Certificate path had to be changed to work with openshift user access
@@ -46,7 +53,7 @@ helm upgrade --set "certsPath=/tmp/minio/certs,tls.enabled=true,tls.certSecret=<
 To deploy Pelorus with [long-term storage](/docs/Storage.md), run the following script from within the root repository directory
 
 ```
-./runhelm.sh -s "bucket_access_point=<your-release-name>.<my-namespace>.svc:9000,bucket_access_key=AKIAIOSFODNN7EXAMPLE,bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+./runhelm.sh -s "bucket_access_point=<my-release-name>.<my-namespace>.svc:9000,bucket_access_key=AKIAIOSFODNN7EXAMPLE,bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 ```
 
 By default, Pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
