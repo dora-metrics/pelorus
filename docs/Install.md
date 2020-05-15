@@ -1,3 +1,4 @@
+
 # Installation
 
 The following will walk through the deployment of Pelorus.
@@ -12,11 +13,9 @@ Before deploying the tooling, you must have the following prepared
   * [Helm3](https://github.com/helm/helm/releases)
   * jq
 
-### Deployment Instructions
+### Deploy Long Term Storage
 
-#### Deploy Long Term Storage
-
-##### 1. Add a security context to OpenShift
+#### Configure Storage Security
 
 To allow minio to run, add a security constraint context. Run the following command from within the root repository directory
 
@@ -24,22 +23,24 @@ To allow minio to run, add a security constraint context. Run the following comm
 oc apply -f storage/minio-scc.yaml
 ```
 
-##### 2. Deploy Object Storage for Pelorus
+#### Deploy Object Storage for Pelorus
 
-To retain Pelorus dashboard data in the long-term, we'll deploy an instance of [minio](https://github.com/helm/charts/tree/master/stable/minio).
+To retain Pelorus dashboard data in the long-term, we'll deploy an instance of [minio](https://github.com/helm/charts/tree/master/stable/minio) and create a bucket called `thanos`.
 
 ```
-helm install --set "buckets[0].name=thanos,buckets[0].policy=none,buckets[0].purge=false" \
+helm install --set "buckets[0].name=thanos" \
+--set "buckets[0].policy=none" \
+--set "buckets[0].purge=false" \
 --set "configPathmc=/tmp/minio/mc" \
 --set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
 ```
 
-* We use recreate mode because RollingDeployments won't allow a single pod to be unavailable (and there's only one)
-* Configuration path path had to be changed to work with openshift
+* Recreate mode is used. RollingDeployments won't allow re-deployment while a pvc is in use
+* Configuration and certificate path changed to [work with openshift]([https://github.com/minio/mc/issues/2640](https://github.com/minio/mc/issues/2640))
 
-##### 3. Secure Minio Object Storage
+#### Secure Minio Object Storage
 
-We'll secure minio using an openshift self-signed certificate
+Secure minio using a [service serving certificate](https://docs.openshift.com/container-platform/4.1/authentication/certificates/service-serving-certificate.html)
 
 ```
 helm upgrade --set "certsPath=/tmp/minio/certs" \
@@ -49,12 +50,11 @@ helm upgrade --set "certsPath=/tmp/minio/certs" \
 --set "service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=pelorus-minio-tls" \
 --set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
 ```
+Other storage configuration can be found [here](/docs/Storage.md).
 
-* Certificate path had to be changed to work with openshift user access
+### Deploy Pelorus
 
-#### Deploy Pelorus
-
-To deploy Pelorus with [long-term storage](/docs/Storage.md), run the following script from within the root repository directory
+To deploy Pelorus, run the following script from within the root repository directory
 
 ```
 ./runhelm.sh -s "bucket_access_point=pelorus-minio.<my-namespace>.svc:9000" \
