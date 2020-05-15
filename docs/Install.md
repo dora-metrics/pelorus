@@ -27,7 +27,7 @@ To retain Pelorus dashboard data in the long-term, we'll deploy an instance of [
 ```
 helm install --set "buckets[0].name=thanos,buckets[0].policy=none,buckets[0].purge=false" \
 --set "configPathmc=/tmp/minio/mc" \
---set "DeploymentUpdate.type=\"Recreate\"" <my-release-name> stable/minio
+--set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
 ```
 
 * We use recreate mode because RollingDeployments won't allow a single pod to be unavailable (and there's only one)
@@ -53,13 +53,18 @@ helm upgrade --set "certsPath=/tmp/minio/certs" \
 To deploy Pelorus with [long-term storage](/docs/Storage.md), run the following script from within the root repository directory
 
 ```
-./runhelm.sh -s "bucket_access_point=<my-release-name>.<my-namespace>.svc:9000,bucket_access_key=AKIAIOSFODNN7EXAMPLE,bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+./runhelm.sh -s "bucket_access_point=pelorus-minio.<my-namespace>.svc:9000" \
+-s "bucket_access_key=AKIAIOSFODNN7EXAMPLE" \
+-s "bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 ```
 
 By default, Pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
 
 ```
-./runhelm.sh -n <my-namespace> -s "bucket_access_point=<my-release-name>.<my-namespace>.svc:9000,bucket_access_key=AKIAIOSFODNN7EXAMPLE,bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+./runhelm.sh -n <my-namespace> \
+-s "bucket_access_point=pelorus-minio.<my-namespace>.svc:9000" \
+-s "bucket_access_key=AKIAIOSFODNN7EXAMPLE" \
+-s "bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 ```
 
 Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
