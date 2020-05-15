@@ -40,10 +40,10 @@ We'll secure minio using an openshift self-signed certificate
 ```
 helm upgrade --set "certsPath=/tmp/minio/certs" \
 --set "tls.enabled=true" \
---set "tls.certSecret=<my-release-name>-tls" \
+--set "tls.certSecret=pelorus-minio-tls" \
 --set "tls.privateKey=tls.key,tls.publicCrt=tls.crt" \
---set "service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=<my-release-name>-tls" \
---set "DeploymentUpdate.type=\"Recreate\"" <my-release-name> stable/minio
+--set "service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=pelorus-minio-tls" \
+--set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
 ```
 
 * Certificate path had to be changed to work with openshift user access
