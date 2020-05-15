@@ -54,7 +54,7 @@ Other storage configuration can be found [here](/docs/Storage.md).
 
 ### Deploy Pelorus
 
-To deploy Pelorus, run the following script from within the root repository directory
+To deploy Pelorus, run the following script from within the root repository directory. Set `<my-namespace>` to the namespace where you deployed minio storage above.
 
 ```
 ./runhelm.sh -s "bucket_access_point=pelorus-minio.<my-namespace>.svc:9000" \
