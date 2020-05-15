@@ -18,7 +18,11 @@ Before deploying the tooling, you must have the following prepared
 
 ##### 1. Add a security context to OpenShift
 
-[INSERT STEP FOR THIS]
+To allow minio to run, add a security constraint context. Run the following command from within the root repository directory
+
+```
+oc apply -f storage/minio-scc.yaml
+```
 
 ##### 2. Deploy Object Storage for Pelorus
 
