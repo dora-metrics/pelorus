@@ -3,6 +3,10 @@ apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDataSource
 metadata:
   name: prometheus-grafana-datasource
+  labels: 
+    app.kubernetes.io/managed-by: helm
+    meta.helm.sh/release-name: pelorus
+    meta.helm.sh/release-namespace: "{{ .Release.Namespace }}"
 spec:
   name: prometheus.yaml
   datasources:
@@ -19,7 +23,7 @@ spec:
       version: 1
       {{ range $key, $value := (lookup "v1" "Secret" "openshift-monitoring" "grafana-datasources").data }}
         {{ if eq $key "prometheus.yaml" }}
-          {{ if eq $value "" }}
+          {{ if not $value }}
       basicAuthPassword: ""
           {{ else }}
             {{ range $k, $v := ($value | b64dec | fromJson).datasources }}
