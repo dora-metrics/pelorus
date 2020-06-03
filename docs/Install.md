@@ -1,3 +1,4 @@
+
 # Installation
 
 The following will walk through the deployment of Pelorus.
@@ -12,17 +13,53 @@ Before deploying the tooling, you must have the following prepared
   * [Helm3](https://github.com/helm/helm/releases)
   * jq
 
-### Deployment Instructions
-To deploy Pelorus, run the following script from within the root repository directory
+### Deploy Long Term Storage
 
+#### Configure Storage Security
 
-```
-./runhelm.sh
-```
-By default, Pelorus will be installed in a namespace called `pelorus`. You can customize this by passing `-n <my-namespace>` like so:
+To allow minio to run, add a security constraint context. Run the following command from within the root repository directory
 
 ```
-./runhelm.sh -n <my-namespace>
+oc apply -f storage/minio-scc.yaml
+```
+
+#### Deploy Object Storage for Pelorus
+
+To retain Pelorus dashboard data in the long-term, we'll deploy an instance of [minio](https://github.com/helm/charts/tree/master/stable/minio) and create a bucket called `thanos`.
+
+```
+helm install --set "buckets[0].name=thanos" \
+--set "buckets[0].policy=none" \
+--set "buckets[0].purge=false" \
+--set "configPathmc=/tmp/minio/mc" \
+--set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
+```
+
+* Recreate mode is used. RollingDeployments won't allow re-deployment while a pvc is in use
+* Configuration and certificate path changed to [work with openshift]([https://github.com/minio/mc/issues/2640](https://github.com/minio/mc/issues/2640))
+
+#### Secure Minio Object Storage
+
+Secure minio using a [service serving certificate](https://docs.openshift.com/container-platform/4.1/authentication/certificates/service-serving-certificate.html)
+
+```
+helm upgrade --set "certsPath=/tmp/minio/certs" \
+--set "tls.enabled=true" \
+--set "tls.certSecret=pelorus-minio-tls" \
+--set "tls.privateKey=tls.key,tls.publicCrt=tls.crt" \
+--set "service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=pelorus-minio-tls" \
+--set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
+```
+Other storage configuration can be found [here](/docs/Storage.md).
+
+### Deploy Pelorus
+
+To deploy Pelorus, run the following script from within the root repository directory. Set `<my-namespace>` to the namespace where you deployed minio storage above.
+```
+./runhelm.sh -n <my-namespace> \
+-s "bucket_access_point=pelorus-minio.<my-namespace>.svc:9000" \
+-s "bucket_access_key=AKIAIOSFODNN7EXAMPLE" \
+-s "bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 ```
 
 Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
@@ -51,44 +88,6 @@ Once you are finished adding your extra hosts, you can update your stack by re-r
 
 ```
 ./runhelm.sh -v extra-prometheus-hosts.yaml
-```
-
-### Long Term Storage
-
-The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
-
-```
-bucket_access_point: s3.noobaa.svc
-bucket_access_key: <your access key>
-bucket_secret_access_key: <your secret access key>
-```
-
-The default bucket name is thanos.  It can be overriden by specifying an additional value for the bucket name as in:
-
-```
-bucket_access_point: s3.noobaa.svc
-bucket_access_key: <your access key>
-bucket_secret_access_key: <your secret access key>
-thanos_bucket_name: <bucket name here>
-```
-
-Then pass this to runhelm.sh like this:
-
-```
-./runhelm.sh -v values.yaml
-```
-
-The thanos instance can also be configured by setting the same variables as arguments to the installation script:
-
-```
-./runhelm.sh -s bucket_access_point=$INTERNAL_S3_ENDPOINT -s bucket_access_key=$AWS_ACCESS_KEY -s bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY -s thanos_bucket_name=somebucket
-```
-
-
-And then:
-
-```
-./runhelm.sh -v file_with_bucket_config.yaml
 ```
 
 ### Cleaning Up
