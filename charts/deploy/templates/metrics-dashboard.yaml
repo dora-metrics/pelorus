@@ -1015,6 +1015,7 @@ spec:
                     "max": null,
                     "min": null,
                     "show": false
+                    "decimals": 1
                     }
                 ],
                 "yaxis": {
