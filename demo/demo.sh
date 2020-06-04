@@ -2,21 +2,23 @@
 #Test oc tool
 #Assumes User is logged in to cluster
 
+path=$1
 
 # Will create spring rest deployment
-cd ~/projects/container-pipelines/basic-nginx
-ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml
+cd $path/basic-nginx
+ansible-galaxy install -r requirements.yml --roles-path=galaxy
+ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e skip_manual_promotion=true
 
 
 # Wait a bit (5 min) for the app to be finished deployed
 sleep 300
 
 #Add Comment to a file to replicate a "change"
-echo "this is a comment" >> /home/kenwilli/projects/container-pipelines/basic-nginx/index.html
+echo "this is a comment" >> $path/basic-nginx/index.html
 
 #Change git dir to the one we're changing
-export GIT_DIR=/home/kenwilli/projects/container-pipelines/.git
-export GIT_WORK_TREE=/home/kenwilli/projects/container-pipelines/
+export GIT_DIR=$path/.git
+export GIT_WORK_TREE=$path
 
 # git commit
 git add .
