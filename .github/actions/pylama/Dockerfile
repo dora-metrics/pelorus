@@ -10,6 +10,6 @@ RUN pip install --upgrade pip
 RUN pip install pylama
 
 
-COPY /.github/actions/pylama/entrypoint.sh /
+COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
