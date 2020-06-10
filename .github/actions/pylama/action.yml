@@ -6,7 +6,7 @@ branding:
 runs-on: ubuntu-latest
 runs:
   using: 'docker'
-  image: '.github/actions/pylamaDockerfile'
+  image: 'Dockerfile'
 steps:
 - uses: actions/checkout@master
 - name: Python Pylama Github Action
