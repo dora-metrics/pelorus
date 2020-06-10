@@ -3,7 +3,7 @@
 
 The following will walk through the deployment of Pelorus.
 
-### Prerequisites
+## Prerequisites
 
 Before deploying the tooling, you must have the following prepared
 
@@ -13,59 +13,82 @@ Before deploying the tooling, you must have the following prepared
   * [Helm3](https://github.com/helm/helm/releases)
   * jq
 
-### Deploy Long Term Storage
+Additionally, if you are planning to use the out of the box exporters to collect Software Delivery data, you will need:
 
-#### Configure Storage Security
+* A [Github Personal Access Token](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line)
+* A [Jira Personal Access Token](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
 
-To allow minio to run, add a security constraint context. Run the following command from within the root repository directory
+## Initial Deployment
+
+The `runhelm.sh` script is used to deploy the core Pelorus stack. We suggest starting with a basic install, which will deploy all Pelorus components to a newly created namespace called `pelorus`.
+
+1. Deploy the Pelorus stack
+
+        ./runhelm.sh
+
+    If you would prefer to install Pelorus in a different namespace, you can do so with the `-n` flag.
+
+        ./runhelm.sh -n my-pelorus
+
+    In a few seconds, you will see a number of resourced get created.
+2. Create the exporter secrets
+    1. For Github
+
+            oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> -n pelorus
+    2. For Jira
+
+            oc create secret generic jira-secret --from-literal=SERVER=<Jira Server> --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=PROJECT=<Jira Project> -n pelorus
+3. Deploy Exporters
+
+        helm template charts/exporter/ -f exporters/committime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
+        helm template charts/exporter/ -f exporters/deploytime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
+        helm template charts/exporter/ -f exporters/failure/values.yaml --namespace pelorus | oc apply -f- -n pelorus
+
+See the [Configuration Guide](/docs/Configuration.md) for more information on exporters.
+
+## Customizing Pelorus
+
+The following sections describe the supported customizations that can be made to a Pelorus deployment.
+
+### Configure Long Term Storage
+
+The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
 
 ```
-oc apply -f storage/minio-scc.yaml
+bucket_access_point: s3.noobaa.svc
+bucket_access_key: <your access key>
+bucket_secret_access_key: <your secret access key>
 ```
 
-#### Deploy Object Storage for Pelorus
-
-To retain Pelorus dashboard data in the long-term, we'll deploy an instance of [minio](https://github.com/helm/charts/tree/master/stable/minio) and create a bucket called `thanos`.
+The default bucket name is thanos.  It can be overriden by specifying an additional value for the bucket name as in:
 
 ```
-helm install --set "buckets[0].name=thanos" \
---set "buckets[0].policy=none" \
---set "buckets[0].purge=false" \
---set "configPathmc=/tmp/minio/mc" \
---set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
+bucket_access_point: s3.noobaa.svc
+bucket_access_key: <your access key>
+bucket_secret_access_key: <your secret access key>
+thanos_bucket_name: <bucket name here>
 ```
 
-* Recreate mode is used. RollingDeployments won't allow re-deployment while a pvc is in use
-* Configuration and certificate path changed to [work with openshift]([https://github.com/minio/mc/issues/2640](https://github.com/minio/mc/issues/2640))
-
-#### Secure Minio Object Storage
-
-Secure minio using a [service serving certificate](https://docs.openshift.com/container-platform/4.1/authentication/certificates/service-serving-certificate.html)
+Then pass this to runhelm.sh like this:
 
 ```
-helm upgrade --set "certsPath=/tmp/minio/certs" \
---set "tls.enabled=true" \
---set "tls.certSecret=pelorus-minio-tls" \
---set "tls.privateKey=tls.key,tls.publicCrt=tls.crt" \
---set "service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=pelorus-minio-tls" \
---set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
-```
-Other storage configuration can be found [here](/docs/Storage.md).
-
-### Deploy Pelorus
-
-To deploy Pelorus, run the following script from within the root repository directory. Set `<my-namespace>` to the namespace where you deployed minio storage above.
-```
-./runhelm.sh -n <my-namespace> \
--s "bucket_access_point=pelorus-minio.<my-namespace>.svc:9000" \
--s "bucket_access_key=AKIAIOSFODNN7EXAMPLE" \
--s "bucket_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+./runhelm.sh -v values.yaml
 ```
 
-Pelorus also has additional (optional) exporters that can be deployed to gather additional data and integrate with external systems. Consult the docs for each exporter below:
+The thanos instance can also be configured by setting the same variables as arguments to the installation script:
 
-* [Commit Time Exporter](/docs/Configuration.md#commit-time-exporter)
-* [Deploy Time](/docs/Configuration.md#deploy-time-exporter)
+```
+./runhelm.sh -s bucket_access_point=$INTERNAL_S3_ENDPOINT -s bucket_access_key=$AWS_ACCESS_KEY -s bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY -s thanos_bucket_name=somebucket
+```
+
+
+And then:
+
+```
+./runhelm.sh -v file_with_bucket_config.yaml
+```
+
+If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](/docs/MinIO.md) to host an instance on OpenShift and configure Pelorus to use it.
 
 ### Deploying Across Multiple Clusters
 
@@ -90,7 +113,7 @@ Once you are finished adding your extra hosts, you can update your stack by re-r
 ./runhelm.sh -v extra-prometheus-hosts.yaml
 ```
 
-### Cleaning Up
+## Uninstalling
 
 Cleaning up Pelorus is very simple.
 
