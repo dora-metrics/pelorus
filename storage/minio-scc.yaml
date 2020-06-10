@@ -1,20 +1,4 @@
-allowHostDirVolumePlugin: false
-allowHostIPC: false
-allowHostNetwork: false
-allowHostPID: false
-allowHostPorts: false
-allowPrivilegeEscalation: true
-allowPrivilegedContainer: false
-allowedCapabilities: null
 apiVersion: security.openshift.io/v1
-defaultAddCapabilities: null
-fsGroup:
-  type: MustRunAs
-  ranges:
-    - min: 1000
-      max: 1000
-groups:
-- system:authenticated
 kind: SecurityContextConstraints
 metadata:
   annotations:
@@ -23,7 +7,22 @@ metadata:
       is the most restrictive SCC and it is used by default for authenticated users.
   generation: 1
   name: minio-restricted
-  selfLink: /apis/security.openshift.io/v1/securitycontextconstraints/restricted
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: true
+allowPrivilegedContainer: false
+allowedCapabilities: null
+defaultAddCapabilities: null
+fsGroup:
+  type: MustRunAs
+  ranges:
+    - min: 1000
+      max: 1000
+groups:
+- system:serviceaccounts:minio
 priority: null
 readOnlyRootFilesystem: false
 requiredDropCapabilities:
@@ -39,7 +38,8 @@ seLinuxContext:
   type: MustRunAs
 supplementalGroups:
   type: RunAsAny
-users: []
+users:
+- system:serviceaccount:minio:pelorus-minio
 volumes:
 - configMap
 - downwardAPI
