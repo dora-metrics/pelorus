@@ -2,6 +2,8 @@
 
 ## Demo Assumptions
 Github SSH key is setup on the machine where the demo will run.
+Ansible is installed
+oc command line tools installed
 Logged into OCP Cluster
 
 ## Demo Purpose
