@@ -3,6 +3,7 @@
 //Table of Content goes here
 
 ## Types of contributions we’re looking for
+
 * Resolving issues
 * Contributing to Documentation
 * Revise language to be more approachable and friendly
@@ -25,9 +26,8 @@ created as others will do so if they appreciate it.
 
 ## Getting set up for local development
 
-Refer to the [Install Doc](./docs/Install.md) for the prerequisites on setting up and installing Pelorus.
+Check out our [Pelorus development guide](/docs/Development.md) to get started developing Pelorus.
 
-    
 ## Contributing Content
 
 Here is a link to the General Contribution Guidelines for the Red Hat Communities of Practice. It will cover some Do's and Dont's, such as forking a repo instead of creating a new branch.
