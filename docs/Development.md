@@ -40,7 +40,7 @@ A Pelorus exporter is simply a [Prometheus exporter](https://prometheus.io/docs/
 
 ### Exporter directory layout
 
-The following is a minial directory structure for a Pelorus exporter.
+The following is a minimal directory structure for a Pelorus exporter.
 
 ```
 exporters/exporter/
