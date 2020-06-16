@@ -3,11 +3,12 @@
 #Assumes User is logged in to cluster
 
 path=$1
+url=$2
 
 # Will create spring rest deployment
 cd $path/basic-nginx
 ansible-galaxy install -r requirements.yml --roles-path=galaxy
-ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e skip_manual_promotion=true
+ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e skip_manual_promotion=true -e source_code_url=$url
 
 
 # Wait a bit (5 min) for the app to be finished deployed
