@@ -23,4 +23,4 @@ jobs:
     - name: Python Pylama Github Action
       uses: Akhil325/pylama-github-action@master
       with:
-        args: pylama --help
+        args: --verbose
