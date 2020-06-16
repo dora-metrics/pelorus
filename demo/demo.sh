@@ -28,5 +28,4 @@ git push origin master
 
 #Redeploy app
 #in the *-build project
-oc project basic-nginx-build
-oc start-build basic-nginx-pipeline
+oc start-build basic-nginx-pipeline -n basic-nginx-build
