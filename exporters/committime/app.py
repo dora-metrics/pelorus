@@ -41,7 +41,7 @@ class CommitCollector(object):
                             my_metric.build_name,
                             str(float(my_metric.commit_timestamp))
                            )
-                        )
+                         )
             ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash],
                                  my_metric.commit_timestamp)
             yield ld_metric
