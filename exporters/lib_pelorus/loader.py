@@ -12,6 +12,7 @@ if not isinstance(numeric_level, int):
 logging.basicConfig(level=numeric_level)
 print("Initializing Logger wit LogLevel: %s" % loglevel.upper())
 
+
 def load_kube_config():
     if "OPENSHIFT_BUILD_NAME" in os.environ:
         config.load_incluster_config()
@@ -20,14 +21,18 @@ def load_kube_config():
         )
         if file_namespace.mode == "r":
             namespace = file_namespace.read()
-            print("namespace: %s\n" %(namespace))
+            print("namespace: %s\n" % (namespace))
     else:
         config.load_kube_config()
 
+
 def convert_date_time_to_timestamp(date_time):
+    # Confirm we have a proper float value
+    float(date_time)
     timestamp = datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%SZ')
     unixformattime = timestamp.replace(tzinfo=timezone.utc).timestamp()
-    return unixformattime       
+    return unixformattime
+
 
 def get_app_label():
     return os.getenv('APP_LABEL', 'application')
