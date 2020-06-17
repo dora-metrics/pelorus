@@ -16,5 +16,9 @@ spec:
       name: "prometheus"
       orgId: 1
       type: "prometheus"
+      {{- if .Values.bucket_access_point }}
       url: "https://thanos-pelorus.{{ .Release.Namespace }}.svc:9092"
+      {{- else }}
+      url: "https://prometheus-pelorus.{{ .Release.Namespace }}.svc:9091"
+      {{- end }}
       version: 1
