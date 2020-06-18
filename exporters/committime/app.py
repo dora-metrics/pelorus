@@ -13,6 +13,8 @@ from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
+REQUIRED_CONFIG = ['GITHUB_USER', 'GITHUB_TOKEN']
+
 loader.load_kube_config()
 k8s_config = client.Configuration()
 k8s_client = client.api_client.ApiClient(configuration=k8s_config)
@@ -215,6 +217,7 @@ def get_metric_from_build(build, app, namespace, repo_url):
 
 
 if __name__ == "__main__":
+    loader.check_required_config(REQUIRED_CONFIG)
     username = os.environ.get('GITHUB_USER')
     token = os.environ.get('GITHUB_TOKEN')
     namespaces = None

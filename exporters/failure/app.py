@@ -11,7 +11,8 @@ from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+REQUIRED_CONFIG = ['PROJECT', 'USER', 'TOKEN', 'SERVER']
 
 loader.load_kube_config()
 k8s_config = client.Configuration()
@@ -126,6 +127,7 @@ class JiraFailureCollector(AbstractFailureCollector):
 
 if __name__ == "__main__":
     print("===== Starting Failure Collector =====")
+    loader.check_required_config(REQUIRED_CONFIG)
     start_http_server(8080)
     project = os.environ.get('PROJECT')
     user = os.environ.get('USER')

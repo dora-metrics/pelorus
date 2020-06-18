@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 from kubernetes import config
 
@@ -37,3 +38,15 @@ def convert_date_time_to_timestamp(date_time):
 
 def get_app_label():
     return os.getenv('APP_LABEL', DEFAULT_APP_LABEL)
+
+
+def check_required_config(vars):
+    missing_configs = False
+    for var in vars:
+        if var not in os.environ:
+            logging.error("Missing required environment variable '%s'." % var)
+            missing_configs = True
+
+    if missing_configs:
+        logging.error("This program will exit.")
+        sys.exit(1)
