@@ -10,7 +10,6 @@ from lib_pelorus import loader
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
-import urllib3
 
 REQUIRED_CONFIG = ['PROJECT', 'USER', 'TOKEN', 'SERVER']
 
