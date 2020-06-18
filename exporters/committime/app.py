@@ -30,10 +30,10 @@ class CommitCollector(object):
         self._apps = apps
 
     def collect(self):
-        ld_metric = GaugeMetricFamily('github_commit_timestamp',
-                                      'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
-        ld_metrics = generate_ld_metrics_list(self._namespaces)
-        for my_metric in ld_metrics:
+        commit_metric = GaugeMetricFamily('github_commit_timestamp',
+                                          'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
+        commit_metrics = generate_commit_metrics_list(self._namespaces)
+        for my_metric in commit_metrics:
             logging.info("Namespace: %s, App: %s, Build: %s, Timestamp: %s"
                          % (
                             my_metric.namespace,
@@ -42,9 +42,9 @@ class CommitCollector(object):
                             str(float(my_metric.commit_timestamp))
                            )
                          )
-            ld_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash],
-                                 my_metric.commit_timestamp)
-            yield ld_metric
+            commit_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash],
+                                     my_metric.commit_timestamp)
+            yield commit_metric
 
 
 class CommitTimeMetric:
@@ -104,9 +104,8 @@ def convert_timestamp_to_date_time(timestamp):
     return date_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-def generate_ld_metrics_list(namespaces):
+def generate_commit_metrics_list(namespaces):
 
-    metrics = []
     if not namespaces:
         logging.info("No namespaces specified, watching all namespaces\n")
         v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
@@ -114,14 +113,13 @@ def generate_ld_metrics_list(namespaces):
     else:
         logging.info("Watching namespaces: %s\n" % (namespaces))
 
+    # Initialize metrics list
+    metrics = []
     for namespace in namespaces:
         # Initialized variables
         builds = []
-        build = {}
         apps = []
         builds_by_app = {}
-        jenkins_builds = []
-        code_builds = []
 
         v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1',  kind='Build')
         # only use builds that have the app label
@@ -144,64 +142,76 @@ def generate_ld_metrics_list(namespaces):
         for app in apps:
             builds_by_app[app] = list(filter(lambda b: b.metadata.labels[loader.get_app_label()] == app, builds.items))
 
-        for app in builds_by_app:
-
-            builds = builds_by_app[app]
-
-            # jsonpath to get commits
-            jsonpath_expr = parse('*.spec.revision.git.commit')
-            jenkins_builds = list(filter(lambda b: b.spec.strategy.type == 'JenkinsPipeline', builds))
-            code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary'], builds))
-
-            # assume for now that there will only be one repo/branch per app
-            # For jenkins pipelines, we need to grab the repo data
-            # then find associated s2i/docker builds from which to pull commit & image data
-
-            if jenkins_builds:
-                # we will default to the repo listed in '.spec.source.git'
-                repo_url = jenkins_builds[0].spec.source.git.uri
-
-                # however, in cases where the Jenkinsfile and source code are separate, we look for params
-                git_repo_regex = re.compile(r"(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
-                for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
-                    result = git_repo_regex.match(env.value)
-                    if result:
-                        repo_url = env.value
-
-            for build in code_builds:
-
-                try:
-                    metric = CommitTimeMetric(app)
-
-                    if build.spec.source.git:
-                        repo_url = build.spec.source.git.uri
-
-                    if "github.com" not in repo_url:
-                        logging.warning("Only GitHub repos are currently supported. Skipping build %s"
-                                        % build.metadata.name)
-
-                    metric.repo_url = repo_url
-
-                    metric.build_name = build.metadata.name
-                    metric.build_config_name = build.metadata.labels.buildconfig
-                    metric.namespace = build.metadata.namespace
-                    labels = build.metadata.labels
-                    metric.labels = json.loads(str(labels).replace("\'", "\""))
-
-                    metric.commit_hash = build.spec.revision.git.commit
-                    metric.name = app + '-' + build.spec.revision.git.commit
-                    metric.commiter = build.spec.revision.git.author.name
-                    metric.image_location = build.status.outputDockerImageReference
-                    metric.image_hash = build.status.output.to.imageDigest
-                    metric.getCommitTime()
-                    metrics.append(metric)
-
-                except Exception as e:
-                    logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
-                                    % (namespace, build.metadata.name, app))
-                    logging.debug(e, exc_info=True)
+        metrics += get_metrics_from_apps(builds_by_app, namespace)
 
     return metrics
+
+
+# get_metrics_from_apps - expects a sorted array of build data sorted by app label
+def get_metrics_from_apps(apps, namespace):
+    metrics = []
+    for app in apps:
+
+        builds = apps[app]
+
+        jenkins_builds = list(filter(lambda b: b.spec.strategy.type == 'JenkinsPipeline', builds))
+        code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary'], builds))
+
+        # assume for now that there will only be one repo/branch per app
+        # For jenkins pipelines, we need to grab the repo data
+        # then find associated s2i/docker builds from which to pull commit & image data
+        repo_url = None
+        if jenkins_builds:
+            # we will default to the repo listed in '.spec.source.git'
+            repo_url = jenkins_builds[0].spec.source.git.uri
+
+            # however, in cases where the Jenkinsfile and source code are separate, we look for params
+            git_repo_regex = re.compile(r"(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
+            for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
+                result = git_repo_regex.match(env.value)
+                if result:
+                    repo_url = env.value
+
+        for build in code_builds:
+            metric = get_metric_from_build(build, app, namespace, repo_url)
+            if metric:
+                metrics.append(metric)
+    return metrics
+
+
+def get_metric_from_build(build, app, namespace, repo_url):
+    try:
+        metric = CommitTimeMetric(app)
+
+        if build.spec.source.git:
+            repo_url = build.spec.source.git.uri
+
+        if "github.com" not in repo_url:
+            logging.warning("Only GitHub repos are currently supported. Skipping build %s"
+                            % build.metadata.name)
+            return None
+
+        metric.repo_url = repo_url
+
+        metric.build_name = build.metadata.name
+        metric.build_config_name = build.metadata.labels.buildconfig
+        metric.namespace = build.metadata.namespace
+        labels = build.metadata.labels
+        metric.labels = json.loads(str(labels).replace("\'", "\""))
+
+        metric.commit_hash = build.spec.revision.git.commit
+        metric.name = app + '-' + build.spec.revision.git.commit
+        metric.commiter = build.spec.revision.git.author.name
+        metric.image_location = build.status.outputDockerImageReference
+        metric.image_hash = build.status.output.to.imageDigest
+        metric.getCommitTime()
+        return metric
+
+    except Exception as e:
+        logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
+                        % (namespace, build.metadata.name, app))
+        logging.debug(e, exc_info=True)
+        return None
 
 
 if __name__ == "__main__":
