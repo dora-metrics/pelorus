@@ -1,3 +1,4 @@
+{{- if .Values.custom_ca }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -6,3 +7,4 @@ metadata:
     config.openshift.io/inject-trusted-cabundle: true
   name: cluster-ca-bundle
 data:
+{{- end }}
