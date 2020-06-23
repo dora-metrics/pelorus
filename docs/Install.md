@@ -48,7 +48,7 @@ See the [Configuration Guide](/docs/Configuration.md) for more information on ex
 
 ## Customizing Pelorus
 
-The following sections describe the supported customizations that can be made to a Pelorus deployment.
+See [Configuring the Pelorus Stack](/docs/Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
 
 ### Configure Long Term Storage
 
