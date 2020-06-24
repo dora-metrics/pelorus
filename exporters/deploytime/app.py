@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import pelorus
@@ -39,7 +40,11 @@ class DeployTimeMetric:
 
 def image_sha(img_url):
     sha_regex = re.compile(r"sha256:.*")
-    return sha_regex.search(img_url).group()
+    try:
+        return sha_regex.search(img_url).group()
+    except AttributeError:
+        logging.debug("Skipping unresolved image reference: %s" % img_url)
+        return None
 
 
 def generate_metrics(namespaces):
