@@ -3,8 +3,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  annotations:
-    config.openshift.io/inject-trusted-cabundle: true
+  labels:
+    config.openshift.io/inject-trusted-cabundle: "true"
   name: cluster-ca-bundle
-data:
+  namespace: {{ .Release.Namespace }}
 {{- end }}
