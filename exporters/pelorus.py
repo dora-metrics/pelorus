@@ -1,11 +1,13 @@
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 from kubernetes import config
 
-loglevel = os.environ.get('LOG_LEVEL')
-if not loglevel:
-    loglevel = "INFO"
+DEFAULT_APP_LABEL = 'app.kubernetes.io/name'
+DEFAULT_LOG_LEVEL = 'INFO'
+
+loglevel = os.getenv('LOG_LEVEL', DEFAULT_LOG_LEVEL)
 numeric_level = getattr(logging, loglevel.upper(), None)
 if not isinstance(numeric_level, int):
     raise ValueError('Invalid log level: %s' % loglevel)
@@ -35,4 +37,16 @@ def convert_date_time_to_timestamp(date_time):
 
 
 def get_app_label():
-    return os.getenv('APP_LABEL', 'application')
+    return os.getenv('APP_LABEL', DEFAULT_APP_LABEL)
+
+
+def check_required_config(vars):
+    missing_configs = False
+    for var in vars:
+        if var not in os.environ:
+            logging.error("Missing required environment variable '%s'." % var)
+            missing_configs = True
+
+    if missing_configs:
+        logging.error("This program will exit.")
+        sys.exit(1)

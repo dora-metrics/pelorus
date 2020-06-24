@@ -1,13 +1,13 @@
 import os
 import re
+import pelorus
 import time
 from kubernetes import client
-from lib_pelorus import loader
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
-loader.load_kube_config()
+pelorus.load_kube_config()
 k8s_config = client.Configuration()
 k8s_client = client.api_client.ApiClient(configuration=k8s_config)
 dyn_client = DynamicClient(k8s_client)
@@ -23,7 +23,7 @@ class DeployTimeCollector(object):
         for m in metrics:
             print("Namespace: ", m.namespace, ", App: ", m.name, ", Image: ", m.image_sha)
             metric.add_metric([m.namespace, m.name, m.image_sha, m.deploy_time],
-                              loader.convert_date_time_to_timestamp(m.deploy_time))
+                              pelorus.convert_date_time_to_timestamp(m.deploy_time))
             yield(metric)
 
 
@@ -56,7 +56,7 @@ def generate_metrics(namespaces):
     for namespace in namespaces:
         v1_replicationcontrollers = dyn_client.resources.get(api_version='v1', kind='ReplicationController')
         replicationcontrollers = v1_replicationcontrollers.get(namespace=namespace,
-                                                               label_selector=loader.get_app_label())
+                                                               label_selector=pelorus.get_app_label())
 
         for rc in replicationcontrollers.items:
             images = [image_sha(c.image) for c in rc.spec.template.spec.containers]

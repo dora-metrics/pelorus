@@ -2,18 +2,21 @@
 import json
 import logging
 import os
+import pelorus
 import requests
 import re
 import time
 from datetime import datetime
 from jsonpath_ng import parse
 from kubernetes import client
-from lib_pelorus import loader
+
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
-loader.load_kube_config()
+REQUIRED_CONFIG = ['GITHUB_USER', 'GITHUB_TOKEN']
+
+pelorus.load_kube_config()
 k8s_config = client.Configuration()
 k8s_client = client.api_client.ApiClient(configuration=k8s_config)
 dyn_client = DynamicClient(k8s_client)
@@ -73,7 +76,7 @@ class CommitTimeMetric:
         commit = response.json()
         try:
             self.commit_time = commit['commit']['committer']['date']
-            self.commit_timestamp = loader.convert_date_time_to_timestamp(self.commit_time)
+            self.commit_timestamp = pelorus.convert_date_time_to_timestamp(self.commit_time)
         except Exception:
             logging.error("Failed processing commit time for build %s" % self.build_name, exc_info=True)
             logging.debug(commit)
@@ -123,10 +126,10 @@ def generate_commit_metrics_list(namespaces):
 
         v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1',  kind='Build')
         # only use builds that have the app label
-        builds = v1_builds.get(namespace=namespace, label_selector=loader.get_app_label())
+        builds = v1_builds.get(namespace=namespace, label_selector=pelorus.get_app_label())
 
         # use a jsonpath expression to find all values for the app label
-        jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(loader.get_app_label()) + "']"
+        jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(pelorus.get_app_label()) + "']"
         jsonpath_expr = parse(jsonpath_str)
 
         found = jsonpath_expr.find(builds)
@@ -140,7 +143,7 @@ def generate_commit_metrics_list(namespaces):
         builds_by_app = {}
 
         for app in apps:
-            builds_by_app[app] = list(filter(lambda b: b.metadata.labels[loader.get_app_label()] == app, builds.items))
+            builds_by_app[app] = list(filter(lambda b: b.metadata.labels[pelorus.get_app_label()] == app, builds.items))
 
         metrics += get_metrics_from_apps(builds_by_app, namespace)
 
@@ -215,6 +218,7 @@ def get_metric_from_build(build, app, namespace, repo_url):
 
 
 if __name__ == "__main__":
+    pelorus.check_required_config(REQUIRED_CONFIG)
     username = os.environ.get('GITHUB_USER')
     token = os.environ.get('GITHUB_TOKEN')
     namespaces = None
