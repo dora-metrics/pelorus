@@ -46,7 +46,7 @@ The following is a minimal directory structure for a Pelorus exporter.
 exporters/exporter/
 ├── app.py
 ├── __init__.py
-├── lib_pelorus -> ../lib_pelorus
+├── pelorus -> ../pelorus
 ├── README.md
 └── values.yaml
 ```

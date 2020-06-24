@@ -1,19 +1,19 @@
 #!/usr/bin/python3
 import os
 import time
+import pelorus
 import pytz
 from datetime import datetime
 from abc import ABC, abstractmethod
 from jira import JIRA
 from kubernetes import client
-from lib_pelorus import loader
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-loader.load_kube_config()
+REQUIRED_CONFIG = ['PROJECT', 'USER', 'TOKEN', 'SERVER']
+
+pelorus.load_kube_config()
 k8s_config = client.Configuration()
 k8s_client = client.api_client.ApiClient(configuration=k8s_config)
 dyn_client = DynamicClient(k8s_client)
@@ -103,7 +103,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         # Change the datetime to a string
         utc_string = utc.strftime('%Y-%m-%dT%H:%M:%SZ')
         # convert to timestamp
-        return loader.convert_date_time_to_timestamp(utc_string)
+        return pelorus.convert_date_time_to_timestamp(utc_string)
 
     def generate_metrics(self, project, issues):
         metrics = []
@@ -126,6 +126,7 @@ class JiraFailureCollector(AbstractFailureCollector):
 
 if __name__ == "__main__":
     print("===== Starting Failure Collector =====")
+    pelorus.check_required_config(REQUIRED_CONFIG)
     start_http_server(8080)
     project = os.environ.get('PROJECT')
     user = os.environ.get('USER')

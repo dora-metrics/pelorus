@@ -2,18 +2,21 @@
 import json
 import logging
 import os
+import pelorus
 import requests
 import re
 import time
 from datetime import datetime
 from jsonpath_ng import parse
 from kubernetes import client
-from lib_pelorus import loader
+
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
-loader.load_kube_config()
+REQUIRED_CONFIG = ['GITHUB_USER', 'GITHUB_TOKEN']
+
+pelorus.load_kube_config()
 k8s_config = client.Configuration()
 k8s_client = client.api_client.ApiClient(configuration=k8s_config)
 dyn_client = DynamicClient(k8s_client)
@@ -82,7 +85,7 @@ class CommitCollector(object):
             builds = []
             apps = []
             builds_by_app = {}
-            app_label = loader.get_app_label()
+            app_label = pelorus.get_app_label()
             logging.info("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
 
             v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
@@ -104,9 +107,7 @@ class CommitCollector(object):
             builds_by_app = {}
 
             for app in apps:
-                # Broke this into two lines as I could not get it under 120 chars :)
-                f = filter(lambda b: b.metadata.labels[loader.get_app_label()] == app, builds.items)
-                builds_by_app[app] = list(f)
+                builds_by_app[app] = list(filter(lambda b: b.metadata.labels[app_label] == app, builds.items))
 
             metrics += self.get_metrics_from_apps(builds_by_app, namespace)
 
@@ -168,6 +169,10 @@ class CommitCollector(object):
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
             metric.getCommitTime()
+            # If commit time is None, then we could not get the value from the API
+            # This is due to calling a non Github API.
+            if metric.commit_time is None:
+                return None
             return metric
 
         except Exception as e:
@@ -206,17 +211,23 @@ class CommitTimeMetric:
         url_tokens = myurl.split("/")
         url = self._prefix + url_tokens[3] + "/" + url_tokens[4].split(".")[0] + self._suffix + self.commit_hash
         response = requests.get(url, auth=(username, token))
-        commit = response.json()
-        try:
-            self.commit_time = commit['commit']['committer']['date']
-            self.commit_timestamp = loader.convert_date_time_to_timestamp(self.commit_time)
-        except Exception:
-            logging.error("Failed processing commit time for build %s" % self.build_name, exc_info=True)
-            logging.debug(commit)
-            raise
+        if response.status_code != 200:
+            # This will occur when trying to make an API call to non-Github
+            logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
+                self.build_name, self.commit_hash, url_tokens[2], str(response.status_code)))
+        else:
+            commit = response.json()
+            try:
+                self.commit_time = commit['commit']['committer']['date']
+                self.commit_timestamp = pelorus.convert_date_time_to_timestamp(self.commit_time)
+            except Exception:
+                logging.error("Failed processing commit time for build %s" % self.build_name, exc_info=True)
+                logging.debug(commit)
+                raise
 
 
 if __name__ == "__main__":
+    pelorus.check_required_config(REQUIRED_CONFIG)
     username = os.environ.get('GITHUB_USER')
     token = os.environ.get('GITHUB_TOKEN')
     git_api = os.environ.get('GITHUB_API')

@@ -33,8 +33,9 @@ spec:
         {{- end}}
       {{- end}}
         env:
-        - name: APP_FILE
-          value: {{ .Values.app_file }}
+{{- if .Values.extraEnv }}
+{{ toYaml .Values.extraEnv | indent 8 }}
+{{- end }}
         ports:
         - containerPort: 8080
           protocol: TCP

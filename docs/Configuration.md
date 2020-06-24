@@ -6,7 +6,7 @@
 
 The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
 
-In order for proper collection, we require that all builds associated with a particular application be labelled with the same `application=<app_name>` label.
+In order for proper collection, we require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label.
 
 #### Deploying to OpenShift
 
@@ -24,7 +24,7 @@ This exporter supports several configuration options, passed via environment var
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
-| `APP_LABEL` | no | Changes the label key used to identify applications  | `application`  |
+| `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
 | `GITHUB_USER` | yes | User's github username | unset |
 | `GITHUB_TOKEN` | yes | User's Github API Token | unset |
@@ -35,13 +35,22 @@ This exporter supports several configuration options, passed via environment var
 
 The job of the deploy time exporter is to capture the timestamp at which a deployment event happen in a production environment.
 
-In order for proper collection, we require that all deployments associated with a particular application be labelled with the same `application=<app_name>` label.
+In order for proper collection, we require that all deployments associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label.
 
 #### Deploying to OpenShift
 
 Deploying to OpenShift is done via the exporter chart.
 
     helm template charts/exporter/ -f exporters/deploytime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
+
+#### Configuration
+
+This exporter supports several configuration options, passed via environment variables
+
+| Variable | Required | Explanation | Default Value |
+|---|---|---|---|
+| `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
+| `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
     
 ### Failure Time Exporter
 
