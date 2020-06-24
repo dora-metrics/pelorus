@@ -29,6 +29,10 @@ Create a secret containing your GitHub token.
 
     oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> -n pelorus
 
+Create a secret containing your GitHub token and GitHub Enterprise API.  An API example is `github.mycompany.com/api/v3`
+
+    oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> --from-literal=GITHUB_API=<api> -n pelorus
+
 Then deploy the chart.
 
     helm template charts/exporter/ -f exporters/committime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
