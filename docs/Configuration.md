@@ -5,7 +5,7 @@
 The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [provided in this repo](/charts/)deploy/values.yaml), and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `values.yaml` and applying the changes like so:
 
 ```
-./runhelm.sh --values=myclusterconfigs/pelorus/values.yaml
+./runhelm.sh -v myclusterconfigs/pelorus/values.yaml
 ```
 
 The following configurations may be made through the `values.yaml` file:
