@@ -20,35 +20,170 @@ dyn_client = DynamicClient(k8s_client)
 
 
 class CommitCollector(object):
-    _prefix = "https://api.github.com/repos/"
-    _suffix = "/commits"
 
-    def __init__(self, username, token, namespaces, apps):
+    def __init__(self, username, token, namespaces, apps, git_api=None):
         self._username = username
         self._token = token
         self._namespaces = namespaces
         self._apps = apps
+        self._git_api = git_api
 
     def collect(self):
         commit_metric = GaugeMetricFamily('github_commit_timestamp',
                                           'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
-        commit_metrics = generate_commit_metrics_list(self._namespaces)
+        commit_metrics = self.generate_commit_metrics_list(self._namespaces)
         for my_metric in commit_metrics:
             logging.info("Namespace: %s, App: %s, Build: %s, Timestamp: %s"
                          % (
-                            my_metric.namespace,
-                            my_metric.name,
-                            my_metric.build_name,
-                            str(float(my_metric.commit_timestamp))
-                           )
+                             my_metric.namespace,
+                             my_metric.name,
+                             my_metric.build_name,
+                             str(float(my_metric.commit_timestamp))
+                         )
                          )
             commit_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash],
                                      my_metric.commit_timestamp)
             yield commit_metric
 
+    def match_image_id(self, replicationController, image_hash):
+        for container in replicationController.spec.template.spec.containers:
+            con_image = container.image
+            image_tokens = con_image.split('@')
+            if len(image_tokens) < 2:
+                return False
+            con_image_hash = image_tokens[1]
+            if con_image_hash == image_hash:
+                return True
+        return False
+
+    def convert_date_time_offset_to_timestamp(self, date_time):
+        date_time = date_time[:-4]
+        timestamp = datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S %z')
+        unixformattime = timestamp.timestamp()
+        return unixformattime
+
+    def convert_timestamp_to_date_time(self, timestamp):
+        date_time = datetime(timestamp)
+        return date_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    def generate_commit_metrics_list(self, namespaces):
+
+        if not namespaces:
+            logging.info("No namespaces specified, watching all namespaces")
+            v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
+            namespaces = [namespace.metadata.name for namespace in v1_namespaces.get().items]
+        else:
+            logging.info("Watching namespaces: %s" % (namespaces))
+
+        # Initialize metrics list
+        metrics = []
+        for namespace in namespaces:
+            # Initialized variables
+            builds = []
+            apps = []
+            builds_by_app = {}
+            app_label = loader.get_app_label()
+            logging.info("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
+
+            v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
+            # only use builds that have the app label
+            builds = v1_builds.get(namespace=namespace, label_selector=app_label)
+
+            # use a jsonpath expression to find all values for the app label
+            jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
+            jsonpath_expr = parse(jsonpath_str)
+
+            found = jsonpath_expr.find(builds)
+
+            apps = [match.value for match in found]
+
+            if not apps:
+                continue
+            # remove duplicates
+            apps = list(dict.fromkeys(apps))
+            builds_by_app = {}
+
+            for app in apps:
+                # Broke this into two lines as I could not get it under 120 chars :)
+                f = filter(lambda b: b.metadata.labels[loader.get_app_label()] == app, builds.items)
+                builds_by_app[app] = list(f)
+
+            metrics += self.get_metrics_from_apps(builds_by_app, namespace)
+
+        return metrics
+
+    # get_metrics_from_apps - expects a sorted array of build data sorted by app label
+    def get_metrics_from_apps(self, apps, namespace):
+        metrics = []
+        for app in apps:
+
+            builds = apps[app]
+
+            jenkins_builds = list(filter(lambda b: b.spec.strategy.type == 'JenkinsPipeline', builds))
+            code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary'], builds))
+
+            # assume for now that there will only be one repo/branch per app
+            # For jenkins pipelines, we need to grab the repo data
+            # then find associated s2i/docker builds from which to pull commit & image data
+            repo_url = None
+            if jenkins_builds:
+                # we will default to the repo listed in '.spec.source.git'
+                repo_url = jenkins_builds[0].spec.source.git.uri
+
+                # however, in cases where the Jenkinsfile and source code are separate, we look for params
+                git_repo_regex = re.compile(r"(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
+                for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
+                    result = git_repo_regex.match(env.value)
+                    if result:
+                        repo_url = env.value
+
+            for build in code_builds:
+                try:
+                    metric = self.get_metric_from_build(build, app, namespace, repo_url)
+                except Exception:
+                    logging.error("Cannot collect metrics from build: %s" % (build.metadata.name))
+
+                if metric:
+                    metrics.append(metric)
+        return metrics
+
+    def get_metric_from_build(self, build, app, namespace, repo_url):
+        try:
+            metric = CommitTimeMetric(app, self._git_api)
+
+            if build.spec.source.git:
+                repo_url = build.spec.source.git.uri
+
+            metric.repo_url = repo_url
+
+            metric.build_name = build.metadata.name
+            metric.build_config_name = build.metadata.labels.buildconfig
+            metric.namespace = build.metadata.namespace
+            labels = build.metadata.labels
+            metric.labels = json.loads(str(labels).replace("\'", "\""))
+
+            metric.commit_hash = build.spec.revision.git.commit
+            metric.name = app + '-' + build.spec.revision.git.commit
+            metric.commiter = build.spec.revision.git.author.name
+            metric.image_location = build.status.outputDockerImageReference
+            metric.image_hash = build.status.output.to.imageDigest
+            metric.getCommitTime()
+            return metric
+
+        except Exception as e:
+            logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
+                            % (namespace, build.metadata.name, app))
+            logging.debug(e, exc_info=True)
+            return None
+
 
 class CommitTimeMetric:
-    def __init__(self, app_name):
+    _prefix_pattern = "https://%s/repos/"
+    _defaultapi = "api.github.com"
+    _prefix = _prefix_pattern % _defaultapi
+    _suffix = "/commits/"
+
+    def __init__(self, app_name, _gitapi=None):
         self.name = app_name
         self.labels = None
         self.repo_url = None
@@ -62,13 +197,14 @@ class CommitTimeMetric:
         self.image_name = None
         self.image_tag = None
         self.image_hash = None
+        if _gitapi is not None and len(_gitapi) > 0:
+            logging.info("Using non-default GitHub API: %s" % (_gitapi))
+            self._prefix = self._prefix_pattern % _gitapi
 
     def getCommitTime(self):
-        _prefix = "https://api.github.com/repos/"
-        _suffix = "/commits/"
         myurl = self.repo_url
         url_tokens = myurl.split("/")
-        url = _prefix + url_tokens[3] + "/" + url_tokens[4].split(".")[0] + _suffix+self.commit_hash
+        url = self._prefix + url_tokens[3] + "/" + url_tokens[4].split(".")[0] + self._suffix + self.commit_hash
         response = requests.get(url, auth=(username, token))
         commit = response.json()
         try:
@@ -80,148 +216,15 @@ class CommitTimeMetric:
             raise
 
 
-def match_image_id(replicationController, image_hash):
-    for container in replicationController.spec.template.spec.containers:
-        con_image = container.image
-        image_tokens = con_image.split('@')
-        if len(image_tokens) < 2:
-            return False
-        con_image_hash = image_tokens[1]
-        if con_image_hash == image_hash:
-            return True
-    return False
-
-
-def convert_date_time_offset_to_timestamp(date_time):
-    date_time = date_time[:-4]
-    timestamp = datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S %z')
-    unixformattime = timestamp.timestamp()
-    return unixformattime
-
-
-def convert_timestamp_to_date_time(timestamp):
-    date_time = datetime(timestamp)
-    return date_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-
-def generate_commit_metrics_list(namespaces):
-
-    if not namespaces:
-        logging.info("No namespaces specified, watching all namespaces\n")
-        v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
-        namespaces = [namespace.metadata.name for namespace in v1_namespaces.get().items]
-    else:
-        logging.info("Watching namespaces: %s\n" % (namespaces))
-
-    # Initialize metrics list
-    metrics = []
-    for namespace in namespaces:
-        # Initialized variables
-        builds = []
-        apps = []
-        builds_by_app = {}
-
-        v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1',  kind='Build')
-        # only use builds that have the app label
-        builds = v1_builds.get(namespace=namespace, label_selector=loader.get_app_label())
-
-        # use a jsonpath expression to find all values for the app label
-        jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(loader.get_app_label()) + "']"
-        jsonpath_expr = parse(jsonpath_str)
-
-        found = jsonpath_expr.find(builds)
-
-        apps = [match.value for match in found]
-
-        if not apps:
-            continue
-        # remove duplicates
-        apps = list(dict.fromkeys(apps))
-        builds_by_app = {}
-
-        for app in apps:
-            builds_by_app[app] = list(filter(lambda b: b.metadata.labels[loader.get_app_label()] == app, builds.items))
-
-        metrics += get_metrics_from_apps(builds_by_app, namespace)
-
-    return metrics
-
-
-# get_metrics_from_apps - expects a sorted array of build data sorted by app label
-def get_metrics_from_apps(apps, namespace):
-    metrics = []
-    for app in apps:
-
-        builds = apps[app]
-
-        jenkins_builds = list(filter(lambda b: b.spec.strategy.type == 'JenkinsPipeline', builds))
-        code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary'], builds))
-
-        # assume for now that there will only be one repo/branch per app
-        # For jenkins pipelines, we need to grab the repo data
-        # then find associated s2i/docker builds from which to pull commit & image data
-        repo_url = None
-        if jenkins_builds:
-            # we will default to the repo listed in '.spec.source.git'
-            repo_url = jenkins_builds[0].spec.source.git.uri
-
-            # however, in cases where the Jenkinsfile and source code are separate, we look for params
-            git_repo_regex = re.compile(r"(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
-            for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
-                result = git_repo_regex.match(env.value)
-                if result:
-                    repo_url = env.value
-
-        for build in code_builds:
-            metric = get_metric_from_build(build, app, namespace, repo_url)
-            if metric:
-                metrics.append(metric)
-    return metrics
-
-
-def get_metric_from_build(build, app, namespace, repo_url):
-    try:
-        metric = CommitTimeMetric(app)
-
-        if build.spec.source.git:
-            repo_url = build.spec.source.git.uri
-
-        if "github.com" not in repo_url:
-            logging.warning("Only GitHub repos are currently supported. Skipping build %s"
-                            % build.metadata.name)
-            return None
-
-        metric.repo_url = repo_url
-
-        metric.build_name = build.metadata.name
-        metric.build_config_name = build.metadata.labels.buildconfig
-        metric.namespace = build.metadata.namespace
-        labels = build.metadata.labels
-        metric.labels = json.loads(str(labels).replace("\'", "\""))
-
-        metric.commit_hash = build.spec.revision.git.commit
-        metric.name = app + '-' + build.spec.revision.git.commit
-        metric.commiter = build.spec.revision.git.author.name
-        metric.image_location = build.status.outputDockerImageReference
-        metric.image_hash = build.status.output.to.imageDigest
-        metric.getCommitTime()
-        return metric
-
-    except Exception as e:
-        logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
-                        % (namespace, build.metadata.name, app))
-        logging.debug(e, exc_info=True)
-        return None
-
-
 if __name__ == "__main__":
     username = os.environ.get('GITHUB_USER')
     token = os.environ.get('GITHUB_TOKEN')
+    git_api = os.environ.get('GITHUB_API')
     namespaces = None
     if os.environ.get('NAMESPACES') is not None:
         namespaces = [proj.strip() for proj in os.environ.get('NAMESPACES').split(",")]
     apps = None
     start_http_server(8080)
-    REGISTRY.register(CommitCollector(username, token, namespaces, apps))
+    REGISTRY.register(CommitCollector(username, token, namespaces, apps, git_api))
     while True:
         time.sleep(1)
