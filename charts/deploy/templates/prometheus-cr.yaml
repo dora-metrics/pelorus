@@ -21,6 +21,10 @@ spec:
   additionalScrapeConfigs:
     name: additional-scrape-configs
     key: prometheus-additional.yml
+{{- if .Values.custom_ca }}
+  configMaps:
+    - cluster-ca-bundle
+{{- end }}
   secrets:
     - prometheus-pelorus-tls
     - prometheus-pelorus-htpasswd
@@ -41,6 +45,9 @@ spec:
     - -cookie-secret=bacon
     - -openshift-ca=/etc/pki/tls/cert.pem
     - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+{{- if .Values.custom_ca }}
+    - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
+{{- end}}
     - -skip-auth-regex=^/metrics
     image: registry.redhat.io/openshift3/oauth-proxy:v3.11
     name: prometheus-proxy
@@ -59,4 +66,8 @@ spec:
       name: secret-prometheus-pelorus-tls
     - mountPath: /etc/proxy/htpasswd
       name: secret-prometheus-pelorus-htpasswd
+    - name: configmap-cluster-ca-bundle
+      readOnly: true
+      mountPath: /etc/prometheus/configmaps/cluster-ca-bundle
+
 
