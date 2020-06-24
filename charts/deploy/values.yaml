@@ -6,6 +6,9 @@ openshift_prometheus_htpasswd_auth: changeme
 openshift_prometheus_basic_auth_pass: changeme
 extra_prometheus_hosts:
 
+# Uncomment this if your cluster serves privately signed certificates
+# custom_ca: true
+
 deployment:
   labels:
     app.kubernetes.io/component: prometheus
