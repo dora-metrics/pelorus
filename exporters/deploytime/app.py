@@ -70,11 +70,12 @@ def generate_metrics(namespaces):
             # containers (images) per pod, we will push one metric per image/container in the
             # pod template
             for i in images:
-                metric = DeployTimeMetric(rc.metadata.name, namespace)
-                metric.labels = rc.metadata.labels
-                metric.deploy_time = rc.metadata.creationTimestamp
-                metric.image_sha = i
-                metrics.append(metric)
+                if i is not None:
+                    metric = DeployTimeMetric(rc.metadata.name, namespace)
+                    metric.labels = rc.metadata.labels
+                    metric.deploy_time = rc.metadata.creationTimestamp
+                    metric.image_sha = i
+                    metrics.append(metric)
 
     return metrics
 
