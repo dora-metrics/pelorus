@@ -24,12 +24,18 @@ The second argument the script takes is the url of the forked repo, so for examp
 
 ## Demo Execution
 
+Note: If exporters are not functioning or deployed, no data will show up in the dashboard. It will look like the following:
+![No-Data](../media/pelorus-dashboard-no-data.png)
+
+An "idle" state could resemble:
+![Idle-Data](../media/pelorus-dashboard-idle-data.png)
+
 Run the demo script
 ``` pelorus/demo/demo.sh <path to container-pipelines> <url to forked repo>```
-	
-The script will create the basic-nginx application by default. After the application is deployed, the script will sleep for 5 minutes to allow the first pipeline to run to completion. Then, a simple line will be added to the index.html file inside of basic-nginx. The changes will be added and commited to source control and the application will build again, rolling out the newest release.
 
+Once the script has completed the openshift applier segment, it will pause for 5 minutes in order for jenkins to get setup and basic-nginx to run through it's first pipeline build. Once the pipeline has completed the dashboard will update accordingly:
+![First-Deploy-Data](../media/pelorus-dashboard-first-deploy.png)
 
-
-
+Once the 5 minute rest period is up, a simple change will be committed and pushed back to the forked repo. Then the second pipeline build of basic-nginx will start. Once complete, the dashboard will update again:
+![Second-Deploy-Data](../media/pelorus-dashboard-second-deploy.png)
 
