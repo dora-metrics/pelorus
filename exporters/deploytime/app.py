@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import pelorus
@@ -39,7 +40,11 @@ class DeployTimeMetric:
 
 def image_sha(img_url):
     sha_regex = re.compile(r"sha256:.*")
-    return sha_regex.search(img_url).group()
+    try:
+        return sha_regex.search(img_url).group()
+    except AttributeError:
+        logging.debug("Skipping unresolved image reference: %s" % img_url)
+        return None
 
 
 def generate_metrics(namespaces):
@@ -65,11 +70,12 @@ def generate_metrics(namespaces):
             # containers (images) per pod, we will push one metric per image/container in the
             # pod template
             for i in images:
-                metric = DeployTimeMetric(rc.metadata.name, namespace)
-                metric.labels = rc.metadata.labels
-                metric.deploy_time = rc.metadata.creationTimestamp
-                metric.image_sha = i
-                metrics.append(metric)
+                if i is not None:
+                    metric = DeployTimeMetric(rc.metadata.name, namespace)
+                    metric.labels = rc.metadata.labels
+                    metric.deploy_time = rc.metadata.creationTimestamp
+                    metric.image_sha = i
+                    metrics.append(metric)
 
     return metrics
 
