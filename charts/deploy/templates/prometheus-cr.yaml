@@ -14,6 +14,7 @@ spec:
       name: thanos-objstore-config
   {{- end }}
   replicas: 2
+  replicaExternalLabelName: ""
   ruleNamespaceSelector: {}
   ruleSelector: {}
   serviceAccountName: pelorus-prometheus
@@ -66,8 +67,10 @@ spec:
       name: secret-prometheus-pelorus-tls
     - mountPath: /etc/proxy/htpasswd
       name: secret-prometheus-pelorus-htpasswd
+{{- if .Values.custom_ca }}
     - name: configmap-cluster-ca-bundle
       readOnly: true
       mountPath: /etc/prometheus/configmaps/cluster-ca-bundle
+{{- end }}
 
 
