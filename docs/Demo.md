@@ -18,6 +18,8 @@ Pelorus should be used as a conversation tool to read the trends in metrics and 
 
 ## Prerequisites
 
+Pelorus is up and running
+
 Clone the [pelorus repo](https://github.com/redhat-cop/pelorus).
 
 Fork the [RedHat COP Container Pipeline Repo](https://github.com/redhat-cop/container-pipelines), then clone (using ssh).
