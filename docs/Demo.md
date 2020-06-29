@@ -20,7 +20,7 @@ Fork the [RedHat COP Container Pipeline Repo](https://github.com/redhat-cop/cont
 
 The location of the repo will be passed as an argument to the pelorus demo script (i.e. /home/<user>/projects/container-pipelines).
 
-The second argument the script takes is the url of the forked repo, so for example ,"https://github.com/kenwilli/pelorus".
+The second argument the script takes is the url of the forked repo, so for example ,"https://github.com/kenwilli/container-pipelines.git".
 
 ## Demo Execution
 
