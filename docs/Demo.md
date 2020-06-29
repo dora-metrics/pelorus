@@ -22,6 +22,16 @@ The location of the repo will be passed as an argument to the pelorus demo scrip
 
 The second argument the script takes is the url of the forked repo, so for example ,"https://github.com/kenwilli/container-pipelines.git".
 
+# Demo Goal
+
+In this demo, you will get a taste of how Pelorus captures a change going through the application's delivery cycle.
+
+1. Initializing Pelorus sets the baseline
+2. Running the demo script will create a new commit to go through the pipeline
+3. Watch as the metrics and trends change as new versions roll out
+
+Pelorus should be used as a conversation tool to read the trends in metrics and react by making informed investments in the software delivery process.
+
 # Demo Execution
 
 An "idle" state could resemble:
