@@ -40,6 +40,7 @@ def convert_date_time_to_timestamp(date_time):
 def get_app_label():
     return os.getenv('APP_LABEL', DEFAULT_APP_LABEL)
 
+
 def get_prod_label():
     return os.getenv('PROD_LABEL', DEFAULT_PROD_LABEL)
 
