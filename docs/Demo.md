@@ -10,7 +10,7 @@
 
 In this demo, you will get a taste of how Pelorus captures a change going through the application's delivery cycle.
 
-1. Initializing Pelorus sets the baseline
+1. Initializing Pelorus sets the baseline by looking at existing, stored data
 2. Running the demo script will create a new commit to go through the pipeline
 3. Watch as the metrics and trends change as new versions roll out
 
