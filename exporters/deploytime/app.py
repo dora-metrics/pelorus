@@ -54,7 +54,8 @@ def generate_metrics(namespaces):
     if not namespaces:
         print("No namespaces specified, watching all namespaces\n")
         v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
-        namespaces = [namespace.metadata.name for namespace in v1_namespaces.get().items]
+        namespaces = [namespace.metadata.name for namespace in v1_namespaces.get(
+            label_selector=pelorus.get_prod_label()).items]
     else:
         print("Watching namespaces: %s\n" % (namespaces))
 
