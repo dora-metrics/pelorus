@@ -29,6 +29,10 @@ A guide for installation can be found in the install document found  in the [ins
 
 A guide for configuration can be found in the configuration document found in the [configuration document](./docs/Configuration.md)
 
+## Pelorus Demo
+
+In this [demo](/docs/Demo.md), you will get a taste of how Pelorus captures a change going through the application's delivery cycle.
+
 ## Contributing to Pelorus
 
 If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found in the [contribution guide](./docs/CONTRIBUTING.md)
