@@ -6,10 +6,10 @@ path=$1
 url=$2
 
 # Will create spring rest deployment
-cd $path/basic-nginx
-ansible-galaxy install -r requirements.yml --roles-path=galaxy
-ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e skip_manual_promotion=true -e source_code_url=$url
-
+pushd $path/basic-nginx
+   ansible-galaxy install -r requirements.yml --roles-path=galaxy
+   ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e skip_manual_promotion=true -e source_code_url=$url
+popd
 
 # Run through a loop, so demo presenter can deploy as many sample apps, with commits, as necessary.
 v1=$3
