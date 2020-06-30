@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from kubernetes import config
 
 DEFAULT_APP_LABEL = 'app.kubernetes.io/name'
+DEFAULT_PROD_LABEL = ''
 DEFAULT_LOG_LEVEL = 'INFO'
 
 loglevel = os.getenv('LOG_LEVEL', DEFAULT_LOG_LEVEL)
@@ -38,6 +39,9 @@ def convert_date_time_to_timestamp(date_time):
 
 def get_app_label():
     return os.getenv('APP_LABEL', DEFAULT_APP_LABEL)
+
+def get_prod_label():
+    return os.getenv('PROD_LABEL', DEFAULT_PROD_LABEL)
 
 
 def check_required_config(vars):
