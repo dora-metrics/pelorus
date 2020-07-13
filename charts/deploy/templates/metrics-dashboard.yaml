@@ -45,7 +45,7 @@ spec:
                 "title": "",
                 "type": "text"
                 },
-                {
+              {
                 "content": "# Deployment Frequency",
                 "datasource": null,
                 "gridPos": {
@@ -323,7 +323,7 @@ spec:
                 "tableColumn": "",
                 "targets": [
                     {
-                    "expr": "count (deploy_timestamp)",
+                    "expr": "count( count_over_time(deploy_timestamp [2d]) )",
                     "format": "time_series",
                     "instant": true,
                     "intervalFactor": 1,
@@ -891,7 +891,7 @@ spec:
                 "steppedLine": false,
                 "targets": [
                     {
-                    "expr": "count(deploy_timestamp)",
+                    "expr": "count( count_over_time(deploy_timestamp [2d]) )",
                     "refId": "A"
                     }
                 ],
