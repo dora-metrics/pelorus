@@ -32,7 +32,39 @@ Currently we have two charts:
 
 ## Dashboard Development
 
-TODO
+We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](/docs/Dashboards.md) user guide for that information.
+
+To effectively do dashboard development, you'll likely need at least two browser windows open, one with Grafana, and another with Prometheus for testing queries. Since our dashboards are imported to Grafana via the Grafana Operator, they get imported in read-only mode. Because of this, you'll need to make a copy of it for development purposes.
+
+The following outlines a workflow for working on a dashboard:
+
+1. Sign in to Grafana via the Grafana route.
+1. Once signed in, sign as an administrator
+  1. Click the signin button in the bottom right corner
+    ![Signin button](/media/signin.png)
+  1. The admin credentials can be pulled from the following commands:
+    ```
+    oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_USER}' | base64 -d
+    oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
+    ```
+1. Export the dashboard JSON.
+  1. Open the dashboard, and select the **Share...** button.
+  1. Select the **Export** tab.
+  1. Click **View JSON**.
+  1. Click **Copy to Clipboard**.
+1. Import as a new dashboard
+  1. Click **Create** -> **Import**.
+  1. Paste your JSON code in the box and click **Load**.
+  1. Change the _Name_ and _Unique Identifier_ fields, and click **Import**.
+1. Make changes to the live dashboard. You can do this by clicking the dropdown by the panel names, and selecting **Edit**.
+1. Once you are happy with your changes, export your updated dashboard, and replace the existing content in the `GrafanaDashbaord` CR.
+  1. Open the dashboard, and select the **Share...** button.
+  1. Select the **Export** tab.
+  1. Click **View JSON**.
+  1. Click **Copy to Clipboard**.
+  1. Open the appropriate `GrafanaDashboard` CR file, and paste the new dashboard JSON.
+
+You're done! Commit your changes and open a PR!
 
 ## Exporter Development
 
