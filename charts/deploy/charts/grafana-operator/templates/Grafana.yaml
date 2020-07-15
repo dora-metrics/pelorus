@@ -86,6 +86,7 @@ spec:
               properties:
                 ports:
                   type: array
+                  description: Override default ports
                   items:
                     type: object
                 annotations:
