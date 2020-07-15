@@ -86,7 +86,6 @@ spec:
               properties:
                 ports:
                   type: array
-                  description: Override default ports
                   items:
                     type: object
                     descripton: A port to add to the grafana service
