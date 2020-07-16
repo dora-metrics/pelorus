@@ -69,6 +69,7 @@ This exporter supports several configuration options, passed via environment var
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
+| `PROD_LABEL` | no | Changes the label key used to identify namespaces that are considered production environments. | unset; matches all namespaces |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
     
 ### Failure Time Exporter

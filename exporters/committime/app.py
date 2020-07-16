@@ -30,6 +30,7 @@ class CommitCollector(object):
         self._namespaces = namespaces
         self._apps = apps
         self._git_api = git_api
+        self.commit_dict = {}
 
     def collect(self):
         commit_metric = GaugeMetricFamily('github_commit_timestamp',
@@ -150,29 +151,41 @@ class CommitCollector(object):
 
     def get_metric_from_build(self, build, app, namespace, repo_url):
         try:
+
             metric = CommitTimeMetric(app, self._git_api)
 
             if build.spec.source.git:
                 repo_url = build.spec.source.git.uri
 
             metric.repo_url = repo_url
-
+            commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
             metric.build_config_name = build.metadata.labels.buildconfig
             metric.namespace = build.metadata.namespace
             labels = build.metadata.labels
             metric.labels = json.loads(str(labels).replace("\'", "\""))
 
-            metric.commit_hash = build.spec.revision.git.commit
-            metric.name = app + '-' + build.spec.revision.git.commit
+            metric.commit_hash = commit_sha
+            metric.name = app + '-' + commit_sha
             metric.commiter = build.spec.revision.git.author.name
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
-            metric.getCommitTime()
-            # If commit time is None, then we could not get the value from the API
-            # This is due to calling a non Github API.
-            if metric.commit_time is None:
-                return None
+            # Check the cache for the commit_time, if not call the API
+            metric_ts = self.commit_dict.get(commit_sha)
+            if metric_ts is None:
+                logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
+                metric.getCommitTime()
+                # If commit time is None, then we could not get the value from the API
+                # This is due to calling a non Github API.
+                if metric.commit_time is None:
+                    return None
+                # Add the timestamp to the cache
+                self.commit_dict[metric.commit_hash] = metric.commit_timestamp
+            else:
+                metric.commit_timestamp = self.commit_dict[commit_sha]
+                logging.debug("Returning sha: %s, commit_timestamp: %s, from cache." % (
+                    commit_sha, metric.commit_timestamp))
+
             return metric
 
         except Exception as e:

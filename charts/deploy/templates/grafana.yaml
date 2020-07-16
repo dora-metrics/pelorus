@@ -49,10 +49,10 @@ spec:
       - mountPath: /etc/proxy/secrets
         name: secret-grafana-k8s-proxy
         readOnly: false
+{{- if .Values.custom_ca }}
       - name: configmap-cluster-ca-bundle
         readOnly: true
         mountPath: /etc/prometheus/configmaps/cluster-ca-bundle
-{{- if .Values.custom_ca }}
   configMaps:
     - cluster-ca-bundle
 {{- end }}
