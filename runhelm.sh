@@ -1,8 +1,11 @@
 #!/bin/bash
 
 namespace=pelorus
+skip_auth=false
 
-while getopts ":n:v:s:" opt; do
+PELORUS_ARGS=""
+
+while getopts ":n:v:s:k" opt; do
   case ${opt} in
     n )
       namespace=$OPTARG
@@ -12,6 +15,9 @@ while getopts ":n:v:s:" opt; do
       ;;
     s )
       EXTRA_VALUES="${EXTRA_VALUES} --set ${OPTARG}"
+      ;;
+    k )
+      skip_auth=true
       ;;
     \? )
       echo "Invalid option: $OPTARG" 1>&2
@@ -25,25 +31,32 @@ while getopts ":n:v:s:" opt; do
 done
 shift $((OPTIND -1))
 
-export GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 --decode | jq .datasources[0].basicAuthPassword | sed 's/"//g' )
+if [ "$skip_auth" = false ]; then
+  echo  "skip_auth is $skip_auth"
+  exit 1
 
-if [ -z $GRAFANA_DATASOURCE_PASSWORD ]; then
-    echo "Could not find the Grafana datasource password in the openshift-monitoring namespace!"
-    exit 1
-fi
+  export GRAFANA_DATASOURCE_PASSWORD=$(oc get secret grafana-datasources -n openshift-monitoring -o jsonpath='{.data.prometheus\.yaml}' | base64 --decode | jq .datasources[0].basicAuthPassword | sed 's/"//g' )
 
-export PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
-if [ -z $PROMETHEUS_HTPASSWD_AUTH ]; then
-    echo "Could not find the prometheus htpasswd file secret in the openshift-monitoring namespace!"
-    exit 1
+  if [ -z $GRAFANA_DATASOURCE_PASSWORD ]; then
+      echo "Could not find the Grafana datasource password in the openshift-monitoring namespace!"
+      exit 1
+  fi
+
+  PELORUS_ARGS="--set openshift_prometheus_htpasswd_auth=${PROMETHEUS_HTPASSWD_AUTH}"
+
+  export PROMETHEUS_HTPASSWD_AUTH=$(oc get secret prometheus-k8s-htpasswd -n openshift-monitoring -o jsonpath='{.data.auth}')
+  if [ -z $PROMETHEUS_HTPASSWD_AUTH ]; then
+      echo "Could not find the prometheus htpasswd file secret in the openshift-monitoring namespace!"
+      exit 1
+  fi
+
+  PELORUS_ARGS="${PELORUS_ARGS} --set openshift_prometheus_basic_auth_pass=${GRAFANA_DATASOURCE_PASSWORD}"
 fi
 
 set -o pipefail
 helm template \
     --namespace ${namespace} \
-    pelorus \
-    --set openshift_prometheus_htpasswd_auth=$PROMETHEUS_HTPASSWD_AUTH \
-    --set openshift_prometheus_basic_auth_pass=$GRAFANA_DATASOURCE_PASSWORD \
+    pelorus ${PELORUS_ARGS} \
     $EXTRA_VALUES \
     ./charts/deploy/ | oc apply -f - -n ${namespace}
 
