@@ -4,7 +4,7 @@ TODO: Need some intro text
 
 ## Outcome: Software Delivery Performance
 
-![Software Delivery Performance dashboard](/media/sdm-dashboard.png)
+![Software Delivery Performance dashboard](/media/sdp-dashboard.png)
 
 The _Software Delivery Performance_ dashboard measures the outcome of _Software Delivery Performance_. 
 
