@@ -16,9 +16,13 @@ Include visual showing relationship between exporters, metrics, pelorus, dashboa
 
 #### Lead Time for Change
 
-TODO: Explain LTfC as a concept
+##### Description
+Product delivery lead time to change is the time it takes to go from code committed to code successfully running in production.  Shorter lead times enable faster feedback on what we are building, and encourages smaller batch sizes to increase flow.
 
-Formula
+##### Formula
+`{deploy time} - {commit time}`
+
+For an organization-level measurement, aggregate by averaging the lead time for change for each product.
 
 ##### Required Exporters
 
@@ -36,9 +40,13 @@ The dashboard then displays these metrics over the given time ranges, and provid
 
 #### Deployment Frequency
 
-TODO: Explanation
+##### Description
+Deployment frequency is how often the organization deploys code to production.  This measure serves as a proxy for measuring batch size, which can be difficult to directly measure and compare across different contexts.
 
-TODO: Formula
+##### Formula
+`{number of deploys in a defined time frame}`
+
+For an organization-level measurement, take the sum across product-level deployment frequencies.
 
 ##### Required Exporters
 
@@ -50,9 +58,13 @@ The dashboard then just tracks a `count_over_time()` of the individual `deploy_t
 
 #### Mean Time to Restore
 
-TODO: Explanation
+##### Description
+Mean time to restore is how long it takes to restore service when a service incident occurs.
 
-TODO: Formula
+##### Formula
+`Average( {failure_resolution_timestamp} - {failure_creation_timestamp} )`
+
+For an organizational-level measurement, average MTTR data across products.
 
 ##### Required Exporters
 
@@ -69,9 +81,14 @@ The dashboard then displays this information for a given time range, and compare
 
 #### Change Failure Rate
 
-TODO: Explanation
+##### Description
+Change failure rate is a key quality metric that measures what percentage of changes to production fail. It is crucial to have alignment on what constitutes a failure.  The recommended definition is a change that either results in degraded service or subsequently requires remediation.
 
-TODO: Formula
+##### Formula
+
+`{number of failed changes} / {total number of changes to the system}`
+
+For an organizational-level measurement, expand the scope of the failures captured to include multiple product statistics.
 
 ##### Required Exporters
 
