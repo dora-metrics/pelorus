@@ -1,18 +1,33 @@
 # Pelorus Dashboards
 
-TODO: Need some intro text
+The mission of Pelorus is to provide visualized, easy to consume data to IT organizations to help improve their ability to strategize and make decisions across major functions of IT. These major functions include:
+
+* Leadership
+* Development
+* Operations
+* Architecture
+* Product Management
+
+By providing data organized into collections that track organizational behaviors, called _outcomes_, we hope to provide a data framework of useful data that help these major functions of IT have more meaningful conversations about the value of work they are doing, or are considering for future investment.
 
 ## Outcome: Software Delivery Performance
 
+_Software Delivery Performance_ is a measure of an organization's ability to effectively deliver software-based products they have built to their customers. It is comprised of 4 _measures_ that provide a balanced perspective, taking both speed to market and stability measures into account. Tracking _Software Delivery Performance_ over time provides IT organizations with data they can use to make smarter investments in their internal tools and processes to optimize their delivery processes based on the types of products they are delivering. This outcomes provides a bridge between development, operations and leadership, allowing them to better communicate about whether proposed work on infrastructure imrovements or process developments are in line with the overall vision and financial goals of the organization at large.
+
 ![Software Delivery Performance dashboard](/media/sdp-dashboard.png)
 
-The _Software Delivery Performance_ dashboard measures the outcome of _Software Delivery Performance_. 
+The Pelorus _Software Delivery Performance_ dashboard tracks the four primary measures of software delivery:
 
-TODO
+* [Lead Time for Change](#lead-time-for-change)
+* [Deployment Frequency](#deployment-frequency)
+* [Mean Time to Restore](#mean-time-to-restore)
+* [Change Failure Rate](#change-failure-rate)
+
+:mag: _For more information about Software Delivery Performance, check out the book [Accelerate](https://itrevolution.com/book/accelerate/)_
 
 ### Measures
 
-Include visual showing relationship between exporters, metrics, pelorus, dashboard.
+TODO: Include visual showing relationship between exporters, metrics, pelorus, dashboard.
 
 #### Lead Time for Change
 
