@@ -10,7 +10,8 @@ The mission of Pelorus is to provide visualized, easy to consume data to IT orga
 
 By providing data organized into collections that track organizational behaviors, called _outcomes_, we hope to provide a data framework of useful data that help these major functions of IT have more meaningful conversations about the value of work they are doing, or are considering for future investment.
 
-:mag: _For more information about outcomes, read [Outcomes over Outputs](https://www.amazon.com/Outcomes-Over-Output-customer-behavior/dp/1091173265)_
+>:mag: **NOTE**<br/>
+>For more information about outcomes, read [Outcomes over Outputs](https://www.amazon.com/Outcomes-Over-Output-customer-behavior/dp/1091173265)
 
 ## Outcome: Software Delivery Performance
 
@@ -25,7 +26,8 @@ The Pelorus _Software Delivery Performance_ dashboard tracks the four primary me
 * [Mean Time to Restore](#mean-time-to-restore)
 * [Change Failure Rate](#change-failure-rate)
 
-:mag: _For more information about Software Delivery Performance, check out the book [Accelerate](https://itrevolution.com/book/accelerate/)_
+>:mag: **NOTE**<br/>
+>For more information about Software Delivery Performance, check out the book [Accelerate](https://itrevolution.com/book/accelerate/)
 
 ### Measures
 
