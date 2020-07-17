@@ -34,7 +34,7 @@ spec:
                 "description": "Lead Time for Change: The time it takes to move from code commited to code deployed in production.",
                 "gridPos": {
                     "h": 2,
-                    "w": 5,
+                    "w": 6,
                     "x": 0,
                     "y": 0
                 },
@@ -50,8 +50,8 @@ spec:
                 "datasource": null,
                 "gridPos": {
                     "h": 2,
-                    "w": 5,
-                    "x": 5,
+                    "w": 6,
+                    "x": 6,
                     "y": 0
                 },
                 "id": 40,
@@ -66,8 +66,8 @@ spec:
                 "datasource": null,
                 "gridPos": {
                     "h": 2,
-                    "w": 5,
-                    "x": 10,
+                    "w": 6,
+                    "x": 12,
                     "y": 0
                 },
                 "id": 41,
@@ -82,8 +82,8 @@ spec:
                 "datasource": null,
                 "gridPos": {
                     "h": 2,
-                    "w": 5,
-                    "x": 15,
+                    "w": 6,
+                    "x": 18,
                     "y": 0
                 },
                 "id": 42,
@@ -199,7 +199,7 @@ spec:
                 },
                 "gridPos": {
                     "h": 4,
-                    "w": 2,
+                    "w": 3,
                     "x": 3,
                     "y": 2
                 },
@@ -281,8 +281,8 @@ spec:
                 },
                 "gridPos": {
                     "h": 4,
-                    "w": 2,
-                    "x": 5,
+                    "w": 3,
+                    "x": 6,
                     "y": 2
                 },
                 "id": 44,
@@ -366,7 +366,7 @@ spec:
                 "gridPos": {
                     "h": 4,
                     "w": 3,
-                    "x": 7,
+                    "x": 9,
                     "y": 2
                 },
                 "id": 37,
@@ -452,8 +452,8 @@ spec:
                 },
                 "gridPos": {
                     "h": 4,
-                    "w": 2,
-                    "x": 10,
+                    "w": 3,
+                    "x": 12,
                     "y": 2
                 },
                 "id": 47,
@@ -536,7 +536,7 @@ spec:
                 "gridPos": {
                     "h": 4,
                     "w": 3,
-                    "x": 12,
+                    "x": 15,
                     "y": 2
                 },
                 "id": 49,
@@ -625,8 +625,8 @@ spec:
                 },
                 "gridPos": {
                     "h": 4,
-                    "w": 2,
-                    "x": 15,
+                    "w": 3,
+                    "x": 18,
                     "y": 2
                 },
                 "id": 48,
@@ -710,7 +710,7 @@ spec:
                 "gridPos": {
                     "h": 4,
                     "w": 3,
-                    "x": 17,
+                    "x": 21,
                     "y": 2
                 },
                 "id": 60,
@@ -774,7 +774,7 @@ spec:
                 "fillGradient": 0,
                 "gridPos": {
                     "h": 6,
-                    "w": 5,
+                    "w": 6,
                     "x": 0,
                     "y": 6
                 },
@@ -862,8 +862,8 @@ spec:
                 "fillGradient": 0,
                 "gridPos": {
                     "h": 6,
-                    "w": 5,
-                    "x": 5,
+                    "w": 6,
+                    "x": 6,
                     "y": 6
                 },
                 "id": 62,
@@ -947,8 +947,8 @@ spec:
                 "fillGradient": 0,
                 "gridPos": {
                     "h": 6,
-                    "w": 5,
-                    "x": 10,
+                    "w": 6,
+                    "x": 12,
                     "y": 6
                 },
                 "id": 65,
@@ -1033,8 +1033,8 @@ spec:
                 "fillGradient": 0,
                 "gridPos": {
                     "h": 6,
-                    "w": 5,
-                    "x": 15,
+                    "w": 6,
+                    "x": 18,
                     "y": 6
                 },
                 "id": 56,
