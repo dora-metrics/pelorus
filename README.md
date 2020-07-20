@@ -16,7 +16,7 @@ Currently, Pelorus functionality can capture proven metrics that measure Softwar
 
 Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides an organizational-level view of the [four critical measures of software delivery performance](https://blog.openshift.com/exploring-a-metrics-driven-approach-to-transformation/).
 
-![Software Delivery Metrics Dashboard](media/pelorus-ss.png)
+![Software Delivery Metrics Dashboard](media/sdp-dashboard.png)
 
 A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg).
 
@@ -24,14 +24,8 @@ A short video describing each of these metrics is available [here](https://www.y
 
 A guide for installation can be found in the install document found  in the [install guide](./docs/Install.md)
 
-
-## Configuration
-
-A guide for configuration can be found in the configuration document found in the [configuration document](./docs/Configuration.md)
-
-## Pelorus Demo
-
-In this [demo](/docs/Demo.md), you will get a taste of how Pelorus captures a change going through the application's delivery cycle.
+## User Guide
+The [Pelorus user guide](/docs/UserGuide.md) provides an index to all documentation.
 
 ## Contributing to Pelorus
 
