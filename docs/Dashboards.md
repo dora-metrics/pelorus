@@ -31,7 +31,7 @@ The Pelorus _Software Delivery Performance_ dashboard tracks the four primary me
 
 ### Measures
 
-TODO: Include visual showing relationship between exporters, metrics, pelorus, dashboard.
+![Exporter relaionship diagram](/media/exporter-relationship-diagram.png)
 
 #### Lead Time for Change
 
