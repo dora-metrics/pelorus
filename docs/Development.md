@@ -192,3 +192,51 @@ Code also comes with a nice debugger feature. Here is a starter configuration to
 ```
 
 For more information, see the [Debugging](https://code.visualstudio.com/docs/editor/debugging) doc in VS Code.
+
+## Testing Pull Requests
+
+The following are notes and general steps for testing Pull Requests for specific types of changes.
+
+### Dashboard Changes
+
+1. Clone/checkout the PR fork/branch
+    ```
+    git remote add themoosman git@github.com:themoosman/pelorus.git
+    git fetch themoosman
+    git checkout themoosman/feature-branch
+    ```
+2. [Install Pelorus](/docs/Install.md) from checked out fork/branch.
+    >:mag: **Note**<br/>
+    >:mag: In most cases you can deploy changes to an existing deployment to retain existing data.
+3. Log into Grafana via the grafana route.
+    ```
+    oc get route grafana-route -n pelorus
+    ```
+4. Click on the dashboard containing changes, and visually validate the behavior change described in the PR
+    >:mag: **Note**<br/>
+    >Eventually we'd like to have some Selenium tests in place to validate dashboards. If you have skills in this area let us know!
+
+### Exporter Changes
+
+Most exporter changes can be tested locally.
+
+1. Clone/checkout the PR fork/branch
+    ```
+    git remote add themoosman git@github.com:themoosman/pelorus.git
+    git fetch themoosman
+    git checkout themoosman/feature-branch
+    ```
+1. Gather necessary [configuration information](/docs/Configuration.md#configuring-exporters).
+1. [Run exporter localy](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
+1. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
+   1. You get a valid response with metrics.
+   1. Confirm the format of expected metrics.
+
+### Helm Install changes
+
+For testing changes to the helm chart, you should just follow the [standard install process](/docs/Install.md), then verify that:
+
+* All expected pods are running and healthy
+* Any expected behavior changes mentioned in the PR can be observed.
+
+We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.
