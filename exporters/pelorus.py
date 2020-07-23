@@ -7,12 +7,14 @@ from kubernetes import config
 DEFAULT_APP_LABEL = 'app.kubernetes.io/name'
 DEFAULT_PROD_LABEL = ''
 DEFAULT_LOG_LEVEL = 'INFO'
+DEFAULT_LOG_FORMAT = '%(asctime)-15s %(levelname)-8s %(message)s'
+DEFAULT_LOG_DATE_FORMAT = '%m-%d-%Y %H:%M:%S'
 
 loglevel = os.getenv('LOG_LEVEL', DEFAULT_LOG_LEVEL)
 numeric_level = getattr(logging, loglevel.upper(), None)
 if not isinstance(numeric_level, int):
     raise ValueError('Invalid log level: %s' % loglevel)
-logging.basicConfig(level=numeric_level)
+logging.basicConfig(format=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT, level=numeric_level)
 print("Initializing Logger wit LogLevel: %s" % loglevel.upper())
 
 
