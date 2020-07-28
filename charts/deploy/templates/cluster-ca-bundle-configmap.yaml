@@ -6,5 +6,4 @@ metadata:
   labels:
     config.openshift.io/inject-trusted-cabundle: "true"
   name: cluster-ca-bundle
-  namespace: {{ .Release.Namespace }}
 {{- end }}
