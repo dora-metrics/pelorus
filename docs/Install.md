@@ -20,6 +20,21 @@ Additionally, if you are planning to use the out of the box exporters to collect
 
 ## Initial Deployment
 
+### Minimal Install Option
+The `runminimal.sh` script is used to deploy only the Pelorus dashboard into an
+existing project with Grafana deployed via the Grafana operator.  This installation
+is highly recommended in the case that you are working in a managed environment such 
+as OpenShift Dedicated.
+
+This script does not require any special parameters but does expect that you are in 
+the current project where you intend to deploy the dashboard.
+
+```./runminimal.sh```
+
+After running this, you should follow the instructions below for deploying the exporters in step #2 of the Full Install Steps.
+
+### Full Install Steps
+
 The `runhelm.sh` script is used to deploy the core Pelorus stack. We suggest starting with a basic install, which will deploy all Pelorus components to a newly created namespace called `pelorus`.
 
 1. Deploy the Pelorus stack
