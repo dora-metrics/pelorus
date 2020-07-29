@@ -25,7 +25,7 @@ spec:
             "editable": true,
             "gnetId": null,
             "graphTooltip": 0,
-            "id": 2,
+            "id": 3,
             "links": [],
             "panels": [
                 {
@@ -34,7 +34,7 @@ spec:
                 "description": "Lead Time for Change: The time it takes to move from code commited to code deployed in production.",
                 "gridPos": {
                     "h": 2,
-                    "w": 5,
+                    "w": 6,
                     "x": 0,
                     "y": 0
                 },
@@ -50,8 +50,8 @@ spec:
                 "datasource": null,
                 "gridPos": {
                     "h": 2,
-                    "w": 5,
-                    "x": 5,
+                    "w": 6,
+                    "x": 6,
                     "y": 0
                 },
                 "id": 40,
@@ -66,8 +66,8 @@ spec:
                 "datasource": null,
                 "gridPos": {
                     "h": 2,
-                    "w": 5,
-                    "x": 10,
+                    "w": 6,
+                    "x": 12,
                     "y": 0
                 },
                 "id": 41,
@@ -82,8 +82,8 @@ spec:
                 "datasource": null,
                 "gridPos": {
                     "h": 2,
-                    "w": 5,
-                    "x": 15,
+                    "w": 6,
+                    "x": 18,
                     "y": 0
                 },
                 "id": 42,
@@ -199,7 +199,7 @@ spec:
                 },
                 "gridPos": {
                     "h": 4,
-                    "w": 2,
+                    "w": 3,
                     "x": 3,
                     "y": 2
                 },
@@ -281,8 +281,8 @@ spec:
                 },
                 "gridPos": {
                     "h": 4,
-                    "w": 2,
-                    "x": 5,
+                    "w": 3,
+                    "x": 6,
                     "y": 2
                 },
                 "id": 44,
@@ -323,7 +323,7 @@ spec:
                 "tableColumn": "",
                 "targets": [
                     {
-                    "expr": "count (deploy_timestamp)",
+                    "expr": "count (count_over_time (deploy_timestamp [$__range]) )",
                     "format": "time_series",
                     "instant": true,
                     "intervalFactor": 1,
@@ -366,7 +366,7 @@ spec:
                 "gridPos": {
                     "h": 4,
                     "w": 3,
-                    "x": 7,
+                    "x": 9,
                     "y": 2
                 },
                 "id": 37,
@@ -410,7 +410,7 @@ spec:
                 "tableColumn": "",
                 "targets": [
                     {
-                    "expr": "(count(deploy_timestamp) - count(deploy_timestamp offset $__range)) / count(deploy_timestamp offset $__range)",
+                    "expr": "(count (count_over_time (deploy_timestamp [$__range]) ) - count (count_over_time (deploy_timestamp [$__range] offset $__range) ) ) / count (count_over_time (deploy_timestamp [$__range] offset $__range) )",
                     "format": "time_series",
                     "hide": false,
                     "instant": false,
@@ -452,8 +452,8 @@ spec:
                 },
                 "gridPos": {
                     "h": 4,
-                    "w": 2,
-                    "x": 10,
+                    "w": 3,
+                    "x": 12,
                     "y": 2
                 },
                 "id": 47,
@@ -536,7 +536,7 @@ spec:
                 "gridPos": {
                     "h": 4,
                     "w": 3,
-                    "x": 12,
+                    "x": 15,
                     "y": 2
                 },
                 "id": 49,
@@ -625,8 +625,8 @@ spec:
                 },
                 "gridPos": {
                     "h": 4,
-                    "w": 2,
-                    "x": 15,
+                    "w": 3,
+                    "x": 18,
                     "y": 2
                 },
                 "id": 48,
@@ -667,7 +667,7 @@ spec:
                 "tableColumn": "",
                 "targets": [
                     {
-                    "expr": "fr:change_failure_rate",
+                    "expr": "avg_over_time(fr:change_failure_rate [$__range])",
                     "format": "heatmap",
                     "intervalFactor": 1,
                     "refId": "A"
@@ -695,7 +695,6 @@ spec:
                     "#299c46",
                     "rgba(237, 129, 40, 0.89)",
                     "#d44a3a"
-                    
                 ],
                 "datasource": "prometheus",
                 "decimals": 0,
@@ -710,7 +709,7 @@ spec:
                 "gridPos": {
                     "h": 4,
                     "w": 3,
-                    "x": 17,
+                    "x": 21,
                     "y": 2
                 },
                 "id": 60,
@@ -745,7 +744,7 @@ spec:
                 "tableColumn": "",
                 "targets": [
                     {
-                    "expr": "((fr:change_failure_rate) - (fr:change_failure_rate offset $__range)) / (fr:change_failure_rate offset $__range) ",
+                    "expr": "((avg_over_time(fr:change_failure_rate [$__range])) - (avg_over_time(fr:change_failure_rate [$__range] offset $__range) ) ) / (avg_over_time(fr:change_failure_rate [$__range] offset $__range) ) ",
                     "format": "time_series",
                     "intervalFactor": 1,
                     "refId": "A"
@@ -774,7 +773,7 @@ spec:
                 "fillGradient": 0,
                 "gridPos": {
                     "h": 6,
-                    "w": 5,
+                    "w": 6,
                     "x": 0,
                     "y": 6
                 },
@@ -862,8 +861,8 @@ spec:
                 "fillGradient": 0,
                 "gridPos": {
                     "h": 6,
-                    "w": 5,
-                    "x": 5,
+                    "w": 6,
+                    "x": 6,
                     "y": 6
                 },
                 "id": 62,
@@ -892,7 +891,7 @@ spec:
                 "steppedLine": false,
                 "targets": [
                     {
-                    "expr": "count(deploy_timestamp)",
+                    "expr": "count (count_over_time (deploy_timestamp [$__range]) )",
                     "refId": "A"
                     }
                 ],
@@ -947,8 +946,8 @@ spec:
                 "fillGradient": 0,
                 "gridPos": {
                     "h": 6,
-                    "w": 5,
-                    "x": 10,
+                    "w": 6,
+                    "x": 12,
                     "y": 6
                 },
                 "id": 65,
@@ -1001,6 +1000,7 @@ spec:
                 },
                 "yaxes": [
                     {
+                    "decimals": 1,
                     "format": "s",
                     "label": null,
                     "logBase": 1,
@@ -1032,8 +1032,8 @@ spec:
                 "fillGradient": 0,
                 "gridPos": {
                     "h": 6,
-                    "w": 5,
-                    "x": 15,
+                    "w": 6,
+                    "x": 18,
                     "y": 6
                 },
                 "id": 56,
@@ -1063,7 +1063,7 @@ spec:
                 "steppedLine": false,
                 "targets": [
                     {
-                    "expr": "fr:change_failure_rate",
+                    "expr": "avg_over_time(fr:change_failure_rate [$__range])",
                     "format": "time_series",
                     "intervalFactor": 1,
                     "refId": "A"
@@ -1119,7 +1119,7 @@ spec:
                 "list": []
             },
             "time": {
-                "from": "now-5m",
+                "from": "now-7d",
                 "to": "now"
             },
             "timepicker": {
