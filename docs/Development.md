@@ -32,7 +32,66 @@ Currently we have two charts:
 
 ## Dashboard Development
 
-TODO
+We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](/docs/Dashboards.md) user guide for that information.
+
+To effectively do dashboard development, you'll likely need at least two browser windows open, one with Grafana, and another with Prometheus for testing queries. Since our dashboards are imported to Grafana via the Grafana Operator, they get imported in read-only mode. Because of this, you'll need to make a copy of it for development purposes.
+
+The following outlines a workflow for working on a dashboard:
+
+1. Sign in to Grafana via the Grafana route.
+1. Once signed in, sign as an administrator
+  1. Click the signin button in the bottom right corner
+    ![Signin button](/media/signin.png)
+  1. The admin credentials can be pulled from the following commands:
+    ```
+    oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_USER}' | base64 -d
+    oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
+    ```
+1. Export the dashboard JSON.
+   * Open the dashboard, and select the **Share...** button.
+   * Select the **Export** tab.
+   * Click **View JSON**.
+   * Click **Copy to Clipboard**.
+1. Import as a new dashboard
+   1. Click **Create** -> **Import**.
+   1. Paste your JSON code in the box and click **Load**.
+   1. Change the _Name_ and _Unique Identifier_ fields, and click **Import**.
+1. Make changes to the live dashboard. You can do this by clicking the dropdown by the panel names, and selecting **Edit**.
+1. Once you are happy with your changes, export your updated dashboard, and replace the existing content in the `GrafanaDashbaord` CR.
+   1. Open the dashboard, and select the **Share...** button.
+   1. Select the **Export** tab.
+   1. Click **View JSON**.
+   1. Click **Copy to Clipboard**.
+   1. Open the appropriate `GrafanaDashboard` CR file, and paste the new dashboard JSON over the existing.
+      >:mag: **NOTE**<br/>
+      >Be sure to match the indentation of the previous dashboard JSON. Your git diffs should still show only the lines changed like the example below
+            
+            $ git diff charts/deploy/templates/metrics-dashboard.yaml
+            diff --git a/charts/deploy/templates/metrics-dashboard.yaml b/charts/deploy/templates/metrics-dashboard.yaml
+            index 73151ad..c470afc 100644
+            --- a/charts/deploy/templates/metrics-dashboard.yaml
+            +++ b/charts/deploy/templates/metrics-dashboard.yaml
+            @@ -25,7 +25,7 @@ spec:
+                        "editable": true,
+                        "gnetId": null,
+                        "graphTooltip": 0,
+            -            "id": 2,
+            +            "id": 3,
+                        "links": [],
+                        "panels": [
+                            {
+            @@ -323,7 +323,7 @@ spec:
+                            "tableColumn": "",
+                            "targets": [
+                                {
+            -                    "expr": "count (deploy_timestamp)",
+            +                    "expr": "count (count_over_time (deploy_timestamp [$__range]) )",
+                                "format": "time_series",
+                                "instant": true,
+                                "intervalFactor": 1,
+            @@ -410,7 +410,7 @@ spec:
+
+You're done! Commit your changes and open a PR!
 
 ## Exporter Development
 
@@ -133,3 +192,51 @@ Code also comes with a nice debugger feature. Here is a starter configuration to
 ```
 
 For more information, see the [Debugging](https://code.visualstudio.com/docs/editor/debugging) doc in VS Code.
+
+## Testing Pull Requests
+
+The following are notes and general steps for testing Pull Requests for specific types of changes.
+
+### Dashboard Changes
+
+1. Clone/checkout the PR fork/branch
+    ```
+    git remote add themoosman git@github.com:themoosman/pelorus.git
+    git fetch themoosman
+    git checkout themoosman/feature-branch
+    ```
+2. [Install Pelorus](/docs/Install.md) from checked out fork/branch.
+    >:mag: **Note**<br/>
+    >:mag: In most cases you can deploy changes to an existing deployment to retain existing data.
+3. Log into Grafana via the grafana route.
+    ```
+    oc get route grafana-route -n pelorus
+    ```
+4. Click on the dashboard containing changes, and visually validate the behavior change described in the PR
+    >:mag: **Note**<br/>
+    >Eventually we'd like to have some Selenium tests in place to validate dashboards. If you have skills in this area let us know!
+
+### Exporter Changes
+
+Most exporter changes can be tested locally.
+
+1. Clone/checkout the PR fork/branch
+    ```
+    git remote add themoosman git@github.com:themoosman/pelorus.git
+    git fetch themoosman
+    git checkout themoosman/feature-branch
+    ```
+1. Gather necessary [configuration information](/docs/Configuration.md#configuring-exporters).
+1. [Run exporter localy](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
+1. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
+   1. You get a valid response with metrics.
+   1. Confirm the format of expected metrics.
+
+### Helm Install changes
+
+For testing changes to the helm chart, you should just follow the [standard install process](/docs/Install.md), then verify that:
+
+* All expected pods are running and healthy
+* Any expected behavior changes mentioned in the PR can be observed.
+
+We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.

@@ -1,0 +1,15 @@
+name: Validate
+
+on: [push, pull_request]
+
+jobs:
+  conftest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Conftest
+        uses: redhat-cop/github-actions/confbatstest@master
+        with:
+          tests: _test/conftest.sh
