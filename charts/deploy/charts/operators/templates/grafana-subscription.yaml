@@ -9,4 +9,4 @@ spec:
   name: grafana-operator
   source: community-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: grafana-operator.v2.0.0
+  startingCSV: grafana-operator.v3.5.0

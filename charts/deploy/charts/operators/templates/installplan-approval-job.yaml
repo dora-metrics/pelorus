@@ -6,9 +6,9 @@ metadata:
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
-#    "helm.sh/hook": post-install
-#    "helm.sh/hook-weight": "-5"
-#    "helm.sh/hook-delete-policy": hook-succeeded
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
     spec:
@@ -20,7 +20,8 @@ spec:
             - |
               export HOME=/tmp/approver
 
-              echo "Approving operator InstallPlans.  Waiting a few seconds to make sure the InstallPlan gets created first."
+              echo "Approving operator Install096096
+              Plans.  Waiting a few seconds to make sure the InstallPlan gets created first."
               sleep 10
               for subscription in `oc get subscription -o name`
               do 
