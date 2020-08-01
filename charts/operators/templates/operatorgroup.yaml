@@ -1,5 +1,5 @@
 ---
-apiVersion: operators.coreos.com/v1
+apiVersion: operators.coreos.com/v1alpha1
 kind: OperatorGroup
 metadata:
   name: {{ .Release.Namespace }}
