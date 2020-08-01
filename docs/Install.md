@@ -24,11 +24,8 @@ The `runhelm.sh` script is used to deploy the core Pelorus stack. We suggest sta
 
 1. Deploy the Pelorus stack
 
-        ./runhelm.sh
-
-    If you would prefer to install Pelorus in a different namespace, you can do so with the `-n` flag.
-
-        ./runhelm.sh -n my-pelorus
+        helm install pelorus-operators charts/operators --namespace pelorus
+        helm install pelorus charts/pelorus --namespace pelorus
 
     In a few seconds, you will see a number of resourced get created.
 2. Create the exporter secrets
@@ -72,20 +69,7 @@ thanos_bucket_name: <bucket name here>
 Then pass this to runhelm.sh like this:
 
 ```
-./runhelm.sh -v values.yaml
-```
-
-The thanos instance can also be configured by setting the same variables as arguments to the installation script:
-
-```
-./runhelm.sh -s bucket_access_point=$INTERNAL_S3_ENDPOINT -s bucket_access_key=$AWS_ACCESS_KEY -s bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY -s thanos_bucket_name=somebucket
-```
-
-
-And then:
-
-```
-./runhelm.sh -v file_with_bucket_config.yaml
+helm upgrade pelorus charts/deploy --namespace pelorus --values values.yaml
 ```
 
 If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](/docs/MinIO.md) to host an instance on OpenShift and configure Pelorus to use it.
@@ -110,12 +94,13 @@ For example:
 Once you are finished adding your extra hosts, you can update your stack by re-running the helm command above, passing your values file with `--values extra-prometheus-hosts.yaml`
 
 ```
-./runhelm.sh -v extra-prometheus-hosts.yaml
+helm upgrade pelorus charts/deploy --namespace pelorus -v extra-prometheus-hosts.yaml
 ```
 
 ## Uninstalling
 
 Cleaning up Pelorus is very simple.
 
-    helm template --namespace pelorus pelorus ./charts/deploy/ | oc delete -f- -n pelorus
+    helm uninstall pelorus --namespace pelorus
+    helm uninstall operators --namespace pelorus
 
