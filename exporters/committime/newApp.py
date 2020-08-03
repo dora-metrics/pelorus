@@ -9,6 +9,11 @@ class AbstractPelorusExporter(ABC):
     def __init_():
         pass
 
+"""
+Will hold info about repository (username, token, etc)
+"""
+class GenericRepository():
+
 
 class AbstractCommitCollector(AbstractPelorusExporter):
     """
