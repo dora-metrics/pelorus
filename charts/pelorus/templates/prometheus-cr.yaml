@@ -19,9 +19,11 @@ spec:
   ruleSelector: {}
   serviceAccountName: pelorus-prometheus
   serviceMonitorSelector: {}
+{{- if .Values.extra_prometheus_hosts}}
   additionalScrapeConfigs:
     name: additional-scrape-configs
     key: prometheus-additional.yml
+{{- end }}
 {{- if .Values.custom_ca }}
   configMaps:
     - cluster-ca-bundle
@@ -50,7 +52,7 @@ spec:
     - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
 {{- end}}
     - -skip-auth-regex=^/metrics
-    image: registry.redhat.io/openshift3/oauth-proxy:v3.11
+    image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.5
     name: prometheus-proxy
     ports:
     - containerPort: 9091
