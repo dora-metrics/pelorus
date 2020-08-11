@@ -4,10 +4,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ .Release.Namespace }}-grafana
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: {{ .Release.Namespace }}-grafana
 subjects:
   - kind: ServiceAccount
     name: grafana-serviceaccount
     namespace: {{ .Release.Namespace }}
-userNames:
-  - system:serviceaccount:{{ .Release.Namespace }}:grafana-serviceaccount
