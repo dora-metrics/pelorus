@@ -24,7 +24,7 @@ The `runhelm.sh` script is used to deploy the core Pelorus stack. We suggest sta
 
 1. Deploy the Pelorus stack
 
-        helm install pelorus-operators charts/operators --namespace pelorus
+        helm install operators charts/operators --namespace pelorus
         helm install pelorus charts/pelorus --namespace pelorus
 
     In a few seconds, you will see a number of resourced get created.
