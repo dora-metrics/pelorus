@@ -20,10 +20,11 @@ Additionally, if you are planning to use the out of the box exporters to collect
 
 ## Initial Deployment
 
-The `runhelm.sh` script is used to deploy the core Pelorus stack. We suggest starting with a basic install, which will deploy all Pelorus components to a newly created namespace called `pelorus`.
+Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.
 
 1. Deploy the Pelorus stack
 
+        oc create namespace pelorus
         helm install operators charts/operators --namespace pelorus
         helm install pelorus charts/pelorus --namespace pelorus
 
