@@ -27,11 +27,12 @@ Exporters can be deployed and configured via the `exporters.instances` list of a
 ```
 exporters:
   instances:
+    # Values file for exporter helm chart
   - app_name: deploytime-exporter
+    source_context_dir: exporters/
     extraEnv:
-    - name: LOG_LEVEL
-      value: INFO
-    source_context_dir: exporters/committime
+    - name: APP_FILE
+      value: deploytime/app.py
     source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
