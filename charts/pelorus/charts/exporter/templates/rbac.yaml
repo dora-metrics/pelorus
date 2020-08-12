@@ -9,9 +9,9 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/component: pelorus-exporters
-    app.kubernetes.io/name: {{ .Values.app_name }}
+    app.kubernetes.io/name: {{ .Release.Name }}
     app.kubernetes.io/version: v1.1
-  name: pelorus-exporter
+  name: pelorus-exporter-{{ .Release.Namespace }}
 rules:
 - apiGroups:
   - ""
@@ -32,9 +32,9 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     app.kubernetes.io/component: pelorus-exporters
-    app.kubernetes.io/name: exporters
+    app.kubernetes.io/name: {{ .Release.Name }}
     app.kubernetes.io/version: v1.2
-  name: {{ .Release.Namespace }}-pelorus-exporter
+  name: pelorus-exporter-{{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

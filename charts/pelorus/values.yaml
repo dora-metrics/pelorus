@@ -15,3 +15,13 @@ deployment:
     app.kubernetes.io/component: prometheus
     app.kubernetes.io/name: pelorus
     app.kubernetes.io/version: v0.33.0
+
+exporters:
+  instances:
+  - app_name: deploytime-exporter
+    extraEnv:
+    - name: LOG_LEVEL
+      value: INFO
+    source_context_dir: exporters/committime
+    source_ref: master
+    source_url: https://github.com/redhat-cop/pelorus.git

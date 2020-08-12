@@ -1,0 +1,7 @@
+{{- range $index, $exporter := .Values.instances }}
+  {{ include "exporters.buildconfig" $exporter }}
+  {{ include "exporters.deploymentconfig" $exporter }}
+  {{ include "exporters.imagestream" $exporter }}
+  {{ include "exporters.route" $exporter }}
+  {{ include "exporters.service" $exporter }}
+{{- end }}
