@@ -22,13 +22,17 @@ See the [Install guide](/docs/Install.md) for more details on that.
 
 Currently we have two charts:
 
-1. The [deploy](/charts/deploy/) chart managed the core stack, which includes:
-    * Prometheus Operator
+1. The [operators](/charts/operators/) chart installs the community operators on which Pelorus depends.
+    * [Prometheus Operator](https://operatorhub.io/operator/prometheus)
+    * [Grafana Operator](https://operatorhub.io/operator/grafana-operator)
+2. The [pelorus](charts/pelorus/) chart manages the Pelorus stack, which includes:
     * Prometheus
     * Thanos
-    * Grafana Operator
     * Grafana
-2. The [exporter](/charts/exporter) chart handles all exporter deployments. Which exporter gets deployed is determined by the `values.yaml` file passed in.
+    * A set of Grafana Dashboards and Datasources
+    * The Pelorus exporters, managed in an [exporter](/charts/exporter) subchart.
+
+We use Helm's [chart-testing](https://github.com/helm/chart-testing) to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `helm lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. When updating the version, use the output of `git describe` to keep the versioning in line with the repo.
 
 ## Dashboard Development
 
