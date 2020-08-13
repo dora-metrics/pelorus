@@ -1,3 +1,5 @@
 site_name: Pelorus Documentation
-
 theme: readthedocs
+nav:
+  - User Guide: UserGuide.md
+  
