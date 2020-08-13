@@ -55,57 +55,57 @@ class AbstractCommitCollector(AbstractPelorusExporter):
         self._git_api = git_api
 
 
-@abstractmethod
-def collect(self):
-    """Method called to collect data and send to Prometheus"""
-    pass
+    @abstractmethod
+    def collect(self):
+        """Method called to collect data and send to Prometheus"""
+        pass
 
 
-def generate_metrics(self, namespaces):
-    """Method called by the collect to create a list of metrics to publish"""
-    # This will loop and look at OCP builds (calls get_git_commit_time)
-    if not namespaces:
-        logging.info("No namespaces specified, watching all namespaces")
-        v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
-        namespaces = [namespace.metadata.name for namespace in v1_namespaces.get().items]
-    else:
-        logging.info("Watching namespaces: %s" % (namespaces))
+    def generate_metrics(self):
+        """Method called by the collect to create a list of metrics to publish"""
+        # This will loop and look at OCP builds (calls get_git_commit_time)
+        if not self._namespaces:
+            logging.info("No namespaces specified, watching all namespaces")
+            v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
+            self._namespaces = [namespace.metadata.name for namespace in v1_namespaces.get().items]
+        else:
+            logging.info("Watching namespaces: %s" % (self._namespaces))
 
-    # Initialize metrics list
-    metrics = []
-    for namespace in namespaces:
-        # Initialized variables
-        builds = []
-        apps = []
-        builds_by_app = {}
-        app_label = pelorus.get_app_label()
-        logging.info("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
+        # Initialize metrics list
+        metrics = []
+        for namespace in self._namespaces:
+            # Initialized variables
+            builds = []
+            apps = []
+            builds_by_app = {}
+            app_label = pelorus.get_app_label()
+            logging.info("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
 
-        v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
-        # only use builds that have the app label
-        builds = v1_builds.get(namespace=namespace, label_selector=app_label)
+            v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
+            # only use builds that have the app label
+            builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
-        # use a jsonpath expression to find all values for the app label
-        jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
-        jsonpath_expr = parse(jsonpath_str)
+            # use a jsonpath expression to find all values for the app label
+            jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
+            jsonpath_expr = parse(jsonpath_str)
 
-        found = jsonpath_expr.find(builds)
+            found = jsonpath_expr.find(builds)
 
-        apps = [match.value for match in found]
+            apps = [match.value for match in found]
 
-        if not apps:
-            continue
-        # remove duplicates
-        apps = list(dict.fromkeys(apps))
-        builds_by_app = {}
+            if not apps:
+                continue
+            # remove duplicates
+            apps = list(dict.fromkeys(apps))
+            builds_by_app = {}
 
-        for app in apps:
-            builds_by_app[app] = list(filter(lambda b: b.metadata.labels[app_label] == app, builds.items))
+            for app in apps:
+                builds_by_app[app] = list(filter(lambda b: b.metadata.labels[app_label] == app, builds.items))
 
-        metrics += self.get_metrics_from_apps(builds_by_app, namespace)
+            metrics += self.get_metrics_from_apps(builds_by_app, namespace)
 
-    return metrics
-    pass
+        return metrics
+        pass
 
     @abstractmethod
     def get_commit_time(self):
@@ -154,7 +154,7 @@ def generate_metrics(self, namespaces):
 
             if build.spec.source.git:
                 repo_url = build.spec.source.git.uri
-
+            logging.info("REPO URL" + repo_url)
             metric.repo_url = repo_url
             commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
@@ -210,7 +210,6 @@ class CommitMetric():
         if _gitapi is not None and len(_gitapi) > 0:
             logging.info("Using non-default API: %s" % (_gitapi))
             self._prefix = self._prefix_pattern % _gitapi
-        # todo add metrics values
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
@@ -230,15 +229,14 @@ class GitHubCommitCollector(AbstractCommitCollector):
     _suffix = "/commits/"
 
     def __init__(self, username, token, namespaces, apps, git_api=None):
-        if git_api is None:
-            git_api = self._defaultapi
-
         super().__init__(username, token, namespaces, apps, git_api)
+        if git_api is None:
+            self._git_api = self._defaultapi
 
     def collect(self):
         commit_metric = GaugeMetricFamily('github_commit_timestamp',
                                           'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
-        commit_metrics = self.generate_metrics(self._namespaces)
+        commit_metrics = self.generate_metrics()
         for my_metric in commit_metrics:
             logging.info("Namespace: %s, App: %s, Build: %s, Timestamp: %s"
                          % (
@@ -309,7 +307,8 @@ if __name__ == "__main__":
     start_http_server(8080)
 
     collector = GitFactory.getCollector(username, token, namespaces, apps, git_api, git_type)
-    REGISTRY.register(collector.get_commit_time())
+    #collector.collect()
+    REGISTRY.register(collector)
 
     while True:
         time.sleep(1)
