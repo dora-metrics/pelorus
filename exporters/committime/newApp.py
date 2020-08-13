@@ -53,12 +53,24 @@ class AbstractCommitCollector(AbstractPelorusExporter):
         self._namespaces = namespaces
         self._apps = apps
         self._git_api = git_api
+        self._commit_dict = {}
 
-
-    @abstractmethod
     def collect(self):
-        """Method called to collect data and send to Prometheus"""
-        pass
+        commit_metric = GaugeMetricFamily('github_commit_timestamp',
+                                          'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
+        commit_metrics = self.generate_metrics()
+        for my_metric in commit_metrics:
+            logging.info("Namespace: %s, App: %s, Build: %s, Timestamp: %s"
+                         % (
+                             my_metric.namespace,
+                             my_metric.name,
+                             my_metric.build_name,
+                             str(float(my_metric.commit_timestamp))
+                         )
+                         )
+            commit_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash],
+                                     my_metric.commit_timestamp)
+            yield commit_metric
 
 
     def generate_metrics(self):
@@ -169,17 +181,17 @@ class AbstractCommitCollector(AbstractPelorusExporter):
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
             # Check the cache for the commit_time, if not call the API
-            metric_ts = self.commit_dict.get(commit_sha)
+            metric_ts = self._commit_dict.get(commit_sha)
             if metric_ts is None:
                 logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
-                metric.commit_time = get_commit_time()
+                metric.commit_time = self.get_commit_time()
                 # If commit time is None, then we could not get the value from the API
                 if metric.commit_time is None:
                     return None
                 # Add the timestamp to the cache
-                self.commit_dict[metric.commit_hash] = metric.commit_timestamp
+                self._commit_dict[metric.commit_hash] = metric.commit_timestamp
             else:
-                metric.commit_timestamp = self.commit_dict[commit_sha]
+                metric.commit_timestamp = self._commit_dict[commit_sha]
                 logging.debug("Returning sha: %s, commit_timestamp: %s, from cache." % (
                     commit_sha, metric.commit_timestamp))
 
@@ -188,7 +200,7 @@ class AbstractCommitCollector(AbstractPelorusExporter):
         except Exception as e:
             logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
                             % (namespace, build.metadata.name, app))
-            logging.debug(e, exc_info=True)
+            logging.info(e, exc_info=True)
             return None
 
 
@@ -207,9 +219,6 @@ class CommitMetric():
         self.image_name = None
         self.image_tag = None
         self.image_hash = None
-        if _gitapi is not None and len(_gitapi) > 0:
-            logging.info("Using non-default API: %s" % (_gitapi))
-            self._prefix = self._prefix_pattern % _gitapi
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
@@ -230,31 +239,17 @@ class GitHubCommitCollector(AbstractCommitCollector):
 
     def __init__(self, username, token, namespaces, apps, git_api=None):
         super().__init__(username, token, namespaces, apps, git_api)
-        if git_api is None:
+        if self._git_api is not None and len(self._git_api) > 0:
+            logging.info("Using non-default API: %s" % (self._git_api))
+        else:
             self._git_api = self._defaultapi
-
-    def collect(self):
-        commit_metric = GaugeMetricFamily('github_commit_timestamp',
-                                          'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
-        commit_metrics = self.generate_metrics()
-        for my_metric in commit_metrics:
-            logging.info("Namespace: %s, App: %s, Build: %s, Timestamp: %s"
-                         % (
-                             my_metric.namespace,
-                             my_metric.name,
-                             my_metric.build_name,
-                             str(float(my_metric.commit_timestamp))
-                         )
-                         )
-            commit_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash],
-                                     my_metric.commit_timestamp)
-            yield commit_metric
+        self._prefix = self._prefix_pattern % self._git_api
 
     def get_commit_time(self):
         """Method called to collect data and send to Prometheus"""
-        myurl = self._git_api
+        myurl = self.repo_url
         url_tokens = myurl.split("/")
-        logging.info(url_tokens)
+        logging.info("MYURL=" + url_tokens)
         url = self._prefix + url_tokens[3] + "/" + url_tokens[4].split(".")[0] + self._suffix + self.commit_hash
         response = requests.get(url, auth=(username, token))
         if response.status_code != 200:
