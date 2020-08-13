@@ -1,19 +1,12 @@
-#!/usr/bin/python3
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import json
 import logging
-import os
 import pelorus
-import requests
 import re
-import time
 from jsonpath_ng import parse
+from prometheus_client.core import GaugeMetricFamily
 from kubernetes import client
 from openshift.dynamic import DynamicClient
-from prometheus_client import start_http_server
-from prometheus_client.core import GaugeMetricFamily, REGISTRY
-
-REQUIRED_CONFIG = ['GITHUB_USER', 'GITHUB_TOKEN']
 
 pelorus.load_kube_config()
 k8s_config = client.Configuration()
@@ -21,26 +14,7 @@ k8s_client = client.api_client.ApiClient(configuration=k8s_config)
 dyn_client = DynamicClient(k8s_client)
 
 
-class AbstractPelorusExporter(ABC):
-    """
-    Base class for PelorusExporter
-    """
-    def __init_():
-        pass
-
-
-class GenericRepository():
-    """
-    Will hold info about repository (username, token, etc)
-    """
-    def __init__(self, username, token, api=None):
-        """Constructor"""
-        self.username = username
-        self.token = token
-        self._git_api = git_api
-
-
-class AbstractCommitCollector(AbstractPelorusExporter):
+class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
     Base class for a CommitCollector.
     This class should be extended for the system which contains the commit information.
@@ -71,7 +45,6 @@ class AbstractCommitCollector(AbstractPelorusExporter):
             commit_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash],
                                      my_metric.commit_timestamp)
             yield commit_metric
-
 
     def generate_metrics(self):
         """Method called by the collect to create a list of metrics to publish"""
@@ -218,90 +191,3 @@ class CommitMetric():
         self.image_name = None
         self.image_tag = None
         self.image_hash = None
-
-
-class GitLabCommitCollector(AbstractCommitCollector):
-
-    def __init__(self, username, token, namespaces, apps):
-        super().__init__(username, token, namespaces, apps)
-
-    def get_commit_time(self):
-        """Method called to collect data and send to Prometheus"""
-        print("GitLab")
-
-
-class GitHubCommitCollector(AbstractCommitCollector):
-    _prefix_pattern = "https://%s/repos/"
-    _defaultapi = "api.github.com"
-    _prefix = _prefix_pattern % _defaultapi
-    _suffix = "/commits/"
-
-    def __init__(self, username, token, namespaces, apps, git_api=None):
-        super().__init__(username, token, namespaces, apps, git_api)
-        if self._git_api is not None and len(self._git_api) > 0:
-            logging.info("Using non-default API: %s" % (self._git_api))
-        else:
-            self._git_api = self._defaultapi
-        self._prefix = self._prefix_pattern % self._git_api
-
-    def get_commit_time(self, metric):
-        """Method called to collect data and send to Prometheus"""
-        myurl = metric.repo_url
-        url_tokens = myurl.split("/")
-        url = self._prefix + url_tokens[3] + "/" + url_tokens[4].split(".")[0] + self._suffix + metric.commit_hash
-        response = requests.get(url, auth=(username, token))
-        if response.status_code != 200:
-            # This will occur when trying to make an API call to non-Github
-            logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
-                metric.build_name, metric.commit_hash, url_tokens[2], str(response.status_code)))
-        else:
-            commit = response.json()
-            try:
-                metric.commit_time = commit['commit']['committer']['date']
-                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(metric.commit_time)
-            except Exception:
-                logging.error("Failed processing commit time for build %s" % metric.build_name, exc_info=True)
-                logging.debug(commit)
-                raise
-        return metric
-
-
-class BitbucketCommitCollector(AbstractCommitCollector):
-
-    def __init__(self, username, token, namespaces, apps):
-        super().__init__(username, token, namespaces, apps)
-
-    def get_commit_time(self):
-        """Method called to collect data and send to Prometheus"""
-        print("BitBucket")
-
-
-class GitFactory:
-    @staticmethod
-    def getCollector(username, token, namespaces, apps, git_api, git_type):
-        if git_type == "gitlab":
-            return GitLabCommitCollector("", "", "", "")
-        if git_type == "github":
-            return GitHubCommitCollector(username, token, namespaces, apps, git_api)
-        if git_type == "bitbucket":
-            return BitbucketCommitCollector("", "", "", "")
-
-
-if __name__ == "__main__":
-    pelorus.check_required_config(REQUIRED_CONFIG)
-    username = os.environ.get('GITHUB_USER')
-    token = os.environ.get('GITHUB_TOKEN')
-    git_api = os.environ.get('GITHUB_API')
-    git_type = os.environ.get('GIT_TYPE')
-    namespaces = None
-    if os.environ.get('NAMESPACES') is not None:
-        namespaces = [proj.strip() for proj in os.environ.get('NAMESPACES').split(",")]
-    apps = None
-    start_http_server(8080)
-
-    collector = GitFactory.getCollector(username, token, namespaces, apps, git_api, git_type)
-    #collector.collect()
-    REGISTRY.register(collector)
-
-    while True:
-        time.sleep(1)

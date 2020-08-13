@@ -1,3 +1,4 @@
+from abc import ABC
 import logging
 import os
 import sys
@@ -57,3 +58,11 @@ def check_required_config(vars):
     if missing_configs:
         logging.error("This program will exit.")
         sys.exit(1)
+
+
+class AbstractPelorusExporter(ABC):
+    """
+    Base class for PelorusExporter
+    """
+    def __init_():
+        pass
