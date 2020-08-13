@@ -199,7 +199,7 @@ class AbstractCommitCollector(AbstractPelorusExporter):
         except Exception as e:
             logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
                             % (namespace, build.metadata.name, app))
-            logging.info(e, exc_info=True)
+            logging.debug(e, exc_info=True)
             return None
 
 
@@ -263,6 +263,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
                 logging.error("Failed processing commit time for build %s" % metric.build_name, exc_info=True)
                 logging.debug(commit)
                 raise
+        return metric
 
 
 class BitbucketCommitCollector(AbstractCommitCollector):
