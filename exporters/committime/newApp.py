@@ -166,7 +166,6 @@ class AbstractCommitCollector(AbstractPelorusExporter):
 
             if build.spec.source.git:
                 repo_url = build.spec.source.git.uri
-            logging.info("REPO URL" + repo_url)
             metric.repo_url = repo_url
             commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
@@ -184,7 +183,7 @@ class AbstractCommitCollector(AbstractPelorusExporter):
             metric_ts = self._commit_dict.get(commit_sha)
             if metric_ts is None:
                 logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
-                metric.commit_time = self.get_commit_time()
+                metric.commit_time = self.get_commit_time(metric)
                 # If commit time is None, then we could not get the value from the API
                 if metric.commit_time is None:
                     return None
@@ -245,27 +244,25 @@ class GitHubCommitCollector(AbstractCommitCollector):
             self._git_api = self._defaultapi
         self._prefix = self._prefix_pattern % self._git_api
 
-    def get_commit_time(self):
+    def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
-        myurl = self.repo_url
+        myurl = metric.repo_url
         url_tokens = myurl.split("/")
-        logging.info("MYURL=" + url_tokens)
-        url = self._prefix + url_tokens[3] + "/" + url_tokens[4].split(".")[0] + self._suffix + self.commit_hash
+        url = self._prefix + url_tokens[3] + "/" + url_tokens[4].split(".")[0] + self._suffix + metric.commit_hash
         response = requests.get(url, auth=(username, token))
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github
             logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
-                self.build_name, self.commit_hash, url_tokens[2], str(response.status_code)))
+                metric.build_name, metric.commit_hash, url_tokens[2], str(response.status_code)))
         else:
             commit = response.json()
             try:
-                self.commit_time = commit['commit']['committer']['date']
-                self.commit_timestamp = pelorus.convert_date_time_to_timestamp(self.commit_time)
+                metric.commit_time = commit['commit']['committer']['date']
+                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(metric.commit_time)
             except Exception:
-                logging.error("Failed processing commit time for build %s" % self.build_name, exc_info=True)
+                logging.error("Failed processing commit time for build %s" % metric.build_name, exc_info=True)
                 logging.debug(commit)
                 raise
-        print("GitHub")
 
 
 class BitbucketCommitCollector(AbstractCommitCollector):
