@@ -22,33 +22,33 @@ Additionally, if you are planning to use the out of the box exporters to collect
 
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.
 
-1. Deploy the Pelorus stack
+    oc create namespace pelorus
+    helm install operators charts/operators --namespace pelorus
+    helm install pelorus charts/pelorus --namespace pelorus
 
-        oc create namespace pelorus
-        helm install operators charts/operators --namespace pelorus
-        helm install pelorus charts/pelorus --namespace pelorus
+In a few seconds, you will see a number of resourced get created. The above commands will result in the following being deployed:
 
-    In a few seconds, you will see a number of resourced get created.
-2. Create the exporter secrets
-    1. For Github
+* Prometheus and Grafana operators
+* The core Pelorus stack, which includes:
+  * A `Prometheus` instance
+  * A `Grafana` instance
+  * A `ServiceMonitor` instance for scraping the Pelorus exporters.
+  * A `GrafanaDatasource` pointing to Prometheus.
+  * A set of `GrafanaDashboards`. See the [dashboards documentation](/docs/Dashboards.md) for more details.
+* The following exporters:
+  * Deploy Time
 
-            oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> -n pelorus
-    2. For Jira
-
-            oc create secret generic jira-secret --from-literal=SERVER=<Jira Server> --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=PROJECT=<Jira Project> -n pelorus
-3. Deploy Exporters
-
-        helm template charts/exporter/ -f exporters/committime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
-        helm template charts/exporter/ -f exporters/deploytime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
-        helm template charts/exporter/ -f exporters/failure/values.yaml --namespace pelorus | oc apply -f- -n pelorus
+From here, some additional configuration is required in order to deploy other exporters, and make the Pelorus
 
 See the [Configuration Guide](/docs/Configuration.md) for more information on exporters.
+
+You may additionally want to enabled other features for the core stack. Read on to understand those options.
 
 ## Customizing Pelorus
 
 See [Configuring the Pelorus Stack](/docs/Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
 
-### Configure Long Term Storage
+### Configure Long Term Storage (Recommended)
 
 The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
 
