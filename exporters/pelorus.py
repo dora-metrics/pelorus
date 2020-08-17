@@ -41,6 +41,13 @@ def convert_date_time_to_timestamp(date_time):
     return unixformattime
 
 
+def convert_date_time_with_utc_offset_to_timestamp(date_time):
+    str(date_time)
+    timestamp = datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S.%f%z')
+    unixformattime = timestamp.replace(tzinfo=timezone.utc).timestamp()
+    return unixformattime
+
+
 def get_app_label():
     return os.getenv('APP_LABEL', DEFAULT_APP_LABEL)
 
