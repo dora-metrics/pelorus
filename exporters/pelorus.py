@@ -10,6 +10,7 @@ DEFAULT_PROD_LABEL = ''
 DEFAULT_LOG_LEVEL = 'INFO'
 DEFAULT_LOG_FORMAT = '%(asctime)-15s %(levelname)-8s %(message)s'
 DEFAULT_LOG_DATE_FORMAT = '%m-%d-%Y %H:%M:%S'
+DEFAULT_GIT = "github"
 
 loglevel = os.getenv('LOG_LEVEL', DEFAULT_LOG_LEVEL)
 numeric_level = getattr(logging, loglevel.upper(), None)

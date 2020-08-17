@@ -16,7 +16,6 @@ pelorus.load_kube_config()
 k8s_config = client.Configuration()
 k8s_client = client.api_client.ApiClient(configuration=k8s_config)
 dyn_client = DynamicClient(k8s_client)
-default_git = "github"
 
 
 class GitFactory:
@@ -37,7 +36,7 @@ if __name__ == "__main__":
     username = os.environ.get('GIT_USER')
     token = os.environ.get('GIT_TOKEN')
     git_api = os.environ.get('GIT_API')
-    git_provider = os.environ.get('GIT_PROVIDER', default_git)
+    git_provider = os.environ.get('GIT_PROVIDER', pelorus.DEFAULT_GIT)
     namespaces = None
     if os.environ.get('NAMESPACES') is not None:
         namespaces = [proj.strip() for proj in os.environ.get('NAMESPACES').split(",")]
