@@ -100,7 +100,7 @@ exporters:
 
 This exporter provides several configuration options, passed via environment variables.
 
-The following Git providers are currently supported: GitHub, GitLab, and BitBucket. Open an issue or a pull request if your favorite provider is not yet listed!
+Currently the only supported Git provider is GitHub. Open an issue or a pull request if your favorite provider is not yet listed!  (BitBucket and GitLab are on our roadmap)
 
 
 | Variable | Required | Explanation | Default Value |
@@ -108,7 +108,6 @@ The following Git providers are currently supported: GitHub, GitLab, and BitBuck
 | `GIT_USER` | yes | User's github username | unset |
 | `GIT_TOKEN` | yes | User's Github API Token | unset |
 | `GIT_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
-| `GIT_PROVIDER` | no | One of `gitlab`, `github`, `bitbucket` | `github` | 
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
