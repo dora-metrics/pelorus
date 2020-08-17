@@ -1,17 +1,23 @@
-# Welcome to MkDocs
+# Welcome to Pelorus
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+![Pelorus](img/Logo-Pelorus-A-Standard-RGB_smaller.png)
 
-## Commands
+![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 
-## Project layout
+- Software Delivery Performance
+- Product Quality and Sustainability
+- Customer experience
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+For more background on the project you can read @trevorquinn's blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation)
+
+## Software Delivery Performance as an outcome
+
+Currently, Pelorus functionality can capture proven metrics that measure Software Delivery Performance -- a significant outcome that IT organizations aim to deliver.
+
+Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides an organizational-level view of the [four critical measures of software delivery performance](https://blog.openshift.com/exploring-a-metrics-driven-approach-to-transformation/).
+
+![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
+
+A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg).
