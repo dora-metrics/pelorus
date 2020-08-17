@@ -63,9 +63,13 @@ def check_required_config(vars):
 def check_legacy_vars():
     username = os.environ.get('GITHUB_USER')
     token = os.environ.get('GITHUB_TOKEN')
-    if username is not None and token is not None:
+    api = os.environ.get('GITHUB_API')
+    if username is not None:
         os.environ['GIT_USER'] = username
+    if token is not None:
         os.environ['GIT_TOKEN'] = token
+    if api is not None:
+        os.environ['GIT_API'] = api
 
 
 class AbstractPelorusExporter(ABC):
