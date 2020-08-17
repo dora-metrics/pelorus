@@ -10,7 +10,7 @@ from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
-REQUIRED_CONFIG = ['GITHUB_USER', 'GITHUB_TOKEN']
+REQUIRED_CONFIG = ['GIT_USER', 'GIT_TOKEN']
 
 pelorus.load_kube_config()
 k8s_config = client.Configuration()
@@ -31,10 +31,12 @@ class GitFactory:
 
 
 if __name__ == "__main__":
+    pelorus.check_legacy_vars()
     pelorus.check_required_config(REQUIRED_CONFIG)
-    username = os.environ.get('GITHUB_USER')
-    token = os.environ.get('GITHUB_TOKEN')
-    git_api = os.environ.get('GITHUB_API')
+
+    username = os.environ.get('GIT_USER')
+    token = os.environ.get('GIT_TOKEN')
+    git_api = os.environ.get('GIT_API')
     git_provider = os.environ.get('GIT_PROVIDER', default_git)
     namespaces = None
     if os.environ.get('NAMESPACES') is not None:
