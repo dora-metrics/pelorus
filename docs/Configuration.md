@@ -15,7 +15,7 @@ The following configurations may be made through the `values.yaml` file:
 | `openshift_prometheus_htpasswd_auth` | yes | The contents for the htpasswd file that Prometheus will use for basic authentication user. | User: `internal`, Password: `changeme` |
 | `openshift_prometheus_basic_auth_pass` | yes | The password that grafana will use for its Prometheus datasource. Must match the above. | `changme` |
 | `custom_ca` | no | Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki)  | `false`  |
-| `extra_prometheus_hosts` | no | Configures additional prometheus instances for a multi-cluster setup. See [Deploying across multple clusters](Install.md#deploying-across-multiple-clusters) for details. | Nil |
+| `extra_prometheus_hosts` | no | Configures additional prometheus instances for a multi-cluster setup. See [Deploying across multple clusters](/page/Install.md#deploying-across-multiple-clusters) for details. | Nil |
 | `exporters` | no | Specified which exporters to install. See [Configuring Exporters](#configuring-exporters). | Installs deploytime exporter only. |
 
 ## Configuring Exporters

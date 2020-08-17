@@ -20,13 +20,10 @@ Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift clust
 
 A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg).
 
-## Installation
+## Documentation
 
-A guide for installation can be found in the install document found  in the [install guide](./docs/Install.md)
-
-## User Guide
-The [Pelorus user guide](/docs/UserGuide.md) provides an index to all documentation.
+Pelorus documentation is available at [pelorus.readthedocs.io](https://pelorus.readthedocs.io/).
 
 ## Contributing to Pelorus
 
-If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found in the [contribution guide](./docs/CONTRIBUTING.md)
+If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found in the [contribution guide](./CONTRIBUTING.md)

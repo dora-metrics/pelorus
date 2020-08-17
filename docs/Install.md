@@ -73,7 +73,7 @@ Then pass this to runhelm.sh like this:
 helm upgrade pelorus charts/deploy --namespace pelorus --values values.yaml
 ```
 
-If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](page/MinIO) to host an instance on OpenShift and configure Pelorus to use it.
+If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](/page/MinIO) to host an instance on OpenShift and configure Pelorus to use it.
 
 ### Deploying Across Multiple Clusters
 
