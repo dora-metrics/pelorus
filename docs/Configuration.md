@@ -74,11 +74,11 @@ Currently we only support GitHub. Open an issue or a pull request to request sup
 
 #### Suggested Secrets
 
-Create a secret containing your Git token.
+Create a secret containing your Git username and token.
 
     oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
 
-Create a secret containing your Git token and Git API.  An API example is `github.mycompany.com/api/v3`
+Create a secret containing your Git username, token, and API.  An API example is `github.mycompany.com/api/v3`
 
     oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
 
