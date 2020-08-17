@@ -68,7 +68,9 @@ Each exporter additionally takes a unique set of environment variables to furthe
 
 The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
 
-In order for proper collection, we require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label.
+In order for proper collection, we require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label. 
+
+Currently we only support GitHub. Open an issue or a pull request to request support for additional Git providers.  (BitBucket and GitLab are on our roadmap.)
 
 #### Suggested Secrets
 
@@ -99,8 +101,6 @@ exporters:
 #### Environment Variables
 
 This exporter provides several configuration options, passed via environment variables.
-
-Currently the only supported Git provider is GitHub. Open an issue or a pull request if your favorite provider is not yet listed!  (BitBucket and GitLab are on our roadmap)
 
 
 | Variable | Required | Explanation | Default Value |
