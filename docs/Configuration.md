@@ -107,7 +107,9 @@ This exporter supports several configuration options, passed via environment var
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
 | `GITHUB_USER` | yes | User's github username | unset |
 | `GITHUB_TOKEN` | yes | User's Github API Token | unset |
-| `GITHUB_API` | yes | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
+| `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
+| `GIT_PROVIDER` | no | One of `gitlab`, `github`, `bitbucket` | `github` | 
+
 
 
 ### Deploy Time Exporter
