@@ -8,4 +8,4 @@ class BitbucketCommitCollector(AbstractCommitCollector):
 
     def get_commit_time(self):
         """Method called to collect data and send to Prometheus"""
-        print("BitBucket")
+        print("BitBucket is not yet supported")

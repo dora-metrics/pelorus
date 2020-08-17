@@ -8,4 +8,4 @@ class GitLabCommitCollector(AbstractCommitCollector):
 
     def get_commit_time(self):
         """Method called to collect data and send to Prometheus"""
-        print("GitLab")
+        print("GitLab is not yet supported")
