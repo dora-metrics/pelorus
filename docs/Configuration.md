@@ -102,13 +102,16 @@ This exporter supports several configuration options, passed via environment var
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
+| `GIT_USER` | yes | User's github username | unset |
+| `GIT_TOKEN` | yes | User's Github API Token | unset |
+| `GIT_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
+| `GIT_PROVIDER` | no | One of `gitlab`, `github`, `bitbucket` | `github` | 
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-| `GITHUB_USER` | yes | User's github username | unset |
-| `GITHUB_TOKEN` | yes | User's Github API Token | unset |
-| `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
-| `GIT_PROVIDER` | no | One of `gitlab`, `github`, `bitbucket` | `github` | 
+| DEPRECATED `GITHUB_USER` | yes | User's github username | unset |
+| DEPRECATED `GITHUB_TOKEN` | yes | User's Github API Token | unset |
+| DEPRECATED `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
 
 
 
