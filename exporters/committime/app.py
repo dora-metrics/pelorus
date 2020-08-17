@@ -31,16 +31,12 @@ class GitFactory:
 
 if __name__ == "__main__":
     pelorus.check_legacy_vars()
-    # pelorus.check_required_config(REQUIRED_CONFIG)
+    pelorus.check_required_config(REQUIRED_CONFIG)
 
-    # username = os.environ.get('GIT_USER')
-    # token = os.environ.get('GIT_TOKEN')
-    # git_api = os.environ.get('GIT_API')
-    # git_provider = os.environ.get('GIT_PROVIDER', pelorus.DEFAULT_GIT)
-    username = "me"
-    token = "Vo4ssRKUZd4sRxsgxLKx"
-    git_api = ""
-    git_provider = "gitlab"
+    username = os.environ.get('GIT_USER')
+    token = os.environ.get('GIT_TOKEN')
+    git_api = os.environ.get('GIT_API')
+    git_provider = os.environ.get('GIT_PROVIDER', pelorus.DEFAULT_GIT)
     namespaces = None
     if os.environ.get('NAMESPACES') is not None:
         namespaces = [proj.strip() for proj in os.environ.get('NAMESPACES').split(",")]
