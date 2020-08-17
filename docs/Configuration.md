@@ -68,17 +68,19 @@ Each exporter additionally takes a unique set of environment variables to furthe
 
 The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
 
-In order for proper collection, we require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label.
+In order for proper collection, we require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label. 
+
+Currently we only support GitHub. Open an issue or a pull request to request support for additional Git providers.  (BitBucket and GitLab are on our roadmap.)
 
 #### Suggested Secrets
 
-Create a secret containing your GitHub token.
+Create a secret containing your Git username and token.
 
-    oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> -n pelorus
+    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
 
-Create a secret containing your GitHub token and GitHub Enterprise API.  An API example is `github.mycompany.com/api/v3`
+Create a secret containing your Git username, token, and API.  An API example is `github.mycompany.com/api/v3`
 
-    oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> --from-literal=GITHUB_API=<api> -n pelorus
+    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
 
 #### Sample Values
 
@@ -98,16 +100,21 @@ exporters:
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables.
+
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
+| `GIT_USER` | yes | User's github username | unset |
+| `GIT_TOKEN` | yes | User's Github API Token | unset |
+| `GIT_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-| `GITHUB_USER` | yes | User's github username | unset |
-| `GITHUB_TOKEN` | yes | User's Github API Token | unset |
-| `GITHUB_API` | yes | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
+| DEPRECATED `GITHUB_USER` | no | User's github username | unset |
+| DEPRECATED `GITHUB_TOKEN` | no | User's Github API Token | unset |
+| DEPRECATED `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
+
 
 
 ### Deploy Time Exporter
@@ -118,7 +125,7 @@ In order for proper collection, we require that all deployments associated with 
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
@@ -144,7 +151,7 @@ Create a secret containing your Jira information.
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
