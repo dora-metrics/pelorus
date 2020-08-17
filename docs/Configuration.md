@@ -74,7 +74,7 @@ Currently we only support GitHub. Open an issue or a pull request to request sup
 
 #### Suggested Secrets
 
-Create a secret containing your GitHub token.
+Create a secret containing your Git token.
 
     oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
 
