@@ -74,11 +74,11 @@ In order for proper collection, we require that all builds associated with a par
 
 Create a secret containing your GitHub token.
 
-    oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> -n pelorus
+    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
 
-Create a secret containing your GitHub token and GitHub Enterprise API.  An API example is `github.mycompany.com/api/v3`
+Create a secret containing your Git token and Git API.  An API example is `github.mycompany.com/api/v3`
 
-    oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> --from-literal=GITHUB_API=<api> -n pelorus
+    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
 
 #### Sample Values
 
@@ -98,7 +98,10 @@ exporters:
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables.
+
+The following Git providers are currently supported: GitHub, GitLab, and BitBucket. Open an issue or a pull request if your favorite provider is not yet listed!
+
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
@@ -123,7 +126,7 @@ In order for proper collection, we require that all deployments associated with 
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
@@ -149,7 +152,7 @@ Create a secret containing your Jira information.
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
