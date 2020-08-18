@@ -1,0 +1,11 @@
+site_name: Pelorus Documentation
+theme: readthedocs
+nav:
+  - Main: index.md
+  - Architecture: Architecture.md
+  - Installation: Install.md
+  - Quickstart: Demo.md
+  - Configuration: Configuration.md
+  - Using Pelorus: Dashboards.md
+  - Dev Guide: Development.md
+  
