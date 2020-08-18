@@ -67,7 +67,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
 
         # get the project id from the map
         try:
-            project_map = self.gitlab_project_map(gl.projects.list())
+            project_map = self.gitlab_project_map(gl.projects.list(all=True))
             if len(project_map) == 0:
                 logging.error("Unable to build project map from GitLab server", exc_info=True)
                 raise
