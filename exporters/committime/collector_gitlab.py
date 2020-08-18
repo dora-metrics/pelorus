@@ -4,8 +4,8 @@ import logging
 import pelorus
 from datetime import datetime, timedelta
 from collector_base import AbstractCommitCollector
-# import urllib3
-# urllib3.disable_warnings()
+import urllib3
+urllib3.disable_warnings()
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
@@ -15,8 +15,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
     __map_expire = datetime.now() + timedelta(seconds=__map_expire_seconds)
 
     def __init__(self, username, token, namespaces, apps):
-        super().__init__(username, token, namespaces, apps)
-        logging.info("=====Using GitLab collector=====")
+        super().__init__(username, token, namespaces, apps, "GitLab")
 
     def gitlab_project_map(self, gl_projects):
         """Gets the GitLab server project map."""
@@ -68,7 +67,11 @@ class GitLabCommitCollector(AbstractCommitCollector):
 
         # get the project id from the map
         try:
-            project_id = self.gitlab_project_map(gl.projects.list())[uri]
+            project_map = self.gitlab_project_map(gl.projects.list())
+            if len(project_map) == 0:
+                logging.error("Unable to build project map from GitLab server", exc_info=True)
+                raise
+            project_id = project_map[uri]
         except Exception:
             logging.error("Failed to find repo project id: %s, for build %s" % (uri, metric.build_name), exc_info=True)
             raise

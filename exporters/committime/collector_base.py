@@ -20,7 +20,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, username, token, namespaces, apps, git_api=None):
+    def __init__(self, username, token, namespaces, apps, collector_name, git_api=None):
         """Constructor"""
         self._username = username
         self._token = token
@@ -28,6 +28,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self._apps = apps
         self._git_api = git_api
         self._commit_dict = {}
+        self._collector_name = collector_name
+        logging.info("=====Using %s Collector=====" % (self._collector_name))
 
     def collect(self):
         commit_metric = GaugeMetricFamily('commit_timestamp',
