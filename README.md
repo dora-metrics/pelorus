@@ -1,4 +1,4 @@
-![Pelorus](media/Logo-Pelorus-A-Standard-RGB_smaller.png)
+![Pelorus](docs/img/Logo-Pelorus-A-Standard-RGB_smaller.png)
 
 ![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
 
@@ -16,7 +16,7 @@ Currently, Pelorus functionality can capture proven metrics that measure Softwar
 
 Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides an organizational-level view of the [four critical measures of software delivery performance](https://blog.openshift.com/exploring-a-metrics-driven-approach-to-transformation/).
 
-![Software Delivery Metrics Dashboard](media/sdp-dashboard.png)
+![Software Delivery Metrics Dashboard](docs/img/sdp-dashboard.png)
 
 A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg).
 
