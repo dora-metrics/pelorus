@@ -230,6 +230,7 @@ Most exporter changes can be tested locally.
     git fetch themoosman
     git checkout themoosman/feature-branch
     ```
+1. Run unit tests using `pytest`.
 1. Gather necessary [configuration information](/page/Configuration.md#configuring-exporters).
 1. [Run exporter localy](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
 1. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
