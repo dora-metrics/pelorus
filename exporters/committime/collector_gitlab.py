@@ -3,14 +3,14 @@ import requests
 import logging
 import pelorus
 from collector_base import AbstractCommitCollector
-# import urllib3
-# urllib3.disable_warnings()
+import urllib3
+urllib3.disable_warnings()
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
 
     def __init__(self, username, token, namespaces, apps):
-        super().__init__(username, token, namespaces, apps, "GitLab")
+        super().__init__(username, token, namespaces, apps, 'GitLab', '%Y-%m-%dT%H:%M:%S.%f%z')
 
     # base class impl
     def get_commit_time(self, metric):
@@ -60,8 +60,9 @@ class GitLabCommitCollector(AbstractCommitCollector):
             # get the commit date/time
             metric.commit_time = commit.committed_date
             # set the timestamp after conversion
-            metric.commit_timestamp = pelorus.convert_date_time_with_utc_offset_to_timestamp(metric.commit_time)
+            metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(metric.commit_time, self._timedate_format)
         except Exception:
             logging.error("Failed processing commit time for build %s" % metric.build_name, exc_info=True)
+            logging.debug(commit)
             raise
         return metric

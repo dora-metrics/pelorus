@@ -20,7 +20,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, username, token, namespaces, apps, collector_name, git_api=None):
+    def __init__(self, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
         """Constructor"""
         self._username = username
         self._token = token
@@ -28,6 +28,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self._apps = apps
         self._git_api = git_api
         self._commit_dict = {}
+        self._timedate_format = timedate_format
         self._collector_name = collector_name
         logging.info("=====Using %s Collector=====" % (self._collector_name))
 
@@ -158,7 +159,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric_ts = self._commit_dict.get(commit_sha)
             if metric_ts is None:
                 logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
-                metric.commit_time = self.get_commit_time(metric)
+                metric = self.get_commit_time(metric)
                 # If commit time is None, then we could not get the value from the API
                 if metric.commit_time is None:
                     return None
