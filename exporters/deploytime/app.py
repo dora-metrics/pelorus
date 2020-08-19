@@ -78,6 +78,25 @@ def generate_metrics(namespaces):
                     metric.image_sha = i
                     metrics.append(metric)
 
+        v1_replicationsets = dyn_client.resources.get(api_version='apps/v1', kind='ReplicaSet')
+        replicationsets = v1_replicationsets.get(namespace=namespace,
+                                                               label_selector=pelorus.get_app_label())
+
+        for rc in replicationsets.items:
+            images = [image_sha(c.image) for c in rc.spec.template.spec.containers]
+
+            # Since a commit will be built into a particular image and there could be multiple
+            # containers (images) per pod, we will push one metric per image/container in the
+            # pod template
+            for i in images:
+                if i is not None:
+                    metric = DeployTimeMetric(rc.metadata.name, namespace)
+                    metric.labels = rc.metadata.labels
+                    metric.deploy_time = rc.metadata.creationTimestamp
+                    metric.image_sha = i
+                    metrics.append(metric)
+
+
     return metrics
 
 
