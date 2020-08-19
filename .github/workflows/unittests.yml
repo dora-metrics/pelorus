@@ -1,4 +1,4 @@
-name: CI (pip)
+name: Unit Tests
 on: [push]
 
 jobs:
@@ -25,6 +25,6 @@ jobs:
           # install sphinx_gallery and matplotlib if available (may not work on pypy)
           pip install sphinx_gallery || true
       - name: Test with pytest
-        run: pytest --cov=./ --cov-report=xml
-      - name: Upload coverage
-        uses: codecov/codecov-action@v1
+        run: coverage run -m pytest
+      - name: Generate coverage report
+        run: coverage report
