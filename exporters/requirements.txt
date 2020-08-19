@@ -5,4 +5,3 @@ jsonpath_ng
 jira
 pytz
 python-gitlab >= 2.4.0
-pytest
