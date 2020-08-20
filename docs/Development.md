@@ -18,25 +18,25 @@ There are three main tracks of Pelorus development to consider.
 
 We use [Helm](https://helm.sh) to provide an automated deployment and configuration experience for Pelorus. We are always doing work to cover more and more complex use cases with our helm charts. In order to be able to effectively contribute to these charts, you'll need a cluster that satisfies all of the installation prerequisites for Pelorus.
 
-See the [Install guide](/docs/Install.md) for more details on that.
+See the [Install guide](/page/Install.md) for more details on that.
 
 Currently we have two charts:
 
-1. The [operators](/charts/operators/) chart installs the community operators on which Pelorus depends.
+1. The [operators](https://github.com/redhat-cop/pelorus/blob/master/charts/operators/) chart installs the community operators on which Pelorus depends.
     * [Prometheus Operator](https://operatorhub.io/operator/prometheus)
     * [Grafana Operator](https://operatorhub.io/operator/grafana-operator)
-2. The [pelorus](charts/pelorus/) chart manages the Pelorus stack, which includes:
+2. The [pelorus](https://github.com/redhat-cop/pelorus/blob/master/charts/pelorus/) chart manages the Pelorus stack, which includes:
     * Prometheus
     * Thanos
     * Grafana
     * A set of Grafana Dashboards and Datasources
-    * The Pelorus exporters, managed in an [exporter](/charts/exporter) subchart.
+    * The Pelorus exporters, managed in an [exporter](https://github.com/redhat-cop/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
 
 We use Helm's [chart-testing](https://github.com/helm/chart-testing) to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `helm lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. When updating the version, use the output of `git describe` to keep the versioning in line with the repo.
 
 ## Dashboard Development
 
-We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](/docs/Dashboards.md) user guide for that information.
+We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](/page/Dashboards.md) user guide for that information.
 
 To effectively do dashboard development, you'll likely need at least two browser windows open, one with Grafana, and another with Prometheus for testing queries. Since our dashboards are imported to Grafana via the Grafana Operator, they get imported in read-only mode. Because of this, you'll need to make a copy of it for development purposes.
 
@@ -45,7 +45,7 @@ The following outlines a workflow for working on a dashboard:
 1. Sign in to Grafana via the Grafana route.
 1. Once signed in, sign as an administrator
   1. Click the signin button in the bottom right corner
-    ![Signin button](/media/signin.png)
+    ![Signin button](img/signin.png)
   1. The admin credentials can be pulled from the following commands:
     ```
     oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_USER}' | base64 -d
@@ -122,7 +122,7 @@ Running an exporter on your local machine should follow this process:
 
         pip install -r exporters/requirements.txt
 
-1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](docs/Configuration.md#configuring-exporters) to see supported variables).
+1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](/page/Configuration.md#configuring-exporters) to see supported variables).
 
 1. Start the exporter
         
@@ -209,7 +209,7 @@ The following are notes and general steps for testing Pull Requests for specific
     git fetch themoosman
     git checkout themoosman/feature-branch
     ```
-2. [Install Pelorus](/docs/Install.md) from checked out fork/branch.
+2. [Install Pelorus](/page/Install.md) from checked out fork/branch.
     >:mag: **Note**<br/>
     >:mag: In most cases you can deploy changes to an existing deployment to retain existing data.
 3. Log into Grafana via the grafana route.
@@ -230,7 +230,7 @@ Most exporter changes can be tested locally.
     git fetch themoosman
     git checkout themoosman/feature-branch
     ```
-1. Gather necessary [configuration information](/docs/Configuration.md#configuring-exporters).
+1. Gather necessary [configuration information](/page/Configuration.md#configuring-exporters).
 1. [Run exporter localy](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
 1. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
    1. You get a valid response with metrics.
@@ -238,7 +238,7 @@ Most exporter changes can be tested locally.
 
 ### Helm Install changes
 
-For testing changes to the helm chart, you should just follow the [standard install process](/docs/Install.md), then verify that:
+For testing changes to the helm chart, you should just follow the [standard install process](/page/Install.md), then verify that:
 
 * All expected pods are running and healthy
 * Any expected behavior changes mentioned in the PR can be observed.

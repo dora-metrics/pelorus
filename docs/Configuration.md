@@ -2,7 +2,7 @@
 
 ## Configuring The Pelorus Stack
 
-The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [provided in this repo](/charts/)deploy/values.yaml), and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `values.yaml` and applying the changes like so:
+The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [provided in this repo](https://github.com/redhat-cop/pelorus/blob/v1.2.1-rc/charts/pelorus/values.yaml), and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `values.yaml` and applying the changes like so:
 
 ```
 helm upgrade pelorus charts/deploy --namespace pelorus --values myclusterconfigs/pelorus/values.yaml
@@ -15,7 +15,7 @@ The following configurations may be made through the `values.yaml` file:
 | `openshift_prometheus_htpasswd_auth` | yes | The contents for the htpasswd file that Prometheus will use for basic authentication user. | User: `internal`, Password: `changeme` |
 | `openshift_prometheus_basic_auth_pass` | yes | The password that grafana will use for its Prometheus datasource. Must match the above. | `changme` |
 | `custom_ca` | no | Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki)  | `false`  |
-| `extra_prometheus_hosts` | no | Configures additional prometheus instances for a multi-cluster setup. See [Deploying across multple clusters](/docs/Install.md#deploying-across-multiple-clusters) for details. | Nil |
+| `extra_prometheus_hosts` | no | Configures additional prometheus instances for a multi-cluster setup. See [Deploying across multple clusters](/page/Install.md#deploying-across-multiple-clusters) for details. | Nil |
 | `exporters` | no | Specified which exporters to install. See [Configuring Exporters](#configuring-exporters). | Installs deploytime exporter only. |
 
 ## Configuring Exporters
@@ -68,17 +68,19 @@ Each exporter additionally takes a unique set of environment variables to furthe
 
 The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
 
-In order for proper collection, we require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label.
+In order for proper collection, we require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label. 
+
+Currently we only support GitHub. Open an issue or a pull request to request support for additional Git providers.  (BitBucket and GitLab are on our roadmap.)
 
 #### Suggested Secrets
 
-Create a secret containing your GitHub token.
+Create a secret containing your Git username and token.
 
-    oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> -n pelorus
+    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
 
-Create a secret containing your GitHub token and GitHub Enterprise API.  An API example is `github.mycompany.com/api/v3`
+Create a secret containing your Git username, token, and API.  An API example is `github.mycompany.com/api/v3`
 
-    oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> --from-literal=GITHUB_API=<api> -n pelorus
+    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
 
 #### Sample Values
 
@@ -98,16 +100,21 @@ exporters:
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables.
+
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
+| `GIT_USER` | yes | User's github username | unset |
+| `GIT_TOKEN` | yes | User's Github API Token | unset |
+| `GIT_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-| `GITHUB_USER` | yes | User's github username | unset |
-| `GITHUB_TOKEN` | yes | User's Github API Token | unset |
-| `GITHUB_API` | yes | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
+| DEPRECATED `GITHUB_USER` | no | User's github username | unset |
+| DEPRECATED `GITHUB_TOKEN` | no | User's Github API Token | unset |
+| DEPRECATED `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
+
 
 
 ### Deploy Time Exporter
@@ -118,7 +125,7 @@ In order for proper collection, we require that all deployments associated with 
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
@@ -144,7 +151,7 @@ Create a secret containing your Jira information.
 
 #### Environment Variables
 
-This exporter supports several configuration options, passed via environment variables
+This exporter provides several configuration options, passed via environment variables
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
