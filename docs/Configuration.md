@@ -2,7 +2,7 @@
 
 ## Configuring The Pelorus Stack
 
-The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [provided in this repo](/charts/)deploy/values.yaml), and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `values.yaml` and applying the changes like so:
+The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [provided in this repo](https://github.com/redhat-cop/pelorus/blob/v1.2.1-rc/charts/pelorus/values.yaml), and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `values.yaml` and applying the changes like so:
 
 ```
 helm upgrade pelorus charts/deploy --namespace pelorus --values myclusterconfigs/pelorus/values.yaml
@@ -15,7 +15,7 @@ The following configurations may be made through the `values.yaml` file:
 | `openshift_prometheus_htpasswd_auth` | yes | The contents for the htpasswd file that Prometheus will use for basic authentication user. | User: `internal`, Password: `changeme` |
 | `openshift_prometheus_basic_auth_pass` | yes | The password that grafana will use for its Prometheus datasource. Must match the above. | `changme` |
 | `custom_ca` | no | Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki)  | `false`  |
-| `extra_prometheus_hosts` | no | Configures additional prometheus instances for a multi-cluster setup. See [Deploying across multple clusters](/docs/Install.md#deploying-across-multiple-clusters) for details. | Nil |
+| `extra_prometheus_hosts` | no | Configures additional prometheus instances for a multi-cluster setup. See [Deploying across multple clusters](/page/Install.md#deploying-across-multiple-clusters) for details. | Nil |
 | `exporters` | no | Specified which exporters to install. See [Configuring Exporters](#configuring-exporters). | Installs deploytime exporter only. |
 
 ## Configuring Exporters

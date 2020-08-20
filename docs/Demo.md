@@ -37,7 +37,7 @@ The second argument the script takes is the url of the forked repo, so for examp
 ## Execution
 
 An "idle" state could resemble:
-![Idle-Data](../media/pelorus-dashboard-idle-data.png)
+![Idle-Data](img/pelorus-dashboard-idle-data.png)
 
 Run the demo script
 ``` 
@@ -45,7 +45,7 @@ pelorus/demo/demo.sh <path to container-pipelines> <url to forked repo>
 ```
 
 The script will start and will begin to run the ansible-applier on the <path to container-pipelines> path. It will attempt to install ansible-galaxy, skipping if it is, and then run the ansible-applier playbook. This will setup a build (jenkins) as well as a dev, stage and prod environment. Once jenkins has been setup, an initial run of the basic-nginx app will build and deploy. Once that is complete, the dashboard should resemble the following:
-![First-Deploy-Data](../media/pelorus-dashboard-first-deploy.png)
+![First-Deploy-Data](img/pelorus-dashboard-first-deploy.png)
 
 A prompt will appear on the screen waiting for user input, the user can "rerun" the script. What this will do is create a change in the index.html file, git commit and push it to the <url to forked repo> repository, then create another pipeline build. Then the second pipeline build of basic-nginx will start. Once complete, the dashboard will update again:
-![Second-Deploy-Data](../media/pelorus-dashboard-second-deploy.png)
+![Second-Deploy-Data](img/pelorus-dashboard-second-deploy.png)
