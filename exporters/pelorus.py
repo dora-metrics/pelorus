@@ -33,7 +33,7 @@ def load_kube_config():
         config.load_kube_config()
 
 
-def convert_date_time_to_timestamp(date_time, format_string):
+def convert_date_time_to_timestamp(date_time, format_string='%Y-%m-%dT%H:%M:%SZ'):
     timestamp = None
     try:
         timestamp = datetime.strptime(date_time, format_string)
