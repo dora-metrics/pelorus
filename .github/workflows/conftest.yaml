@@ -1,4 +1,4 @@
-name: Validate
+name: Conftest
 
 on: [push, pull_request]
 
