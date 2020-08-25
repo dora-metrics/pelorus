@@ -23,9 +23,8 @@ spec:
   strategy:
     sourceStrategy:
       from:
-        kind: ImageStreamTag
-        name: python:3.6
-        namespace: openshift
+        kind: DockerImage
+        name: registry.access.redhat.com/ubi8/python-38
     type: Source
   successfulBuildsHistoryLimit: 5
   triggers:
