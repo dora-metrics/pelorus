@@ -5,7 +5,8 @@ import pelorus
 @pytest.mark.parametrize("start_time,end_time,format",
                          [
                             ('2020-06-27T03:17:8Z', '2020-06-27T06:17:8Z', '%Y-%m-%dT%H:%M:%SZ'),
-                            ('2020-06-27T03:17:08.00000-0500', '2020-06-27T06:17:08.000000-0500', '%Y-%m-%dT%H:%M:%S.%f%z')
+                            ('2020-06-27T03:17:08.00000-0500', '2020-06-27T06:17:08.000000-0500',
+                                                               '%Y-%m-%dT%H:%M:%S.%f%z')
                          ]
                          )
 def test_convert_date_time_to_timestamp(start_time, end_time, format):
