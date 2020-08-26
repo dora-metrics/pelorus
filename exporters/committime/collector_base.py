@@ -3,6 +3,7 @@ import json
 import logging
 import pelorus
 import re
+import CommitMetric
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 from kubernetes import client
@@ -176,20 +177,3 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                             % (namespace, build.metadata.name, app))
             logging.debug(e, exc_info=True)
             return None
-
-
-class CommitMetric():
-    def __init__(self, app_name, _gitapi):
-        self.name = app_name
-        self.labels = None
-        self.repo_url = None
-        self.commiter = None
-        self.commit_hash = None
-        self.commit_time = None
-        self.commit_timestamp = None
-        self.build_name = None
-        self.build_config_name = None
-        self.image_location = None
-        self.image_name = None
-        self.image_tag = None
-        self.image_hash = None
