@@ -93,7 +93,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metrics += self.get_metrics_from_apps(builds_by_app, namespace)
 
         return metrics
-        pass
 
     @abstractmethod
     def get_commit_time(self, metric):
