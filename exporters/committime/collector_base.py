@@ -20,7 +20,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, username, token, namespaces, apps, git_api=None):
+    def __init__(self, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
         """Constructor"""
         self._username = username
         self._token = token
@@ -28,9 +28,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self._apps = apps
         self._git_api = git_api
         self._commit_dict = {}
+        self._timedate_format = timedate_format
+        self._collector_name = collector_name
+        logging.info("=====Using %s Collector=====" % (self._collector_name))
 
     def collect(self):
-        commit_metric = GaugeMetricFamily('github_commit_timestamp',
+        commit_metric = GaugeMetricFamily('commit_timestamp',
                                           'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
         commit_metrics = self.generate_metrics()
         for my_metric in commit_metrics:
@@ -93,7 +96,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         pass
 
     @abstractmethod
-    def get_commit_time(self):
+    def get_commit_time(self, metric):
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 
@@ -156,7 +159,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric_ts = self._commit_dict.get(commit_sha)
             if metric_ts is None:
                 logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
-                metric.commit_time = self.get_commit_time(metric)
+                metric = self.get_commit_time(metric)
                 # If commit time is None, then we could not get the value from the API
                 if metric.commit_time is None:
                     return None

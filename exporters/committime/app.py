@@ -22,7 +22,7 @@ class GitFactory:
     @staticmethod
     def getCollector(username, token, namespaces, apps, git_api, git_provider):
         if git_provider == "gitlab":
-            return GitLabCommitCollector("", "", "", "")
+            return GitLabCommitCollector(username, token, namespaces, apps)
         if git_provider == "github":
             return GitHubCommitCollector(username, token, namespaces, apps, git_api)
         if git_provider == "bitbucket":

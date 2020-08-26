@@ -8,7 +8,7 @@ spec:
     rules: 
     - record: sdp:lead_time:by_app
       expr: >
-        deploy_timestamp - on(image_sha) group_left github_commit_timestamp
+        deploy_timestamp - on(image_sha) group_left commit_timestamp
     - record: sdp:lead_time:global
       expr: >
         avg(sdp:lead_time:by_app)
@@ -20,4 +20,4 @@ spec:
         avg(fr:time_to_restore)
     - record: fr:change_failure_rate
       expr: >
-        count(fr:time_to_restore) / count(deploy_timestamp)
+        count(failure_creation_timestamp) / count(deploy_timestamp)
