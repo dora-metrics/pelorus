@@ -20,21 +20,19 @@ class GitHubCommitCollector(AbstractCommitCollector):
 
     def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
-        myurl = metric.repo_url
-        url_tokens = myurl.split("/")
 
-        git_server = url_tokens[2]
+        git_server = metric.git_fqdn
         # check for gitlab or bitbucket
         if "gitlab" in git_server or "bitbucket" in git_server:
             logging.warn("Skipping non GitHub server, found %s" % (git_server))
             return None
 
-        url = self._prefix + url_tokens[3] + "/" + url_tokens[4].split(".")[0] + self._suffix + metric.commit_hash
+        url = self._prefix + metric.repo_group + "/" + metric.repo_project + self._suffix + metric.commit_hash
         response = requests.get(url, auth=(self._username, self._token))
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github
             logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
-                metric.build_name, metric.commit_hash, url_tokens[2], str(response.status_code)))
+                metric.build_name, metric.commit_hash, metric.repo_fqdn, str(response.status_code)))
         else:
             commit = response.json()
             try:

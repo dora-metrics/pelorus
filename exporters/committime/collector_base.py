@@ -131,7 +131,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     def get_metric_from_build(self, build, app, namespace, repo_url):
         try:
 
-            metric = CommitMetric(app, self._git_api)
+            metric = CommitMetric(app)
 
             if build.spec.source.git:
                 repo_url = build.spec.source.git.uri
@@ -173,14 +173,15 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
 
 class CommitMetric():
-    def __init__(self, app_name, _gitapi=None):
+    def __init__(self, app_name):
         self.name = app_name
         self.labels = None
-        self.repo_url = None
-        self.repo_protocol = None
-        self.repo_fqdn = None
-        self.repo_group = None
-        self.repo_project = None
+        self.__repo_url = None
+        self.__repo_protocol = None
+        self.__repo_fqdn = None
+        self.__repo_group = None
+        self.__repo_name = None
+        self.__repo_project = None
         self.commiter = None
         self.commit_hash = None
         self.commit_time = None
@@ -192,27 +193,58 @@ class CommitMetric():
         self.image_tag = None
         self.image_hash = None
 
-    def parse_repourl(self):
-        """Parses the repo_url into individual pieces"""
-        if self.repo_url is None:
+    @property
+    def repo_url(self):
+        return self.__repo_url
+
+    @repo_url.setter
+    def repo_url(self, value):
+        self.__repo_url = value
+        self.__parse_repourl()
+
+    @property
+    def repo_protocol(self):
+        """Returns the Git server protocol"""
+        return self.__repo_protocol
+
+    @property
+    def git_fqdn(self):
+        """Returns the Git server FQDN"""
+        return self.__repo_fqdn
+
+    @property
+    def repo_group(self):
+        return self.__repo_group
+
+    @property
+    def repo_name(self):
+        """Returns the Git repo name, example: myrepo.git"""
+        return self.__repo_name
+
+    @property
+    def repo_project(self):
+        """Returns the Git project name, this is normally the repo_name with '.git' parsed off the end."""
+        return self.__repo_project
+
+    @property
+    def git_server(self):
+        """Returns the Git server FQDN with the protocol"""
+        return str(self.__repo_protocol + '://' + self.__repo_fqdn)
+
+    def __parse_repourl(self):
+        """Parse the repo_url into individual pieces"""
+        if self.__repo_url is None:
             return
 
-        url_tokens = self.repo_url.split("/")
-        self.repo_protocol = url_tokens[0]
-        if self.repo_protocol.endswith(':'):
-            self.repo_protocol = self.repo_protocol[:-1]
+        url_tokens = self.__repo_url.split("/")
+        self.__repo_protocol = url_tokens[0]
+        if self.__repo_protocol.endswith(':'):
+            self.__repo_protocol = self.__repo_protocol[:-1]
         # token 1 is always a blank
-        self.repo_fqdn = url_tokens[2]
-        self.repo_group = url_tokens[3]
-        self.repo_project = url_tokens[4]
-
-    def repo_combine_protocol_fqdn(self):
-        """Returns the protocol and FQDN"""
-        return str(self.repo_protocol + '://' + self.repo_fqdn)
-
-    def repo_strip_git_from_project(self):
-        """Returns a string that removes '.git' from the project if it's present"""
-        if self.repo_project.endswith('.git'):
-            return self.repo_project[:-4]
+        self.__repo_fqdn = url_tokens[2]
+        self.__repo_group = url_tokens[3]
+        self.__repo_name = url_tokens[4]
+        if self.__repo_name.endswith('.git'):
+            self.__repo_project = self.__repo_name[:-4]
         else:
-            return self.repo_project
+            self.__repo_project = self.__repo_name

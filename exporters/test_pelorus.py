@@ -26,9 +26,13 @@ def test_convert_date_time_to_timestamp(start_time, end_time, format):
 # Unit tests for the CommitMetric
 @pytest.mark.parametrize("appname", [("pytest")])
 def test_commitmetric_initial(appname):
-    metric = CommitMetric(appname, None)
+    metric = CommitMetric(appname)
     assert metric.repo_url is None
     assert metric.name == appname
+    assert metric.repo_protocol is None
+    assert metric.git_fqdn is None
+    assert metric.repo_group is None
+    assert metric.repo_project is None
 
 
 @pytest.mark.parametrize("protocol,fqdn,group,project,project_noext",
@@ -41,19 +45,23 @@ def test_commitmetric_initial(appname):
                          ]
                          )
 def test_commitmetric_repos(protocol, fqdn, group, project, project_noext):
+    test_name = 'pytest'
     url = str(protocol + '://' + fqdn + '/' + group + '/' + project)
-    metric = CommitMetric("pytest")
+    metric = CommitMetric(test_name)
+    metric.name == test_name
+    assert metric.repo_url is None
+    assert metric.repo_protocol is None
+    assert metric.git_fqdn is None
+    assert metric.repo_group is None
+    assert metric.repo_project is None
     metric.repo_url = url
     assert metric.repo_url is not None
     assert metric.repo_url == url
-    metric.parse_repourl()
     assert metric.repo_protocol is not None
-    assert metric.repo_fqdn is not None
+    assert metric.git_fqdn is not None
     assert metric.repo_group is not None
     assert metric.repo_project is not None
     assert metric.repo_protocol == protocol
-    assert metric.repo_fqdn == fqdn
-    assert metric.repo_combine_protocol_fqdn() == str(protocol + '://' + fqdn)
-    test_value = metric.repo_strip_git_from_project()
-    assert test_value is not None
-    assert test_value == project_noext
+    assert metric.git_fqdn == fqdn
+    assert metric.git_server == str(protocol + '://' + fqdn)
+    assert metric.repo_project == project_noext

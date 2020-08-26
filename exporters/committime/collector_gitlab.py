@@ -3,8 +3,8 @@ import requests
 import logging
 import pelorus
 from collector_base import AbstractCommitCollector
-import urllib3
-urllib3.disable_warnings()
+# import urllib3
+# urllib3.disable_warnings()
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
@@ -18,10 +18,8 @@ class GitLabCommitCollector(AbstractCommitCollector):
         session = requests.Session()
         session.verify = False
 
-        metric.parse_repourl()
-        project_name = metric.repo_strip_git_from_project()
-
-        git_server = metric.repo_combine_protocol_fqdn()
+        project_name = metric.repo_project
+        git_server = metric.git_server
 
         if "github" in git_server or "bitbucket" in git_server:
             logging.warn("Skipping non GitLab server, found %s" % (git_server))
