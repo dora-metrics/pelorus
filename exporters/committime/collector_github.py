@@ -12,8 +12,8 @@ class GitHubCommitCollector(AbstractCommitCollector):
 
     def __init__(self, username, token, namespaces, apps, git_api=None):
         super().__init__(username, token, namespaces, apps, "GitHub", '%Y-%m-%dT%H:%M:%SZ', git_api)
-        if self._git_api is not None and len(self._git_api) > 0:
-            logging.info("Using non-default API: %s" % (self._git_api))
+        if git_api is not None and len(git_api) > 0:
+            logging.info("Using non-default API: %s" % (git_api))
         else:
             self._git_api = self._defaultapi
         self._prefix = self._prefix_pattern % self._git_api
