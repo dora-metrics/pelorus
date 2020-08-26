@@ -3,16 +3,8 @@ import json
 import logging
 import pelorus
 import re
-import CommitMetric
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
-from kubernetes import client
-from openshift.dynamic import DynamicClient
-
-pelorus.load_kube_config()
-k8s_config = client.Configuration()
-k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-dyn_client = DynamicClient(k8s_client)
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -21,8 +13,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
+    def __init__(self, kube_client, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
         """Constructor"""
+        self._kube_client = kube_client
         self._username = username
         self._token = token
         self._namespaces = namespaces
@@ -55,7 +48,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # This will loop and look at OCP builds (calls get_git_commit_time)
         if not self._namespaces:
             logging.info("No namespaces specified, watching all namespaces")
-            v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
+            v1_namespaces = self._kube_client.resources.get(api_version='v1', kind='Namespace')
             self._namespaces = [namespace.metadata.name for namespace in v1_namespaces.get().items]
         else:
             logging.info("Watching namespaces: %s" % (self._namespaces))
@@ -70,7 +63,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             app_label = pelorus.get_app_label()
             logging.info("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
 
-            v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
+            v1_builds = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
@@ -177,3 +170,49 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                             % (namespace, build.metadata.name, app))
             logging.debug(e, exc_info=True)
             return None
+
+
+class CommitMetric():
+    def __init__(self, app_name, _gitapi=None):
+        self.name = app_name
+        self.labels = None
+        self.repo_url = None
+        self.repo_protocol = None
+        self.repo_fqdn = None
+        self.repo_group = None
+        self.repo_project = None
+        self.commiter = None
+        self.commit_hash = None
+        self.commit_time = None
+        self.commit_timestamp = None
+        self.build_name = None
+        self.build_config_name = None
+        self.image_location = None
+        self.image_name = None
+        self.image_tag = None
+        self.image_hash = None
+
+    def parse_repourl(self):
+        """Parses the repo_url into individual pieces"""
+        if self.repo_url is None:
+            return
+
+        url_tokens = self.repo_url.split("/")
+        self.repo_protocol = url_tokens[0]
+        if self.repo_protocol.endswith(':'):
+            self.repo_protocol = self.repo_protocol[:-1]
+        # token 1 is always a blank
+        self.repo_fqdn = url_tokens[2]
+        self.repo_group = url_tokens[3]
+        self.repo_project = url_tokens[4]
+
+    def repo_combine_protocol_fqdn(self):
+        """Returns the protocol and FQDN"""
+        return str(self.repo_protocol + '://' + self.repo_fqdn)
+
+    def repo_strip_git_from_project(self):
+        """Returns a string that removes '.git' from the project if it's present"""
+        if self.repo_project.endswith('.git'):
+            return self.repo_project[:-4]
+        else:
+            return self.repo_project

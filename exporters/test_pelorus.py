@@ -1,6 +1,6 @@
 import pytest
 import pelorus
-from committime.commitmetric import CommitMetric
+from committime.collector_base import CommitMetric
 
 
 @pytest.mark.parametrize("start_time,end_time,format",
@@ -42,7 +42,7 @@ def test_commitmetric_initial(appname):
                          )
 def test_commitmetric_repos(protocol, fqdn, group, project, project_noext):
     url = str(protocol + '://' + fqdn + '/' + group + '/' + project)
-    metric = CommitMetric("pytest", None)
+    metric = CommitMetric("pytest")
     metric.repo_url = url
     assert metric.repo_url is not None
     assert metric.repo_url == url

@@ -9,8 +9,8 @@ urllib3.disable_warnings()
 
 class GitLabCommitCollector(AbstractCommitCollector):
 
-    def __init__(self, username, token, namespaces, apps):
-        super().__init__(username, token, namespaces, apps, 'GitLab', '%Y-%m-%dT%H:%M:%S.%f%z')
+    def __init__(self, kube_client, username, token, namespaces, apps):
+        super().__init__(kube_client, username, token, namespaces, apps, 'GitLab', '%Y-%m-%dT%H:%M:%S.%f%z')
 
     # base class impl
     def get_commit_time(self, metric):
@@ -18,8 +18,8 @@ class GitLabCommitCollector(AbstractCommitCollector):
         session = requests.Session()
         session.verify = False
 
-        metric.parse_url()
-        project_name = self.parse_project_name(metric.repo_project)
+        metric.parse_repourl()
+        project_name = metric.repo_strip_git_from_project()
 
         git_server = metric.repo_combine_protocol_fqdn()
 
@@ -57,9 +57,3 @@ class GitLabCommitCollector(AbstractCommitCollector):
             logging.debug(commit)
             raise
         return metric
-
-    def parse_project_name(self, project):
-        if project.endswith('.git'):
-            return project[:-4]
-        else:
-            return project
