@@ -1,7 +1,5 @@
 from abc import abstractmethod
-#from abc import ABC, abstractmethod
 import pelorus
-import logging
 from prometheus_client.core import GaugeMetricFamily
 
 
@@ -23,8 +21,8 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                                             'Failure Creation Timestamp',
                                             labels=['project', 'issue_number'])
         failure_metric = GaugeMetricFamily('failure_resolution_timestamp',
-                                            'Failure Resolution Timestamp',
-                                            labels=['project', 'issue_number'])
+                                           'Failure Resolution Timestamp',
+                                           labels=['project', 'issue_number'])
 
         critical_issues = self.search_issues()
         metrics = self.generate_metrics(self.project, critical_issues)
@@ -48,7 +46,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
             # If the issue has a resolution date, then
             if issue.resolutiondate:
                 # Add the end metric
-                metric = FailureMetric( issue.resolutiondate, True, labels=[project, issue.issue_number])
+                metric = FailureMetric(issue.resolutiondate, True, labels=[project, issue.issue_number])
                 metrics.append(metric)
         return metrics
 
@@ -57,17 +55,18 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
         # This will be tracker specific
         pass
 
-
     @abstractmethod
     def convert_timestamp(self, date_time):
         # This will format timestamp based on tracker specific data
         pass
+
 
 class TrackerIssue():
     def __init__(self, issue_number, creationdate, resolutiondate):
         self.creationdate = creationdate
         self.resolutiondate = resolutiondate
         self.issue_number = issue_number
+
 
 class FailureMetric():
     def __init__(self, time_stamp, is_resolution=False, labels=[]):
@@ -78,4 +77,3 @@ class FailureMetric():
     def get_value(self):
         """Returns the timestamp"""
         return self.time_stamp
-

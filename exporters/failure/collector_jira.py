@@ -1,4 +1,4 @@
-from collector_base import AbstractFailureCollector, FailureMetric, TrackerIssue
+from collector_base import AbstractFailureCollector, TrackerIssue
 import logging
 import pelorus
 import pytz
@@ -11,7 +11,7 @@ class JiraFailureCollector(AbstractFailureCollector):
     Jira implementation of a FailureCollector
     """
 
-    def __init__(self, user, apikey, server,project='MDT'):
+    def __init__(self, user, apikey, server, project='MDT'):
         super().__init__(server, user, apikey, project)
 
     def search_issues(self):
@@ -26,18 +26,19 @@ class JiraFailureCollector(AbstractFailureCollector):
         jira_issues = jira.search_issues(query_string)
         critical_issues = []
         for issue in jira_issues:
-            logging.info('Found issue opened: {}, {}: {}'.format(str(issue.fields.created), issue.key, issue.fields.summary))
+            logging.info('Found issue opened: {}, {}: {}'.format(str(issue.fields.created),
+                         issue.key, issue.fields.summary))
             # Create the JiraFailureMetric
             created_ts = self.convert_timestamp(issue.fields.created)
             resolution_ts = None
             if issue.fields.resolutiondate:
-                logging.info('Found issue close: {}, {}: {}'.format(str(issue.fields.resolutiondate), issue.key, issue.fields.summary))
+                logging.info('Found issue close: {}, {}: {}'.format(str(issue.fields.resolutiondate),
+                             issue.key, issue.fields.summary))
                 resolution_ts = self.convert_timestamp(issue.fields.resolutiondate)
             tracker_issue = TrackerIssue(issue.key, created_ts, resolution_ts)
             critical_issues.append(tracker_issue)
 
         return critical_issues
-
 
     def convert_timestamp(self, date_time):
         """Convert a Jira datetime with TZ to UTC """
@@ -47,4 +48,3 @@ class JiraFailureCollector(AbstractFailureCollector):
         utc_string = utc.strftime('%Y-%m-%dT%H:%M:%SZ')
         # convert to timestamp
         return pelorus.convert_date_time_to_timestamp(utc_string)
-

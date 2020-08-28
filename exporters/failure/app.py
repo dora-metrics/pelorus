@@ -9,11 +9,13 @@ from prometheus_client.core import REGISTRY
 
 REQUIRED_CONFIG = ['PROJECT', 'USER', 'TOKEN', 'SERVER']
 
+
 class TrackerFactory:
     @staticmethod
     def getCollector(username, token, tracker_api, project, tracker_provider):
         if tracker_provider == "jira":
             return JiraFailureCollector(username, token, tracker_api, project)
+
 
 if __name__ == "__main__":
     logging.info("===== Starting Failure Collector =====")
@@ -34,5 +36,3 @@ if __name__ == "__main__":
     while True:
         time.sleep(1)
     logging.info("===== Exit Failure Collector =====")
-
-
