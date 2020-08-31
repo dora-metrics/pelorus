@@ -12,26 +12,26 @@ from prometheus_client.core import REGISTRY
 
 REQUIRED_CONFIG = ['GIT_USER', 'GIT_TOKEN']
 
-pelorus.load_kube_config()
-k8s_config = client.Configuration()
-k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-dyn_client = DynamicClient(k8s_client)
-
 
 class GitFactory:
     @staticmethod
-    def getCollector(username, token, namespaces, apps, git_api, git_provider):
+    def getCollector(kube_client, username, token, namespaces, apps, git_api, git_provider):
         if git_provider == "gitlab":
-            return GitLabCommitCollector(username, token, namespaces, apps)
+            return GitLabCommitCollector(kube_client, username, token, namespaces, apps)
         if git_provider == "github":
-            return GitHubCommitCollector(username, token, namespaces, apps, git_api)
+            return GitHubCommitCollector(kube_client, username, token, namespaces, apps, git_api)
         if git_provider == "bitbucket":
-            return BitbucketCommitCollector("", "", "", "")
+            return BitbucketCommitCollector(kube_client, "", "", "", "")
 
 
 if __name__ == "__main__":
     pelorus.check_legacy_vars()
     pelorus.check_required_config(REQUIRED_CONFIG)
+    pelorus.load_kube_config()
+
+    k8s_config = client.Configuration()
+    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
+    dyn_client = DynamicClient(k8s_client)
 
     username = os.environ.get('GIT_USER')
     token = os.environ.get('GIT_TOKEN')
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     apps = None
     start_http_server(8080)
 
-    collector = GitFactory.getCollector(username, token, namespaces, apps, git_api, git_provider)
+    collector = GitFactory.getCollector(dyn_client, username, token, namespaces, apps, git_api, git_provider)
     REGISTRY.register(collector)
 
     while True:

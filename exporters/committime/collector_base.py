@@ -5,13 +5,6 @@ import pelorus
 import re
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
-from kubernetes import client
-from openshift.dynamic import DynamicClient
-
-pelorus.load_kube_config()
-k8s_config = client.Configuration()
-k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-dyn_client = DynamicClient(k8s_client)
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -20,8 +13,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
+    def __init__(self, kube_client, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
         """Constructor"""
+        self._kube_client = kube_client
         self._username = username
         self._token = token
         self._namespaces = namespaces
@@ -54,7 +48,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # This will loop and look at OCP builds (calls get_git_commit_time)
         if not self._namespaces:
             logging.info("No namespaces specified, watching all namespaces")
-            v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
+            v1_namespaces = self._kube_client.resources.get(api_version='v1', kind='Namespace')
             self._namespaces = [namespace.metadata.name for namespace in v1_namespaces.get().items]
         else:
             logging.info("Watching namespaces: %s" % (self._namespaces))
@@ -69,7 +63,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             app_label = pelorus.get_app_label()
             logging.info("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
 
-            v1_builds = dyn_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
+            v1_builds = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
@@ -93,7 +87,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metrics += self.get_metrics_from_apps(builds_by_app, namespace)
 
         return metrics
-        pass
 
     @abstractmethod
     def get_commit_time(self, metric):
@@ -138,7 +131,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     def get_metric_from_build(self, build, app, namespace, repo_url):
         try:
 
-            metric = CommitMetric(app, self._git_api)
+            metric = CommitMetric(app)
 
             if build.spec.source.git:
                 repo_url = build.spec.source.git.uri
@@ -180,10 +173,15 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
 
 class CommitMetric():
-    def __init__(self, app_name, _gitapi):
+    def __init__(self, app_name):
         self.name = app_name
         self.labels = None
-        self.repo_url = None
+        self.__repo_url = None
+        self.__repo_protocol = None
+        self.__repo_fqdn = None
+        self.__repo_group = None
+        self.__repo_name = None
+        self.__repo_project = None
         self.commiter = None
         self.commit_hash = None
         self.commit_time = None
@@ -194,3 +192,59 @@ class CommitMetric():
         self.image_name = None
         self.image_tag = None
         self.image_hash = None
+
+    @property
+    def repo_url(self):
+        return self.__repo_url
+
+    @repo_url.setter
+    def repo_url(self, value):
+        self.__repo_url = value
+        self.__parse_repourl()
+
+    @property
+    def repo_protocol(self):
+        """Returns the Git server protocol"""
+        return self.__repo_protocol
+
+    @property
+    def git_fqdn(self):
+        """Returns the Git server FQDN"""
+        return self.__repo_fqdn
+
+    @property
+    def repo_group(self):
+        return self.__repo_group
+
+    @property
+    def repo_name(self):
+        """Returns the Git repo name, example: myrepo.git"""
+        return self.__repo_name
+
+    @property
+    def repo_project(self):
+        """Returns the Git project name, this is normally the repo_name with '.git' parsed off the end."""
+        return self.__repo_project
+
+    @property
+    def git_server(self):
+        """Returns the Git server FQDN with the protocol"""
+        return str(self.__repo_protocol + '://' + self.__repo_fqdn)
+
+    def __parse_repourl(self):
+        """Parse the repo_url into individual pieces"""
+        if self.__repo_url is None:
+            return
+
+        url_tokens = self.__repo_url.split("/")
+        self.__repo_protocol = url_tokens[0]
+        if self.__repo_protocol.endswith(':'):
+            self.__repo_protocol = self.__repo_protocol[:-1]
+        # token 1 is always a blank
+        self.__repo_fqdn = url_tokens[2]
+        self.__repo_group = url_tokens[3]
+        self.__repo_name = url_tokens[4]
+        if self.__repo_name.endswith('.git'):
+            self.__repo_project = self.__repo_name[:-4]
+        else:
+            self.__repo_project = self.__repo_name

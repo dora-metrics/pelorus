@@ -3,14 +3,14 @@ import requests
 import logging
 import pelorus
 from collector_base import AbstractCommitCollector
-import urllib3
-urllib3.disable_warnings()
+# import urllib3
+# urllib3.disable_warnings()
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
 
-    def __init__(self, username, token, namespaces, apps):
-        super().__init__(username, token, namespaces, apps, 'GitLab', '%Y-%m-%dT%H:%M:%S.%f%z')
+    def __init__(self, kube_client, username, token, namespaces, apps):
+        super().__init__(kube_client, username, token, namespaces, apps, 'GitLab', '%Y-%m-%dT%H:%M:%S.%f%z')
 
     # base class impl
     def get_commit_time(self, metric):
@@ -18,18 +18,8 @@ class GitLabCommitCollector(AbstractCommitCollector):
         session = requests.Session()
         session.verify = False
 
-        uri = metric.repo_url
-        url_tokens = uri.split("/")
-        protocol = url_tokens[0]
-        server = url_tokens[2]
-        # group = url_tokens[3]
-        project = url_tokens[4]
-        project_name = project.strip('.git')
-
-        for t in url_tokens:
-            logging.debug(t)
-
-        git_server = protocol + "//" + server
+        project_name = metric.repo_project
+        git_server = metric.git_server
 
         if "github" in git_server or "bitbucket" in git_server:
             logging.warn("Skipping non GitLab server, found %s" % (git_server))
@@ -48,12 +38,11 @@ class GitLabCommitCollector(AbstractCommitCollector):
             project = project_map[0]
         except Exception:
             logging.error("Failed to find project: %s, repo: %s for build %s" % (
-                uri, project_name, metric.build_name), exc_info=True)
+                metric.repo_url, project_name, metric.build_name), exc_info=True)
             raise
         # Using the project id, get the project
         if project is None:
-            logging.error("Failed to find repo project: %s, for build %s" % (uri, metric.build_name), exc_info=True)
-            raise
+            raise TypeError("Failed to find repo project: %s, for build %s" % (metric.repo_url, metric.build_name))
         try:
             # get the commit from the project using the hash
             commit = project.commits.get(metric.commit_hash)

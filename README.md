@@ -1,6 +1,9 @@
 ![Pelorus](docs/img/Logo-Pelorus-A-Standard-RGB_smaller.png)
 
 ![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
+![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)
+![](https://github.com/redhat-cop/pelorus/workflows/Conftest/badge.svg)
+![](https://github.com/redhat-cop/pelorus/workflows/Chart%20Lint/badge.svg)
 
 Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 
