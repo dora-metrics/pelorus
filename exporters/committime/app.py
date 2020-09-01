@@ -13,15 +13,6 @@ from prometheus_client.core import REGISTRY
 
 REQUIRED_CONFIG = ['GIT_USER', 'GIT_TOKEN']
 
-<<<<<<< Updated upstream
-=======
-pelorus.load_kube_config()
-k8s_config = client.Configuration()
-k8s_config.verify_ssl = "False"
-k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-dyn_client = DynamicClient(k8s_client)
-
->>>>>>> Stashed changes
 
 class GitFactory:
     @staticmethod
@@ -35,20 +26,15 @@ class GitFactory:
 
 
 if __name__ == "__main__":
-<<<<<<< Updated upstream
-    pelorus.check_legacy_vars()
-    pelorus.check_required_config(REQUIRED_CONFIG)
-    pelorus.load_kube_config()
-
-    k8s_config = client.Configuration()
-    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-    dyn_client = DynamicClient(k8s_client)
-=======
     pelorus.upgrade_legacy_vars()
     if pelorus.missing_configs(REQUIRED_CONFIG):
         print("This program will exit.")
         sys.exit(1)
->>>>>>> Stashed changes
+
+    pelorus.load_kube_config()
+    k8s_config = client.Configuration()
+    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
+    dyn_client = DynamicClient(k8s_client)
 
     username = os.environ.get('GIT_USER')
     token = os.environ.get('GIT_TOKEN')
