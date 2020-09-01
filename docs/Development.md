@@ -124,13 +124,20 @@ Running an exporter on your local machine should follow this process:
 
 1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](/page/Configuration.md#configuring-exporters) to see supported variables).
 
+        export GIT_TOKEN=xxxx
+        export GIT_USER=xxxx
+
+1. Log in to your OpenShift cluster (To avoid certificate warnings and some possible errors, you may need to download your certificate bundle from the cluster and pass it in with your login)
+
+        oc login --token=<token> --server=https://api.cluster-eric.blue.osp.opentlc.com:6443 --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
+
 1. Start the exporter
         
         python exporters/committime/app.py
 
 At this point, your exporter should be available at http://localhost:8080
 
-    curl http://localhost:8080
+        curl http://localhost:8080
 
 ### IDE Setup (VSCode)
 
