@@ -21,6 +21,18 @@ rules:
   verbs:
   - list
 - apiGroups:
+  - apps
+  resources:
+  - replicasets
+  verbs:
+  - list
+- apiGroups:
+  - extensions
+  resources:
+  - replicasets
+  verbs:
+  - list
+- apiGroups:
   - build.openshift.io
   resources:
   - builds

@@ -60,12 +60,29 @@ def generate_metrics(namespaces):
         print("Watching namespaces: %s\n" % (namespaces))
 
     for namespace in namespaces:
+        replicas = []
+
+        # Process ReplicationControllers for DeploymentConfigs
         v1_replicationcontrollers = dyn_client.resources.get(api_version='v1', kind='ReplicationController')
         replicationcontrollers = v1_replicationcontrollers.get(namespace=namespace,
                                                                label_selector=pelorus.get_app_label())
+        replicas = replicationcontrollers.items
 
-        for rc in replicationcontrollers.items:
+        # Process ReplicaSets from apps/v1 api version for Deployments
+        v1_replicationsets = dyn_client.resources.get(api_version='apps/v1', kind='ReplicaSet')
+        replicationsets = v1_replicationsets.get(namespace=namespace,
+                                                 label_selector=pelorus.get_app_label())
+        replicas = replicas + replicationsets.items
+
+        # Process ReplicaSets from extentions/v1beta1 api version for Deployments
+        v1_replicationsets = dyn_client.resources.get(api_version='extensions/v1beta1', kind='ReplicaSet')
+        replicationsets = v1_replicationsets.get(namespace=namespace,
+                                                 label_selector=pelorus.get_app_label())
+        replicas = replicas + replicationsets.items
+
+        for rc in replicas:
             images = [image_sha(c.image) for c in rc.spec.template.spec.containers]
+            print("IMAGE" + str(images))
 
             # Since a commit will be built into a particular image and there could be multiple
             # containers (images) per pod, we will push one metric per image/container in the
