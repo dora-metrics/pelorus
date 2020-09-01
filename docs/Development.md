@@ -56,6 +56,12 @@ When any of our Helm charts are updated, we need to bump the version number. Thi
 2. Run `vert -g ^1 $(git describe)`.
 3. Insert the version into the `version` field of your `Chart.yaml` file.
 
+Before committing, you can run `ct lint` to confirm the version bump worked. Or, you can automate this process by adding our pre-commit script to your local git hooks.
+
+```
+cp _test/pre-commit .git/hooks/pre-commit
+```
+
 ## Dashboard Development
 
 We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](/page/Dashboards.md) user guide for that information.
