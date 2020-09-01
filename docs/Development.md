@@ -137,7 +137,7 @@ Running an exporter on your local machine should follow this process:
 
 At this point, your exporter should be available at http://localhost:8080
 
-        curl http://localhost:8080
+    curl http://localhost:8080
 
 ### IDE Setup (VSCode)
 
