@@ -124,6 +124,21 @@ Running an exporter on your local machine should follow this process:
 
 1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](/page/Configuration.md#configuring-exporters) to see supported variables).
 
+        export GIT_TOKEN=xxxx
+        export GIT_USER=xxxx
+
+1. Log in to your OpenShift cluster
+
+        oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443 
+
+1. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
+
+    1.  Download your cluster ca.crt file
+    1.  Add cert to system trust bundle
+    1.  Pass cert bundle with your login command
+
+            oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443  --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
+
 1. Start the exporter
         
         python exporters/committime/app.py
