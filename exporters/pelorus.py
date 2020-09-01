@@ -1,7 +1,6 @@
 from abc import ABC
 import logging
 import os
-import sys
 from datetime import datetime, timezone
 from kubernetes import config
 

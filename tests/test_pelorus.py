@@ -43,6 +43,7 @@ def test_missing_configs():
     os.environ["VAR2"] = "value"
     assert not pelorus.missing_configs(configs)
 
+
 @pytest.mark.parametrize("git_user,git_token,git_api,github_user,github_token,github_api",
                          [
                             (None, None, None, 'goodU', 'goodT', 'goodA'),
@@ -50,7 +51,7 @@ def test_missing_configs():
                             ('goodU', 'goodT', 'goodA', 'badU', 'badT', 'badA')
                          ]
                          )
-def test_ugprade_legacy_vars(git_user,git_token,git_api,github_user,github_token,github_api):
+def test_ugprade_legacy_vars(git_user, git_token, git_api, github_user, github_token, github_api):
     if git_user:
         os.environ["GIT_USER"] = git_user
     if git_token:
