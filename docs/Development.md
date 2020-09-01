@@ -127,9 +127,17 @@ Running an exporter on your local machine should follow this process:
         export GIT_TOKEN=xxxx
         export GIT_USER=xxxx
 
-1. Log in to your OpenShift cluster (To avoid certificate warnings and some possible errors, you may need to download your certificate bundle from the cluster and pass it in with your login)
+1. Log in to your OpenShift cluster
 
-        oc login --token=<token> --server=https://api.cluster-eric.blue.osp.opentlc.com:6443 --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
+        oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443 
+
+1. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
+
+    1.  Download your cluster ca.crt file
+    1.  Add cert to system trust bundle
+    1.  Pass cert bundle with your login command
+
+            oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443  --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
 
 1. Start the exporter
         
