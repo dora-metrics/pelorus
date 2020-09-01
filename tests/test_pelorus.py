@@ -1,6 +1,6 @@
 import os
 import pytest
-import pelorus
+from exporters import pelorus
 
 
 @pytest.mark.parametrize("start_time,end_time,format",
