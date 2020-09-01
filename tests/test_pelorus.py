@@ -1,6 +1,10 @@
 import os
 import pytest
+<<<<<<< HEAD
 from exporters import pelorus
+=======
+import pelorus
+>>>>>>> 642a19b... Refactor tests into their own directory
 
 
 @pytest.mark.parametrize("start_time,end_time,format",
