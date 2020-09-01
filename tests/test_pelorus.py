@@ -47,7 +47,7 @@ def test_missing_configs():
 @pytest.mark.parametrize("git_user,git_token,git_api,github_user,github_token,github_api",
                          [
                             (None, None, None, 'goodU', 'goodT', 'goodA'),
-                            ('goodU', 'goodT', 'goodA', None, None, None),       
+                            ('goodU', 'goodT', 'goodA', None, None, None),
                             ('goodU', 'goodT', 'goodA', 'badU', 'badT', 'badA')
                          ]
                          )
