@@ -5,6 +5,17 @@ import pelorus
 import re
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
+<<<<<<< Updated upstream
+=======
+from kubernetes import client
+from openshift.dynamic import DynamicClient
+
+pelorus.load_kube_config()
+k8s_config = client.Configuration()
+k8s_config.verify_ssl = "False"
+k8s_client = client.api_client.ApiClient(configuration=k8s_config)
+dyn_client = DynamicClient(k8s_client)
+>>>>>>> Stashed changes
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
