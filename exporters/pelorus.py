@@ -1,7 +1,6 @@
 from abc import ABC
 import logging
 import os
-import sys
 from datetime import datetime, timezone
 from kubernetes import config
 
@@ -50,27 +49,25 @@ def get_prod_label():
     return os.getenv('PROD_LABEL', DEFAULT_PROD_LABEL)
 
 
-def check_required_config(vars):
+def missing_configs(vars):
     missing_configs = False
     for var in vars:
         if var not in os.environ:
             logging.error("Missing required environment variable '%s'." % var)
             missing_configs = True
 
-    if missing_configs:
-        logging.error("This program will exit.")
-        sys.exit(1)
+    return missing_configs
 
 
-def check_legacy_vars():
+def upgrade_legacy_vars():
     username = os.environ.get('GITHUB_USER')
     token = os.environ.get('GITHUB_TOKEN')
     api = os.environ.get('GITHUB_API')
-    if username is not None:
+    if username and not os.getenv('GIT_USER'):
         os.environ['GIT_USER'] = username
-    if token is not None:
+    if token and not os.getenv('GIT_TOKEN'):
         os.environ['GIT_TOKEN'] = token
-    if api is not None:
+    if api and not os.getenv('GIT_API'):
         os.environ['GIT_API'] = api
 
 

@@ -80,6 +80,9 @@ target/
 #   install all needed dependencies.
 #Pipfile.lock
 
+# Python virtualenv
+.venv
+
 # celery beat schedule file
 celerybeat-schedule
 
