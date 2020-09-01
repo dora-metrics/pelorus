@@ -121,6 +121,7 @@ Running an exporter on your local machine should follow this process:
 1. Install dependencies
 
         pip install -r exporters/requirements.txt
+        pip install -r exporters/requirements-dev.txt
 
 1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](/page/Configuration.md#configuring-exporters) to see supported variables).
 
