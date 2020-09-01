@@ -48,6 +48,14 @@ Before committing, you can run `ct lint` to confirm the version bump worked. Or,
 cp _test/pre-commit .git/hooks/pre-commit
 ```
 
+### Updating the chart versions
+
+When any of our Helm charts are updated, we need to bump the version number. This allows for a seemless upgrade experience. In order to maintain versioning with our repository, our version numbers are derived from our tagged releases. Git provides a command which will give us that version, via `git describe`. However, the [git generated version number is not fully semver compatible](https://github.com/semver/semver/issues/200). To bridge that gap we use a tool called [Version Tester (vert)](https://github.com/Masterminds/vert). Here are the steps to generate the version:
+
+1. Install the latest release of [vert](https://github.com/Masterminds/vert/releases/)
+2. Run `vert -g ^1 $(git describe)`.
+3. Insert the version into the `version` field of your `Chart.yaml` file.
+
 ## Dashboard Development
 
 We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](/page/Dashboards.md) user guide for that information.
