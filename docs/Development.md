@@ -32,7 +32,7 @@ Currently we have two charts:
     * A set of Grafana Dashboards and Datasources
     * The Pelorus exporters, managed in an [exporter](https://github.com/redhat-cop/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
 
-We use Helm's [chart-testing](https://github.com/helm/chart-testing) to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `helm lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. When updating the version, use the output of `git describe` to keep the versioning in line with the repo.
+We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `ct lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
 
 ### Updating the chart versions
 
