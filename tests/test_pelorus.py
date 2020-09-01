@@ -48,7 +48,9 @@ def unset_envs():
     vars = ["GIT_USER", "GIT_TOKEN", "GIT_API", "GITHUB_USER", "GITHUB_TOKEN", "GITHUB_API"]
 
     for var in vars:
-        os.unsetenv(var)
+        if os.getenv(var):
+            del os.environ[var]
+        print("%s: %s" % (var, os.getenv(var)))
 
 
 @pytest.mark.parametrize("git_user,git_token,git_api,github_user,github_token,github_api",
