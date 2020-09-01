@@ -70,7 +70,7 @@ The job of the commit time exporter is to find relevant builds in OpenShift and 
 
 In order for proper collection, we require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label. 
 
-Currently we only support GitHub. Open an issue or a pull request to request support for additional Git providers.  (BitBucket and GitLab are on our roadmap.)
+Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issue or a pull request to add support for additional Git providers!
 
 #### Suggested Secrets
 
