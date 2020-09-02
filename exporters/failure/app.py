@@ -3,6 +3,7 @@ import os
 import time
 import pelorus
 import pytz
+import sys
 from datetime import datetime
 from abc import ABC, abstractmethod
 from jira import JIRA
@@ -126,7 +127,9 @@ class JiraFailureCollector(AbstractFailureCollector):
 
 if __name__ == "__main__":
     print("===== Starting Failure Collector =====")
-    pelorus.check_required_config(REQUIRED_CONFIG)
+    if pelorus.missing_configs(REQUIRED_CONFIG):
+        print("This program will exit.")
+        sys.exit(1)
     start_http_server(8080)
     project = os.environ.get('PROJECT')
     user = os.environ.get('USER')

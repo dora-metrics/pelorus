@@ -32,7 +32,21 @@ Currently we have two charts:
     * A set of Grafana Dashboards and Datasources
     * The Pelorus exporters, managed in an [exporter](https://github.com/redhat-cop/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
 
-We use Helm's [chart-testing](https://github.com/helm/chart-testing) to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `helm lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. When updating the version, use the output of `git describe` to keep the versioning in line with the repo.
+We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `ct lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
+
+### Updating the chart versions
+
+When any of our Helm charts are updated, we need to bump the version number. This allows for a seemless upgrade experience. In order to maintain versioning with our repository, our version numbers are derived from our tagged releases. Git provides a command which will give us that version, via `git describe`. However, the [git generated version number is not fully semver compatible](https://github.com/semver/semver/issues/200). To bridge that gap we use a tool called [Version Tester (vert)](https://github.com/Masterminds/vert). Here are the steps to generate the version:
+
+1. Install the latest release of [vert](https://github.com/Masterminds/vert/releases/)
+2. Run `vert -g ^1 $(git describe)`.
+3. Insert the version into the `version` field of your `Chart.yaml` file.
+
+Before committing, you can run `ct lint` to confirm the version bump worked. Or, you can automate this process by adding our pre-commit script to your local git hooks.
+
+```
+cp _test/pre-commit .git/hooks/pre-commit
+```
 
 ## Dashboard Development
 
@@ -121,6 +135,7 @@ Running an exporter on your local machine should follow this process:
 1. Install dependencies
 
         pip install -r exporters/requirements.txt
+        pip install -r exporters/requirements-dev.txt
 
 1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](/page/Configuration.md#configuring-exporters) to see supported variables).
 
@@ -245,7 +260,17 @@ Most exporter changes can be tested locally.
     git fetch themoosman
     git checkout themoosman/feature-branch
     ```
-1. Run unit tests using `pytest`.
+1. Install both the runtime and development dependencies.
+    ```
+    pip install -r exporters/requirements.txt
+    pip install -r exporters/requirements-dev.txt
+    ```
+1. Run unit tests using `python -m pytest`.
+  1. You can also run coverage reports with the following:
+        ```
+        coverage run -m pytest
+        coverage report
+        ```
 1. Gather necessary [configuration information](/page/Configuration.md#configuring-exporters).
 1. [Run exporter localy](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
 1. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:

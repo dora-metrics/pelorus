@@ -4,6 +4,7 @@ from collector_gitlab import GitLabCommitCollector
 from collector_github import GitHubCommitCollector
 import os
 import pelorus
+import sys
 import time
 from kubernetes import client
 from openshift.dynamic import DynamicClient
@@ -25,10 +26,12 @@ class GitFactory:
 
 
 if __name__ == "__main__":
-    pelorus.check_legacy_vars()
-    pelorus.check_required_config(REQUIRED_CONFIG)
-    pelorus.load_kube_config()
+    pelorus.upgrade_legacy_vars()
+    if pelorus.missing_configs(REQUIRED_CONFIG):
+        print("This program will exit.")
+        sys.exit(1)
 
+    pelorus.load_kube_config()
     k8s_config = client.Configuration()
     k8s_client = client.api_client.ApiClient(configuration=k8s_config)
     dyn_client = DynamicClient(k8s_client)
