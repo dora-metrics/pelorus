@@ -1,3 +1,35 @@
 #!/bin/bash
 
-ct lint
+bump_version() {
+    chart=${1}
+    version=$(python _test/bump_version.py -i ${chart})
+    sed -i "s/version:\ .*$/version:\ ${version}/" ${chart}/Chart.yaml
+    echo "Updated chart ${chart} version to ${version}."
+}
+
+set_app_version() {
+    version=$(vert -g ^1 $(git describe))
+    sed -i "s/appVersion:\ .*$/appVersion:\ ${version}/" charts/pelorus/Chart.yaml
+}
+
+# Ensure app
+set_app_version
+if [ "$(git diff charts/pelorus/Chart.yaml)" != "" ]; then
+    echo "Updated charts/pelorus appVersion to $(git describe)."
+    echo "Please re-commit."
+    exit 1
+fi
+
+chart_lint=$(ct lint 2>&1)
+failed=$?
+failed_charts=$(echo "${chart_lint}" | sed -n 's/.*\(path:\ \"\)\(.*\)\".*Chart\ version.*$/\2/p')
+
+if [ ${failed} -ne 0 ] && [ "${failed_charts}" != "" ]; then
+    for chart in ${failed_charts}; do
+        bump_version ${chart}
+    done
+    # Recursively call script to ensure tests pass now
+    ./$0
+    echo "Please re-commit."
+    exit 1
+fi
