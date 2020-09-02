@@ -12,7 +12,7 @@ set_app_version() {
     sed -i "s/appVersion:\ .*$/appVersion:\ ${version}/" charts/pelorus/Chart.yaml
 }
 
-chart_lint=$(ct lint 2>&1)
+chart_lint=$(ct lint --remote upstream 2>&1)
 failed=$?
 failed_charts=$(echo "${chart_lint}" | sed -n 's/.*\(path:\ \"\)\(.*\)\".*Chart\ version.*$/\2/p')
 
