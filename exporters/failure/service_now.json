@@ -1,0 +1,10 @@
+{"result": 
+[
+    {"parent": "", "delivery_address": "", "made_sla": "true", "watch_list": "", "upon_reject": "cancel", "requested_for": 
+    {"link": "https://dev86536.service-now.com/api/now/table/sys_user/6816f79cc0a8016401c5a33be04be441", "value": "6816f79cc0a8016401c5a33be04be441"}, 
+    "sys_updated_on": "2020-08-22 20:58:44", "approval_history": "", "number": "REQ0000001", "sys_updated_by": "admin", 
+    "opened_by": {"link": "https://dev86536.service-now.com/api/now/table/sys_user/6816f79cc0a8016401c5a33be04be441", "value": 
+    "6816f79cc0a8016401c5a33be04be441"}, "user_input": "", "price": "600", "sys_created_on": "2020-08-22 20:58:44", "sys_domain": 
+    {"link": "https://dev86536.service-now.com/api/now/table/sys_user_group/global", "value": "global"}, "state": "1", 
+    "sys_created_by": "admin", "knowledge": "false", "order": "", "calendar_stc": "", "special_instructions": "", "closed_at": "", "cmdb_ci": "", "delivery_plan": "", "contract": "", "impact": "3", "active": "true", "work_notes_list": "", "business_service": "", "priority": "4", "sys_domain_path": "/", "time_worked": "", "expected_start": "", "opened_at": "2020-08-22 20:58:44", "business_duration": "", "group_list": "", "work_end": "", "approval_set": "", "work_notes": "", "short_description": "", "correlation_display": "", "delivery_task": "", "work_start": "", "assignment_group": "", "parent_interaction": "", "additional_assignee_list": "", "description": "", "calendar_duration": "", "close_notes": "", "service_offering": "", "sys_class_name": "sc_request", "closed_by": "", "follow_up": "", "sys_id": "6eed229047801200e0ef563dbb9a71c2", "contact_type": "", "urgency": "3", "requested_date": "", "company": "", "reassignment_count": "0", "activity_due": "", "assigned_to": "", "comments": "", "approval": "approved", "sla_due": "", "comments_and_work_notes": "", "due_date": "2020-08-24 20:58:43", "sys_mod_count": "0", "sys_tags": "", "request_state": "in_process", "stage": "requested", "escalation": "0", "upon_approval": "proceed", "correlation_id": "", "location": ""}]
+}
