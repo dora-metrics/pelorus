@@ -36,17 +36,17 @@ We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ens
 
 ### Updating the chart versions
 
-When any of our Helm charts are updated, we need to bump the version number. This allows for a seemless upgrade experience. In order to maintain versioning with our repository, our version numbers are derived from our tagged releases. Git provides a command which will give us that version, via `git describe`. However, the [git generated version number is not fully semver compatible](https://github.com/semver/semver/issues/200). To bridge that gap we use a tool called [Version Tester (vert)](https://github.com/Masterminds/vert). Here are the steps to generate the version:
+When any of our Helm charts are updated, we need to bump the version number. This allows for a seemless upgrade experience. In order to maintain versioning with our repository, our version numbers are derived from our tagged releases. Git provides a command which will give us that version, via `git describe`. However, the [git generated version number is not fully semver compatible](https://github.com/semver/semver/issues/200). To bridge that gap we use a tool called [Version Tester (vert)](https://github.com/Masterminds/vert). We have also written a pre-commit hook script that will automatically detect when a version bump is needed and will make the required change. Here are the steps to get the hook set up.
 
+1. Install Helm's [chart-testing](https://github.com/helm/chart-testing) tool.
 1. Install the latest release of [vert](https://github.com/Masterminds/vert/releases/)
-2. Run `vert -g ^1 $(git describe)`.
-3. Insert the version into the `version` field of your `Chart.yaml` file.
+    1. Run `vert -g ^1 $(git describe)` to test that its working.
+1. Copy the pre-commit hook into your git hooks directory.
+    ```
+    cp _test/pre-commit .git/hooks/pre-commit
+    ```
 
-Before committing, you can run `ct lint` to confirm the version bump worked. Or, you can automate this process by adding our pre-commit script to your local git hooks.
-
-```
-cp _test/pre-commit .git/hooks/pre-commit
-```
+This script will use Helm's built-in linter to check whether a version bump is necessary, and if it is, it will take the current `version` from Chart.yaml and increment it one patch version. It will also keep `appVersion` fo the Pelorus chart up to date with the repo version using `git describe`.
 
 ## Dashboard Development
 
