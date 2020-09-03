@@ -99,7 +99,7 @@ def get_replicas(apiVersion, objectName, namespace):
                                              label_selector=pelorus.get_app_label())
         replicas = replicas + replicationobjects.items
     except ResourceNotFoundError:
-        logging.debug("API Object not found for version: %s object:%s" , apiVersion, objectName)
+        logging.debug("API Object not found for version: %s object: %s", apiVersion, objectName)
         pass
     return replicas
 
