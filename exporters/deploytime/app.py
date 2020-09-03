@@ -70,7 +70,7 @@ def generate_metrics(namespaces):
         replicas = replicas + get_replicas('apps/v1', 'ReplicaSet', namespace)
 
         # Process ReplicaSets from extentions/v1beta1 api version for Deployments
-        replicas = replicas + get_replicas('extensions/v1beta1x', 'ReplicaSet', namespace)
+        replicas = replicas + get_replicas('extensions/v1beta1', 'ReplicaSet', namespace)
 
         for rc in replicas:
             images = [image_sha(c.image) for c in rc.spec.template.spec.containers]
