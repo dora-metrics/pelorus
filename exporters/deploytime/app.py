@@ -64,31 +64,13 @@ def generate_metrics(namespaces):
         replicas = []
 
         # Process ReplicationControllers for DeploymentConfigs
-        try:
-            v1_replicationcontrollers = dyn_client.resources.get(api_version='v1', kind='ReplicationController')
-            replicationcontrollers = v1_replicationcontrollers.get(namespace=namespace,
-                                                                   label_selector=pelorus.get_app_label())
-            replicas = replicationcontrollers.items
-        except ResourceNotFoundError:
-            pass
+        replicas = get_replicas('v1', 'ReplicationController', namespace)
 
         # Process ReplicaSets from apps/v1 api version for Deployments
-        try:
-            v1_replicationsets = dyn_client.resources.get(api_version='apps/v1', kind='ReplicaSet')
-            replicationsets = v1_replicationsets.get(namespace=namespace,
-                                                     label_selector=pelorus.get_app_label())
-            replicas = replicas + replicationsets.items
-        except ResourceNotFoundError:
-            pass
+        replicas = replicas + get_replicas('apps/v1', 'ReplicaSet', namespace)
 
         # Process ReplicaSets from extentions/v1beta1 api version for Deployments
-        try:
-            v1_replicationsets = dyn_client.resources.get(api_version='extensions/v1beta1', kind='ReplicaSet')
-            replicationsets = v1_replicationsets.get(namespace=namespace,
-                                                     label_selector=pelorus.get_app_label())
-            replicas = replicas + replicationsets.items
-        except ResourceNotFoundError:
-            pass
+        replicas = replicas + get_replicas('extensions/v1beta1', 'ReplicaSet', namespace)
 
         for rc in replicas:
             images = [image_sha(c.image) for c in rc.spec.template.spec.containers]
@@ -106,6 +88,19 @@ def generate_metrics(namespaces):
                     metrics.append(metric)
 
     return metrics
+
+
+def get_replicas(apiVersion, objectName, namespace):
+    replicas = []
+    # Process ReplicaSets from apps/v1 api version for Deployments
+    try:
+        apiResource = dyn_client.resources.get(api_version=apiVersion, kind=objectName)
+        replicationobjects = apiResource.get(namespace=namespace,
+                                             label_selector=pelorus.get_app_label())
+        replicas = replicas + replicationobjects.items
+    except ResourceNotFoundError:
+        pass
+    return replicas
 
 
 if __name__ == "__main__":
