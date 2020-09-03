@@ -5,6 +5,7 @@ import pelorus
 import time
 from kubernetes import client
 from openshift.dynamic import DynamicClient
+from openshift.dynamic.exceptions import ResourceNotFoundError
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
@@ -63,22 +64,31 @@ def generate_metrics(namespaces):
         replicas = []
 
         # Process ReplicationControllers for DeploymentConfigs
-        v1_replicationcontrollers = dyn_client.resources.get(api_version='v1', kind='ReplicationController')
-        replicationcontrollers = v1_replicationcontrollers.get(namespace=namespace,
-                                                               label_selector=pelorus.get_app_label())
-        replicas = replicationcontrollers.items
+        try:
+            v1_replicationcontrollers = dyn_client.resources.get(api_version='v1', kind='ReplicationController')
+            replicationcontrollers = v1_replicationcontrollers.get(namespace=namespace,
+                                                                   label_selector=pelorus.get_app_label())
+            replicas = replicationcontrollers.items
+        except ResourceNotFoundError:
+            pass
 
         # Process ReplicaSets from apps/v1 api version for Deployments
-        v1_replicationsets = dyn_client.resources.get(api_version='apps/v1', kind='ReplicaSet')
-        replicationsets = v1_replicationsets.get(namespace=namespace,
-                                                 label_selector=pelorus.get_app_label())
-        replicas = replicas + replicationsets.items
+        try:
+            v1_replicationsets = dyn_client.resources.get(api_version='apps/v1', kind='ReplicaSet')
+            replicationsets = v1_replicationsets.get(namespace=namespace,
+                                                     label_selector=pelorus.get_app_label())
+            replicas = replicas + replicationsets.items
+        except ResourceNotFoundError:
+            pass
 
         # Process ReplicaSets from extentions/v1beta1 api version for Deployments
-        v1_replicationsets = dyn_client.resources.get(api_version='extensions/v1beta1', kind='ReplicaSet')
-        replicationsets = v1_replicationsets.get(namespace=namespace,
-                                                 label_selector=pelorus.get_app_label())
-        replicas = replicas + replicationsets.items
+        try:
+            v1_replicationsets = dyn_client.resources.get(api_version='extensions/v1beta1', kind='ReplicaSet')
+            replicationsets = v1_replicationsets.get(namespace=namespace,
+                                                     label_selector=pelorus.get_app_label())
+            replicas = replicas + replicationsets.items
+        except ResourceNotFoundError:
+            pass
 
         for rc in replicas:
             images = [image_sha(c.image) for c in rc.spec.template.spec.containers]
