@@ -28,18 +28,19 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     def collect(self):
         commit_metric = GaugeMetricFamily('commit_timestamp',
-                                          'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
+                                          'Commit timestamp', labels=['namespace', 'app', 'commit' 'image_sha'])
         commit_metrics = self.generate_metrics()
         for my_metric in commit_metrics:
-            logging.info("Collected commit_timestamp{ namespace=%s, app=%s, image_sha: %s } %s"
+            logging.info("Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s"
                          % (
                              my_metric.namespace,
                              my_metric.name,
+                             my_metric.commit_hash,
                              my_metric.image_hash,
                              str(float(my_metric.commit_timestamp))
                          )
                          )
-            commit_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.image_hash],
+            commit_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.commit_hash, my_metric.image_hash],
                                      my_metric.commit_timestamp)
             yield commit_metric
 
