@@ -31,11 +31,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                                           'Commit timestamp', labels=['namespace', 'app', 'image_sha'])
         commit_metrics = self.generate_metrics()
         for my_metric in commit_metrics:
-            logging.info("Namespace: %s, App: %s, Build: %s, Timestamp: %s"
+            logging.info("commit_timestamp{ namespace=%s, app=%s, image_sha: %s } %s"
                          % (
                              my_metric.namespace,
                              my_metric.name,
-                             my_metric.build_name,
+                             my_metric.image_hash,
                              str(float(my_metric.commit_timestamp))
                          )
                          )
@@ -61,7 +61,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             apps = []
             builds_by_app = {}
             app_label = pelorus.get_app_label()
-            logging.info("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
+            logging.debug("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
 
             v1_builds = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
             # only use builds that have the app label
@@ -144,7 +144,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.labels = json.loads(str(labels).replace("\'", "\""))
 
             metric.commit_hash = commit_sha
-            metric.name = app + '-' + commit_sha
+            metric.name = app
             metric.commiter = build.spec.revision.git.author.name
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
