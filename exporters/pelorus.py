@@ -48,7 +48,7 @@ def convert_date_time_to_timestamp(date_time, format_string='%Y-%m-%dT%H:%M:%SZ'
 def convert_timestamp_to_date_time_str(timestamp, format_string='%Y-%m-%dT%H:%M:%SZ'):
     date_time_str = None
     try:
-        date_time = datetime.fromtimestamp(timestamp)
+        date_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
         date_time_str = date_time.strftime(format_string)
     except ValueError:
         raise
