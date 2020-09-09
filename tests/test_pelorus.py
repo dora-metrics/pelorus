@@ -1,13 +1,15 @@
 import os
 import pytest
+from datetime import datetime, timezone
 from exporters import pelorus
 
 
 @pytest.mark.parametrize("start_time,end_time,format",
                          [
-                            ('2020-06-27T03:17:8Z', '2020-06-27T06:17:8Z', '%Y-%m-%dT%H:%M:%SZ'),
-                            ('2020-06-27T03:17:08.00000-0500', '2020-06-27T06:17:08.000000-0500',
-                                                               '%Y-%m-%dT%H:%M:%S.%f%z')
+                             ('2020-06-27T03:17:8Z',
+                              '2020-06-27T06:17:8Z', '%Y-%m-%dT%H:%M:%SZ'),
+                             ('2020-06-27T03:17:08.00000-0500', '2020-06-27T06:17:08.000000-0500',
+                              '%Y-%m-%dT%H:%M:%S.%f%z')
                          ]
                          )
 def test_convert_date_time_to_timestamp(start_time, end_time, format):
@@ -44,6 +46,22 @@ def test_missing_configs():
     assert not pelorus.missing_configs(configs)
 
 
+@pytest.mark.parametrize("date_format", [('%Y-%m-%dT%H:%M:%S.%f')])
+def test_datetime_conversion_type(date_format):
+    d = datetime.now()
+    myts = d.replace(tzinfo=timezone.utc).timestamp()
+    ts = pelorus.convert_date_time_to_timestamp(d, date_format)
+    assert ts is not None
+    assert myts == ts
+
+
+@pytest.mark.parametrize("date_time, timestamp, date_format", [('2020-06-27T06:17:08.000000', 1593238628, '%Y-%m-%dT%H:%M:%S.%f')])
+def test_datetime__as_str_conversion_type(date_time, timestamp, date_format):
+    ts = pelorus.convert_date_time_to_timestamp(date_time, date_format)
+    assert ts is not None
+    assert timestamp == ts
+
+
 def unset_envs():
     vars = ["GIT_USER", "GIT_TOKEN", "GIT_API", "GITHUB_USER", "GITHUB_TOKEN", "GITHUB_API"]
 
@@ -55,9 +73,9 @@ def unset_envs():
 
 @pytest.mark.parametrize("git_user,git_token,git_api,github_user,github_token,github_api",
                          [
-                            (None, None, None, 'goodU', 'goodT', 'goodA'),
-                            ('goodU', 'goodT', 'goodA', None, None, None),
-                            ('goodU', 'goodT', 'goodA', 'badU', 'badT', 'badA')
+                             (None, None, None, 'goodU', 'goodT', 'goodA'),
+                             ('goodU', 'goodT', 'goodA', None, None, None),
+                             ('goodU', 'goodT', 'goodA', 'badU', 'badT', 'badA')
                          ]
                          )
 def test_ugprade_legacy_vars(git_user, git_token, git_api, github_user, github_token, github_api):
