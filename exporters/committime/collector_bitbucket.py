@@ -3,8 +3,8 @@ import json
 import logging
 import pelorus
 from collector_base import AbstractCommitCollector
-import urllib3
-urllib3.disable_warnings()
+# import urllib3
+# urllib3.disable_warnings()
 
 
 class BitbucketCommitCollector(AbstractCommitCollector):
@@ -52,22 +52,23 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                     self.__server_dict[git_server] = '1.0'
                     api_version = self.__server_dict.get(git_server)
                 else:
-                    logging.error("Unable to determine API version for Bitbucket server: %s" % (git_server))
                     return metric
 
-        # get the project, group and commit sha properties from the existing metric
+        # get the project, group, and commit sha properties from the existing metric
         project_name = metric.repo_project
         sha = metric.commit_hash
         group = metric.repo_group
 
         # set API variables depending on the version
         if api_version == '1.0':
+            # start with the V1 globals
             api_root = self.V1_API_ROOT
             api_pattern = self.V1_API_PATTERN
             # Due to the BB V1 git pattern differences, need remove '/scm' and parse again.
             old_url = metric.repo_url
             # Parse out the V1 /scm, for whatever reason why it is present.
             new_url = old_url.replace('/scm', '')
+            # set the new url, so the parsing will happen
             metric.repo_url = new_url
             # set the new project name
             project_name = metric.repo_project
@@ -76,6 +77,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             # set the URL back to the original
             metric.repo_url = old_url
         elif api_version == '2.0':
+            # Just set the V2 globals
             api_root = self.V2_API_ROOT
             api_pattern = self.V2_API_PATTERN
 
@@ -85,8 +87,11 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         # Finally, make the API call
         api_response = None
         try:
+            # build the API path using, group, project and commit sha
             path = api_pattern.format(group=group, project=project_name, commit=sha)
+            # create the full URL
             url = pelorus.url_joiner(api_server, path)
+            # send a GET
             response = self.__session.request("GET", url=url, headers=self.DEFAULT_HEADERS)
             response.encoding = 'utf-8'
             api_response = response
@@ -116,7 +121,12 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             else:
                 # API V1 has the commit timestamp, which does not need to be converted
                 commit_timestamp = api_j["committerTimestamp"]
-                metric.commit_timestamp = commit_timestamp
+                # Convert timestamp from miliseconds to seconds
+                converted_timestamp = commit_timestamp / 1000
+                # set the timestamp in the metric
+                metric.commit_timestamp = converted_timestamp
+                # convert the time stamp to datetime and set in metric
+                metric.commit_time = pelorus.convert_timestamp_to_date_time_str(converted_timestamp)
         except Exception:
             logging.error("Failed processing commit time for build %s" % metric.build_name, exc_info=True)
             raise
@@ -127,7 +137,12 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             api_server = pelorus.url_joiner(git_server, api_root)
             url = pelorus.url_joiner(api_server, api_test)
             response = session.request("GET", url=url, headers=self.DEFAULT_HEADERS)
-            if response.status_code == 200:
+            status_code = response.status_code
+            if status_code == 200:
                 return True
+            else:
+                logging.warning("Unable to retrieve API version for URL: %s . Got http code: %s" % (
+                    url, str(status_code)))
+                return False
         except Exception:
             return False

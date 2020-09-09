@@ -45,6 +45,16 @@ def convert_date_time_to_timestamp(date_time, format_string='%Y-%m-%dT%H:%M:%SZ'
     return timestamp.replace(tzinfo=timezone.utc).timestamp()
 
 
+def convert_timestamp_to_date_time_str(timestamp, format_string='%Y-%m-%dT%H:%M:%SZ'):
+    date_time_str = None
+    try:
+        date_time = datetime.fromtimestamp(timestamp)
+        date_time_str = date_time.strftime(format_string)
+    except ValueError:
+        raise
+    return date_time_str
+
+
 def get_app_label():
     return os.getenv('APP_LABEL', DEFAULT_APP_LABEL)
 
