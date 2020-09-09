@@ -1,0 +1,20 @@
+# This is the rules file.
+
+groups:
+- name: software-delivery-performance
+  rules: 
+  - record: sdp:lead_time:by_commit
+    expr: >
+      min by (app, image_sha) (deploy_timestamp) - on(app,image_sha) group_left(commit) commit_timestamp
+  - record: sdp:lead_time:global
+    expr: >
+      avg(sdp:lead_time:by_app)
+  - record: fr:time_to_restore
+    expr: >
+      failure_resolution_timestamp - failure_creation_timestamp
+  - record: fr:time_to_restore:global
+    expr: >
+      avg(fr:time_to_restore)
+  - record: fr:change_failure_rate
+    expr: >
+      count(failure_creation_timestamp) / count(deploy_timestamp)
