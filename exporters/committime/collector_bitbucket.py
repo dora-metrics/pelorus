@@ -40,19 +40,9 @@ class BitbucketCommitCollector(AbstractCommitCollector):
 
         # Get or figure out the BB API version
         # check the cache
-        api_version = self.__server_dict.get(git_server)
+        api_version = self.get_api_version(git_server)
         if api_version is None:
-            # cache miss, figure out the api
-            # try version 2.0
-            if self.get_api_verison(self.__session, git_server, self.V2_API_ROOT, self.V2_API_TEST):
-                self.__server_dict[git_server] = '2.0'
-                api_version = self.__server_dict.get(git_server)
-            else:  # try version 1.0
-                if self.get_api_verison(self.__session, git_server, self.V1_API_ROOT, self.V1_API_TEST):
-                    self.__server_dict[git_server] = '1.0'
-                    api_version = self.__server_dict.get(git_server)
-                else:
-                    return metric
+            return metric
 
         # get the project, group, and commit sha properties from the existing metric
         project_name = metric.repo_project
@@ -85,29 +75,16 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         api_server = pelorus.url_joiner(git_server, api_root)
 
         # Finally, make the API call
-        api_response = None
-        try:
-            # build the API path using, group, project and commit sha
-            path = api_pattern.format(group=group, project=project_name, commit=sha)
-            # create the full URL
-            url = pelorus.url_joiner(api_server, path)
-            # send a GET
-            response = self.__session.request("GET", url=url, headers=self.DEFAULT_HEADERS)
-            response.encoding = 'utf-8'
-            api_response = response
-        except Exception:
-            logging.warning("Failed to find project: %s, repo: %s for build %s" % (
-                metric.repo_url, project_name, metric.build_name), exc_info=True)
-            return metric
+        api_response = self.get_commit_information(api_pattern, api_server, group, project_name, sha, metric)
 
         # Check for a valid response and continue if none is found
         if api_response is None or api_response.status_code != 200 or api_response.text is None:
             logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
-                metric.build_name, metric.commit_hash, metric.repo_fqdn, str(response.status_code)))
+                metric.build_name, metric.commit_hash, metric.repo_fqdn, str(api_response.status_code)))
             return metric
         try:
             logging.debug("API call returned: %s" % (api_response.text))
-            api_j = json.loads(response.text)
+            api_j = json.loads(api_response.text)
             if api_version == '2.0':
                 # API V2 only has the commit time, which needs to be converted.
                 # get the commit date/time
@@ -132,7 +109,41 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             raise
         return metric
 
-    def get_api_verison(self, session, git_server, api_root, api_test):
+    def get_commit_information(self, api_pattern, api_server, group, project_name, sha, metric):
+        """Makes an API call to get the commit information"""
+        # Finally, make the API call
+        api_response = None
+        try:
+            # build the API path using, group, project and commit sha
+            path = api_pattern.format(group=group, project=project_name, commit=sha)
+            # create the full URL
+            url = pelorus.url_joiner(api_server, path)
+            # send a GET
+            response = self.__session.request("GET", url=url, headers=self.DEFAULT_HEADERS)
+            response.encoding = 'utf-8'
+            api_response = response
+        except Exception:
+            logging.warning("Failed to find project: %s, repo: %s for build %s" % (
+                metric.repo_url, project_name, metric.build_name), exc_info=True)
+        return api_response
+
+    def get_api_version(self, git_server):
+        """Checks the map for a the Git server API version.  If not found it makes an API call to determine."""
+        api_version = self.__server_dict.get(git_server)
+        if api_version is None:
+            # cache miss, figure out the api
+            # try version 2.0
+            if self.check_api_verison(self.__session, git_server, self.V2_API_ROOT, self.V2_API_TEST):
+                self.__server_dict[git_server] = '2.0'
+                api_version = self.__server_dict.get(git_server)
+            else:  # try version 1.0
+                if self.check_api_verison(self.__session, git_server, self.V1_API_ROOT, self.V1_API_TEST):
+                    self.__server_dict[git_server] = '1.0'
+                    api_version = self.__server_dict.get(git_server)
+        return api_version
+
+    def check_api_verison(self, session, git_server, api_root, api_test):
+        """Makes an API call to determine the API version"""
         try:
             api_server = pelorus.url_joiner(git_server, api_root)
             url = pelorus.url_joiner(api_server, api_test)
