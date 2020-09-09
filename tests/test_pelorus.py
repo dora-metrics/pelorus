@@ -65,6 +65,7 @@ def test_datetime__as_str_conversion_type(date_time, timestamp, date_format):
     assert ts is not None
     assert timestamp == ts
 
+
 @pytest.mark.parametrize("timestamp, date_time_str", [(1599659116.0, '2020-09-09T13:45:16Z')])
 def test_timestamp_to_datetime_conversion(timestamp, date_time_str):
     date_time = pelorus.convert_timestamp_to_date_time_str(timestamp)
