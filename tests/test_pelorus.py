@@ -55,7 +55,11 @@ def test_datetime_conversion_type(date_format):
     assert myts == ts
 
 
-@pytest.mark.parametrize("date_time, timestamp, date_format", [('2020-06-27T06:17:08.000000', 1593238628, '%Y-%m-%dT%H:%M:%S.%f')])
+@pytest.mark.parametrize("date_time, timestamp, date_format",
+                         [
+                             ('2020-06-27T06:17:08.000000', 1593238628, '%Y-%m-%dT%H:%M:%S.%f')
+                         ]
+                         )
 def test_datetime__as_str_conversion_type(date_time, timestamp, date_format):
     ts = pelorus.convert_date_time_to_timestamp(date_time, date_format)
     assert ts is not None
