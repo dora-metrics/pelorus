@@ -52,18 +52,20 @@ tests:
 
   # Unit tests for promql expressions.
   promql_expr_test:
-  # Unit test 1.
+  # Check that the expected number of deploy_timestamp entries are present
   - expr: count(deploy_timestamp)
     eval_time: 1m
     exp_samples:
     # Sample 1.
     - labels: '{}'
       value: 9
+  # Check that the expected number of commit_timestamp entries are present
   - expr: count(commit_timestamp)
     eval_time: 1m
     exp_samples:
     - labels: '{}'
       value: 10
+  # Ensure expected values for lead time for app 1
   - expr: sdp:lead_time:by_commit{app="basic-nginx"}
     eval_time: 1m
     exp_samples:
@@ -73,8 +75,22 @@ tests:
       value: 282
     - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="c8683ac2ae37cb9dd7c4c576747bf8f3d74c4f28"}'
       value: 2918139
+  # Ensure expected values for lead time for app 2
   - expr: sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot"}
     eval_time: 1m
     exp_samples:
     - labels: 'sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d"}'
       value: 1028589
+  # Check calculation of average lead time per application
+  - expr: sdp:lead_time:by_app
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:lead_time:by_app{app="basic-nginx"}'
+      value: 972844
+    - labels: 'sdp:lead_time:by_app{app="kenwilli-basic-spring-boot"}'
+      value: 1028589
+  - expr: sdp:lead_time:global
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:lead_time:global'
+      value: 1000716.5
