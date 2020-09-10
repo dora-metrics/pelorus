@@ -2,7 +2,7 @@
 # Only this file is passed as command line argument.
 
 rule_files:
-  - rules.yml
+  - rules.yaml
 
 evaluation_interval: 1m
 

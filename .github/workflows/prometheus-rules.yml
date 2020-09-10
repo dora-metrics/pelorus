@@ -1,0 +1,16 @@
+name: Promteheus Rules Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '^1.13.1' # The Go version to download (if necessary) and use.
+    - run: |
+        go version
+        go get github.com/prometheus/prometheus/cmd/promtool
+        promtool version
+        _test/test_prometheusrules
