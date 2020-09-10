@@ -12,5 +12,5 @@ jobs:
     - run: |
         go version
         go get github.com/prometheus/prometheus/cmd/promtool
-        promtool version
+        promtool --version
         _test/test_prometheusrules
