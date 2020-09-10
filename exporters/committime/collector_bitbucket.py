@@ -89,7 +89,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                 # API V2 only has the commit time, which needs to be converted.
                 # get the commit date/time
                 commit_time = api_j["date"]
-                logging.debug("API returned sha: %s, commit date: %s" % (sha, str(commit_time)))
+                logging.debug("API v2 returned sha: %s, commit date: %s" % (sha, str(commit_time)))
                 # set the commit time from the API
                 metric.commit_time = commit_time
                 # set the timestamp after conversion
@@ -98,6 +98,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             else:
                 # API V1 has the commit timestamp, which does not need to be converted
                 commit_timestamp = api_j["committerTimestamp"]
+                logging.debug("API v1 returned sha: %s, timestamp: %s" % (sha, str(commit_timestamp)))
                 # Convert timestamp from miliseconds to seconds
                 converted_timestamp = commit_timestamp / 1000
                 # set the timestamp in the metric
