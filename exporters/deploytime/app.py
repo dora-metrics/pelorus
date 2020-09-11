@@ -20,10 +20,11 @@ class DeployTimeCollector(object):
         self._namespaces = namespaces
 
     def collect(self):
+        logging.info("collect: start")
         metric = GaugeMetricFamily('deploy_timestamp', 'Deployment timestamp', labels=['namespace', 'app', 'image_sha'])
         metrics = generate_metrics(self._namespaces)
         for m in metrics:
-            print("Namespace: ", m.namespace, ", App: ", m.name, ", Image: ", m.image_sha)
+            logging.info("Namespace: %s, App: %s, Image: %s", m.namespace, m.name, m.image_sha)
             metric.add_metric([m.namespace, m.name, m.image_sha, m.deploy_time],
                               pelorus.convert_date_time_to_timestamp(m.deploy_time))
             yield(metric)
@@ -51,57 +52,72 @@ def image_sha(img_url):
 def generate_metrics(namespaces):
 
     metrics = []
+    pods = []
+    pod_replica_dict = {}
 
+    logging.info("generate_metrics: start")
+
+    v1_pods = dyn_client.resources.get(api_version='v1', kind='Pod')
     if not namespaces:
-        print("No namespaces specified, watching all namespaces\n")
-        v1_namespaces = dyn_client.resources.get(api_version='v1', kind='Namespace')
-        namespaces = [namespace.metadata.name for namespace in v1_namespaces.get(
-            label_selector=pelorus.get_prod_label()).items]
+        logging.info("No namespaces specified, watching all namespaces")
     else:
-        print("Watching namespaces: %s\n" % (namespaces))
+        logging.info("Wwtching namespaces %s", namespaces)
 
-    for namespace in namespaces:
-        replicas = []
+    pods = v1_pods.get(label_selector=pelorus.get_app_label(), field_selector='status.phase=Running').items
 
-        # Process ReplicationControllers for DeploymentConfigs
-        replicas = get_replicas('v1', 'ReplicationController', namespace)
+    replicas_dict = {}
+    # Process ReplicationControllers for DeploymentConfigs
+    get_replicas('v1', 'ReplicationController', replicas_dict)
 
-        # Process ReplicaSets from apps/v1 api version for Deployments
-        replicas = replicas + get_replicas('apps/v1', 'ReplicaSet', namespace)
+    # Process ReplicaSets from apps/v1 api version for Deployments
+    get_replicas('apps/v1', 'ReplicaSet', replicas_dict)
 
-        # Process ReplicaSets from extentions/v1beta1 api version for Deployments
-        replicas = replicas + get_replicas('extensions/v1beta1', 'ReplicaSet', namespace)
+    # Process ReplicaSets from extentions/v1beta1 api version for Deployments
+    get_replicas('extensions/v1beta1', 'ReplicaSet', replicas_dict)
 
-        for rc in replicas:
-            images = [image_sha(c.image) for c in rc.spec.template.spec.containers]
-            print("IMAGE" + str(images))
+    for pod in pods:
+        if not namespaces or (pod.metadata.namespace in namespaces):
+            logging.info("Getting Replicas for pod: %s", pod.metadata.name)
+            ownerRefs = pod.metadata.ownerReferences
+            namespace = pod.metadata.namespace
 
-            # Since a commit will be built into a particular image and there could be multiple
-            # containers (images) per pod, we will push one metric per image/container in the
-            # pod template
-            for i in images:
-                if i is not None:
-                    metric = DeployTimeMetric(rc.metadata.name, namespace)
-                    metric.labels = rc.metadata.labels
-                    metric.deploy_time = rc.metadata.creationTimestamp
-                    metric.image_sha = i
-                    metrics.append(metric)
+            for ownerRef in ownerRefs:
+                if ownerRef.kind in ['ReplicaSet', 'ReplicationController'] and not pod_replica_dict.get(ownerRef.name):
+
+                    logging.info("Getting Replica ownerRef: %s, %s",  ownerRef.name, ownerRef.kind)
+
+                    # Process ReplicationControllers for DeploymentConfigs
+                    rc = replicas_dict[ownerRef.name]
+
+                    if rc:
+                        pod_replica_dict[rc.metadata.name] = "DONE"
+                        images = [image_sha(c.image) for c in pod.spec.containers]
+
+                        # Since a commit will be built into a particular image and there could be multiple
+                        # containers (images) per pod, we will push one metric per image/container in the
+                        # pod template
+                        for i in images:
+                            if i is not None:
+                                metric = DeployTimeMetric(rc.metadata.name, namespace)
+                                metric.labels = rc.metadata.labels
+                                metric.deploy_time = rc.metadata.creationTimestamp
+                                metric.image_sha = i
+                                metric.namespace = namespace
+                                metrics.append(metric)
 
     return metrics
 
 
-def get_replicas(apiVersion, objectName, namespace):
-    replicas = []
+def get_replicas(apiVersion, objectName, replicas):
     # Process ReplicaSets from apps/v1 api version for Deployments
     try:
         apiResource = dyn_client.resources.get(api_version=apiVersion, kind=objectName)
-        replicationobjects = apiResource.get(namespace=namespace,
-                                             label_selector=pelorus.get_app_label())
-        replicas = replicas + replicationobjects.items
+        replicationobjects = apiResource.get(label_selector=pelorus.get_app_label())
+        for replica in replicationobjects.items:
+            replicas[replica.metadata.name] = replica
     except ResourceNotFoundError:
         logging.debug("API Object not found for version: %s object: %s", apiVersion, objectName)
         pass
-    return replicas
 
 
 if __name__ == "__main__":
