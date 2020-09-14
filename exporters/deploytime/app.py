@@ -78,20 +78,23 @@ def generate_metrics(namespaces):
     replicas_dict.update(get_replicas('extensions/v1beta1', 'ReplicaSet'))
 
     for pod in pods:
-        if not namespaces or (pod.metadata.namespace in namespaces):
+        if (not namespaces or (pod.metadata.namespace in namespaces)) and pod.metadata.ownerReferences:
             logging.debug("Getting Replicas for pod: %s in namespace: %s", pod.metadata.name, pod.metadata.namespace)
             ownerRefs = pod.metadata.ownerReferences
             namespace = pod.metadata.namespace
 
+            # use the replica controller/replicasets to get deploy timestame.  The ownerRef of pod is used to get
+            # replicaiton controller.  A dictionary is used to handle dups when multiple pods are running.
             for ownerRef in ownerRefs:
-                if ownerRef.kind in supported_replica_objects and not not pod_replica_dict.get(ownerRef.name+namespace):
+                if (ownerRef.kind in supported_replica_objects and
+                   not pod_replica_dict.get(namespace + "/" + ownerRef.name)):
 
                     logging.debug("Getting replica: %s, kind: %s, namespace: %s",
                                   ownerRef.name, ownerRef.kind, namespace)
 
-                    if replicas_dict.get(ownerRef.name+namespace):
-                        rc = replicas_dict.get(ownerRef.name+namespace)
-                        pod_replica_dict[rc.metadata.name] = "DONE"
+                    if replicas_dict.get(namespace + "/" + ownerRef.name):
+                        rc = replicas_dict.get(namespace + "/" + ownerRef.name)
+                        pod_replica_dict[namespace + "/" + ownerRef.name] = "DONE"
                         images = [image_sha(c.image) for c in pod.spec.containers]
 
                         # Since a commit will be built into a particular image and there could be multiple
@@ -116,7 +119,7 @@ def get_replicas(apiVersion, objectName):
         apiResource = dyn_client.resources.get(api_version=apiVersion, kind=objectName)
         replicationobjects = apiResource.get(label_selector=pelorus.get_app_label())
         for replica in replicationobjects.items:
-            replicas[replica.metadata.name+replica.metadata.namespace] = replica
+            replicas[replica.metadata.namespace + "/" + replica.metadata.name] = replica
     except ResourceNotFoundError:
         logging.debug("API Object not found for version: %s object: %s", apiVersion, objectName)
         pass
