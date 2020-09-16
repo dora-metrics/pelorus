@@ -104,7 +104,7 @@ def generate_metrics(namespaces):
                         # pod template
                         for i in images:
                             if i is not None:
-                                metric = DeployTimeMetric(rc.metadata.name, namespace)
+                                metric = DeployTimeMetric(rc.metadata.labels[pelorus.get_app_label()], namespace)
                                 metric.labels = rc.metadata.labels
                                 metric.deploy_time = rc.metadata.creationTimestamp
                                 metric.image_sha = i
