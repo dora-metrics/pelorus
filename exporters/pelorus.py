@@ -36,10 +36,23 @@ def load_kube_config():
 def convert_date_time_to_timestamp(date_time, format_string='%Y-%m-%dT%H:%M:%SZ'):
     timestamp = None
     try:
-        timestamp = datetime.strptime(date_time, format_string)
+        if isinstance(date_time, datetime):
+            timestamp = date_time
+        else:
+            timestamp = datetime.strptime(date_time, format_string)
     except ValueError:
         raise
     return timestamp.replace(tzinfo=timezone.utc).timestamp()
+
+
+def convert_timestamp_to_date_time_str(timestamp, format_string='%Y-%m-%dT%H:%M:%SZ'):
+    date_time_str = None
+    try:
+        date_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        date_time_str = date_time.strftime(format_string)
+    except ValueError:
+        raise
+    return date_time_str
 
 
 def get_app_label():
@@ -70,6 +83,14 @@ def upgrade_legacy_vars():
         os.environ['GIT_TOKEN'] = token
     if api and not os.getenv('GIT_API'):
         os.environ['GIT_API'] = api
+
+
+def url_joiner(url, path, trailing=None):
+    """Join to sections for a URL and add proper forward slashes"""
+    url_link = '/'.join(s.strip('/') for s in [url, path])
+    if trailing:
+        url_link += '/'
+    return url_link
 
 
 class AbstractPelorusExporter(ABC):
