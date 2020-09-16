@@ -155,7 +155,7 @@ spec:
                 "tableColumn": "",
                 "targets": [
                     {
-                    "expr": "avg (deploy_timestamp - on(image_sha) group_left github_commit_timestamp)",
+                    "expr": "sdp:lead_time:global",
                     "format": "time_series",
                     "intervalFactor": 1,
                     "refId": "A"
