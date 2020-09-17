@@ -2,7 +2,7 @@
 apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDashboard
 metadata:
-  name: metrics-dashboard
+  name: dashboard-sdp
   labels:
     app: grafana
 spec:
