@@ -78,10 +78,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             apps = [match.value for match in found]
 
             if not apps:
-                logging.debug("Not match found for " + str(app_label) + " in " + str(builds))
+                logging.debug("No match found for " + str(app_label) + " in " + str(builds))
                 continue
             # remove duplicates
             apps = list(dict.fromkeys(apps))
+            logging.debug("Found " + str(len(apps)) + " apps with match for " + str(app_label))
             builds_by_app = {}
 
             for app in apps:
