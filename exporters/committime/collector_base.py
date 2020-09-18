@@ -65,6 +65,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             logging.debug("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
 
             v1_builds = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
+            # logging.debug(str(v1_builds.get(namespace=namespace)))
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
@@ -77,6 +78,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             apps = [match.value for match in found]
 
             if not apps:
+                logging.debug("Not match found for " + str(app_label) + " in " + str(builds))
                 continue
             # remove duplicates
             apps = list(dict.fromkeys(apps))
