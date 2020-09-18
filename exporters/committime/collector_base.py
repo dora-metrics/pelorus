@@ -145,8 +145,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric = CommitMetric(app)
 
             if build.spec.source.git:
+                logging.debug("Setting repo_url to " + str(build.spec.source.git.uri))
                 repo_url = build.spec.source.git.uri
             metric.repo_url = repo_url
+
+            logging.debug("metric.repo_url is set to " + str(metric.repo_url))
             commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
             metric.build_config_name = build.metadata.labels.buildconfig
