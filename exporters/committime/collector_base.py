@@ -109,6 +109,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             logging.debug("There are " + str(len(code_builds))  + " code builds for  " + str(namespace))
             logging.debug("There are " + str(len(jenkins_builds))  + " jenkins builds for  " + str(namespace))
+            for b in builds:
+                logging.debug("This build has a strategy of type " + str(b.spec.strategy.type))
             # assume for now that there will only be one repo/branch per app
             # For jenkins pipelines, we need to grab the repo data
             # then find associated s2i/docker builds from which to pull commit & image data
