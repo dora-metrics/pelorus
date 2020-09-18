@@ -78,11 +78,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             apps = [match.value for match in found]
 
             if not apps:
-                logging.debug("No match found for " + str(app_label) + " in " + str(builds))
+                # logging.debug("No match found for " + str(app_label) + " in " + str(namespace))
                 continue
             # remove duplicates
             apps = list(dict.fromkeys(apps))
-            logging.debug("Found " + str(len(apps)) + " apps with match for " + str(app_label))
+            logging.debug("Found " + str(len(apps)) + " apps with match for " + str(app_label) + " for namespace " + str(namespace))
             builds_by_app = {}
 
             for app in apps:
@@ -129,7 +129,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     logging.error("Cannot collect metrics from build: %s" % (build.metadata.name))
 
                 if metric:
+                    logging.debug("Appending metric for " + str(namespace))
                     metrics.append(metric)
+                else:
+                    logging.info("No metric found for " + str(namespace))
         return metrics
 
     def get_metric_from_build(self, build, app, namespace, repo_url):
