@@ -105,7 +105,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             builds = apps[app]
             logging.debug("There are " + str(len(builds))  + " total builds for  " + str(namespace))
             jenkins_builds = list(filter(lambda b: b.spec.strategy.type == 'JenkinsPipeline', builds))
-            code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary'], builds))
+            code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary', 'Docker'], builds))
 
             logging.debug("There are " + str(len(code_builds))  + " code builds for  " + str(namespace))
             logging.debug("There are " + str(len(jenkins_builds))  + " jenkins builds for  " + str(namespace))
