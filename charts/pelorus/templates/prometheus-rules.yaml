@@ -24,6 +24,9 @@ spec:
     - record: sdp:time_to_restore:global
       expr: >
         avg (sdp:time_to_restore:by_app)
-    - record: fr:change_failure_rate
+    - record: sdp:change_failure_rate:by_app
       expr: >
-        count(failure_creation_timestamp) / count(deploy_timestamp)
+        (count by (app) (failure_creation_timestamp) or sdp:lead_time:by_app * 0) / count by (app) (sdp:lead_time:by_commit)
+    - record: sdp:change_failure_rate:global
+      expr: >
+        avg(sdp:change_failure_rate:by_app)

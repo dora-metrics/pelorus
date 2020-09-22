@@ -130,3 +130,15 @@ tests:
     exp_samples:
     - labels: 'sdp:time_to_restore:global{}'
       value: 1292
+  - expr: sdp:change_failure_rate:by_app
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:change_failure_rate:by_app{app="basic-nginx"}'
+      value: .6666666666666666
+    - labels: 'sdp:change_failure_rate:by_app{app="kenwilli-basic-spring-boot"}'
+      value: 1
+  - expr: sdp:change_failure_rate:global
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:change_failure_rate:global{}'
+      value: .8333333333333333
