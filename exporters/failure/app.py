@@ -8,14 +8,14 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 import sys
 
-REQUIRED_CONFIG = ['PROJECT', 'USER', 'TOKEN', 'SERVER']
+REQUIRED_CONFIG = ['USER', 'TOKEN', 'SERVER']
 
 
 class TrackerFactory:
     @staticmethod
     def getCollector(username, token, tracker_api, project, tracker_provider):
         if tracker_provider == "jira":
-            return JiraFailureCollector(username, token, tracker_api, project)
+            return JiraFailureCollector(username, token, tracker_api)
 
 
 if __name__ == "__main__":
@@ -28,7 +28,6 @@ if __name__ == "__main__":
     token = os.environ.get('TOKEN')
     tracker_api = os.environ.get('SERVER')
     tracker_provider = os.environ.get('TRACKER_PROVIDER', pelorus.DEFAULT_TRACKER)
-    logging.info("Project: " + project)
     logging.info("Server: " + tracker_api)
     logging.info("User: " + username)
     start_http_server(8080)
