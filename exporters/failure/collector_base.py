@@ -19,7 +19,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
     def collect(self):
         creation_metric = GaugeMetricFamily('failure_creation_timestamp',
                                             'Failure Creation Timestamp',
-                                            labels=['app' 'issue_number'])
+                                            labels=['app', 'issue_number'])
         failure_metric = GaugeMetricFamily('failure_resolution_timestamp',
                                            'Failure Resolution Timestamp',
                                            labels=['app', 'issue_number'])
