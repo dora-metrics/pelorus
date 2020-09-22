@@ -494,7 +494,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "fr:time_to_restore:global",
+            "expr": "sdp:time_to_restore:global",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -580,7 +580,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "((fr:time_to_restore:global ) - (fr:time_to_restore:global  offset $__range)) / (fr:time_to_restore:global  offset $__range)\n",
+            "expr": "((sdp:time_to_restore:global ) - (sdp:time_to_restore:global  offset $__range)) / (sdp:time_to_restore:global  offset $__range)\n",
             "format": "time_series",
             "hide": false,
             "instant": false,
@@ -667,7 +667,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "avg_over_time(fr:change_failure_rate [$__range])",
+            "expr": "avg_over_time(sdp:change_failure_rate:global [$__range])",
             "format": "heatmap",
             "intervalFactor": 1,
             "refId": "A"
@@ -744,7 +744,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "((avg_over_time(fr:change_failure_rate [$__range])) - (avg_over_time(fr:change_failure_rate [$__range] offset $__range) ) ) / (avg_over_time(fr:change_failure_rate [$__range] offset $__range) ) ",
+            "expr": "((avg_over_time(sdp:change_failure_rate:global [$__range])) - (avg_over_time(sdp:change_failure_rate:global [$__range] offset $__range) ) ) / (avg_over_time(sdp:change_failure_rate:global [$__range] offset $__range) ) ",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -979,7 +979,7 @@ spec:
         "steppedLine": false,
         "targets": [
             {
-            "expr": "fr:time_to_restore:global",
+            "expr": "sdp:time_to_restore:global",
             "refId": "A"
             }
         ],
@@ -1067,7 +1067,7 @@ spec:
         "steppedLine": false,
         "targets": [
             {
-            "expr": "avg_over_time(fr:change_failure_rate [$__range])",
+            "expr": "avg_over_time(sdp:change_failure_rate:global [$__range])",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
