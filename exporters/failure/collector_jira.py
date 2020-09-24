@@ -24,9 +24,8 @@ class JiraFailureCollector(AbstractFailureCollector):
         query_string = "type=bug and priority=highest"
         jira = JIRA(options, basic_auth=(self.user, self.apikey))
         jira_issues = jira.search_issues(query_string)
-        app_issues = list(filter(lambda i: self.has_app_label(i), jira_issues))
         critical_issues = []
-        for issue in app_issues:
+        for issue in jira_issues:
             logging.debug(issue)
             logging.debug('Found issue opened: {}, {}: {}'.format(str(issue.fields.created),
                           issue.key, issue.fields.summary))
@@ -51,15 +50,9 @@ class JiraFailureCollector(AbstractFailureCollector):
         # convert to timestamp
         return pelorus.convert_date_time_to_timestamp(utc_string)
 
-    def has_app_label(self, issue):
-        app_label = pelorus.get_app_label()
-        for label in issue.fields.labels:
-            if label.startswith("%s=" % app_label):
-                return True
-        return False
-
     def get_app_name(self, issue):
         app_label = pelorus.get_app_label()
         for label in issue.fields.labels:
             if label.startswith("%s=" % app_label):
                 return label.replace("%s=" % app_label, "")
+        return "unknown"
