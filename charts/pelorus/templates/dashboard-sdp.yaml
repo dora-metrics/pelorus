@@ -1199,6 +1199,258 @@ spec:
         "title": "Recent Go-Lives",
         "transform": "table",
         "type": "table"
+        },
+        {
+        "datasource": "prometheus",
+        "cacheTimeout": null,
+        "colorBackground": false,
+        "colorValue": false,
+        "colors": [
+            "#299c46",
+            "rgba(237, 129, 40, 0.89)",
+            "#d44a3a"
+        ],
+        "description": "This is the number of commits that are currently not being taken into account in the measures above because of missing information.",
+        "format": "none",
+        "gauge": {
+            "maxValue": 100,
+            "minValue": 0,
+            "show": false,
+            "thresholdLabels": false,
+            "thresholdMarkers": true
+        },
+        "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 19
+        },
+        "id": 71,
+        "interval": null,
+        "links": [],
+        "mappingType": 1,
+        "mappingTypes": [
+            {
+            "name": "value to text",
+            "value": 1
+            },
+            {
+            "name": "range to text",
+            "value": 2
+            }
+        ],
+        "maxDataPoints": 100,
+        "nullPointMode": "connected",
+        "nullText": null,
+        "options": {},
+        "postfix": "",
+        "postfixFontSize": "50%",
+        "prefix": "",
+        "prefixFontSize": "50%",
+        "rangeMaps": [
+            {
+            "from": "null",
+            "text": "N/A",
+            "to": "null"
+            }
+        ],
+        "sparkline": {
+            "fillColor": "#FADE2A",
+            "full": false,
+            "lineColor": "rgb(31, 120, 193)",
+            "show": true,
+            "ymax": null,
+            "ymin": null
+        },
+        "tableColumn": "",
+        "targets": [
+            {
+            "expr": "count( commit_timestamp and on (app, image_sha) deploy_timestamp )",
+            "refId": "A"
+            }
+        ],
+        "thresholds": "",
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Untracked Commits",
+        "type": "singlestat",
+        "valueFontSize": "80%",
+        "valueMaps": [
+            {
+            "op": "=",
+            "text": "N/A",
+            "value": "null"
+            }
+        ],
+        "valueName": "avg"
+        },
+        {
+        "datasource": "prometheus",
+        "cacheTimeout": null,
+        "colorBackground": false,
+        "colorPrefix": false,
+        "colorValue": false,
+        "colors": [
+            "#299c46",
+            "rgba(237, 129, 40, 0.89)",
+            "#d44a3a"
+        ],
+        "description": "This is the number of deployments that are currently not being taken into account in the measures above because of missing information.",
+        "format": "none",
+        "gauge": {
+            "maxValue": 100,
+            "minValue": 0,
+            "show": false,
+            "thresholdLabels": false,
+            "thresholdMarkers": true
+        },
+        "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 19
+        },
+        "id": 69,
+        "interval": null,
+        "links": [],
+        "mappingType": 1,
+        "mappingTypes": [
+            {
+            "name": "value to text",
+            "value": 1
+            },
+            {
+            "name": "range to text",
+            "value": 2
+            }
+        ],
+        "maxDataPoints": 100,
+        "nullPointMode": "connected",
+        "nullText": null,
+        "options": {},
+        "postfix": "",
+        "postfixFontSize": "50%",
+        "prefix": "",
+        "prefixFontSize": "50%",
+        "rangeMaps": [
+            {
+            "from": "null",
+            "text": "N/A",
+            "to": "null"
+            }
+        ],
+        "sparkline": {
+            "fillColor": "rgba(31, 118, 189, 0.18)",
+            "full": false,
+            "lineColor": "rgb(31, 120, 193)",
+            "show": true,
+            "ymax": null,
+            "ymin": null
+        },
+        "tableColumn": "",
+        "targets": [
+            {
+            "expr": "count( deploy_timestamp unless on (app, image_sha) commit_timestamp )",
+            "refId": "A"
+            }
+        ],
+        "thresholds": "",
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Untracked Deployments",
+        "type": "singlestat",
+        "valueFontSize": "80%",
+        "valueMaps": [
+            {
+            "op": "=",
+            "text": "N/A",
+            "value": "null"
+            }
+        ],
+        "valueName": "avg"
+        },
+        {
+        "datasource": "prometheus",
+        "type": "singlestat",
+        "title": "Unknown Issues",
+        "gridPos": {
+            "x": 12,
+            "y": 19,
+            "w": 6,
+            "h": 4
+        },
+        "id": 73,
+        "targets": [
+            {
+            "refId": "A",
+            "expr": "count(failure_creation_timestamp{app=\"unknown\"})"
+            }
+        ],
+        "timeFrom": null,
+        "timeShift": null,
+        "options": {},
+        "links": [],
+        "maxDataPoints": 100,
+        "interval": null,
+        "cacheTimeout": null,
+        "format": "none",
+        "prefix": "",
+        "postfix": "",
+        "nullText": null,
+        "valueMaps": [
+            {
+            "value": "null",
+            "op": "=",
+            "text": "N/A"
+            }
+        ],
+        "mappingTypes": [
+            {
+            "name": "value to text",
+            "value": 1
+            },
+            {
+            "name": "range to text",
+            "value": 2
+            }
+        ],
+        "rangeMaps": [
+            {
+            "from": "null",
+            "to": "null",
+            "text": "N/A"
+            }
+        ],
+        "mappingType": 1,
+        "nullPointMode": "connected",
+        "valueName": "avg",
+        "prefixFontSize": "50%",
+        "valueFontSize": "80%",
+        "postfixFontSize": "50%",
+        "thresholds": "",
+        "colorBackground": false,
+        "colorValue": false,
+        "colors": [
+            "#299c46",
+            "rgba(237, 129, 40, 0.89)",
+            "#d44a3a"
+        ],
+        "sparkline": {
+            "show": true,
+            "full": false,
+            "ymin": null,
+            "ymax": null,
+            "lineColor": "rgb(31, 120, 193)",
+            "fillColor": "rgba(31, 118, 189, 0.18)"
+        },
+        "gauge": {
+            "show": false,
+            "minValue": 0,
+            "maxValue": 100,
+            "thresholdMarkers": true,
+            "thresholdLabels": false
+        },
+        "tableColumn": ""
         }
     ],
     "refresh": false,
