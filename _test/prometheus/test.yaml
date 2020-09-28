@@ -49,6 +49,20 @@ tests:
         values: '1590767500'
       - series: commit_timestamp{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d", endpoint="http", exported_namespace="kenwilli-basic-spring-boot-build", image_sha="sha256:382947b77566babcc7c6c55f50cb17469c7d068bc4b0cfbdcd4b8b33e091d133", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
         values: '1590767500'
+      - series: failure_creation_timestamp{app="foo",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-7",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1600719815'
+      - series: failure_creation_timestamp{app="basic-nginx",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-6",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1597170899'
+      - series: failure_creation_timestamp{app="basic-nginx",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-4",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1588262309'
+      - series: failure_creation_timestamp{app="kenwilli-basic-spring-boot",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-3",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1587750306'
+      - series: failure_resolution_timestamp{app="basic-nginx",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-6",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1597175474'
+      - series: failure_resolution_timestamp{app="basic-nginx",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-4",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1588262346'
+      - series: failure_resolution_timestamp{app="kenwilli-basic-spring-boot",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-3",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1587750584'
 
   # Unit tests for promql expressions.
   promql_expr_test:
@@ -94,3 +108,37 @@ tests:
     exp_samples:
     - labels: 'sdp:lead_time:global'
       value: 1000716.5
+  - expr: count(sdp:time_to_restore:by_issue)
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 3
+  - expr: count(sdp:time_to_restore:by_app)
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: sdp:time_to_restore:by_app
+    eval_time: 1m
+    exp_samples:
+    - labels: sdp:time_to_restore:by_app{app="basic-nginx"}
+      value: 2306
+    - labels: sdp:time_to_restore:by_app{app="kenwilli-basic-spring-boot"}
+      value: 278
+  - expr: sdp:time_to_restore:global
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:time_to_restore:global{}'
+      value: 1292
+  - expr: sdp:change_failure_rate:by_app
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:change_failure_rate:by_app{app="basic-nginx"}'
+      value: .6666666666666666
+    - labels: 'sdp:change_failure_rate:by_app{app="kenwilli-basic-spring-boot"}'
+      value: 1
+  - expr: sdp:change_failure_rate:global
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:change_failure_rate:global{}'
+      value: .8333333333333333
