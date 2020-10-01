@@ -22,7 +22,7 @@ class GitFactory:
         if git_provider == "github":
             return GitHubCommitCollector(kube_client, username, token, namespaces, apps, git_api)
         if git_provider == "bitbucket":
-            return BitbucketCommitCollector(kube_client, "", "", "", "")
+            return BitbucketCommitCollector(kube_client, username, token, namespaces, apps)
 
 
 if __name__ == "__main__":

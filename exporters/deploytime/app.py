@@ -26,7 +26,9 @@ class DeployTimeCollector(object):
         metric = GaugeMetricFamily('deploy_timestamp', 'Deployment timestamp', labels=['namespace', 'app', 'image_sha'])
         metrics = generate_metrics(self._namespaces)
         for m in metrics:
-            logging.info("Namespace: %s, App: %s, Image: %s", m.namespace, m.name, m.image_sha)
+            logging.info("Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s" %
+                         (m.namespace, m.name, m.image_sha, pelorus.convert_date_time_to_timestamp(m.deploy_time))
+                         )
             metric.add_metric([m.namespace, m.name, m.image_sha, m.deploy_time],
                               pelorus.convert_date_time_to_timestamp(m.deploy_time))
             yield(metric)
@@ -102,7 +104,7 @@ def generate_metrics(namespaces):
                         # pod template
                         for i in images:
                             if i is not None:
-                                metric = DeployTimeMetric(rc.metadata.name, namespace)
+                                metric = DeployTimeMetric(rc.metadata.labels[pelorus.get_app_label()], namespace)
                                 metric.labels = rc.metadata.labels
                                 metric.deploy_time = rc.metadata.creationTimestamp
                                 metric.image_sha = i

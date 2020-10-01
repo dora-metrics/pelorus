@@ -18,6 +18,7 @@ rules:
   resources:
   - namespaces
   - replicationcontrollers
+  - pods
   verbs:
   - list
 - apiGroups:

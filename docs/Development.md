@@ -285,3 +285,39 @@ For testing changes to the helm chart, you should just follow the [standard inst
 * Any expected behavior changes mentioned in the PR can be observed.
 
 We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.
+
+## Release Management Process
+
+The following is a walkthrough of the process we follow to create and manage versioned releases of Pelorus.
+
+1. Create a lightweight _release candidate_ tag from the `master` branch. The tag name should be the next sequential [Semantic Version](https://semver.org) with the suffix `-rc`. Then push the new tag to the main repository.
+
+        git tag <version>-rc
+        git push -u upstream <version>-rc
+2. Generate git release notes from the `git log`.
+
+        git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
+3. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
+    * Select the tag that was pushed in the first step
+    * The release _title_ should be `Release candidate for <version>`. 
+    * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
+    * Check the box that says **This is a pre-release**.
+    * Click **Publish Release**.
+4. Test. Test. Test.
+    * Ensure that all github actions in the repo are passing.
+    * Ensure that you can install Pelorus from the tagged version of the code, including all exporters and optional configurations. (Ensure you update the values.yaml file you are using to refer to the tagged version of the code in all builds)
+    * Follow the above guidance for testing Pull requests.
+5. If any bugs are found, open PRs to fix them, then delete the release and tag that was created, and start again from step 1.
+6. Create an annotated tag for the final release with the `-rc` suffix removed.
+
+        git checkout <version>-rc
+        git tag -a <version>
+        git push -u upstream <version>
+8. Generate git release notes from the `git log`.
+
+        git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
+7. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
+    * Select the tag that was pushed in the previous step.
+    * The release _title_ should be `Release <version>`. 
+    * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
+    * Click **Publish Release**.
