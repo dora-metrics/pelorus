@@ -163,6 +163,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.commiter = build.spec.revision.git.author.name
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
+            logging.debug("My image hash is %s" % metric.image_hash)
             # Check the cache for the commit_time, if not call the API
             metric_ts = self._commit_dict.get(commit_sha)
             if metric_ts is None:
