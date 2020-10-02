@@ -46,7 +46,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
         try:
             # get the commit from the project using the hash
             short_hash = metric.commit_hash[:8]
-            logging.debug("Looking for commit_hash %s" % short_hash)
+            logging.debug("Looking for commit_hash %s on project %s" % short_hash, project.name)
             commit = project.commits.get(short_hash)
             # get the commit date/time
             metric.commit_time = commit.committed_date
