@@ -11,8 +11,8 @@ class JiraFailureCollector(AbstractFailureCollector):
     Jira implementation of a FailureCollector
     """
 
-    def __init__(self, user, apikey, server, project='MDT'):
-        super().__init__(server, user, apikey, project)
+    def __init__(self, user, apikey, server):
+        super().__init__(server, user, apikey)
 
     def search_issues(self):
         options = {
@@ -21,21 +21,22 @@ class JiraFailureCollector(AbstractFailureCollector):
         # Connect to Jira
         jira = JIRA(options, basic_auth=(self.user, self.apikey))
         # TODO FIXME This may need to be modified to suit needs and have a time period.
-        query_string = "project=" + self.project + " and type=bug and priority=highest"
+        query_string = "type=bug and priority=highest"
         jira = JIRA(options, basic_auth=(self.user, self.apikey))
         jira_issues = jira.search_issues(query_string)
         critical_issues = []
         for issue in jira_issues:
-            logging.info('Found issue opened: {}, {}: {}'.format(str(issue.fields.created),
-                         issue.key, issue.fields.summary))
+            logging.debug(issue)
+            logging.debug('Found issue opened: {}, {}: {}'.format(str(issue.fields.created),
+                          issue.key, issue.fields.summary))
             # Create the JiraFailureMetric
             created_ts = self.convert_timestamp(issue.fields.created)
             resolution_ts = None
             if issue.fields.resolutiondate:
-                logging.info('Found issue close: {}, {}: {}'.format(str(issue.fields.resolutiondate),
-                             issue.key, issue.fields.summary))
+                logging.debug('Found issue close: {}, {}: {}'.format(str(issue.fields.resolutiondate),
+                              issue.key, issue.fields.summary))
                 resolution_ts = self.convert_timestamp(issue.fields.resolutiondate)
-            tracker_issue = TrackerIssue(issue.key, created_ts, resolution_ts)
+            tracker_issue = TrackerIssue(issue.key, created_ts, resolution_ts, self.get_app_name(issue))
             critical_issues.append(tracker_issue)
 
         return critical_issues
@@ -48,3 +49,10 @@ class JiraFailureCollector(AbstractFailureCollector):
         utc_string = utc.strftime('%Y-%m-%dT%H:%M:%SZ')
         # convert to timestamp
         return pelorus.convert_date_time_to_timestamp(utc_string)
+
+    def get_app_name(self, issue):
+        app_label = pelorus.get_app_label()
+        for label in issue.fields.labels:
+            if label.startswith("%s=" % app_label):
+                return label.replace("%s=" % app_label, "")
+        return "unknown"
