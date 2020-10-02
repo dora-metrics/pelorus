@@ -45,6 +45,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
             raise TypeError("Failed to find repo project: %s, for build %s" % (metric.repo_url, metric.build_name))
         try:
             # get the commit from the project using the hash
+            logging.debug("Looking for commit_hash %s" % metric.commit_hash)
             commit = project.commits.get(metric.commit_hash)
             # get the commit date/time
             metric.commit_time = commit.committed_date
