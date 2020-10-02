@@ -65,7 +65,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             logging.debug("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
 
             v1_builds = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
-            # logging.debug(str(v1_builds.get(namespace=namespace)))
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
@@ -78,11 +77,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             apps = [match.value for match in found]
 
             if not apps:
-                # logging.debug("No match found for " + str(app_label) + " in " + str(namespace))
                 continue
             # remove duplicates
             apps = list(dict.fromkeys(apps))
-            logging.debug("Found " + str(len(apps)) + " apps with match for " + str(app_label) + " for namespace " + str(namespace))
             builds_by_app = {}
 
             for app in apps:
@@ -103,14 +100,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         for app in apps:
 
             builds = apps[app]
-            logging.debug("There are " + str(len(builds))  + " total builds for  " + str(namespace))
             jenkins_builds = list(filter(lambda b: b.spec.strategy.type == 'JenkinsPipeline', builds))
             code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary', 'Docker'], builds))
-
-            logging.debug("There are " + str(len(code_builds))  + " code builds for  " + str(namespace))
-            logging.debug("There are " + str(len(jenkins_builds))  + " jenkins builds for  " + str(namespace))
-            for b in builds:
-                logging.debug("This build has a strategy of type " + str(b.spec.strategy.type))
             # assume for now that there will only be one repo/branch per app
             # For jenkins pipelines, we need to grab the repo data
             # then find associated s2i/docker builds from which to pull commit & image data
@@ -133,24 +124,17 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     logging.error("Cannot collect metrics from build: %s" % (build.metadata.name))
 
                 if metric:
-                    logging.debug("Appending metric for " + str(namespace))
                     metrics.append(metric)
-                else:
-                    logging.info("No metric found for " + str(namespace))
         return metrics
 
     def get_metric_from_build(self, build, app, namespace, repo_url):
         try:
 
             metric = CommitMetric(app)
-            logging.debug(build.spec)
 
             if build.spec.source.git:
-                logging.debug("Setting repo_url to " + str(build.spec.source.git.uri))
                 repo_url = build.spec.source.git.uri
             metric.repo_url = repo_url
-
-            logging.debug("metric.repo_url is set to " + str(metric.repo_url))
             commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
             metric.build_config_name = build.metadata.labels.buildconfig
@@ -163,7 +147,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.commiter = build.spec.revision.git.author.name
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
-            logging.debug("My image hash is %s" % metric.image_hash)
             # Check the cache for the commit_time, if not call the API
             metric_ts = self._commit_dict.get(commit_sha)
             if metric_ts is None:
