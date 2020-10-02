@@ -258,7 +258,7 @@ class CommitMetric():
         # token 1 is always a blank
         self.__repo_fqdn = url_tokens[2]
         self.__repo_group = url_tokens[3]
-        self.__repo_name = url_tokens[4]
+        self.__repo_name = url_tokens[-1]
         if self.__repo_name.endswith('.git'):
             self.__repo_project = self.__repo_name[:-4]
         else:
