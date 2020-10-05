@@ -1,3 +1,0 @@
-:labname: Scheduler
-:show_solution: false
-include::../modules/09_Scheduler/09_1_Scheduler_Body.adoc[]

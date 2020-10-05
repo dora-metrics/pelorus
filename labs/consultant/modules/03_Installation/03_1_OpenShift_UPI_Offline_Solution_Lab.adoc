@@ -1,3 +1,0 @@
-:labname: OpenShift UPI Disconnected Deployment Solution
-:show_solution: true
-include::../modules/03_Installation/03_1_OpenShift_UPI_Offline_Body.adoc[]

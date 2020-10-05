@@ -1,4 +1,0 @@
-:labname: OpenShift OperatorHub 
-:show_solution: false
-include::../modules/06_OperatorHub/06_1_OperatorHub_Body.adoc[]
-

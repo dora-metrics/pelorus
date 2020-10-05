@@ -1,3 +1,0 @@
-:labname: Limit Ranges and Horizontal Pod Autoscaler Solution
-:show_solution: true
-include::../modules/08_Resource_Management/08_1_LimitRanges_and_Horizontal_Pod_Autoscaler_Body.adoc[]

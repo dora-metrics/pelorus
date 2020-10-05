@@ -1,3 +1,0 @@
-:labname: Machine Management Solution
-:show_solution: true
-include::../modules/04_Machine_Management/04_1_Machine_Management_Body.adoc[]

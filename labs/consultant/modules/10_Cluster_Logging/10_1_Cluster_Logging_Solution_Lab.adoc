@@ -1,3 +1,0 @@
-:labname: Cluster Logging Solution
-:show_solution: true
-include::../modules/10_Cluster_Logging/10_1_Cluster_Logging_Body.adoc[]
