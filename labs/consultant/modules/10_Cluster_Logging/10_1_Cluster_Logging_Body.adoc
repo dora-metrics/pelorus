@@ -1,0 +1,503 @@
+include::../../tools/00_0_Lab_Header.adoc[]
+
+== {labname} Lab
+
+As an OpenShift Container Platform cluster administrator, you can deploy cluster logging to aggregate logs for a range of OpenShift Container Platform services.
+
+The cluster logging components are based upon Elasticsearch, Fluentd or Rsyslog, and Kibana. The collector, Fluentd, is deployed to each node in the OpenShift Container Platform cluster. It collects all node and container logs and writes them to Elasticsearch (ES). Kibana is the centralized, web UI where users and administrators can create rich visualizations and dashboards with the aggregated data.
+
+OpenShift Container Platform cluster administrators can deploy cluster logging using a few CLI commands and the OpenShift Container Platform web console to install the Elasticsearch Operator and Cluster Logging Operator. When the operators are installed, create a Cluster Logging Custom Resource (CR) to schedule cluster logging pods and other resources necessary to support cluster logging. The operators are responsible for deploying, upgrading, and maintaining cluster logging.
+
+You can configure cluster logging by modifying the Cluster Logging Custom Resource (CR), named instance. The CR defines a complete cluster logging deployment that includes all the components of the logging stack to collect, store and visualize logs. The Cluster Logging Operator watches the ClusterLogging Custom Resource and adjusts the logging deployment accordingly.
+
+Administrators and application developers can view the logs of the projects for which they have view access.
+
+There are currently 5 different types of cluster logging components:
+
+* *logStore* - This is where the logs will be stored. The current implementation is Elasticsearch.
+* *collection* - This is the component that collects logs from the node, formats them, and stores them in the logStore. The current implementation is Fluentd.
+* *visualization* - This is the UI component used to view logs, graphs, charts, and so forth. The current implementation is Kibana.
+* *curation* - This is the component that trims logs by age. The current implementation is Curator.
+* *event routing* - This is the component forwards events to cluster logging. The current implementation is Event Router.
+
+.Goals
+
+In this lab you set up the Cluster Logging Stack.
+
+* Create a dedicated Node for the Cluster Logging Stack
+* Deploy the Cluster Logging Operators
+* Deploy the Cluster Logging Stack
+* Test a simple application to validate log aggregation is working
+
+[[labexercises]]
+:numbered:
+
+== Create a dedicated Node for the Cluster Logging Stack
+
+The Cluster Logging stack is quite a resource intensive application. Therefore it makes sense to create a separate node - or in a production environment a set of nodes - dedicated for the logging components.
+
+. You should still have the YAML definitions of the MachineSets from the Machine Management Lab. If you do make a copy of the file `machineset-1a.yaml` and name it `logging-1a.yaml`. If you do not you can export the machineset definition from the General Purpose 1a machineset.
++
+[source]
+----
+$ oc get machineset general-purpose-1a -o yaml -n openshift-machine-api > logging-1a.yaml
+----
+
+. Update the Machineset with the following properties (leave all other values as defined):
+* Name: logging-1a
+* Selector and Labels: machine.openshift.io/cluster-api-machineset: logging-1a
+* Node Labels:
+** node-role.kubernetes.io/logging: ""
+** *Remove* failure-domain.beta.kubernetes.io/region: east
+** *Remove* failure-domain.beta.kubernetes.io/zone: 1a
+* flavor: 4c16g30d
+* The node should have the following `taints` to keep non logging pods off the node:
+** logging=reserved:NoSchedule
+** logging=reserved:NoExecute
++
+ifeval::[{show_solution} == true]
+
+Your machineset definition should look similar to this one:
++
+[source,yaml]
+----
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+  labels:
+    machine.openshift.io/cluster-api-cluster: cluster-7a2f-bl5bg
+    machine.openshift.io/cluster-api-machine-role: worker
+    machine.openshift.io/cluster-api-machine-type: worker
+  name: logging-1a
+  namespace: openshift-machine-api
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      machine.openshift.io/cluster-api-cluster: cluster-7a2f-bl5bg
+      machine.openshift.io/cluster-api-machineset: logging-1a
+  template:
+    metadata:
+      labels:
+        machine.openshift.io/cluster-api-cluster: cluster-7a2f-bl5bg
+        machine.openshift.io/cluster-api-machine-role: worker
+        machine.openshift.io/cluster-api-machine-type: worker
+        machine.openshift.io/cluster-api-machineset: logging-1a
+    spec:
+      metadata:
+        labels:
+          failure-domain.beta.kubernetes.io/region: regionOne
+          failure-domain.beta.kubernetes.io/zone: nova
+          node-role.kubernetes.io/logging: ""
+      providerSpec:
+        value:
+          apiVersion: openstackproviderconfig.openshift.io/v1alpha1
+          cloudName: openstack
+          cloudsSecret:
+            name: openstack-cloud-credentials
+            namespace: openshift-machine-api
+          flavor: 4c16g30d
+          image: rhcos-ocp45
+          kind: OpenstackProviderSpec
+          networks:
+          - filter: {}
+            subnets:
+            - filter:
+                name: 7a2f-ocp-subnet
+          securityGroups:
+          - filter: {}
+            name: 7a2f-worker_sg
+          serverMetadata:
+            Name: cluster-7a2f-bl5bg-worker
+            openshiftClusterID: cluster-7a2f-bl5bg
+          tags:
+          - openshiftClusterID=cluster-7a2f-bl5bg
+          trunk: false
+          userDataSecret:
+            name: worker-user-data
+      taints:
+      - effect: NoSchedule
+        key: logging
+        value: reserved
+      - effect: NoExecute
+        key: logging
+        value: reserved
+----
+endif::[]
+
+. Create the Machineset. And scale it to 1 replicas.
++
+[source]
+----
+$ oc create -f logging-1a.yaml
+$ oc scale machineset logging-1a --replicas=1 -n openshift-machine-api
+----
+
+. Wait until the new Node is Ready.
++
+[source]
+----
+$ oc get nodes
+NAME                       STATUS   ROLES                AGE    VERSION
+d591-8b7q5-master-0        Ready    master               22h    v1.14.6+c7d2111b9
+d591-8b7q5-master-1        Ready    master               22h    v1.14.6+c7d2111b9
+d591-8b7q5-master-2        Ready    master               22h    v1.14.6+c7d2111b9
+general-purpose-1a-q7888   Ready    general-use,worker   176m   v1.14.6+c7d2111b9
+general-purpose-1b-qkkgz   Ready    general-use,worker   177m   v1.14.6+c7d2111b9
+infra-1a-fxb5b             Ready    infra,worker         6h     v1.14.6+c7d2111b9
+logging-1a-8grq9           Ready    logging,worker       88s    v1.14.6+c7d2111b9
+----
+
+. You are now ready to deploy the Cluster Logging stack to your cluster.
+
+== Deploy the ElasticSearch Operators
+
+OpenShift Container Platform cluster logging is designed to be used with the default configuration, which is tuned for small to medium sized OpenShift Container Platform clusters.
+
+Follow the instructions in the OpenShift Documentation to install the Elasticsearch Operator:
+
+* https://docs.openshift.com/container-platform/4.5/logging/cluster-logging-deploying.html
+* It is up to you if you want to use the Web Console or the CLI to install the Elasticsearch Operator.
+** For the Web Console follow the step 1 under *Procedure*.
+** For the CLI follow the steps 1 through 3 under *Procedure*
+
+ifeval::[{show_solution} == true]
+. The following steps are the solution for the CLI.
++
+Create a directory to hold your YAML resource definitions:
++
+[source]
+----
+$ mkdir $HOME/cluster-logging
+----
+
+. Create the namespace for the Elasticsearch Operator. Create a YAML file holding the namespace definition:
++
+[source]
+----
+$ cat << EOF >$HOME/cluster-logging/es_namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-operators-redhat 
+  annotations:
+    openshift.io/node-selector: ""
+  labels:
+    openshift.io/cluster-monitoring: "true"
+EOF
+----
+
+. Create the Namespace
++
+[source]
+----
+$ oc create -f $HOME/cluster-logging/es_namespace.yaml
+----
+
+. Create the namespace YAML file for the Cluster Logging Operator:
++
+[source]
+----
+$ cat << EOF >$HOME/cluster-logging/cl_namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-logging
+  annotations:
+    openshift.io/node-selector: "" 
+  labels:
+    openshift.io/cluster-monitoring: "true"
+EOF
+----
+
+. Create the Namespace
++
+[source]
+----
+$ oc create -f $HOME/cluster-logging/cl_namespace.yaml
+----
+
+. Create an Operator Group object YAML file.
++
+[source]
+----
+$ cat << EOF >$HOME/cluster-logging/operator_group.yaml
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-operators-redhat
+  namespace: openshift-operators-redhat 
+spec: {}
+EOF
+----
+
+. Create the Operator Group
++
+[source]
+----
+$ oc create -f $HOME/cluster-logging/operator_group.yaml
+----
+
+. Create a YAML manifest for the Elasticsearch Operator Subscription making sure the *channel* matches your cluster version ("4.5", "4.4", ...).
++
+[source]
+----
+$ cat << EOF >$HOME/cluster-logging/subscription.yaml
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  generateName: "elasticsearch-"
+  namespace: "openshift-operators-redhat" 
+spec:
+  channel: "4.5"
+  installPlanApproval: "Automatic"
+  source: "redhat-operators"
+  sourceNamespace: "openshift-marketplace"
+  name: "elasticsearch-operator"
+EOF
+----
+
+. Create the Subscription.
++
+[source]
+----
+$ oc create -f $HOME/cluster-logging/subscription.yaml
+----
+
+. Double check that the Elasticsearch Operator is working. Note that it will not run on the logging node because there is no way to set matching tolerations for the operator pod. Get the operator pod:
++
+[source,options="nowrap"]
+----
+$ oc get pod -n openshift-operators-redhat -o wide
+
+NAME                                      READY   STATUS    RESTARTS   AGE   IP            NODE                       NOMINATED NODE   READINESS GATES
+elasticsearch-operator-669c4876ff-86z6c   1/1     Running   0          38s   10.131.6.20   general-purpose-1a-dcfvh   <none>           <none>
+----
+
+. Check the operator logs:
++
+[source,options="nowrap"]
+----
+$ oc logs elasticsearch-operator-669c4876ff-86z6c -n openshift-operators-redhat
+time="2019-11-21T20:27:51Z" level=warning msg="Unable to parse loglevel \"\""
+{"level":"info","ts":1574368071.3894377,"logger":"cmd","msg":"Go Version: go1.11.13"}
+{"level":"info","ts":1574368071.389457,"logger":"cmd","msg":"Go OS/Arch: linux/amd64"}
+{"level":"info","ts":1574368071.3894606,"logger":"cmd","msg":"Version of operator-sdk: v0.7.0"}
+{"level":"info","ts":1574368071.3896976,"logger":"leader","msg":"Trying to become the leader."}
+{"level":"info","ts":1574368071.502415,"logger":"leader","msg":"No pre-existing lock was found."}
+{"level":"info","ts":1574368071.5100715,"logger":"leader","msg":"Became the leader."}
+{"level":"info","ts":1574368071.6039932,"logger":"cmd","msg":"Registering Components."}
+{"level":"info","ts":1574368071.6042397,"logger":"kubebuilder.controller","msg":"Starting EventSource","controller":"elasticsearch-controller","source":"kind source: /, Kind="}
+{"level":"info","ts":1574368071.71937,"logger":"cmd","msg":"failed to create or get service for metrics: services \"elasticsearch-operator\" is forbidden: cannot set blockOwnerDeletion if an ownerReference refers to a resource you can't set finalizers on: , <nil>"}
+{"level":"info","ts":1574368071.719388,"logger":"cmd","msg":"Starting the Cmd."}
+{"level":"info","ts":1574368071.8196914,"logger":"kubebuilder.controller","msg":"Starting Controller","controller":"elasticsearch-controller"}
+{"level":"info","ts":1574368071.9202697,"logger":"kubebuilder.controller","msg":"Starting workers","controller":"elasticsearch-controller","worker count":1}
+----
+endif::[]
+
+== Deploy the Cluster Logging Operator
+
+. Now that you have the Elasticsearch operator deployed follow the instructions in the OpenShift Documentation to install the Cluster Logging Operator.
+
+* https://docs.openshift.com/container-platform/4.5/logging/cluster-logging-deploying.html
+* It is up to you if you want to use the Web Console or the CLI to install cluster logging.
+** For the Web Console follow the steps 2 under *Procedure*.
+** For the CLI follow the steps 4 under *Procedure*
+
+ifeval::[{show_solution} == true]
+. The following instructions use the web console to deploy the cluster logging stack.
+. Retrieve the URL of the web console.
++
+[source]
+----
+$ oc whoami --show-console
+https://console-openshift-console.apps.d591.blue.osp.opentlc.com
+----
+
+. Log into the console as a user with administrative privileges.
+. In the OpenShift Container Platform web console, click Operators → OperatorHub.
+. Choose Cluster Logging from the list of available Operators, and click Install.
+. On the Create Operator Subscription page, under *Installed Namespace* select `Operator recommended`.
+. Select the channel that matches your cluster version ("4.5", "4.4", ...). Then, click Subscribe.
+. Validate that the Cluster Logging operator is running. Again note that this operator will not run on the logging node because it is missing the matching tolerations.
++
+[source,options="nowrap"]
+----
+$ oc get pod -n openshift-logging -o wide
+
+NAME                                        READY   STATUS    RESTARTS   AGE   IP            NODE                       NOMINATED NODE   READINESS GATES
+cluster-logging-operator-6ff744fc47-7s5lq   1/1     Running   0          11s   10.128.8.17   general-purpose-1b-jgjkd   <none>           <none>
+----
+
+. Validate that the logs don't show any errors.
++
+[source,options="nowrap"]
+----
+$ oc logs cluster-logging-operator-6ff744fc47-7s5lq -n openshift-logging
+----
+endif::[] 
+
+== Deploy the Cluster Logging Stack
+
+. With both the Elasticsearch and Cluster Logging operators deployed follow the instructions in the OpenShift Documentation to deploy the Cluster Logging Stack.
+* https://docs.openshift.com/container-platform/4.5/logging/cluster-logging-deploying.html
+* It is up to you if you want to use the Web Console or the CLI to install cluster logging.
+** For the Web Console follow the steps 3 and 4 under *Procedure*.
+** For the CLI follow the steps 5 and 6 under *Procedure*
+* You will need to change some default settings:
+** You only have one node for logging. So the `redundancyPolicy` needs to be changed to support only one node. Also `nodeCount` needs to be changed accordingly.
+** Your logging Node has only 16Gb of Memory. So Elasticsearch should not receive more than 4Gi of memory.
+** We will not need 200G of storage. 50Gi should be enough.
+** Set the retention policy for Elasticsearch to *2d* for application logs, *3d* for infrastructure logs and *5d* for audit logs.
+** OpenStack does not have a storage class `gp2`. Find the correct storage class for your cluster to use.
+** Node Selectors should be set for Elasticsearch, Kibana and logging curator to ensure that the components all run on the dedicated Logging node. Do *not* set a node selector for Fluentd.
+** Tolerations need to be set for Elasticsearch, Kibana and the Curator to allow running on the logging node. Remember that the Logging Node has the following taints:
+*** logging=reserved:NoSchedule, logging=reserved:NoExecute
+** Tolerations need to be set for Fluentd to allow running on both the logging *and* the infra node. Remember that the Infra Node has the following taints:
+*** infra=reserved:NoSchedule, infra=reserved:NoExecute
++
+[TIP]
+The complete documenation for the Cluster Logging CR is at https://docs.openshift.com/container-platform/4.5/logging/config/cluster-logging-configuring-cr.html.
+
+ifeval::[{show_solution} == true]
+. Create a cluster logging instance:
+.. Click on Operators and then Installed Operators.
+.. Select `openshift-logging` as the project.
+.. Click on `Cluster Logging`.
+.. Click on `Create Instance` under the Provided APIs. Refresh your browser if you don't see this as an option.
+.. Switch to YAML View and fill in the correct values. Your final YAML definition should look like this:
++
+[source,yaml]
+----
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  managementState: Managed
+  logStore:
+    type: elasticsearch
+    retentionPolicy: 
+      application:
+        maxAge: 2d
+      infra:
+        maxAge: 3d
+      audit:
+        maxAge: 5d
+    elasticsearch:
+      resources:
+        limits:
+          memory: 6Gi
+        requests:
+          memory: 6Gi
+      nodeCount: 1
+      nodeSelector:
+        node-role.kubernetes.io/logging: ""
+      redundancyPolicy: ZeroRedundancy
+      storage:
+        storageClassName: standard
+        size: 50Gi
+      tolerations:
+      - key: logging
+        value: reserved
+        effect: NoSchedule
+      - key: logging
+        value: reserved
+        effect: NoExecute
+  visualization:
+    type: kibana
+    kibana:
+      replicas: 1
+      nodeSelector:
+        node-role.kubernetes.io/logging: ""
+      tolerations:
+      - key: logging
+        value: reserved
+        effect: NoSchedule
+      - key: logging
+        value: reserved
+        effect: NoExecute
+  curation:
+    type: curator
+    curator:
+      schedule: 30 3 * * *
+      nodeSelector:
+        node-role.kubernetes.io/logging: ""
+      tolerations:
+      - key: logging
+        value: reserved
+        effect: NoSchedule
+      - key: logging
+        value: reserved
+        effect: NoExecute
+  collection:
+    logs:
+      type: fluentd
+      fluentd:
+        tolerations:
+        - operator: Exists
+----
++
+[TIP]
+Instead of writing all 4 tolerations for Fluentd you can just use a toleration `- operator: Exists`. This is a toleration that tolerates *any* taint. OpenShift system DaemonSets (like DNS) use this toleration to guarantee the DaemonSet pod runs on all nodes.
+endif::[]
+
+. Make sure your entire logging stack has rolled out successfully. You should see the Operator pod, the Elasticsearch and Kibana pods as well as a Fluentd pod for each of your nodes. If any pods are pending review your node selectors and tolerations.
++
+[source,options="nowrap"]
+----
+$ oc get pod -n openshift-logging -o wide
+
+NAME                                           READY   STATUS    RESTARTS   AGE     IP            NODE                          NOMINATED NODE   READINESS GATES
+cluster-logging-operator-6ff744fc47-7s5lq      1/1     Running   0	    3m39s   10.128.8.17   general-purpose-1b-jgjkd      <none>           <none>
+elasticsearch-cdm-0sitxst5-1-dd58b66cf-kx76q   2/2     Running   0          70s     10.131.0.4    logging-1a-c92s5              <none>           <none>
+fluentd-8vx4c                                  1/1     Running   0          99s     10.130.0.14   cluster-7a2f-bl5bg-master-2   <none>           <none>
+fluentd-fhnhc                                  1/1     Running   0          99s     10.128.0.32   cluster-7a2f-bl5bg-master-1   <none>           <none>
+fluentd-j4zcd                                  1/1     Running   0	    99s     10.128.2.27   infra-1a-88v65                <none>           <none>
+fluentd-lqp84                                  1/1     Running   0          99s     10.129.0.30   cluster-7a2f-bl5bg-master-0   <none>           <none>
+fluentd-mfwjj                                  1/1     Running   0          99s     10.128.8.18   general-purpose-1b-jgjkd      <none>           <none>
+fluentd-mvgt9                                  1/1     Running   0	    99s     10.131.6.21   general-purpose-1a-dcfvh      <none>           <none>
+fluentd-ptjc8                                  1/1     Running   0          99s     10.131.0.3    logging-1a-c92s5              <none>           <none>
+kibana-d4866d868-5985t                         2/2     Running   0          53s     10.131.0.5    logging-1a-c92s5              <none>           <none>
+----
++
+[TIP]
+You can always delete the logging stack by using `oc delete clusterlogging instance -n openshift-logging` and starting over. When you do however you will also need to delete the Elasticsearch *PVC*.
+
+== Examine Logs in Kibana
+
+. Find the Kibana route
++
+[source]
+----
+$ oc get route -n openshift-logging
+NAME     HOST/PORT                                                 PATH   SERVICES   PORT    TERMINATION          WILDCARD
+kibana   kibana-openshift-logging.apps.d591.blue.osp.opentlc.com          kibana     <all>   reencrypt/Redirect   None
+----
+
+. Open the route in your web browser and log in as a cluster administrator (for example `karla`).
++
+[NOTE]
+You may need to create a few pods that write logs for Kibana to be able to create an index pattern first.
+
+. You will see all the logs for all the pods in the cluster that you have access to. Because you are a cluster administrator this is a lot of information. You can use the filters in Kibana to only see the logs of a particular pod.
++
+Set the filters to only show the logs from the cluster logging operator pod.
++
+To filter items based on the pod name, do the following:
+.. Click on *Discover* in the navigator on the left.
+.. Next, type into the Lucene Query field: `kubernetes.pod_name: cluster-logging-*`
+. You still see a lot of data in the Kibana UI. You can restrict what is being shown by selecting specific fields. Most times you will be interested in the actual logging message.
+.. Under *Available Fields* look for *message*, hover your mouse over *message* and click *Add*.
+. Your logging display is now a lot cleaner to look at.
+
+== Summary
+
+In this lab you created a dedicated Node to deploy the Logging stack to. You also protected this node from running non-logging workloads by adding taints to this node. You then deployed the Elasticsearch and Cluster Logging operators.
+
+Once the infrastructure was in place you created the ClusterLogging API resource which resulted in the operators deploying the entire logging stack.
+
+And finally you validated that the logging stack worked by logging into the Kibana logging UI and creating a simple query to display the logs for the cluster logging operator.
+
+This concludes this lab.

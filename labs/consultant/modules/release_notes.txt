@@ -1,0 +1,24 @@
+—————————————————————————————————— \n
+Major Release \n
+February 10th, 2020 \n
+version 4.1.0 \n
+OpenShift Advanced Deployment and Management\n
+courseID: 015DC41627\n
+Lab Environment: OPENTLC Lab Portal: Services → Catalogs → All Services → OPENTLC OpenShift 4 Labs → OpenShift 4 Install VM (OpenStack)\n
+Changes:\n
+- Remove OpenShift 3 sections.\n
+- Add Disconnected install on OpenStack.\n
+- Move entire class to OpenShift 4.3.\n
+- Add modules (Operator Hub, Cluster Logging, Authentication & Security).\n
+- Major rework of all other modules.\n
+—————————————————————————————————— \n
+Minor Release \n
+October 25, 2019 \n
+version 3.1.4 \n
+OpenShift Advanced Deployment and Management\n
+courseID: 015DC41627\n
+Lab Environment: OPENTLC Lab Portal: Services → Catalogs → All Services → OPENTLC OpenShift 4 Labs → OpenShift 4 AWS Install VM\n
+Changes:\n
+- Remove OpenShift 3 Homework.\n
+- Make OpenShift 4 Homework the only available homework.\n
+—————————————————————————————————— \n

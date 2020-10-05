@@ -1,0 +1,149 @@
+:noaudio:
+:scrollbar:
+:data-uri:
+:toc2:
+:linkattrs:
+
+== Homework Assignment Lab
+
+=== Goals
+
+* Assess hands-on proficiency with Red Hat^(R)^ OpenShift^(R)^ Container Platform advanced deployment topics.
+* Complete this course leading to *Red Hat Delivery Specialist - Advanced Platform-as-a-Service (PaaS) Administration* accreditation.
+
+=== Criteria
+
+* Assignments take the average student about eight hours to complete.
+* Assignments are an individual effort--complete the assignment without collaboration.
+* Assignments simulate a challenge typically encountered in a Red Hat Consulting engagement.
+
+=== Grading
+
+You should create a fully functional OpenShift 4 cluster which satisfies all criteria listed below.
+The cluster should pass all FTL tests.
+
+=== Environment
+
+Log in to link:https://labs.opentlc.com[OpenTLC^].
+Go to *Services* -> *Catalogs* -> *OPENTLC OpenShift 4 Labs* -> *OpenShift 4 Installation Lab*.
+Click *Order* -> *Submit*
+
+You will recieve three emails indicating the status of the environment and instructions for accessing the environment.
+In the third email you receive all information you need to install and configure an OpenShift 4 cluster.
+
+:numbered:
+== Business Use Case
+
+You are a consultant on an assignment to a telecommunications company called MitziCom.
+
+MitziCom is very impressed by the demonstration of OpenShift 4 capabilities and the results of the PoC that you provided.
+Now they want to deploy a fully functional cluster for their development team.
+They asked you to install a cluster that is as close as possible to a production cluster in terms of resource control and security.
+
+== Requirements
+
+You have to install an OpenShift 4 cluster to satisfy the following requirements.
+At the end of the installation you have to run a script which tests all required cluster parameters.
+
+IMPORTANT: The script checks your cluster settings _literally_: if the requirements specify "*20G*" it checks for "*20G*" and not for "*20Gi*".
+Please pay attention to such details.
+
+NOTE: Your setup should satisfy _all_ the requirements.
+Don't destroy your cluster until you have received `PASSED` to all tests.
+
+=== Cluster Information Requirements
+
+* Deploy the cluster in AWS EC2 region: `us-east-2`
+* You may deploy any recent OCP 4 version
+* The cluster name should be named `cluster-$GUID`
+** Replace the `$GUID` with your actual GUID, like `9f40`
+* Use the base domain `sandboxNNN.opentlc.com`
+** Replace the `NNN` with the sandbox ID that appears in your list
+
+=== User Authentication Requirements
+
+* Ability to authenticate both at the webconsole and command line
+* Five users have access to the cluster: `john`, `paul`, `ringo`, `george`, and `pete`.
+The password for each user should be set to `openshift4`.
+** Note: to pass the tests you should have logged in with `oc login` as each of the users
+at least once so that the user object is created in the cluster.
+* User `john` is a cluster admin
+
+=== Cluster Architecture Requirements
+
+* There are three master nodes working
+* There are two worker nodes
+* There are two infra nodes
+* Image registry is running on one of the infra nodes
+* Routers (two replicas) are running on two infra nodes
+* Logging and monitoring are running on the infra nodes
+** Elasticsearch should run on two nodes and have SingleRedundancy
+
+=== Sizing Requirements
+
+* Masters: instance size `.xlarge` (m4.xlarge or m5.xlarge)
+* Infra nodes: instance size `.xlarge` (m4.xlarge or m5.xlarge)
+* Workers: instance size `.large` (m4.large or m5.large)
+* Elasticsearch: make storage volume *20G*, memory request *4Gi*, CPU request *500m*
+** Hint: you will have to edit the `clusterlogging` object to change the requests
+
+=== Resource Controls Configuration
+
+* LimitRange for all new project should be set to:
+** LimitRange name: `project-limits`
+** Default request: *500m* CPU
+** Default request: *500Mi* memory
+** Default limits: *1* CPU
+** Default limits: *1Gi* memory
+* Resource Quota for all new projects should be set at:
+** ResourceQuota name: `project-quota`
+** *10* pods
+** *4CPU/8Gi* requests over all pods/containers
+** *6CPU/16Gi* limits over all pods/containers
+** *20G* PVC storage
+
+HINT: you have to change the default Project Request Template (look up in the documentation)
+
+=== Network Policy Configuration
+
+* In each new project the following network traffic should be allowed:
+** Between Pods in the same namespace (the policy name should be `allow-same-namespace`)
+** From Ingress namespace to the Pods in the project (the policy name should be `allow-from-openshift-ingress`)
+
+HINT: you have to change the default Project Request Template
+
+== Test and Grade Your Setup
+
+* Login to your bastion/VM host
+* Login to your cluster with `oc login` as a user with "cluster-admin" privileges (i.e. "john" or "system:admin")
+* Run the following command:
+
+[source]
+----
+$ grade_lab ocp4_advanced_deployment hw <your-opentlc-id>
+----
+
+It will create a test project and check if all its parameters (quotas, limit ranges, network policies) are set according to the requirements above.
+The command will display the test results.
+Make sure it passed *all* the tests.
+
+=== Submission
+
+* After the command above passed all the tests, find the results file in `/tmp/grading_dir/grading_report.txt`.
+* Submit this file with your class details as described in the *Submission* section.
+** `scp` the `/tmp/grading_report.txt` from the bastion host to your laptop and then upload to the LMS.
+* To help keep things organized, please indicate the following in a note in the LMS:
+** Instructor
+** Class location
+** Class date
+
+* Instructions for using the LMS:
+** Red Hat employees: link:https://docs.google.com/document/d/1nxlvAOlSdNs3-y8AkmDjnc8vtCH9rJdI5zbN9deCK50/edit[Red Hat Employee Homework Submission Instructions - PDF^]
+// ** Partners: link:https://partner.redhat.com[Red Hat Connect^] (partner.redhat.com)
+** Partners: link:https://github.com/redhat-gpte-devopsautomation/ILT_Resources/raw/master/homework_guides/Seertech%20-%20Learner%20Homework%20Guide.pdf[Partner Employee Homework Submission Instructions - PDF^]
+
+Thank you for taking our course.
+
+Your feedback is very important to us.
+
+Please fill out your survey.

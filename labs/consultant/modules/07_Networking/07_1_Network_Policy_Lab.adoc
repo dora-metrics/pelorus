@@ -1,0 +1,3 @@
+:labname: Network Policy
+:show_solution: false
+include::../modules/07_Networking/07_1_Network_Policy_Body.adoc[]

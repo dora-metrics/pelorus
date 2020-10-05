@@ -1,0 +1,963 @@
+ifdef::revealjs_slideshow[]
+
+[#cover,data-background-image="image/1156524-bg_redhat.png" data-background-color="#cc0000"]
+== &nbsp;
+
+[#cover-h1]
+Advanced Red Hat OpenShift Deployment and Management
+
+[#cover-h2]
+Scheduler
+
+[#cover-logo]
+image::{revealjs_cover_image}[]
+
+endif::[]
+
+== Module Topics
+
+* Scheduler Overview
+* Default Scheduler
+* Clusterwide Scheduler Customization
+* Pod Affinity and Anti-affinity
+* Node Affinity
+* Node Selectors
+* Node Taints and Pod Tolerations
+* Pod Disruption Budgets
+* Pod Priority Classes
+
+== Scheduler
+.Overview
+
+* Pod scheduling determines placement of new pods onto nodes within the cluster.
+* OpenShift Container Platform comes with a default scheduler that serves the needs of most users.
+** The default scheduler uses both inherent and customization tools to determine the best fit for a pod.
+** Default Scheduler can be customized
+* Various Mechanisms exist to influence placement of Pods
+** Affinity
+** Node Selectors
+** Taints and Tolerations
+
+== Scheduler
+.Separation of Responsibilities
+
+* Cluster Administrator:
+** Label Nodes
+** Taint Nodes
+** Communicate available Labels and Taints to Application Developers
+* Application Developers
+** Set Pod Affinity and Anti-Affinity as appropriate
+** Set Node Affinity and Node Selectors as appropriate
+** Set Tolerations as appropriate
+
+== Scheduler
+.Example Labels
+
+* Region / Availability Zone
+* Regions / Zones / Racks
+* Rooms / Racks
+* Example:
+** failure-domain.beta.kubernetes.io/region=us-east-1
+** failure-domain.beta.kubernetes.io/zone=us-east-1a
+** room=1001
+** rack=100A
+
+== Default Scheduler
+.Understanding default scheduling
+
+*  Select a node to host the pod in a three-step operation:
+. Filter the Nodes: The available nodes are filtered based on the constraints or requirements specified.
+. Prioritize the Filtered List of Nodes:
+** Pass each node through a series of priority functions that assign it a score between 0 - 10.
+** Can also take in a simple weight (positive numeric value) for each priority function.
+** The node score provided by each priority function is multiplied by the weight.
+** Weight attribute can be used by administrators to give higher importance to some priorities.
+. Select the Best Fit Node: The nodes are sorted based on their scores and the node with the highest score is selected to host the pod. If multiple nodes have the same high score, then one of them is selected at random.
+
+ifdef::showscript[]
+=== Transcript
+The existing generic scheduler is the default platform-provided scheduler engine that selects a node to host the pod in a three-step operation:
+
+1. Filters the Nodes
+    The available nodes are filtered based on the constraints or requirements specified. This is done by running each node through the list of filter functions called predicates.
+
+2. Prioritize the Filtered List of Nodes
+    This is achieved by passing each node through a series of priority_ functions that assign it a score between 0 - 10, with 0 indicating a bad fit and 10 indicating a good fit to host the pod. The scheduler configuration can also take in a simple weight (positive numeric value) for each priority function. The node score provided by each priority function is multiplied by the weight (default weight for most priorities is 1) and then combined by adding the scores for each node provided by all the priorities. This weight attribute can be used by administrators to give higher importance to some priorities.
+3. Select the Best Fit Node
+
+    The nodes are sorted based on their scores and the node with the highest score is selected to host the pod. If multiple nodes have the same high score, then one of them is selected at random.
+endif::showscript[]
+
+== Clusterwide Scheduler Customization
+.Example Scheduler policy
+
+* Add Predicates and Priorities as desired.
+** Static Predicates
+** General Predicates
+** Scheduler Priorities
+
+[source,json]
+----
+{
+  "kind" : "Policy",
+  "apiVersion" : "v1",
+  "predicates" : [
+    {"name" : "PodFitsHostPorts"},
+    {"name" : "PodFitsResources"},
+    {"name" : "NoDiskConflict"},
+    {"name" : "NoVolumeZoneConflict"},
+    {"name" : "MatchNodeSelector"},
+    {"name" : "MaxEBSVolumeCount"},
+    {"name" : "MaxAzureDiskVolumeCount"},
+    {"name" : "checkServiceAffinity"},
+    {"name" : "PodToleratesNodeNoExecuteTaints"},
+    {"name" : "MaxGCEPDVolumeCount"},
+    {"name" : "MatchInterPodAffinity"},
+    {"name" : "PodToleratesNodeTaints"},
+    {"name" : "HostName"}
+  ],
+  "priorities" : [
+    {"name" : "LeastRequestedPriority",     "weight" : 1},
+    {"name" : "BalancedResourceAllocation", "weight" : 1},
+    {"name" : "ServiceSpreadingPriority",   "weight" : 1},
+    {"name" : "EqualPriority",              "weight" : 1}
+  ]
+}
+----
+
+ifdef::showscript[]
+=== Transcript
+
+* Add Predicates and Priorities as desired.
+
+* List of Static Predicates: https://docs.openshift.com/container-platform/4.2/nodes/scheduling/nodes-scheduler-default.html#static-predicates_nodes-scheduler-default
+
+* List of General Predicates: https://docs.openshift.com/container-platform/4.2/nodes/scheduling/nodes-scheduler-default.html#static-predicates_nodes-scheduler-default
+
+* Scheduler Priorities: https://docs.openshift.com/container-platform/4.2/nodes/scheduling/nodes-scheduler-default.html#nodes-scheduler-default-priorities_nodes-scheduler-default
+endif::showscript[]
+
+== Clusterwide Scheduler Customization
+.Example Custom Predicate and Priority
+
+* The following example defines three topological levels: region (affinity), zone (affinity) and rack (anti-affinity):
+
+[source,json]
+----
+{
+  "kind": "Policy",
+  "apiVersion": "v1",
+  "predicates": [
+    {
+      "name": "RegionZoneAffinity",
+      "argument": {
+        "serviceAffinity": {
+          "label": "region, zone"
+        }
+      }
+    }
+  ],
+  "priorities": [
+    {
+      "name":"RackSpread",
+      "weight" : 1,
+      "argument": {
+         "serviceAntiAffinity": {
+           "label": "rack"
+         }
+       }
+     }
+  ]
+}
+----
+
+ifdef::showscript[]
+=== Transcript
+More examples here:
+https://docs.openshift.com/container-platform/4.2/nodes/scheduling/nodes-scheduler-default.html#nodes-scheduler-default-sample_nodes-scheduler-default
+
+endif::showscript[]
+
+== Default Scheduler
+.Scheduler Object
+
+* Clusterwide resource
+* Specify Name of Scheduler Policy
+* Specify selectors for a default Node Selector
+
+.Default Scheduler Configuration
+[source,yaml]
+----
+apiVersion: config.openshift.io/v1
+kind: Scheduler
+metadata:
+  annotations:
+    release.openshift.io/create-only: "true"
+  name: cluster
+spec:
+  policy:
+    name: scheduler-policy
+  defaultNodeSelector: type=user-node,region=east
+----
+
+ifdef::showscript[]
+=== Transcript
+
+endif::showscript[]
+
+== Clusterwide Scheduler Customization
+.Defining Scheduler Policy
+
+* JSON file which *must* be named `policy.cfg`.
+** Specifies the predicates and priorities the scheduler will consider
+* Create a `ConfigMap` in `openshift-config` project containing the policy file.
++
+[source,sh]
+----
+oc create configmap -n openshift-config --from-file=policy.cfg <configmap-name>
+----
+* Update `cluster` Scheduler object to point to new ConfigMap
++
+[source,sh]
+----
+oc patch Scheduler cluster --type='merge' -p '{"spec":{"policy":{"name":"<configmap-name>"}}}'
+----
+* Wait for *openshift-kube-apiserver* pods to redeploy.
+* Verify Scheduler pod logs in *openshift-kube-scheduler* project
++
+[source,sh]
+----
+oc logs -n openshift-kube-scheduler openshift-kube-scheduler-ip-10-0-141-29.ec2.internal | grep predicates
+----
+
+ifdef::showscript[]
+=== Transcript
+
+endif::showscript[]
+
+== Pod Affinity and Anti-affinity
+.Overview
+
+* Specify rules about pod placement relative to other pods
+* Define rules using custom labels on nodes, label selectors specified in pods
+* Allow constraining which nodes pod is eligible to be scheduled on based on the labels on other pods
+** Pod affinity can tell scheduler to locate new pod on same node as other pods
+** Pod anti-affinity can prevent scheduler from locating new pod on same node as pods with same labels
+
+* Two types of pod affinity rules:
+** Required rules must be met before pod can be scheduled on node
+** If rule met, preferred rules specify that scheduler tries to enforce rules, but does not guarantee enforcement
+
+ifdef::showscript[]
+Transcript
+
+Pod affinity and anti-affinity allow you to specify rules about how pods are placed relative to other pods. The rules are defined using custom labels on nodes and label selectors specified in pods. Pod affinity and anti-affinity allows a pod to specify an affinity (or anti-affinity) toward a group of pods with which it can be placed. The node does not have control over the placement.
+
+For example, using affinity rules, you can spread or pack pods within a service or relative to pods in other services. Anti-affinity rules allow you to prevent pods of a particular service from being scheduled on the same nodes as pods of another service that are known to interfere with the performance of the pods of the first service. Or, you can spread the pods of a service across nodes or availability zones to reduce correlated failures.
+
+Pod affinity and anti-affinity allows you to constrain which nodes your pod is eligible to be scheduled on based on the labels on other pods. A label is a key/value pair.
+
+Pod affinity can tell the scheduler to locate a new pod on the same node as other pods if the label selector on the new pod matches the label on the current pod.
+
+Pod anti-affinity can prevent the scheduler from locating a new pod on the same node as pods with the same labels if the label selector on the new pod matches the label on the current pod.
+
+There are two types of pod affinity rules: required and preferred.
+
+Required rules must be met before a pod can be scheduled on a node. Preferred rules specify that, if the rule is met, the scheduler tries to enforce the rules but does not guarantee enforcement.
+
+endif::showscript[]
+
+== Pod Affinity and Anti-affinity
+.Pod Labels
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: security-s1
+  labels:
+    security: S1
+spec:
+  containers:
+  - name: security-s1
+    image: docker.io/ocpqe/hello-pod
+----
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: security-s2
+  labels:
+    security: S2
+spec:
+  containers:
+  - name: security-s2
+    image: docker.io/ocpqe/hello-pod
+----
+
+== Pod Affinity and Anti-affinity
+.Pod Affinity Example
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-affinity
+spec:
+  affinity:
+    podAffinity: <1>
+      requiredDuringSchedulingIgnoredDuringExecution: <2>
+      - labelSelector:
+          matchExpressions:
+          - key: security <3>
+            operator: In <4>
+            values:
+            - S1 <3>
+        topologyKey: failure-domain.beta.kubernetes.io/zone <5>
+  containers:
+  - name: with-pod-affinity
+    image: docker.io/ocpqe/hello-pod
+----
+
+ifdef::showscript[]
+Transcript
+
+You configure pod affinity and anti-affinity through the pod specification files. You can specify a required rule, a preferred rule, or both. If you specify both, the node must first meet the required rule, then it attempts to meet the preferred rule.
+
+The following example shows a pod specification configured for pod affinity and anti-affinity.
+
+In this example, the pod affinity rule indicates that the pod can schedule onto a node only if that node has at least one already-running pod with a label that has the key `security` and value of `S1`.
+
+Note the callouts in this example:
+
+<1> Stanza to configure pod affinity.
+<2>	Defines a required rule.
+<3>	The key and value (label) that must be matched to apply the rule.
+<4>	The operator represents the relationship between the label on the existing pod and the set of values in the `matchExpression` parameters in the specification for the new pod. Can be `In`, `NotIn`, `Exists`, or `DoesNotExist`.
+<5> Kubernetes pre-defined node label. Depends on cloud provider.
+
+In principle, `topologyKey` can be any legal label-key. However, for performance and security reasons, there are some constraints on `topologyKey`:
+
+* For affinity and for `requiredDuringSchedulingIgnoredDuringExecution` pod anti-affinity, an empty `topologyKey` is not allowed.
+* For `requiredDuringSchedulingIgnoredDuringExecution` pod anti-affinity, the  `LimitPodHardAntiAffinityTopology` admission controller was introduced to limit `topologyKey` to `kubernetes.io/hostname`. If you want to make it available for custom topologies, you can modify the admission controller, or simply disable it.
+* For `preferredDuringSchedulingIgnoredDuringExecution` pod anti-affinity, an empty `topologyKey` is interpreted as “all topologies”. In this case, “all topologies” is currently limited to the combination of `kubernetes.io/hostname`, `failure-domain.beta.kubernetes.io/zone`, and `failure-domain.beta.kubernetes.io/region`.
+* Except for the cases identified here, the `topologyKey` can be any legal label-key.
+
+In addition to `labelSelector` and `topologyKey`, you can optionally specify a list of namespaces that the `labelSelector` should match against. (This goes at the same level of the definition as `labelSelector` and `topologyKey`). If omitted or empty, it defaults to the namespace of the pod where the affinity/anti-affinity definition appears.
+
+All `matchExpressions` associated with `requiredDuringSchedulingIgnoredDuringExecution` affinity and anti-affinity must be satisfied for the pod to be scheduled onto a node.
+endif::showscript[]
+
+== Pod Affinity and Anti-affinity
+.Pod Anti-affinity Example
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-antiaffinity
+spec:
+  affinity:
+    podAntiAffinity: <1>
+      preferredDuringSchedulingIgnoredDuringExecution: <2>
+      - weight: 100 <3>
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: security <4>
+              operator: In <5>
+              values:
+              - S2
+          topologyKey: kubernetes.io/hostname <6>
+  containers:
+  - name: with-pod-affinity
+    image: docker.io/ocpqe/hello-pod
+----
+
+ifdef::showscript[]
+Transcript
+
+This pod anti-affinity rule says that the pod prefers to not schedule onto a node if that node is already running a pod with a label having a `security` key and value of `S2`.
+
+Note the following callouts in this example:
+
+<1> Stanza to configure pod anti-affinity.
+<2>	Defines a preferred rule.
+<3>	Specifies a weight for a preferred rule. The node with the highest weight is preferred.
+<4>	Description of the pod label that determines when the anti-affinity rule applies. Specify a key and value for the label.
+<5>	The operator represents the relationship between the label on the existing pod and the set of values in the matchExpression parameters in the specification for the new pod. Can be `In`, `NotIn`, `Exists`, or `DoesNotExist`.
+<6> Kubernetes pre-defined node label. Depends on cloud provider.
+endif::showscript[]
+
+== Pod Affinity and Anti-affinity
+.Complex Pod Anti-affinity Example
+
+[source,texinfo]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cache
+spec:
+  selector:
+    matchLabels:
+      app: cache
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: cache
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - cache
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: redis-server
+        image: redis:3.2-alpine
+----
+
+ifdef::showscript[]
+Transcript
+
+In a three-node cluster, a web application has an in-memory cache, such as Redis. You want the web servers to be co-located with the cache as much as possible. This example shows the YAML snippet of a simple Redis deployment with three replicas and an `app=store` selector label. The deployment has `PodAntiAffinity` configured to ensure that the scheduler does not co-locate replicas on a single node.
+endif::showscript[]
+
+== Pod Affinity and Anti-affinity
+.Complex Pod Affinity Example
+
+[source,texinfo]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server
+spec:
+  selector:
+    matchLabels:
+      app: web
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - web
+            topologyKey: "kubernetes.io/hostname"
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - cache
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: web-app
+        image: nginx:1.12-alpine
+----
+
+ifdef::showscript[]
+Transcript
+
+This YAML snippet of the web server deployment has both `podAntiAffinity` and `podAffinity` configured. This informs the scheduler that all of its replicas are to be co-located with pods that have the `app=store` selector label. This also ensures that each web server replica does not co-locate on a single node.
+
+This example uses the `podAntiAffinity` rule with a `topologyKey` of `"kubernetes.io/hostname"` to deploy the Redis cluster so that no two instances are located on the same host.
+endif::showscript[]
+
+== Node Affinity
+.Overview
+
+* Node affinity is a set of rules used by the scheduler to determine where a pod can be placed. The rules are defined using custom labels on the nodes and label selectors specified in pods.
+* Pod can set
+** Node selector
+** Node affinity
+* Valid operators: `In`, `NotIn`, `Exists`, `DoesNotExist`, `Lt`, `Gt`
+* No explicit concept of node anti-affinity
+** `NotIn` or `DoesNotExist` operators provide anti-affinity behavior
+
+== Node Affinity
+.Required Node Affinity Example
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-affinity
+spec:
+  affinity:
+    nodeAffinity: <1>
+      requiredDuringSchedulingIgnoredDuringExecution: <2>
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: e2e-az-NorthSouth <3>
+            operator: In <4>
+            values:
+            - e2e-az-North <3>
+            - e2e-az-South <3>
+  containers:
+  - name: with-node-affinity
+    image: docker.io/ocpqe/hello-pod
+----
+
+ifdef::showscript[]
+Transcript
+
+Note the following callouts in this example:
+
+<1> The stanza to configure node affinity.
+<2> Defines a required rule.
+<3> A key/value pair (label) that must be matched to apply the rule.
+<4> The operator represents the relationship between the label on the node and the set of values in the matchExpression parameters in the pod specification. This value can be `In`, `NotIn`, `Exists`, or `DoesNotExist`, `Lt`, or `Gt`.
+
+The example is a pod specification with a rule that requires the pod be placed on a node with a label whose key is e2e-az-NorthSouth and whose value is either e2e-az-North or e2e-az-South:
+endif::showscript[]
+
+== Node Affinity
+.Preferred Node Affinity Example
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-affinity
+spec:
+  affinity:
+    nodeAffinity: <1>
+      preferredDuringSchedulingIgnoredDuringExecution: <2>
+      - weight: 1 <3>
+        preference:
+          matchExpressions:
+          - key: e2e-az-EastWest <4>
+            operator: In <5>
+            values:
+            - e2e-az-East <4>
+            - e2e-az-West <4>
+  containers:
+  - name: with-node-affinity
+    image: docker.io/ocpqe/hello-pod
+----
+
+ifdef::showscript[]
+Transcript
+
+Note the following callouts in this example:
+
+<1> The stanza to configure node affinity.
+<2> Defines a preferred rule.
+<3> Specifies a weight for a preferred rule. The node with highest weight is preferred.
+<4> A key/value pair (label) that must be matched to apply the rule.
+<5>	The operator represents the relationship between the label on the node and the set of values in the `matchExpression parameters` in the pod specification. This value can be `In`, `NotIn`, `Exists`, or `DoesNotExist`, `Lt`, or `Gt`.
+endif::showscript[]
+
+== Node Selectors
+.Overview
+
+* Schedule Pods to nodes based on node labels
+* Can use multiple labels
+* Can use Node Selector and Node Affinity concurrently
++
+[source,sh]
+----
+kind: ReplicaSet
+spec:
+  template:
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+        node-role.kubernetes.io/worker: ''
+        type: user-node
+----
+
+== Node Selectors
+.Cluster-wide Node Selectors
+
+* Ensure that Nodes or MachineSets have the right labels
+* Edit the Scheduler Operator Custom Resource to add the cluster node selectors
++
+[source,sh]
+----
+apiVersion: config.openshift.io/v1
+kind: Scheduler
+metadata:
+  name: cluster
+spec: {}
+  policy:
+spec:
+  defaultNodeSelector: type=user-node,region=east
+----
+
+== Node Selectors
+.Project-wide Node Selectors
+
+* Ensure that Nodes or MachineSets have the right labels
+* Edit the Namespace to add a Project Node selector via an annotation
++
+[source,sh]
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    openshift.io/node-selector: "type=user-node,region=east"
+  name: demo
+spec:
+  finalizers:
+  - kubernetes
+----
+
+== Taints and Tolerations
+.Overview
+
+* Allow node to control which pods can or cannot be scheduled on them
+* Taint allows node to refuse pod to be scheduled unless pod has matching _toleration_
+* Apply taints to node through:
+** Node specification (`NodeSpec`)
+* Apply tolerations to pod through pod specification (`PodSpec`)
+* Taint on node instructs node to repel all pods that do not tolerate taint
+* Taints and tolerations consist of `key`, `value`, `effect`
+** Operator allows leaving one of these parameters empty
+
+== Taints and Tolerations
+.Components
+
+[[taint-and-tolerations]]
+[cols="3a,8a",caption=""]
+|===
+|Parameter |Description
+|`key`
+|Any string up to 253 characters; must begin with letter or number; may contain letters, numbers, hyphens, dots, underscores
+|`value`
+| Any string up to 63 characters; must begin with letter or number; may contain letters, numbers, hyphens, dots, underscores
+|`effect`
+|One of the following:
+[frame=none]
+[cols="2a,3a",options="noheader"]
+!====
+!`NoSchedule`
+!* New pods that do not match taint are not scheduled onto that node
+* Existing pods on node remain
+!`PreferNoSchedule`
+!* New pods that do not match taint may be scheduled onto that node, but scheduler tries not to
+* Existing pods on node remain
+!`NoExecute`
+!* New pods that do not match taint cannot be scheduled onto that node
+* Existing pods on node with no matching toleration removed
+!====
+|`operator`
+|[frame=none]
+[cols="2,3",options="noheader"]
+!====
+!`Equal`
+!`key`/`value`/`effect` parameters must match (default)
+!`Exists`
+!`key`/`effect` parameters must match; must leave `value` parameter blank, which matches any
+!====
+|===
+
+ifdef::showscript[]
+Transcript
+
+A toleration matches a taint:
+
+* If the `operator` parameter is set to `Equal`:
+** `Key` parameters are the same
+** `Value` parameters are the same
+** `Effect` parameters are the same
+* If the `operator` parameter is set to `Exists`:
+** `Key` parameters are the same
+** `Effect` parameters are the same
+
+endif::showscript[]
+
+== Taints and Tolerations
+.Kubernetes built-in taints
+
+* The following taints are built into kubernetes
+** node.kubernetes.io/not-ready
+** node.kubernetes.io/unreachable
+** node.kubernetes.io/out-of-disk
+** node.kubernetes.io/memory-pressure
+** node.kubernetes.io/disk-pressure
+** node.kubernetes.io/network-unavailable
+** node.kubernetes.io/unschedulable
+** node.cloudprovider.kubernetes.io/uninitialized
+
+ifdef::showscript[]
+=== Transcript
+The following taints are built into kubernetes:
+
+* node.kubernetes.io/not-ready: The node is not ready. This corresponds to the node condition Ready=False.
+
+* node.kubernetes.io/unreachable: The node is unreachable from the node controller. This corresponds to the node condition Ready=Unknown.
+
+* node.kubernetes.io/out-of-disk: The node has insufficient free space on the node for adding new pods. This corresponds to the node condition OutOfDisk=True.
+
+* node.kubernetes.io/memory-pressure: The node has memory pressure issues. This corresponds to the node condition MemoryPressure=True.
+
+* node.kubernetes.io/disk-pressure: The node has disk pressure issues. This corresponds to the node condition DiskPressure=True.
+
+* node.kubernetes.io/network-unavailable: The node network is unavailable.
+
+* node.kubernetes.io/unschedulable: The node is unschedulable.
+
+* node.cloudprovider.kubernetes.io/uninitialized: When the node controller is started with an external cloud provider, this taint is set on a node to mark it as unusable. After a controller from the cloud-controller-manager initializes this node, the kubelet removes this taint.
+
+endif::showscript[]
+
+== Taints and Tolerations
+.Multiple Taints
+
+* You can put multiple taints on same node and multiple tolerations on same pod
+* OpenShift^(R)^ processes taints for which pod has matching toleration
+* The remaining unmatched taints have the indicated effects on the pod:
+** If at least one unmatched taint with `NoSchedule` effect, OpenShift^(R)^ cannot schedule pod onto that node
+** If no unmatched taint with `NoSchedule` effect, but at least one unmatched taint with `PreferNoSchedule` effect, OpenShift tries to not schedule the pod onto node
+** If at least one unmatched taint with `NoExecute` effect, OpenShift does not schedule pod onto node or, if pod already running on node, evicts it
+*** Pods that do not tolerate taint are immediately evicted
+*** Pods that tolerate taint without specifying `tolerationSeconds` remain bound forever, otherwise bound for specified time
+
+ifdef::showscript[]
+=== Transcript
+You can specify how long a pod can remain bound to a node before being evicted by specifying the tolerationSeconds parameter in the pod specification. If a taint with the NoExecute effect is added to a node, any pods that do not tolerate the taint are evicted immediately (pods that do tolerate the taint are not evicted). However, if a pod that to be evicted has the tolerationSeconds parameter, the pod is not evicted until that time period expires.
+
+For example:
+
+tolerations:
+- key: "key1"
+  operator: "Equal"
+  value: "value1"
+  effect: "NoExecute"
+  tolerationSeconds: 3600
+
+Here, if this pod is running but does not have a matching taint, the pod stays bound to the node for 3,600 seconds and then be evicted. If the taint is removed before that time, the pod is not evicted.
+
+endif::showscript[]
+
+== Taints and Tolerations
+.Example
+
+* Update the MachineSet with the Taint
+** `spec.template.spec.taint`
++
+[source,sh]
+----
+spec:
+  template:
+    spec:
+      taints:
+      - key: ssd
+        value: "true"
+        effect: NoSchedule
+----
+
+* Create a new Machine from the MachineSet
+
+== Taints and Tolerations
+.Example
+
+* Setting Taints on Nodes
++
+[source,sh]
+----
+$ oc adm taint nodes node1 ssd=true:NoSchedule
+$ oc adm taint nodes node1 ssd=true:NoExecute
+$ oc adm taint nodes node1 gpu=true:NoSchedule
+----
+
+* On the Pod spec set the matching toleration
++
+[source,texinfo]
+----
+tolerations:
+- key: "ssd"
+  operator: "Equal"
+  value: "true"
+  effect: "NoSchedule"
+- key: "ssd"
+  operator: "Equal"
+  value: "true"
+  effect: "NoExecute"
+- key: "gpu"
+  operator: "Equal"
+  value: "true"
+  effect: "NoSchedule"
+----
+
+ifdef::showscript[]
+Transcript
+
+You add a taint to a node using the `oc adm taint` command with the parameters described in the xref:taint-and-tolerations[Taint and Tolerations Components] table:
+
+[source,sh]
+----
+$ oc adm taint nodes <node-name> <key>=<value>:<effect>
+----
+
+In this case, the pod will be scheduled onto the node, since there is a toleration matching the all the taints.
+because node1 has 3 taints your pod must have all three. matching tolerations
+endif::showscript[]
+
+== Taints and Tolerations
+.Pod eviction for node problems
+
+* The Taint-Based Evictions feature is enabled by default.
+* The taints are automatically added by the node controller and the normal logic for evicting pods from Ready nodes is disabled.
+** If a node enters a not ready state, the *node.kubernetes.io/not-ready:NoExecute* taint is added and pods cannot be scheduled on the node. Existing pods remain for the toleration seconds period.
+** If a node enters a not reachable state, the *node.kubernetes.io/unreachable:NoExecute* taint is added and pods cannot be scheduled on the node. Existing pods remain for the toleration seconds period.
+** Other Kubernetes default taints (memory pressure, disk-pressure, ...) are set as conditions occur
+* Add matching tolerations to the Pod to prevent Pod Eviction for those problems.
+
+== Pod Disruption Budgets
+.Overview
+
+* a `PodDisruptionBudget` allows the specification of safety constraints on pods during operations, such as draining a node for maintenance.
+* `PodDisruptionBudget`: API object that specifies the minimum number or percentage of replicas that must be up at a time. Setting these in projects can be helpful during node maintenance (such as scaling a cluster down or a cluster upgrade) and is only honored on voluntary evictions (not on node failures)
+* `PodDisruptionBudget` object's configuration consists of these parts:
+** Label selector--label query over set of pods
+** Availability level--specifies minimum number of pods that must be available simultaneously
+
+== Pod Disruption Budget
+.Example
+
+[source,texinfo]
+----
+apiVersion: policy/v1beta1 <1>
+kind: PodDisruptionBudget
+metadata:
+  name: my-pdb
+spec:
+  selector:  <2>
+    matchLabels:
+      foo: bar
+  minAvailable: 2  <3>
+----
+
+ifdef::showscript[]
+Transcript
+
+Note the following callouts in this example:
+
+<1> `PodDisruptionBudget` is part of the `policy/v1beta1` API group. However, note that since OpenShift 3.6, pod disruption budgets are fully supported by Red Hat.
+<2> A label query over a set of resources. The result of `matchLabels` and
+ `matchExpressions` are logically conjoined.
+<3> The minimum number of pods that must be available simultaneously. This can
+be either an integer or a string specifying a percentage (for example, `20%`).
+
+endif::showscript[]
+
+== Pod Priority
+.Overview
+
+* Pod priority indicates the importance of a pod relative to other pods and queues the pods based on that priority.
+* Pod preemption allows the cluster to evict, or preempt, lower-priority pods so that higher-priority pods can be scheduled if there is no available space on a suitable node
+* Pod priority also affects the scheduling order of pods and out-of-resource eviction ordering on the node.
+* To use priority and preemption, you create priority classes that define the relative weight of your pods.
+
+ifdef::showscript[]
+=== Transcript
+https://docs.openshift.com/container-platform/4.2/nodes/pods/nodes-pods-priority.html
+
+You can enable pod priority and preemption in your cluster. Pod priority indicates the importance of a pod relative to other pods and queues the pods based on that priority. Pod preemption allows the cluster to evict, or preempt, lower-priority pods so that higher-priority pods can be scheduled if there is no available space on a suitable node Pod priority also affects the scheduling order of pods and out-of-resource eviction ordering on the node.
+
+To use priority and preemption, you create priority classes that define the relative weight of your pods. Then, reference a priority class in the pod specification to apply that weight for scheduling.
+
+Preemption is controlled by the disablePreemption parameter in the scheduler configuration file, which is set to false by default.
+
+When you use the Pod Priority and Preemption feature, the scheduler orders pending pods by their priority, and a pending pod is placed ahead of other pending pods with lower priority in the scheduling queue. As a result, the higher priority pod might be scheduled sooner than pods with lower priority if its scheduling requirements are met. If a pod cannot be scheduled, scheduler continues to schedule other lower priority pods.
+endif::showscript[]
+
+== Pod Priority
+.Pod priority classes
+
+* A priority class object can take any 32-bit integer value smaller than or equal to 1000000000 (one billion).
+** Reserve numbers larger than one billion for critical pods that should not be preempted or evicted.
+* Two reserved priority classes
+** system-node-critical (2000001000): Used for all pods that should never be evicted from a node.
+** system-cluster-critical(2000000000): Used with pods that are important for the cluster. Pods with this priority class can be evicted from a node in certain circumstances.
+
+ifdef::showscript[]
+=== Transcript
+
+* system-node-critical - This priority class has a value of 2000001000 and is used for all pods that should never be evicted from a node. Examples of pods that have this priority class are sdn-ovs, sdn, and so forth. A number of critical components include the system-node-critical priority class by default, for example:
+** master-api
+** master-controller
+** master-etcd
+** sdn
+** sdn-ovs
+** sync
+
+* system-cluster-critical - This priority class has a value of 2000000000 (two billion) and is used with pods that are important for the cluster. Pods with this priority class can be evicted from a node in certain circumstances. For example, pods configured with the system-node-critical priority class can take priority. However, this priority class does ensure guaranteed scheduling. Examples of pods that can have this priority class are fluentd, add-on components like descheduler, and so forth. A number of critical components include the system-cluster-critical priority class by default, for example:
+** fluentd
+** metrics-server
+** descheduler
+
+* cluster-logging - This priority is used by Fluentd to make sure Fluentd pods are scheduled to nodes over other apps.
+
+endif::showscript[]
+
+== Pod Priority
+.Example
+
+.Priority Class
+[source,sh]
+----
+apiVersion: scheduling.k8s.io/v1beta1
+kind: PriorityClass
+metadata:
+  name: high-priority <1>
+value: 1000000 <2>
+globalDefault: false <3>
+description: "This priority class should be used for XYZ service pods only." <4>
+----
+
+.Pod Spec
+[source,sh]
+----
+[...]
+spec:
+  priorityClassName: high-priority
+----
+
+ifdef::showscript[]
+=== Transcript
+
+<1> The name of the priority class object.
+<2> The priority value of the object.
+<3> Optional field that indicates whether this priority class should be used for pods without a priority class name specified. This field is false by default. Only one priority class with globalDefault set to true can exist in the cluster. If there is no priority class with globalDefault:true, the priority of pods with no priority class name is zero. Adding a priority class with globalDefault:true affects only pods created after the priority class is added and does not change the priorities of existing pods.
+<4> Optional arbitrary text string that describes which pods developers should use with this priority class.
+endif::showscript[]
+
+== Summary
+
+* Scheduler Overview
+* Default Scheduler Policy
+* Clusterwide Scheduler Customization
+* Pod Affinity and Anti-affinity
+* Node Affinity
+* Node Selectors
+* Node Taints and Pod Tolerations
+* Pod Disruption Budget
+* Pod Priority Classes

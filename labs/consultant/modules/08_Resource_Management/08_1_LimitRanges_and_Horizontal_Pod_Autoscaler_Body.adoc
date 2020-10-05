@@ -1,0 +1,677 @@
+include::../../tools/00_0_Lab_Header.adoc[]
+:imagesdir: ./images
+
+== {labname} Lab
+
+.Goals
+
+* Create a `LimitRange` object
+* Create a Horizontal Pod Autoscaler (HPA)
+* Test the HPA
+
+[NOTE]
+You must have have metrics working in your cluster to create an HPA.
+
+// WK: No include of lab setup. This builds on completion of the previous lab.
+[[labexercises]]
+:numbered:
+
+== Create a New Application
+
+. Create a new project:
++
+[source]
+----
+$ oc new-project my-hpa
+----
+
+. Deploy the `pod-autoscale` application in the new project:
++
+[source]
+----
+$ oc new-app quay.io/gpte-devops-automation/pod-autoscale-lab:rc0 --name=pod-autoscale -n my-hpa
+$ oc expose svc pod-autoscale
+----
+
+== Create a Limit Range
+
+. Create a `LimitRange` object with the following properties:
++
+.Pod Limits
+[.noredheader,cols="2",caption=""]
+|====
+|Min CPU|10m
+|Max CPU|100m
+|Min Memory|5Mi
+|Max Memory|750Mi
+|====
++
+.Container Limits
+[.noredheader,cols="2",caption=""]
+|====
+|Min CPU|10m
+|Max CPU|100m
+|Min Memory|5Mi
+|Max Memory|750Mi
+|Default CPU|50m
+|Default Memory|100Mi
+|====
+
+ifeval::[{show_solution} == true]
+. Confirm that your code looks similar to this:
++
+[source]
+----
+$ echo '---
+kind: LimitRange
+apiVersion: v1
+metadata:
+  name: limits
+spec:
+  limits:
+  - type: Pod
+    max:
+      cpu: 100m
+      memory: 750Mi
+    min:
+      cpu: 10m
+      memory: 5Mi
+  - type: Container
+    max:
+      cpu: 100m
+      memory: 750Mi
+    min:
+      cpu: 10m
+      memory: 5Mi
+    default:
+      cpu: 50m
+      memory: 100Mi
+' | oc create -f - -n my-hpa
+----
+endif::[]
+
+== Create a resource HPA
+
+. Create a resource HPA for the `pod-autoscale` deployment to scale between one and five replicas and set it to scale up when the CPU utilization reaches 60%.
+ifeval::[{show_solution} == true]
++
+[source]
+----
+$ oc autoscale deployment.apps/pod-autoscale --min 1 --max 5 --cpu-percent=60
+----
+endif::[]
+
+. Show the status of the autoscaler:
++
+[source,options="nowrap"]
+----
+$ oc get hpa pod-autoscale -n my-hpa
+NAME            REFERENCE                        TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+pod-autoscale   Deployment/pod-autoscale   <unknown>/60%   1         5         1          34s
+----
++
+[NOTE]
+It takes several minutes for the HPA to collect enough metrics to present a current status. If you see `<unknown>` in the `TARGETS` column, wait few minutes and repeat this step.
+
+. Review the autoscaler information:
++
+[source,options="nowrap"]
+----
+$ oc describe hpa pod-autoscale -n my-hpa
+Name:                                                  pod-autoscale
+Namespace:                                             my-hpa
+Labels:                                                <none>
+Annotations:                                           <none>
+CreationTimestamp:                                     Wed, 10 Apr 2019 15:34:51 -0700
+Reference:                                             Deployment/pod-autoscale
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  <unknown> / 60%
+Min replicas:                                          1
+Max replicas:                                          5
+Deployment pods:                                 1 current / 0 desired
+Conditions:
+  Type           Status  Reason                   Message
+  ----           ------  ------                   -------
+  AbleToScale     True    ReadyForNewScale  recommended size matches current size
+  ScalingActive   True    ValidMetricFound  the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  True    TooFewReplicas    the desired replica count is less than the minimum replica count
+Events:           <none>
+
+----
+Note: If HPA is not working. Please try this command. Wait some minutes and review the HPA again:
+
++
+[source]
+oc set resources deployment.apps/pod-autoscale --requests=cpu=50m --requests=memory=5Mi --limits=cpu=100m --limits=memory=750Mi
+
+. In a separate terminal, create CPU load for the pod and monitor the environment:
++
+[source]
+----
+$ oc rsh -n my-hpa $(oc get ep pod-autoscale -n my-hpa -o jsonpath='{ .subsets[].addresses[0].targetRef.name }')
+
+$ while true;do true;done
+----
++
+NOTE: You can stop this artificial load generation at any time by pressing CTRL-C
+. Examine the HPA information to see the effect of the workload.
+. Use the Red Hat^(R)^ OpenShift^(R)^ Container Platform web console to see whether new pods are being created.
++
+[NOTE]
+The HPA does not scale up or down instantly. Take a look at the pods to see how HPA is scaling up and down based on the resources consumption.
+
+== Clean Up Resource HPA
+
+. Stop the artificial load generation you previously started using `oc rsh`.
+. Wait for the HPA to scale the number of pods back down to the minimum. This may take several minutes.
+. Remove the HPA:
++
+[source]
+----
+$ oc delete hpa pod-autoscale -n my-hpa
+----
+
+== Create a Custom HPA
+
+Notes:
+
+* Custom HPAs in OpenShift require the use of a namespaced Prometheus
+* Cannot use the cluster monitoring instance of Prometheus
+* An adapter is required to expose custom metrics to Kubernetes
+
+TIP: When interacting with the OperatorHub, using the UI is the easiest experience. The solutions provided show the yaml and/or CLI approach for reference.
+
+=== Deploy Prometheus Operator
+
+. Create a new project called `my-prometheus`
++
+[source]
+----
+$ oc new-project my-prometheus
+----
+
+. Using the OperatorHub catalog in the OpenShift UI, create a subscription to the `Prometheus Operator` in the `my-prometheus` project.
+
+. Verify that your subscription to the Prometheus operator was created and deployed:
++
+[source]
+----
+$ oc describe subscriptions.operators.coreos.com prometheus -n my-prometheus
+
+Name:         prometheus
+Namespace:    my-prometheus
+Labels:       <none>
+Annotations:  <none>
+API Version:  operators.coreos.com/v1alpha1
+Kind:         Subscription
+Metadata:
+  Creation Timestamp:  2019-12-04T03:33:39Z
+  Generation:          1
+  Resource Version:    2370321
+  Self Link:           /apis/operators.coreos.com/v1alpha1/namespaces/my-prometheus/subscriptions/prometheus
+  UID:                 dd00efa7-1646-11ea-baf6-fa163e1a1aa4
+Spec:
+  Channel:                beta
+  Install Plan Approval:  Automatic
+  Name:                   prometheus
+  Source:                 community-operators
+  Source Namespace:       openshift-marketplace
+  Starting CSV:           prometheusoperator.0.32.0
+Status:
+  Catalog Health:
+    Catalog Source Ref:
+      API Version:       operators.coreos.com/v1alpha1
+      Kind:              CatalogSource
+      Name:              certified-operators
+      Namespace:         openshift-marketplace
+      Resource Version:  2182472
+      UID:               2e2a5424-1232-11ea-9881-fa163e3a8fe7
+    Healthy:             true
+    Last Updated:        2019-12-04T03:33:39Z
+    Catalog Source Ref:
+      API Version:       operators.coreos.com/v1alpha1
+      Kind:              CatalogSource
+      Name:              community-operators
+      Namespace:         openshift-marketplace
+      Resource Version:  2182469
+      UID:               2e9b6d65-1232-11ea-9881-fa163e3a8fe7
+    Healthy:             true
+    Last Updated:        2019-12-04T03:33:39Z
+    Catalog Source Ref:
+      API Version:       operators.coreos.com/v1alpha1
+      Kind:              CatalogSource
+      Name:              redhat-operators
+      Namespace:         openshift-marketplace
+      Resource Version:  2182481
+      UID:               2dce315e-1232-11ea-9881-fa163e3a8fe7
+    Healthy:             true
+    Last Updated:        2019-12-04T03:33:39Z
+  Conditions:
+    Last Transition Time:  2019-12-04T03:33:39Z
+    Message:               all available catalogsources are healthy
+    Reason:                AllCatalogSourcesHealthy
+    Status:                False
+    Type:                  CatalogSourcesUnhealthy
+  Current CSV:             prometheusoperator.0.32.0
+  Install Plan Ref:
+    API Version:       operators.coreos.com/v1alpha1
+    Kind:              InstallPlan
+    Name:              install-pl8d4
+    Namespace:         my-prometheus
+    Resource Version:  2370241
+    UID:               dd1c99dd-1646-11ea-8253-fa163e3a8fe7
+  Installed CSV:       prometheusoperator.0.32.0
+  Installplan:
+    API Version:  operators.coreos.com/v1alpha1
+    Kind:         InstallPlan
+    Name:         install-pl8d4
+    Uuid:         dd1c99dd-1646-11ea-8253-fa163e3a8fe7
+  Last Updated:   2019-12-04T03:33:44Z
+  State:          AtLatestKnown
+Events:           <none>
+----
+
+=== Create Namespaced Prometheus Instance
+
+. Now that you have a dedicated Prometheus operator deployed in your namespace, you can use it to deploy an instance of Prometheus
+.. In the UI, click *Operators* > *Installed Operators* > *Prometheus Operator*
+.. You will use this view to both create and observe the operator controlled resources
+. First, you will create a Service Monitor. The Service Monitor will be configured to:
+** Watch pods based on a `matchLabel` selector
+** Be watched by a Prometheus instance based on the Service Monitor's labels
+. In the UI, click *Create Instance* under the Service Monitor tab. If you don't see this information, ensure that the installation finished. Ensure that you approve the resources to be installed.
+
+. Paste the following into the YAML editor and then click *Create*:
++
+[source]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pod-autoscale
+  labels:
+    lab: custom-hpa
+spec:
+  namespaceSelector:
+    matchNames:
+      - my-prometheus
+      - my-hpa
+  selector:
+    matchLabels:
+      app: pod-autoscale
+  endpoints:
+  - port: 8080-tcp
+    interval: 30s
+----
++
+NOTE: You are allowing this Service Monitor to watch workloads in mutiple namespaces. You could also create the Service Monitor in those namespaces and have the Prometheus instance watch them.
++
+. From here, you will create the actual Prometheus instance. In the UI, back on the Prometheus operator overview click *Create Instance* under the Prometheus option. Paste the following into the YAML editor then click *Create*:
++
+[source]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: my-prometheus
+  labels:
+    prometheus: my-prometheus
+  namespace: my-prometheus
+spec:
+  replicas: 2
+  serviceAccountName: prometheus-k8s
+  securityContext: {}
+  serviceMonitorSelector:
+    matchLabels:
+      lab: custom-hpa
+----
+
+. Expose the service as a route so that you can conveniently issue queries against your new Prometheus instance.
++
+[source]
+----
+$ oc expose svc prometheus-operated -n my-prometheus
+----
+
+. Using the newly exposed ingress, open the Prometheus UI in a web browser
++
+[source]
+----
+$ oc get route prometheus-operated -o jsonpath='{.spec.host}{"\n"}' -n my-prometheus
+----
+
+=== Prometheus RBAC and Objects
+. Now that you have your `ServiceMonitor` and `Prometheus` instance deployed, you should be able to query for the `http_requests_total` metric in the Prometheus UI, but there is no data. You are missing two key pieces:
+.. Prometheus does not have the proper RBAC permissions to query other namespaces.
+.. There is no adapter set up that will translate Prometheus metrics for the Kubernetes HPA
+. First, you can address the RBAC permissions by giving the `ServiceAccount` used by Prometheus in the `my-prometheus` namespace the proper access to the `my-hpa` namespace.
++
+[source]
+----
+$ echo "---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: my-prometheus-hpa
+  namespace: my-hpa
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-k8s
+    namespace: my-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view" | oc create -f -
+----
+
+. Back in your Prometheus UI, execute the query for `http_requests_total` again and you should see results. Be patient if you don't see results immediately.
+
+image::prometheus-lab.png[width=100%]
+
+
+* Now that you know your Prometheus is working, it is time to wire it up to Kubernetes so that the HPA can act on custom metrics. The list of objects is included below:
+
+** APIService
+
+** ServiceAccount
+
+** ClusterRole - custom metrics-server-resources
+
+** ClusterRole - custom-metrics-resource-reader
+
+** ClusterRoleBinding - custom-metrics:system:auth-delegator
+
+** ClusterRoleBinding - custom-metrics-resource-reader
+
+** ClusterRoleBinding - hpa-controller-custom-metrics
+
+** RoleBinding - custom-metrics-auth-reader
+
+** Secret
+
+** ConfigMap
+
+** Deployment
+
+** Service
+
+Create all of the objects by using this yaml file containg all the definitions. Please review this link:https://raw.githubusercontent.com/redhat-gpte-devopsautomation/ocp_advanced_deployment_resources/master/ocp4_adv_deploy_lab/custom_hpa/custom_adapter_kube_objects.yaml[YAML file^] before executing the objects creation:
+
+[source]
+----
+$ oc create -f https://raw.githubusercontent.com/redhat-gpte-devopsautomation/ocp_advanced_deployment_resources/master/ocp4_adv_deploy_lab/custom_hpa/custom_adapter_kube_objects.yaml
+----
+. Verify that there were no errors and that your adapter is coming online
+** Check Deployment
+** Check pod logs for errors
+** Check APIService to ensure it found the service
++
+[source]
+----
+$ oc get apiservice v1beta1.custom.metrics.k8s.io
+----
+
+. If all is working, test:
++
+[source]
+----
+$ oc get --raw /apis/custom.metrics.k8s.io/v1beta1/ | jq -r '.resources[] | select(.name | contains("pods/http"))'
+
+{
+  "name": "pods/http_requests",
+  "singularName": "",
+  "namespaced": true,
+  "kind": "MetricValueList",
+  "verbs": [
+    "get"
+  ]
+}
+----
+
+=== Create Custom HPA
+
+. Now that you have custom metrics available to Prometheus AND you have a Prometheus adapter that can be queried, it is time to set up the HPA.
++
+[source]
+----
+$ echo "---
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2beta1
+metadata:
+  name: pod-autoscale-custom
+  namespace: my-hpa
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: pod-autoscale
+    apiVersion: apps/v1
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Pods
+      pods:
+        metricName: http_requests
+        targetAverageValue: 500m" | oc create -f -
+----
+
+. In order to generate load, open another SSH terminal and run:
++
+[source]
+----
+$ AUTOSCALE_ROUTE=$(oc get route pod-autoscale -n my-hpa -o jsonpath='{ .spec.host}')
+$ while true;do curl http://$AUTOSCALE_ROUTE;sleep .5;done
+----
+
+. While generating the workload, observe your HPA & pod list to see the number of pods increase
++
+[source]
+----
+$ oc describe hpa pod-autoscale-custom -n my-hpa
+
+Min replicas:               1
+Max replicas:               5
+Deployment pods:            4 current / 4 desired
+Conditions:
+  Type            Status  Reason              Message
+  ----            ------  ------              -------
+  AbleToScale     True    ReadyForNewScale    recommended size matches current size
+  ScalingActive   True    ValidMetricFound    the HPA was able to successfully calculate a replica count from pods metric http_requests
+  ScalingLimited  False   DesiredWithinRange  the desired count is within the acceptable range
+
+$ oc get pods -n my-hpa
+NAME                             READY   STATUS    RESTARTS   AGE
+pod-autoscale-55f9858b67-4jvf9   1/1     Running   0          3m38s
+pod-autoscale-55f9858b67-dtgb7   1/1     Running   0          3m38s
+pod-autoscale-55f9858b67-jm79g   1/1     Running   0          3m38s
+pod-autoscale-55f9858b67-lkxzg   1/1     Running   0          23h
+----
+
+. When you are complete, stop your load generation and (optionally) delete your HPA.
+
+=== Add Another Application (bonus)
+
+Using what you have learned in this lab, deploy a new application and set up a custom monitor. Some hints:
+
+// TODO: find an app that doesn't generate its own load...can't scale down with this!
+* Use the app pulled from `quay.io/gpte-devops-automation/instrumented_app:rc0`
+* Deploy the app into a new project
+* Use the same Prometheus instance
+* Explore exposed metrics at the `/metrics` endpoint of the route for the application
+* Set up an HPA to scale based on a custom metric (http_requests)
+* Refer to link:https://docs.openshift.com/container-platform/4.5/monitoring/exposing-custom-application-metrics-for-autoscaling.html[Exposing custom application metrics for autoscaling^] docs if needed 
+
+ifeval::[{show_solution} == true]
+.Solution
+. Create the new app in a new project:
++
+[source]
+----
+$ oc new-project my-new-hpa
+$ oc new-app quay.io/gpte-devops-automation/instrumented_app:rc0 -n my-new-hpa
+$ oc expose svc instrumentedapp -n my-new-hpa
+----
+
+. See all of the metrics exposed by the new app:
++
+[source]
+----
+$ curl http://$(oc get route instrumentedapp -n my-new-hpa -o jsonpath='{ .spec.host}')/metrics
+
+...
+# TYPE http_requests_total counter
+http_requests_total{code="0",handler="api",method="get"} 754868
+http_requests_total{code="0",handler="api",method="post"} 117526
+http_requests_total{code="200",handler="prometheus",method="get"} 441
+http_requests_total{code="404",handler="api",method="get"} 18024
+http_requests_total{code="500",handler="api",method="get"} 4863
+http_requests_total{code="500",handler="api",method="post"} 2923
+...
+----
+
+. Create a new `ServiceMonitor`
++
+[source]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    lab: custom-hpa
+  name: my-servicemonitor
+  namespace: my-prometheus
+spec:
+  endpoints:
+    - interval: 30s
+      port: 8080-tcp
+  namespaceSelector:
+    matchNames:
+    - my-new-hpa
+  selector:
+    matchLabels:
+      app: instrumentedapp
+----
+
+. Give Prometheus access to your new project so it can begin gathering metrics:
++
+[source]
+----
+$ echo "---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: my-new-hpa
+  namespace: my-new-hpa
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-k8s
+    namespace: my-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view" | oc create -f -
+----
+
+. Wait few mintues and verify that you see new metrics in your Prometheus. You can use this query:
++
+[source]
+----
+http_requests_total{job="instrumentedapp"}
+----
+image::prometheus-instrapp-lab.png[width=100%]
+
+. When you run the following command again, you will get a lot of additional output, picked up by Prometheus from the metrics exposed by the new application:
++
+[source]
+----
+$ oc get --raw /apis/custom.metrics.k8s.io/v1beta1/ | jq -r '.resources[] | select(.name | contains("pods/http"))'
+{
+  "name": "pods/http_request_duration_microseconds_sum",
+  "singularName": "",
+  "namespaced": true,
+  "kind": "MetricValueList",
+  "verbs": [
+    "get"
+  ]
+}
+{
+  "name": "pods/http_response_size_bytes_count",
+  "singularName": "",
+  "namespaced": true,
+  "kind": "MetricValueList",
+  "verbs": [
+    "get"
+  ]
+}
+...
+{
+  "name": "pods/http_request_size_bytes_sum",
+  "singularName": "",
+  "namespaced": true,
+  "kind": "MetricValueList",
+  "verbs": [
+    "get"
+  ]
+}
+{
+  "name": "pods/http_request_size_bytes",
+  "singularName": "",
+  "namespaced": true,
+  "kind": "MetricValueList",
+  "verbs": [
+    "get"
+  ]
+}
+...
+----
+
+. Create your new HPA for the new application in the new namespace:
++
+[source]
+----
+$ echo "---
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2beta1
+metadata:
+  name: pod-autoscale-custom-2
+  namespace: my-new-hpa
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: instrumentedapp
+    apiVersion: apps/v1
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Pods
+      pods:
+        metricName: http_requests
+        targetAverageValue: 50000m" | oc create -f -
+----
+
+. This app dynamically generates its own load, so there is no need to artifically create any. See if you can figure out how this is calculated.
+* Verify your HPA is working:
+
++
+[source]
+$ oc describe hpa pod-autoscale-custom
+Deployment pods:            2 current / 2 desired
+Conditions:
+  Type            Status  Reason              Message
+  ----            ------  ------              -------
+  AbleToScale     True    ReadyForNewScale    recommended size matches current size
+  ScalingActive   True    ValidMetricFound    the HPA was able to successfully calculate a replica count from pods metric http_requests
+  ScalingLimited  False   DesiredWithinRange  the desired count is within the acceptable range
+Events:
+  Type    Reason             Age   From                       Message
+  ----    ------             ----  ----                       -------
+  Normal  SuccessfulRescale  98s   horizontal-pod-autoscaler  New size: 2; reason: pods metric http_requests above target
+endif::[]
+
+=== Clean Up Environment
+. Delete the HPAs and scale the Deployment you created during this lab back to 1:
++
+[source]
+$ oc delete hpa pod-autoscale-custom -n my-hpa
+$ oc delete hpa pod-autoscale-custom-2 -n my-new-hpa
+$ oc scale deployment.apps/instrumentedapp --replicas=1 -n my-new-hpa
+$ oc scale deployment.apps/pod-autoscale --replicas=1 -n my-hpa 

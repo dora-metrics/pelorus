@@ -1,0 +1,358 @@
+= Advanced Red Hat OpenShift Container Platform Deployment and Management - Instructor's Guide
+
+*Updated for 4*
+
+*Last Update: jmaltin @ 22-Oct-2019*
+
+
+This document attempts to give a few hints for instructors of the Advanced Red Hat OpenShift Container Platform Deployment and Management class. If any reader of this document has additions please submit a pull request to update this guide.
+
+Author: GPTE DevOps & Automation (gpte-devops-automation@redhat.com)
+
+== Quick Links for Class Prep
+
+* Etherpads
+** http://etherpad-opentlc-shared.apps.shared-na4.na4.openshift.opentlc.com/admin/[http://etherpad-opentlc-shared.apps.shared-na4.na4.openshift.opentlc.com/admin/^]
+* Jenkins for latest OCP4 Advanced Deployment - use OpenTLC creds
+** Latest Stable Build direct download:
+*** https://jenkins.opentlc.com/jenkins/view/ocp/job/ocp4_advanced_deployment/lastStableBuild/artifact/tempMultiSCOFiles/*zip*/tempMultiSCOFiles.zip[https://jenkins.opentlc.com/jenkins/view/ocp/job/ocp4_advanced_deployment/lastStableBuild/artifact/tempMultiSCOFiles/*zip*/tempMultiSCOFiles.zip^]
+
+** General
+*** https://jenkins.opentlc.com/jenkins/view/ocp/job/ocp4_advanced_deployment/[https://jenkins.opentlc.com/jenkins/view/ocp/job/ocp4_advanced_deployment/^]
+
+* Jenkins for latest OCP4 Advanced Development
+** Latest Stable Build direct download:
+*** https://jenkins.opentlc.com/jenkins/view/ocp/job/ocp4_application_deployment/lastSuccessfulBuild/artifact/tempMultiSCOFiles/*zip*/tempMultiSCOFiles.zip[https://jenkins.opentlc.com/jenkins/view/ocp/job/ocp4_application_deployment/lastSuccessfulBuild/artifact/tempMultiSCOFiles/*zip*/tempMultiSCOFiles.zip^]
+
+* OpenShift 4 Clients
+** https://mirror.openshift.com/pub/openshift-v4/clients/ocp/[https://mirror.openshift.com/pub/openshift-v4/clients/ocp/^]
+
+== Month Before Class
+
+* Get to know your sponsor
+** North America - Raleigh - Kimberly Boone
+** EMEA - Susanne Pollit
+** APAC - Claudine Sia
+** AIPAC - Rafa Godinez Perez
+** LATAM - Alexandre Antonio or Simone Pierosan
+** GSI - N/A
+
+* Do kickoff call ~2 weeks prior to class
+** Encourage doing to prereqs
+** Encourage students to get OpenTLC creds
+* Setup Etherpad and bit.ly (see below)
+** Send link to Etherpad to Students
+* Get swag/gifts for students
+** Contact GPTE Marketing (Allyn Collins)
+* Run through the labs - do them on your own
+** Fix broken lab stuff
+* Setup room the way you like
+** Some of us like "conference room" other like rows
+** Test projector
+** Whiteboard?  Markers?  Eraser?
+* Self-care
+** Water, snacks
+
+== Presenting Modules: Hints 
+
+=== Class Intro
+
+* Logistics for the week
+** Class start/end
+** Building access
+** Lunch time
+*** Meals (NA meal cards)
+** Class dinner (optional)
+* Explain why we're here
+** OCP Advanced Deployments
+** Get you from Intermediate OpenShift to Advanced OpenShift
+** Consultant Oriented course
+** Encourage collaboration
+** Get to know colleagues
+** Understand Red Hat better
+
+=== Module 1: Introduction
+
+* This module is generally noise. Anything that needs to be covered is covered in subsequent modules.
+* There is really no reason to spend time on it.
+
+=== Module 2: OpenShift 4 Overview (nate@redhat.com)
+
+* This module gives a broad and medium level overview of OpenShift.
+* Start with the logical architecture. Have the students help you draw this diagram on the whiteboard. Verbally, of course. This lets them get engaged and helps you guage their skill levels.
+* OpenShift 4 Design Principles are a good opportunity to compare how things were with how things are now. Basically all of the bad things in OpenShift 3, from a cluster management perspective, we tried to fix in OpenShift 4.
+* Spend some time on the OpenShift 4.1/4.2 themes as a continuation of the design principles. Have examples to talk about.
+* For Operators, it is nice to start out with a playful and simple definition and then build on it. Honestly, this should not be fhe first time they learn about Operators, but it is for some. Explain what they are and what they do.
+* With the CRD & CR examples, pause and let the class explain what those things are and what they do.
+* Bring it home with the CVO and COs
+* For installation methods, they will be covered in much more detail in the next module. Take this opportunity to introduce them as well as other options. Remember that this class is not just about knobs and switches, so taking a few seconds to remind people of our hosted options is a good thing.
+* RHEL CoreOS. Use this. Don't use RHEL. If you have to use RHEL, make it scarier.
+* With CRI-O, give a brief history. In the beginning, Kube was hardcoded to use Docker. Docker became a bad citizen and kept changing. CRI was created to abstract. CRI-O has a specific job and does it well. Also a good opportunity to talk about podman and buildah.
+* Networking:
+** Avoid detailed packet flow topics. That is not the purpose here.
+** Keep the message on why we ship an SDN - we just want to make it easy for Pods to talk to one another securely ad reliably.
+** Network policy will be covered in more detail later in the week, so don't dwell on it or derail with it.
+** Take some time to cover the 3 networking operators. Focus on what they can actually influence and change.
+** Have a couple of examples for Multus. Telco. Secure networks. Details on how to configure and use it are in the docs - not in the slides.
+** Egress is vastly simplified. Make sure you understand how the options outlined work. Whiteboard it.
+* Storage - why you need it, what is supported, how it is used. These are pretty straight forward.
+* Subscription Management is not something we have covered in detail and there are several slides here that attempt to to this. *This is an important topic for SA, consultant, and partner*.
+** link:https://docs.google.com/presentation/d/1W-A3FFYJxqXRMZH5T3qFlwBi_XKKOcA7wRH0tlZV2tQ/edit#slide=id.g5ccca33de2_1_142[Read the presentation^] and understand how this works
+** Take note epeically with infra and master nodes. The node-role label matters.
+* Lifecycle wraps up this module and covers both how long releases will exist for as well as how to upgrade between versions.
+
+=== Module 3: OpenShift Installation (nate@redhat.com)
+
+* Start with an overview of what you'll cover. Much of the attention will be on `openshift-install` and IPI vs UPI. The lab in this module will be a disconnected installation.
+* The supported providers are listed. Know what these are. If a provider is not listed, there is still an option do use Bare Metal process to deploy OpenShift 4, albeit with UPI method.
+* The bootstrap process. Spend some time understanding how this works. You don't need to understand every detail of every step, but understand the broad strokes and what creates what. This is a good thing to whiteboard, because you can include more detail than you get with the diagram from the official docs.
+* The prerequisites exist in this slide to show that they are different for each provider. The OpenStack requirements are listed because that is what is being used for the lab, but the focus should be that they need to spend time on prereqs and read the docs.
+* The IPI section has an example of how you can basically run `create cluster`. You can, of course, do this in phases to. Don't teach this if you don't know how `openshift-install` works in both IPI & UPI.
+* The UPI section has more detailed `install-config` as well as the phases necessary to complete. Again, don't teach this until you have done this yourself and understand how it works. You'll need this especially for the lab.
+* Disconnected installation - talk about *why* you want to do this. It adds complexity. You can do disconnected install, but have your cluster connected. You can do completely air-gapped. There are a lot of mix-and-match options.
+** Point out the examples here - they will use similar in the lab.
+* Before starting the lab, walk through what they are doing. It is explained very well in the lab guide, but still take the time to go through the beginning and if the opportunity presents itself to whiteboard some of the discussion then you should do it.
+
+=== Module 4: Machine Managment (nate@redhat.com)
+
+* The machine API is the magic that does all the things in this module. It creates instances. It matches them to nodes. Take some time to review the documenation on how this works.
+* The general flow of this module tries to build up from Machine API > Node > Machine > MachineSet > Autoscaler.
+* Keep desicriptions of nodes, machines, and machinesets simple. Relate them to other concepts when possible.
+** Node is like container.
+** Machine is like Pod.
+** MachineSet is like ReplicaSet.
+** These are not entirely accurate, but it helps to form some analogies when possible.
+* Any examples in these slides, *stop*. Make the class tell you what it is doing. Lead them, but make them explain it.
+* Both OpenStack and AWS examples are used here. OpenStack because you are using that in the lab. AWS because it is more common knowledge.
+* RHEL cannot pariticipate in Machine Management. It is called out here. Discourage it.
+* Wrap up with Cluster autoscaler. Why do you want to use something like this. Have an example.
+* Lab will cover the following:
+** Discover the details of their MachineSets
+** Create new MachineSets for general purpose
+** Create new MachineSets for infrastructure
+** Create autoscaling and deploy a workload to make it do things.
+
+=== Module 5: Auth & Security
+
+=== Module 6: Operator Hub (panni@redhat.com)
+
+* Start with a user story: why and when we need to use OperatorHub
+** Web console is easier to use and it performs some steps for you with reasonable defaults
+** Practice using command line and YAML manifests to automate it
+** Using the "App Store" analogy with your phone and how you manage apps is a good approach.
+* Quickly review the agenda of this module
+** Check (again) that the students understand what an Operator is.
+** Ask them to give you a couple of explanations (definitions) of Operators.
+* Discuss Operator Lifecycle Manager: why do we need it?
+** Lifecycle is the key word here: we want not only to install Operators but also to manage and update them properly
+** With OLM we make sure Operators are packaged and installed as designed by their developers, including dependencies
+** With OLM we can find Operators and figure out what they provide
+** Use RPM analogy here
+* How does the OLM manage all that?
+** Namespacing: each Operator is _running_ only in one namespace; it's resources also resctricted to one namespace; 
+although we can make it available in other namespaces (often in _all_ namespaces)
+** The most common way to talk to Operators is via Custom Resources: 
+create, modify, delete them to trigger actions from Operators
+** Dependencies are specified in Operators' metadata. 
+Don't try to create "fat" Operators; use them only to work with _their_ resources.
+Use other Operators to work with other resoruces.
+** Labels are used with Operators the same way they are used in the rest of 
+Kubernetes
+** Garbage Collection is necessary when we uninstall an Operator which installed 
+other Operators as dependencies. But we should not remove them if they are
+also used by other Operators in the cluster (of course).
+* Main components of the OLM framework: 
+give one sentence about each and explain in more detail in the following slides 
+** ClusterServiceVersion: keeps metadata and other info -- more about that later
+** InstallPlan: intention to install a set of resources in a particular namespace -- more about that later
+** CatalogSource: currently three of them -- more about that later
+** Subscription: where to get new versions and how often -- more about that later
+** OperatorGroup: a way to achieve multitenancy with Operators -- more about it later
+** OLM consists of OLM Operator and Catalog Operator
+* ClusterServiceVersion (CSV): metadata, install strategy, CRDs provided and CRDs required (dependencies)
+* InstallPlan: what and where should be installed or created: 
+CRDs, CSVs, Subscriptions, Roles, RoleBindings, etc.
+* CatalogSource: Red Hat, Certified, Community
+* Subscription: this is what you create when you install an Operator.
+You specify a channel you will be using to update your ClusterService and the 
+update strategy.
+* Dependency Resolution is pretty straightforward: 
+you want to make sure your Operators have everything they need to operate
+* OLM operator watches for CSVs and installs applications defined in them. 
+OLM operator is _not_ responsible for creating resources defined by CSVs --
+this can be done manually or via Catalog Operator.
+* Catalog Operator watches CSVs and creates resources defined in them. 
+Also it watches for updates in the channels configured by CSVs
+* CatalogRegistry keeps CSVs and CRDs, package manifests
+* OperatorGroups are used to specify target namespaces for Operators.
+That allows to install multiple Operators to manage resources in different namespaces.
+** Usually there is only one OperatorGroup in a single namespace
+** If installing in `openshift-operators` there is no need to create an OperatorGroup
+** A set of Roles and RoleBindings are generated when an OperatorGroup is created 
+(more: https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/operatorgroups.md)
+** Copies of CSVs are created in all target namespaces (`oc get csv -A`)
+* OperatorHub is running in `openshift-marketplace`
+** Consists of two CRDs, one `marketplace-operator` Deployment and three
+catalog Deployments, one per each catalog (Red Hat, Certified, Community)
+* Lab overview:
+** In the first exercise you will install a simple Operator the easy way -- 
+via the console. You will explore its basic components using command line
+** Then you will uninstall that Operator and reinstall it using only
+command line.
+You will study YAML manifests and create your own.
+** Finally you will install a more complex Operator which has dependencies.
+You will explore it in more detail using command line. 
+
+=== Module 7: Scheduler
+
+=== Module 8: Logging
+
+=== Module 9: Resource Management
+
+=== Module 10: Network Policy
+
+=== Module 11: Homework
+
+== Managing Time
+
+* Plan the day and announce working agenda
+* Announce agenda for next 3 hours.  Examples:
+** "Good Morning.  At 10am we'll start the roll-call of sorrow - plan to tell us what didn't work for you, then we'll take a short break and get into our next topic until lunch"
+** "Have a good lunch.  At 1:30pm we'll talk about X for 60 minutes, then take a break, then get to labs."
+
+== Labs
+
+Labs: Strongly encourage students to avoid looking at lab solutions too early. The class has plenty of time built in for students to experiment and fail. It should also be encouraged to ask students around and the instructor for help. I usually tell students that if they get stuck for 10-15 minutes on a specific task to consult the instructor.
+
+== Class Behavior
+
+* Laptops DOWN, cellphones off
+- Try to make this reasonable and explain the motivation, "We want everyone to be engaged, and we all know that a laptop infront of us quickly grabs our attention, in this week, we will be closing our deviced during presentations and discussions.
+- we are all adults, and we are all busy people, if you need to take a call, text or reply to an email, it's understood, no problem, just please take it out of the class, it is distracting for other students and me the presenter.
+- You might need to insist a couple of times before everyone gets into the habit, make sure to not get into "fights" with students, and approach them between sessions if you need to.
+- It's also recommended to say "2 minutes to laptops down" and provide a bit of a warning so they can finish whatever they are working on before you ask them to "laptops down".
+* Students are invited to interrupt with questions
+* Play the "Name Game" introduction
+** Understand student backgrounds to engage them fully later
+- It creates a good atmosphere in class and forces each student to speak up and have a "personal and slightly embarrassing" moment, saying their animal and of course failing to remember everyone's names.
+- If anyone resists, let them be.
+- Make it fun, joke around, use the animal names yourself, this will set the tone of open discussion for the week.
+
+== Engaging Students - suggestions
+
+* WHITEBOARD EARLY and OFTEN
+* Leave the room during labs (Please use in moderation)
+** They'd better be helping each other when you return
+* Give a prize for the Top GNU
+** Students vote on their Top GNU on Friday
+** Call them out to help during discussion based on their expertise
+* Use parking lots for forbidden topics or stop a line of questioning
+* Talk through the labs on the projector
+
+== Every Day
+
+* Find an excuse to the the whiteboard
+* Refer to the Etherpad a lot - best collaboration tool
+** Give specific line numbers
+* Announce the schedule for the day
+* Ask for input about previous labs
+* Class cadence
+** 50 minutes talking, then a break.
+** 5 minute bio breaks, 15 minute  coffee breaks
+* The class has plenty of time built in for students to experiment and fail.
+** Don’t crack the whip
+* Finish the Labs
+** Then help your classmates who are stuck
+
+== Schedule
+
+* Monday
+** OpenShift Overview
+** OpenShift Disconnected Install
+* Tuesday:
+** Machine Management
+** Auth & Security Config
+* Wednesday:
+** Operator Hub
+** Scheduler
+* Thursday:
+** Cluster Logging
+** Resource Management
+** Network Policy
+* Friday:
+** Assignment
+** Extra Labs
+** Recap and Farewell
+
+== Environment Setup
+
+* Ensure students check their emails for messages from the Deployer
+
+== Etherpad
+
+* Etherpads are hosted at  http://etherpad-opentlc-shared.apps.na.openshift.opentlc.com.
+* Naming Convention for a class Etherpad is *OCP_Infra_Deployment_GUID_DATE* where GUID is the GUID of the location (e.g. `RDU` and Date is the first day of class (e.g. `2018_03_26`).
+* We are using an Etherpad instead of Google Docs or other solutions because it allows Partners to participate as well.
+* Also create a `bit.ly` short link to write on the white board on day 1 of the class so that students have to type the whole long URL of the pad.
+* Copy content daily from the last class I ran before - and encourage students to add additional findings/tips/tricks etc. to the Etherpad.
+* Make your etherpads permanent by copy/paste into https://github.com/ocp4_advanced_deployment/etherpads/
+
+== Tips and Tricks
+
+* Students has an issue with a GLS course or exam?   Send them to rol-support@redhat.com
+* RHU Team for course related issues/feedback by dropping an email at rhu-help@redhat.com as they are the correct point of contact for Internal Employees. for exam related issues please drop an email at certification-team@redhat.com.
+
+* When you run `oc get events` by default they are not sorted by time. To sort them by timestamp use `oc get events --sort-by='.lastTimestamp'` 
+
+* Real `*get all*` 
++ 
+[source,sh,options=nowrap]
+----
+oc get --ignore-not-found $( oc api-resources --verbs=list --namespaced -o name | xargs | sed 's/\ /,/g')
+----
+- Make life easy, set an alias: 
++
+[source,sh,options=nowrap]
+----
+alias oc-all="oc get --ignore-not-found $( oc api-resources --verbs=list --namespaced -o name | xargs | sed 's/\ /,/g')"
+----
+
+* Reboot instances based on private-dns-name
+- Find the instanceId
++
+[source,bash]
+----
+aws ec2 describe-instances --region=us-east-2 --filters "Name=private-dns-name,Values=ip-10-0-129-162.us-east-2.compute.internal" --query "Reservations[*].Instances[*].[InstanceId,Tags[?Key=='Name'].Value]"
+----
++
+- Sample Output:
++
+[source,text]
+----
+[
+    [
+        [
+            "i-085f3f07140c67f54",
+            [
+                "ssd-1a-njzr2"
+            ]
+        ]
+    ]
+]
+----
++
+- and then reboot the instance
++
+[source,bash]
+----
+aws ec2 --region us-east-2 reboot-instances --instance-ids i-085f3f07140c67f54
+----
+
+
+* Find more tips and tricks in historical etherpads https://github.com/ocp4_advanced_deployment/etherpads/
+
+
+
+== Stuff Students Keep Missing
+
+* `oc explain` <- mention this

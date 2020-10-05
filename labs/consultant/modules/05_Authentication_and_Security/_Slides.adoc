@@ -1,0 +1,362 @@
+ifdef::revealjs_slideshow[]
+
+[#cover,data-background-image="image/1156524-bg_redhat.png" data-background-color="#cc0000"]
+== &nbsp;
+
+[#cover-h1]
+Advanced Red Hat OpenShift Deployment and Management
+
+[#cover-h2]
+Authentication and Security
+
+[#cover-logo]
+image::{revealjs_cover_image}[]
+
+endif::[]
+
+:linkattrs:
+== Module Topics
+
+* TLS Certificate Configuration
+* Delegating Cluster Admin Access
+* Container Image Registry
+* Node SSH Access
+
+ifdef::showscript[]
+=== Transcript
+As part of TLS certificate configuration:
+
+* Cluster API certs
+* Default ingress router certs
+
+As part of container image registry
+
+* Remote access/exposing
+OpenShift Container Platform master includes a built-in OAuth server. Users obtain OAuth access tokens to authenticate themselves to the API.
+https://docs.openshift.com/container-platform/4.4/authentication/configuring-internal-oauth.html
+
+endif::showscript[]
+
+== TLS Certificate Configuration
+
+* OpenShift uses TLS certificates for:
+** The Cluster API on port 6443
+** Ingress routes
+** Internal authentication, for example the `system:admin` user
+** Application internal communication if configured
+
+ifdef::showscript[]
+
+The Cluster API: oc login, or any kind of API client.
+
+Ingress routes: any route you create you can add a certificate. 
+
+The certificate can be replaced by using the API and default ingress. 
+However, we cannot replace the internal certificates that OpenShift creates and uses.
+
+endif::showscript[]
+
+== TLS Certificate Configuration
+
+* All OpenShift TLS certificates are initially signed by an internal certificate authority
+** The cluster certificate authority is available to all pods and infrastructure components
+
+* Custom certificates are appropriate for traffic exposed outside of the cluster, primarily:
+** Cluster API on port 6443
+** Routes certificates including the default ingress certificate
+
+ifdef::showscript[]
+TLS certificates are initially signed by an internal certificate authority
+you can replace the certificate used by the API and default ingress.
+
+cluster CA is available to all pods and infrastructure.
+When we need custom certificates?  any request that is coming from outside the cluster, mainly:
+Cluster API, Routes certificates .
+Ingress route- any route you create you can add a certificate. You can have a wildcard (*) certificate.
+endif::showscript[]
+
+== TLS Certificate Configuration
+
+* Configuring API TLS certificates
+** Create a TLS secret in the `openshift-config` namespace
+** Update `apiservers.config.openshift.io/cluster`
++
+--------------------------------------------------------------------------------
+spec:
+  servingCerts:
+    namedCertificates:
+    - names: ["api.ocp.example.com"]
+      servingCertificate:
+        name: cluster-apiserver-tls
+--------------------------------------------------------------------------------
+
+ifdef::showscript[]
+
+1) oc create secret tls cluster-apiserver-tls --cert=$HOME/certificates/cert.pem --key=$HOME/certificates/privkey.pem -n openshift-config
+
+
+Update the cluster API server to use the new certificate. with edit /patch. When update the cluster, it will update the CR and the openshift-kube-apiserver-operator will begin deploying new kubeapiserver Pods.
+
+ 2) oc patch apiservers.config.openshift.io cluster --type=merge -p '{"spec":{"servingCerts": {"namedCertificates": [{"names": ["'$API_HOSTNAME'"], "servingCertificate": {"name": "cluster-apiserver-tls"}}]}}}'
+
+
+-
+ if you don't want to be prompt for the unsigned certificate messages you need to update the trusted CA bundle
+
+ oc config set-cluster cluster-$GUID --certificate-authority=$HOME/certificates/chain.pem
+
+endif::showscript[]
+
+
+== TLS Certificate Configuration
+
+* Configuring the default ingress router TLS certificate
+** Create a TLS secret in the `openshift-ingress` namespace
+** Update `ingresscontroller.operator.openshift.io/default` in the `openshift-ingress-operator` namespace:
++
+--------------------------------------------------------------------------------
+spec:
+  defaultCertificate:
+    name: default-ingress-tls
+--------------------------------------------------------------------------------
+
+* Routes may also provide their own TLS certificates and keys.
+
+ifdef::showscript[]
+
+the main difference is the namespace compared with the API certificates.
+
+1- oc create secret tls default-ingress-tls --cert=$HOME/certificates/fullchain.pem --key=$HOME/certificates/privkey.pem -n openshift-ingress
+
+Update the ingresscontrollers.operator.openshift.io resource 
+
+2-oc patch ingresscontroller.operator default --type=merge -p '{"spec":{"defaultCertificate": {"name": "default-ingress-tls"}}}' -n openshift-ingress-operator
+
+When you change something, such as a secret or configmap, the Pods have to be restarted to consume the new or updated artifacts.  in this case the operator to restart the default router pods in the openshift-ingress namespace. 
+
+ https://docs.openshift.com/container-platform/4.3/networking/ingress-operator.html#nw-ingress-setting-a-custom-default-certificate_configuring-ingress
+
+
+endif::showscript[]
+
+
+== Delegating Cluster Admin Access
+
+* Steps to delegate cluster administrative access:
+** Configure OAuth identity provider(s)
+** Configure groups and/or LDAP group sync
+** Grant `cluster-admin` to appropriate group
+** Verify access
+** Disable `kubeadmin` authentication
+
+
+ifdef::showscript[]
+
+When a person requests a new OAuth token, the OAuth server uses the configured identity provider to determine the identity of the person making the request.
+
+It then determines what user that identity maps to, creates an access token for that user, and returns the token for use."
+https://docs.openshift.com/container-platform/4.4/authentication/configuring-internal-oauth.html
+
+See the list of identity providers
+https://docs.openshift.com/container-platform/4.4/authentication/understanding-identity-provider.html
+list of Identity providers
+https://docs.openshift.com/container-platform/4.4/authentication/understanding-identity-provider.html
+
+If you delete kubeadmin secret, you delete the kubeadmin.
+however, be carefull if you do this before another user is a cluster-admin, then OpenShift must be reinstalled. It is not possible to undo this command.
+
+endif::showscript[]
+
+
+== Delegating Cluster Admin Access
+
+* Configuring OAuth
+** OpenShift supports a large number of identity providers
+** Identity providers are configured as `oauth.config.openshift.io` with name `cluster`
+** Some identity providers require passwords, others use a SSO service
+** The OpenShift console provides a token for user command-line or API authentication
+
+ifdef::showscript[]
+"The OpenShift Container Platform master includes a built-in OAuth server. 
+Developers and administrators obtain OAuth access tokens to authenticate themselves to the API."
+
+Identity providers:
+"By default, only a kubeadmin user exists on your cluster. To specify an identity provider, 
+you must create a Custom Resource (CR) that describes that identity provider and add it to the cluster.""
+
+use can use a token for the command-line or API
+endif::showscript[]
+
+== Delegating Cluster Admin Access
+
+* Best practice is to grant access to user groups rather than individual users
+** Group names make it clear why users are granted access
+* Groups may be managed with `oc adm groups`
+** Manual group managment with sub-commands: `new`, `add-users`, and `remove-users`
+** Group synchronization with LDAP using sub-commands: `sync` and `prune`
+** Groups and group sync configuration can be managed with source control
+
+ifdef::showscript[]
+create user groups rather than individual users.
+create a clusterrolebinding and associating the cluster role with the group.
+example:  oc adm policy add-cluster-role-to-group cluster-admin lab-cluster-admins --rolebinding-name=lab-cluster-admins
+Sync with LDAP is also available.
+endif::showscript[]
+
+== Delegating Cluster Admin Access
+
+* Disable `kubeadmin`
+** The `kubeadmin` user is provided for initial cluster exploration and configuration
+** Simply delete the `kubeadmin` secret in the `kube-system` namespace
+** Access will be denied, even if the secret is recreated
+
+* The `system:admin` TLS credentials are separate
+** Credentials are in kube config created by the installer
+** TLS and token-based authentication bypass OAuth entirely
+** Keep it safe. Keep it secret
+
+== Container Image Registry
+
+* OpenShift integrated container image registry
+** Integrates image management with RBAC
+** Managed through ImageStreams within namespaces
+
+* Configuring the Image Registry
+** Expose the registry to pull/push images
+
+
+ifdef::showscript[]
+
+The OpenShift registry obeys the RBAC you have configured in your cluster. when you push an image to the 
+OpenShift registry in your project will only be accessible by users that has right access in your project.
+
+OpenShift integrated registry service is not exposed by default 
+(so you can access inside the cluster but not outside the cluster)
+
+
+endif::showscript[]
+
+== Container Image Registry
+
+* Exposing the Registry
+** Managed with `spec.routes` in `configs.imageregistry.operator.openshift.io/cluster`:
++
+----
+spec:
+  defaultRoute: true
+  routes:
+  - name: image-registry.apps.openshift.example.com
+----
+** `spec.defaultRoute` creates route `image-registry` in `openshift-image-registry` namespace with default hostname.
+** `spec.routes` allows control of hostname and TLS certificates if desired.
+
+ifdef::showscript[]
+
+to do it with the default route- 
+Setting spec.defaultRoute to true in the imageregistry.operator.openshift.io custom resource.
+this will causes the cluster-image-registry-operator to create a route to expose the registry.
+
+oc patch configs.imageregistry.operator.openshift.io/cluster --type=merge --patch '{"spec":{"defaultRoute":true}}'
+
+see the route
+oc get route -n openshift-image-registry
+
+if you want to create a shorter route
+
+ oc patch configs.imageregistry.operator.openshift.io/cluster --type=merge --patch '{"spec":{"routes":[{"name":"image-registry", "hostname":"image-registry.'$INGRESS_DOMAIN'"}]}}'
+endif::showscript[]
+
+== Container Image Registry
+
+* Connect to an exposed registry with `skopeo`, `podman`, etc.
+** `skopeo` to push, pull, and copy images with simple commands
+** `podman` tag images for the registry then push
+
+* Get registry repository path from ImageStream:
++
+----
+oc get is -n NAMESPACE IMAGE_STREAM -o jsonpath='{.status.dockerImageRepository}'
+----
+
+ifdef::showscript[]
+Skopeo is a tools used to perform tasks on container images, for. ex. storage mechanisms,  copying images between different registries.
+an imagestream -  is an abstraction for referencing container images in OpenShift.
+endif::showscript[]
+
+== Container Image Registry
+
+* Authenticating to an exposed registry
+** `oc whoami --show-token`
+** `oc sa get-token SERVICE_ACCOUNT -n NAMESPACE` 
+** Use token as password, username is required but ignored
+
+* Remember to validate TLS certificates!
+** `skopeo` use environment variable `SSL_CERT_FILE`
+** `podman` use `/etc/containers/certs.d`
+
+ifdef::showscript[]
+You need authorization for your registry. Registry is user based. You need a token.
+oc whoami --show-token (REGULAR USER)
+oc sa get-token SERVICE_ACCOUNT -n NAMESPACE (SERVICE ACCOUNT)
+With this command, a username must be provided but the value is ignored. A common convention is to pass username "-" or "unused".
+endif::showscript[]
+
+
+== Container Image Registry
+
+* Authorization to exposed registry
+** `edit` allows pull/push for users
+** `builder` service account includes pull/push access for namespace
+** `registry-admin` ClusterRole is useful to cluster-wide registry access
+
+ifdef::showscript[]
+Create a registry-admin service account in the openshift-config namespace.
+endif::showscript[]
+
+== Node SSH Access
+
+* SSH access keys managed through the machine config daemon
+* SSH not recommended for RHEL CoreOS system administration!
+* SSH access as user `core` only
+** User `core` can sudo to root
+//This was found to not be true at this time...
+//* Machines accessed by SSH receive annotation: machineconfiguration.openshift.io/ssh=accessed
+* Pods can be used to SSH to nodes if direct access is unavailable
+
+ifdef::showscript[]
+In the cluster install you had the option of providing an SSH key to access the nodes. 
+You should not use this access to configure nodes, however, it can be useful when troubleshooting issues. 
+(review slide)
+
+to see the resources including the ssh access
+oc get machineconfigs.machineconfiguration.openshift.io
+
+look at the definition:
+oc get machineconfig 99-worker-ssh -o yaml
+endif::showscript[]
+
+
+== Node SSH Access
+
+* SSH MachineConfigs if SSH public key provided during install:
+** `99-master-ssh` for master machine config pool
+** `99-worker-ssh` for worker machine config pool
+* MachineConfig for public key:
++
+----
+spec:
+  config:
+    passwd:
+      users:
+      - name: core
+        sshAuthorizedKeys:
+        - SSH_PUBLIC_KEY
+----
+* Updating MachineConfig triggers system reboot
+
+== Summary
+
+* TLS Certificate Configuration
+* Delegating Cluster Admin Access
+* Container Image Registry
+* Node SSH Access

@@ -1,0 +1,3 @@
+:labname: Authentication and Security
+:show_solution: false
+include::../modules/05_Authentication_and_Security/05_1_Authentication_and_Security_Body.adoc[]

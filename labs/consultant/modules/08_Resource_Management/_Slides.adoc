@@ -1,0 +1,794 @@
+ifdef::revealjs_slideshow[]
+
+[#cover,data-background-image="image/1156524-bg_redhat.png" data-background-color="#cc0000"]
+== &nbsp;
+
+[#cover-h1]
+Advanced Red Hat OpenShift Deployment and Management
+
+[#cover-h2]
+Resource Management
+
+[#cover-logo]
+image::{revealjs_cover_image}[]
+
+endif::[]
+
+== Module Topics
+
+* Compute Resources
+* Limit Ranges
+* Quotas
+* Horizontal Pod Autoscaling
+* Application Idling
+
+== Compute Resources
+.Why Manage Resources?
+
+* Prevent user from accidentally breaking cluster
+* Reduce harm from malicious users
+* Predictable application performance and SLAs
+
+== Compute Resources
+.Overview
+
+* Each running container consumes compute resources
+** Measurable quantities that can be requested, allocated, consumed
+* Pod configuration file can specify required CPU and memory for each container
+** Allows better pod scheduling in cluster to provide satisfactory performance
+* CPU measured in units called _millicores_ (m)
+** Number of CPU cores on node multiplied by 1,000 to express node's total capacity--1/10 of single core is 100m
+* Memory measured in bytes
+** May also be used with SI suffixes (E, P, T, G, M, K) or power-of-two equivalents (Ei, Pi, Ti, Gi, Mi, Ki)
+
+== Compute Resources
+.CPU Requests
+
+* Each container in pod can specify amount of CPU it requests on node
+** Scheduler uses CPU requests to find node with fit for container
+* CPU request represents _minimum_ amount of CPU container wants to consume
+** If no contention for CPU on node, can use all available CPU
+** If CPU contention on node, CPU requests provide relative weight across all containers on system for how much CPU time container may use
+
+== Compute Resources
+.CPU Limits
+
+* Each container in pod can specify amount of CPU limited to use on node
+* CPU limits control _maximum_ amount of CPU container may use independent of contention on node
+* If container tries to exceed specified limit, system throttles container
+* Enforcing CPU limits allows container to have consistent level of service independent of number of pods scheduled to node
+
+== Compute Resources
+.Memory Requests
+
+* By default, container can consume as much memory on node as possible
+* To improve placement of pods in cluster, specify _minimum_ amount of memory required for container to run
+** Scheduler then takes available node memory capacity into account prior to binding pod to node
+** Container can still consume _as much memory on node as possible_ even when specifying request
+
+== Compute Resources
+.Memory Limits
+
+* Specify to constrain _maximum_ amount of memory container can use
+** If limit of 200{nbsp}Mi specified, container limited to using that amount on node
+* If container exceeds specified memory limit, it is _terminated_
+** May be restarted depending upon container restart policy
+
+== Compute Resources
+.QoS Tiers
+
+* Compute resource gets Quality of Service (QoS) classification based on specified request and limit values:
+
+[cols="4"]
+|===
+a|QoS                | Request  | Limit    | Description
+|`BestEffort`        | None     | None     | Neither request nor limit set
+|`Burstable`         | Required | Optional | Request < limit, limit optional
+|`Guaranteed`        | Optional | Required | Request == limit, limit set
+|===
+
+== Compute Resources
+.QoS Tiers
+
+* Container may have different QoS for each compute resource
+** Example: Container can have `Burstable` CPU and `Guaranteed` memory QoS
+
+* QoS has impact on what happens if resource compressible or not
+** CPU is compressible resource, but memory is incompressible
+
+== Compute Resources
+.QoS: CPU
+
+* `BestEffort` can consume as much CPU as available on node with lowest priority
+* `Burstable` gets minimum amount of CPU requested
+** May or may not get additional CPU time
+* Excess CPU resources distributed based on amount requested across all containers on node
+* `Guaranteed` gets amount requested and no more, even if additional CPU cycles available
+** Provides consistent level of performance independent of other activity on node
+
+== Compute Resources
+.QoS: Memory
+
+* `BestEffort` able to consume as much memory as available on node
+** Scheduler may place container on node with too little memory to meet need
+* `Burstable` scheduled on node to get amount of memory requested
+** May consume more
+* `Guaranteed` gets amount of memory requested, but no more
+
+* For out-of-memory event, containers terminated in this order:
+** `BestEffort` has greatest chance of termination
+** `Burstable` terminated after `BestEffort` when attempting to recover memory
+** `Guaranteed` terminated only if no more `BestEffort` or `Burstable`
+
+== Compute Resources
+.To View Pod Compute Resources
+
+[source,sh]
+----
+$ oc describe pod nginx-tfjxt
+----
+
+[source,texinfo]
+----
+Name:       nginx-tfjxt
+Namespace:  default
+Image(s):   nginx
+Node:       /
+Labels:     run=nginx
+Status:     Pending
+Reason:
+Message:
+IP:
+Replication Controllers:  nginx (1/1 replicas created)
+Containers:
+  nginx:
+    Container ID:
+    Image:    nginx
+    Image ID:
+    QoS Tier:
+      cpu:  Burstable
+      memory: Burstable
+    Limits:
+      cpu:  200m
+      memory: 400Mi
+    Requests:
+      cpu:    100m
+      memory:   200Mi
+    State:    Waiting
+    Ready:    False
+    Restart Count:  0
+    Environment Variables:
+----
+
+== Limit Ranges
+.Project Resource Limits
+
+* `LimitRange` must be set _per project_ by cluster administrators
+
+* Developers cannot create, edit, or delete these limits
+* Developers can view projects to which they have access
+
+== Limit Ranges
+.`LimitRange` Object
+
+* Defines limit range
+* Enumerates compute resource constraints in project's pod, container, image, image stream
+* Specifies resources that pod, container, image, image stream can consume
+* All requests to create and modify resources evaluated against each `LimitRange` object in project
+** If resource violates any enumerated constraints, resource rejected
+** If resource does not set explicit value and constraint supports default value, then default value applied to resource
+
+== Limit Ranges
+.Core `LimitRange` Object Definition
+
+[source,texinfo]
+----
+apiVersion: "v1"
+kind: "LimitRange"
+metadata:
+  name: "core-resource-limits" <1>
+spec:
+  limits:
+    - type: "Pod"
+      max:
+        cpu: "2" <2>
+        memory: "1Gi" <3>
+      min:
+        cpu: "200m" <4>
+        memory: "6Mi" <5>
+    - type: "Container"
+      max:
+        cpu: "2" <6>
+        memory: "1Gi" <7>
+      min:
+        cpu: "100m" <8>
+        memory: "4Mi" <9>
+      default:
+        cpu: "300m" <10>
+        memory: "200Mi" <11>
+      defaultRequest:
+        cpu: "200m" <12>
+        memory: "100Mi" <13>
+      maxLimitRequestRatio:
+        cpu: "10" <14>
+----
+
+ifdef::showscript[]
+Transcript
+
+Note the callouts in this example:
+
+<1> The name of the limit range document.
+<2> The maximum amount of CPU that a pod can request on a node across all of the containers.
+<3> The maximum amount of memory that a pod can request on a node across all of the containers.
+<4> The minimum amount of CPU that a pod can request on a node across all of the containers.
+<5> The minimum amount of memory that a pod can request on a node across all of the containers.
+<6> The maximum amount of CPU that a single container in a pod can request.
+<7> The maximum amount of memory that a single container in a pod can request.
+<8> The minimum amount of CPU that a single container in a pod can request.
+<9> The minimum amount of memory that a single container in a pod can request.
+<10> The default amount of CPU that a container is limited to use if not specified.
+<11> The default amount of memory that a container is limited to use if not specified.
+<12> The default amount of CPU that a container will request to use if not specified.
+<13> The default amount of memory that a container will request to use if not specified.
+<14> The maximum amount of CPU burst that a container can make as a ratio of its limit over request.
+
+endif::showscript[]
+
+== Limit Ranges
+.OpenShift^(R)^ `LimitRange` Object Definition
+
+[source,texinfo]
+----
+apiVersion: "v1"
+kind: "LimitRange"
+metadata:
+  name: "openshift-resource-limits"
+spec:
+  limits:
+    - type: openshift.io/Image
+      max:
+        storage: 1Gi <1>
+    - type: openshift.io/ImageStream
+      max:
+        openshift.io/image-tags: 20 <2>
+        openshift.io/images: 30 <3>
+----
+
+NOTE: Both core and OpenShift resources can be specified in just one `LimitRange` object. They are separated in this slide and the previous one for greater clarity.
+
+ifdef::showscript[]
+Transcript
+
+Note the callouts in this example:
+
+<1> The maximum size of an image that can be pushed to an internal registry.
+<2> The maximum number of unique image tags per image stream specification.
+<3> The maximum number of unique image references per image stream's status.
+
+endif::showscript[]
+
+== Limit Ranges
+.Container Limits
+
+[cols="3a,7a",caption=""]
+|===
+|Constraint |Behavior
+|`MaxLimitRequestRatio`
+|`MaxLimitRequestRatio[resource]` &#8804;
+(`container.resources.limits[resource]` /
+`container.resources.requests[resource]`)
+|===
+
+* If configuration defines `maxLimitRequestRatio` value, then new containers must have both request and limit values
+* Limit-to-request ratio computed by dividing limit by request
+
+** For example, if container has `cpu: 500` for `limit` value, and `cpu: 100` for `request` value, then limit-to-request ratio for `cpu` is `5`
+** Ratio must be &#8804; `maxLimitRequestRatio`
+
+== Limit Ranges
+.To Create and View Limit Ranges
+
+* To apply limit range to project, create `LimitRange` object definition on file system to desired specifications, then run:
++
+[source,sh]
+----
+$ oc create -f <limit_range_file> -n <project>
+----
+
+* To view limits:
++
+[source,texinfo]
+----
+$ oc get limits -n demoproject
+NAME              AGE
+resource-limits   6d
+----
++
+[source,texinfo]
+----
+$ oc describe limits resource-limits
+Name:                     limits
+Namespace:                default
+Type                      Resource                 Min  Max Request Limit Limit/Request
+---_                      --------                 ---  --- ------- ----- -------------
+Pod                       memory                   6Mi  1Gi -       -     -
+Pod                       cpu                      200m  2  -       -     -
+Container                 cpu                      100m  2  200m    300m  10
+Container                 memory                   4Mi  1Gi 100Mi   200Mi -
+openshift.io/Image        storage                  -    1Gi -       -     -
+openshift.io/ImageStream  openshift.io/image-tags  -    10  -       -     -
+openshift.io/ImageStream  openshift.io/images      -    12  -       -     -
+----
+
+== Quotas
+.Overview
+
+* Cluster administrators set constraints to limit objects or compute resources used in projects
+* Helps manage and allocate resources across all projects
+* Developers can set requests and limits on compute resources at pod and container level
+
+* `ResourceQuotas` are per project
+* `ClusterResourceQuotas` have multi-project scope
+
+ifdef::showscript[]
+Transcript
+
+The following slides are intended to help you understand how to check on your quota and limit range settings, what they can constrain, and how you can request or limit compute resources in your own pods and containers.
+
+endif::showscript[]
+
+== Quotas
+.Resources Managed by Quota
+
+* Set of compute resources and object types that can be managed by quota:
+
+[cols="3a,8a"]
+|===
+|Resource Name |Usage Across All Pods in Non-Terminal State
+|`cpu` or `requests.cpu`
+|Sum of CPU requests cannot exceed this value
+|`memory` or `requests.memory`
+|Sum of memory requests cannot exceed this value
+|`limits.cpu`
+|Sum of CPU limits cannot exceed this value
+|`limits.memory`
+|Sum of memory limits cannot exceed this value
+|===
+
+== Quotas
+.Object Counts Managed by Quota
+[cols="3a,8a",caption=""]
+|===
+|Resource Name |Limits Total Number of Objects in Project
+|`pods`
+|Pods in non-terminal state--pod in terminal state if `status.phase in (Failed, Succeeded)` true
+|`replicationcontrollers`
+|Replication controllers
+|`resourcequotas`
+|Resource quotas
+|`services`
+|Services
+|`secrets`
+|Secrets
+|`configmaps`
+|`ConfigMap` objects
+|`persistentvolumeclaims`
+|Persistent volume claims
+|`openshift.io/imagestreams`
+|Image streams
+|===
+
+== Quotas
+.Quota Scopes
+
+* Each quota can have associated set of _scopes_
+** Quota measures usage for resource only if matching intersection of enumerated scopes
+
+* When scope added to quota, limits number of resources it supports to those that pertain to scope
+** Resources specified on quota outside allowed set results in validation error
+
+== Quotas
+.Quota Scopes: Pods
+[cols="3a,8a",caption=""]
+|===
+|Scope |Description
+|`Terminating`
+|Match pods where `spec.activeDeadlineSeconds` >= 0
+|`NotTerminating`
+|Match pods where `spec.activeDeadlineSeconds` is nil
+|`BestEffort`
+|Match pods that have best-effort QoS for either `cpu` or `memory`
+|`NotBestEffort`
+|Match pods that do not have best-effort QoS for `cpu` and `memory`
+|===
+
+== Quotas
+.Quota Scopes: Pods
+
+* `BestEffort` scope restricts quota to limit `pods` resource
+
+* `Terminating`, `NotTerminating`, `NotBestEffort` scope restrict quota to tracking these resources:
+** `pods`
+** `memory`
+** `requests.memory`
+** `limits.memory`
+** `cpu`
+** `requests.cpu`
+** `limits.cpu`
+
+== Quotas
+.Quota Enforcement
+
+* After resource quota for project created, project restricts ability to create new resources that violate quota constraint until updated usage statistics calculated
+* After quota created and usage statistics updated, project accepts creation of new content
+* When you try to create or modify resources, quota usage incremented immediately upon request to create or modify resource
+* When you delete resources, quota use decremented during next full recalculation of quota statistics for project
+
+== Quotas
+.Quota Enforcement
+
+* If project modifications exceed quota usage limit:
+** Server denies action
+** Appropriate error message returned to user:
+*** Indicates that quota constraint violated
+*** Provides currently observed usage stats in system
+
+== Quotas
+.Requests and Limits
+
+* When allocating compute resources, each container can specify request and limit value for either CPU or memory
+ ** Quota can be configured to set quota for either value
+* If quota has value specified for `requests.cpu`, `requests.memory`, `limits.cpu`, or `limits.memory`, then it _requires every incoming container to make explicit requests for those resources_
+
+== Quotas
+.Sample Resource Quota Definitions
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: core-object-counts
+spec:
+  hard:
+    configmaps: "10" <1>
+    persistentvolumeclaims: "4" <2>
+    replicationcontrollers: "20" <3>
+    secrets: "10" <4>
+    services: "10" <5>
+----
+
+ifdef::showscript[]
+Transcript
+
+Note the callouts in this example:
+
+<1> The total number of `ConfigMap` objects that can exist in the project.
+<2> The total number of persistent volume claims (PVCs) that can exist in the project.
+<3> The total number of replication controllers that can exist in the project.
+<4> The total number of secrets that can exist in the project.
+<5> The total number of services that can exist in the project.
+
+endif::showscript[]
+
+== Quotas
+.Sample `compute-resources.yaml` File
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-resources
+spec:
+  hard:
+    pods: "4" <1>
+    requests.cpu: "1" <2>
+    requests.memory: 1Gi <3>
+    limits.cpu: "2" <4>
+    limits.memory: 2Gi <5>
+  hard:
+    openshift.io/imagestreams: "10" <6>
+----
+
+ifdef::showscript[]
+Transcript
+
+Note the callouts in this example:
+
+<1> The total number of pods in a non-terminal state that can exist in the project.
+<2> Across all pods in a non-terminal state, the sum of CPU requests cannot exceed one core.
+<3> Across all pods in a non-terminal state, the sum of memory requests cannot exceed 1{nbsp}Gi.
+<4> Across all pods in a non-terminal state, the sum of CPU limits cannot exceed two cores.
+<5> Across all pods in a non-terminal state, the sum of memory limits cannot exceed 2{nbsp}Gi.
+<6> The total number of image streams that can exist in the project.
+
+endif::showscript[]
+
+== Quotas
+.Sample `besteffort.yaml` File
+
+[source,texinfo]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: besteffort
+spec:
+  hard:
+    pods: "1" <1>
+  scopes:
+  - BestEffort <2>
+----
+
+ifdef::showscript[]
+Transcript
+
+Note the callouts in this example:
+
+<1> The total number of pods in a non-terminal state with `BestEffort` QoS that can exist in the project.
+<2> Restricts the quota to only matching pods that have `BestEffort` QoS for either memory or CPU.
+
+endif::showscript[]
+
+== Quotas
+.To View Quota
+
+* To view usage statistics related to any hard limits defined in project's quota:
+** Navigate to project's *Settings* tab in web console
+** Alternatively, use CLI to view quota details:
++
+[source,texinfo]
+----
+$ oc get quota -n demoproject
+NAME                AGE
+besteffort          11m
+compute-resources   2m
+core-object-counts  29m
+----
++
+[source,texinfo]
+----
+$ oc describe quota core-object-counts -n demoproject
+Name:			core-object-counts
+Namespace:		demoproject
+Resource		Used	Hard
+--------		----	----
+configmaps		3	10
+persistentvolumeclaims	0	4
+replicationcontrollers	3	20
+secrets			9	10
+services		2	10
+----
+
+// == Quotas
+// .To Configure Quota Synchronization Period
+
+// // WKTBD: Check how this is done in OCP4
+// * When set of resources deleted, synchronization time frame of resources determined by `resource-quota-sync-period` setting in `/etc/origin/master/master-config.yaml` file
+// * Before quota usage restored, user may encounter problems when attempting to reuse resources
+// * To have set of resources regenerate at desired amount of time (in seconds) and for resources to be available again, change `resource-quota-sync-period` setting
+
+// [NOTE]
+// The `resource-quota-sync-period` setting is designed to balance system performance. Reducing the sync period can result in a heavy load on the master.
+
+== Quotas
+.To Set Multi-Project Quotas
+
+* `ClusterResourceQuota` object defines multi-project quota
+* Allows quotas to be shared across multiple projects
+* Resources used in all selected project aggregated
+* Aggregate used to limit resources across all selected projects
+* Projects selected by:
+** Annotation selection
+** Label selection
+** Both
+
+== Quotas
+.To Set Multi-Project Quotas
+
+* Project section based on user name or project label.
++
+[source,sh]
+----
+$ oc create clusterquota for-user \
+     --project-annotation-selector openshift.io/requester=<user-name> \
+     --hard pods=10 --hard secrets=20
+
+$ oc create clusterresourcequota for-name \ 
+    --project-label-selector=name=frontend \ 
+    --hard=pods=10 --hard=secrets=20
+----
+
+== Quotas
+.To Set Multi-Project Quotas
+
+* Multi-project quota document controls all projects requested by `<user-name>` using default project request endpoint:
++
+.Sample Output
+[source,texinfo]
+----
+apiVersion: v1
+kind: ClusterResourceQuota
+metadata:
+  name: for-name
+spec:
+  quota:
+    hard:
+      pods: "10"
+      secrets: "20"
+  selector:
+    annotations: null
+    labels:
+      matchLabels:
+        name: frontend
+----
+
+== Quotas
+.Applicable ClusterResourceQuotas
+
+* Project administrator can view applicable multi-project quotas
+
+[source,bash]
+----
+$ oc describe AppliedClusterResourceQuota
+----
+
+.Sample Output:
+[source,text]
+----
+Name:   for-user
+Namespace:  <none>
+Created:  19 hours ago
+Labels:   <none>
+Annotations:  <none>
+Label Selector: <null>
+AnnotationSelector: map[openshift.io/requester:<user-name>]
+Resource  Used  Hard
+--------  ----  ----
+pods        1     10
+secrets     9     20
+----
+
+== Horizontal Pod Autoscaling
+.Overview
+
+* Scales the number of pods in a replication controller, deployment or replica set
+* Based on resource (CPU, memory) or custom metrics
+* HPA fetches metrics from aggregated APIs:
+** `metrics.k8s.io`
+** `custom.metrics.k8s.io`
+** `external.metrics.k8s.io`
+
+ifdef::showscript[]
+`metrics.k8s.io` is what is used for normal resource usage (i.e. cpu, mem, etc.)
+`custom.metrics.k8s.io` leverages an adapter API for custom metrics
+`external.metrics.k8s.io` would let you query an external non-Kube aware monitoring system
+
+endif::showscript[]
+
+== Horizontal Pod Autoscaling
+.Scaling based on resource
+
+// Need to validate this...I think we use this instead of in memory metrics-server
+* Provided by `kube-state-metrics`
+** Essentially replaces what `heapster` used to provide
+* Supports CPU & Memory resources
+
+ifdef::showscript[]
+
+endif::showscript[]
+
+== Horizontal Pod Autoscaling
+.Resource HPA Example
+
+[source,textinfo]
+----
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-resource-metrics-cpu 
+spec:
+  scaleTargetRef:
+    apiVersion: apps.openshift.io/v1 <1>
+    kind: DeploymentConfig
+    name: hello-hpa-cpu 
+  minReplicas: 1 <2>
+  maxReplicas: 5 <3>
+  metrics:
+  - type: Resource <4>
+    resource:
+      name: cpu
+      targetAverageUtilization: 50 <5>
+----
+
+ifdef::showscript[]
+
+<1> The API group must be set to this to use OpenShift native kind, such as DeploymentConfig
+<2> The minimum number of replicas
+<3> The maximum number of replicas
+<4> The type of metric to observe - `Resource` for CPU, memory
+<5> The aggregated usage across all pods observed in the DC
+
+endif::showscript[]
+
+== Horizontal Pod Autoscaling
+.Scaling based on custom metrics
+
+* Requires an "adapter" API server, such as the Prometheus adapter
+* Supports metrics such as `http_requests`
+* Can also use metric blocks - Ex:
+** CPU Utilization
+** Pod packets per second
+** Ingress request per second
+
+ifdef::showscript[]
+
+endif::showscript[]
+
+== Horizontal Pod Autoscaling
+.Custom HPA Example
+
+[source,textinfo]
+----
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2beta1
+metadata:
+  name: hpa-custom-metrics-http
+spec:
+  scaleTargetRef:
+    kind: DeploymentConfig
+    name: hello-hpa-cpu
+    apiVersion: apps.openshift.io/v1
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Pods
+      pods:
+        metricName: http_requests <1>
+        targetAverageValue: 500m <2>
+----
+
+ifdef::showscript[]
+<1> The metric that the HPA will be evaluating
+<2> The average value across all pods in the DC (or RC, RS, etc). 500m would be equivilent to
+    .5 requests per second.
+
+endif::showscript[]
+
+== Application Idling
+
+* To reduce resource consumption, idle applications
+* Applications made of services and other scalable resources
+** For example, deployment configurations
+* Idling application involves idling all associated resources
+
+== Application Idling
+.Idling Applications
+
+* Involves finding scalable resources associated with service
+** Deployment configurations, replication controllers, and others
+* Finds service and marks it as idled, scales down resources to zero replicas
+* To idle single service:
++
+[source,sh]
+----
+$ oc idle <service>
+----
+
+== Application Idling
+.Un-idling Applications
+
+* Application services become active again when they receive network traffic and scaled back up to previous state
+* Includes both traffic to services and traffic passing through routes
+* Works only when using default HAProxy router
+** To un-idle these applications, must configure other routers to detect idling
+
+== Summary
+
+* Compute Resources
+* Limit Ranges
+* Quotas
+* Horizontal Pod Autoscaling
+* Application Idling

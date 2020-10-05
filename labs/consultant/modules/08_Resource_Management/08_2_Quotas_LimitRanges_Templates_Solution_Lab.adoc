@@ -1,0 +1,3 @@
+:labname: Quotas, LimitRanges, and Templates Solution
+:show_solution: true
+include::../modules/08_Resource_Management/08_2_Quotas_LimitRanges_Templates_Body.adoc[]
