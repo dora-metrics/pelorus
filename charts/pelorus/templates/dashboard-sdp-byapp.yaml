@@ -1119,7 +1119,7 @@ spec:
     "refresh": false,
     "schemaVersion": 21,
     "style": "dark",
-    "tags": [],
+    "tags": ["team", "software-delivery-performance"],
     "templating": {
         "list": [
         {
