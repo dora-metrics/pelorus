@@ -20,6 +20,7 @@ class TrackerFactory:
         if tracker_provider == "servicenow":
             return ServiceNowFailureCollector(username, token, tracker_api, project)
 
+
 if __name__ == "__main__":
     logging.info("===== Starting Failure Collector =====")
     if pelorus.missing_configs(REQUIRED_CONFIG):
