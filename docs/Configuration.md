@@ -158,8 +158,8 @@ This exporter provides several configuration options, passed via environment var
 |---|---|---|---|
 | `TACKER_PROVIDER` | no | Set the type of failure provider. One of `jira`, `servicenow` | `jira` |
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `SERVER` | yes | URL to the Jira Server  | unset  |
-| `PROJECT` | yes | Jira project to scan | unset |
-| `USER` | yes | Jira Username | unset |
+| `SERVER` | yes | URL to the Jira or ServiceNowServer  | unset  |
+| `PROJECT` | yes | Jira project or ServiceNow category to scan | unset |
+| `USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
-| `TRACKER_QUERY` | no | Used for ServiceNow integration, query used to gather incidents or problems. ex: `/api/now/table/incident?sysparm_fields=closed_at%2Copened_at%2Cstate%2Cnumber&state=6&category=` | unset |
+| `TRACKER_QUERY` | no | Used for ServiceNow integration, query used to gather incidents or problems. ex: "/api/now/table/incident?sysparm_fields=closed_at%2Copened_at%2Cstate%2Cnumber&state=6&category=" | unset |
