@@ -36,6 +36,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
             logging.debug("Searching for project: %s" % (project_name))
             project_map = gl.projects.list(search=project_name)
             project = project_map[0]
+            logging.debug("Setting project to %s" % project.name)
         except Exception:
             logging.error("Failed to find project: %s, repo: %s for build %s" % (
                 metric.repo_url, project_name, metric.build_name), exc_info=True)
