@@ -33,9 +33,9 @@ class GitLabCommitCollector(AbstractCommitCollector):
         # get the project id from the map by search for the project_name
         project = None
         try:
-            logging.debug("Searching for project: %s" % (project_name))
+            logging.debug("Searching for project: %s" % project_name)
             project_map = gl.projects.list(search=project_name)
-            project = project_map[0]
+            project = self.get_matched_project(project_map, metric.repo_url)
             logging.debug("Setting project to %s : %s" % (project.name, str(project.id)))
         except Exception:
             logging.error("Failed to find project: %s, repo: %s for build %s" % (
@@ -57,3 +57,16 @@ class GitLabCommitCollector(AbstractCommitCollector):
             logging.debug(commit)
             raise
         return metric
+
+    @staticmethod
+    def get_matched_project(project_list, git_url):
+        """
+        Returns the project in the project list that matches the git url
+        :param project_list: list of projects returned by the search by name API call
+        :param git_url: Repository url stored in the metric
+        :return: Matching project or None if there is no match
+        """
+        for p in project_list:
+            if p.http_url_to_repo == git_url or p.ssh_url_to_repo == git_url:
+                return p
+        return None
