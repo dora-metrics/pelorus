@@ -1,5 +1,6 @@
 import giturlparse
 
+
 class CommitMetric():
     def __init__(self, app_name):
         self.name = app_name

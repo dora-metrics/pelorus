@@ -171,5 +171,3 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                             % (namespace, build.metadata.name, app))
             logging.debug(e, exc_info=True)
             return None
-
-
