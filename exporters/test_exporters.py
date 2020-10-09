@@ -1,6 +1,6 @@
 import pytest
 import pelorus
-from committime.collector_base import CommitMetric
+from committime.commit_metric import CommitMetric
 
 
 @pytest.mark.parametrize("start_time,end_time,format",
@@ -41,10 +41,10 @@ def test_commitmetric_initial(appname):
                              ('http://dogs.git.foo/dogs/repo.git', 'repo'),
                              ('http://noabank.git.foo/chase/git.git', 'git'),
                              ('ssh://git.moos.foo/maverick/tootsie.git', 'tootsie'),
-                             # TODO: make this work in the future
-                             # ('git@github.com:redhat-cop/pelorus.git', 'pelorus'),
+                             ('git@github.com:redhat-cop/pelorus.git', 'pelorus'),
                              ('notvalid://breakme/snoopy/gtist.git', 'gtist'),
                              ('kmoos://myprotocol/buffy/noext/noext', 'noext'),
+                             ('https://gitlab.com/firstgroup/secondgroup/myrepo.git', 'myrepo')
                          ]
                          )
 def test_commitmetric_repos(url, project_name):

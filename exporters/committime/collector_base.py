@@ -6,6 +6,8 @@ import re
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 
+from commit_metric import CommitMetric
+
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
@@ -171,79 +173,3 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             return None
 
 
-class CommitMetric():
-    def __init__(self, app_name):
-        self.name = app_name
-        self.labels = None
-        self.__repo_url = None
-        self.__repo_protocol = None
-        self.__repo_fqdn = None
-        self.__repo_group = None
-        self.__repo_name = None
-        self.__repo_project = None
-        self.commiter = None
-        self.commit_hash = None
-        self.commit_time = None
-        self.commit_timestamp = None
-        self.build_name = None
-        self.build_config_name = None
-        self.image_location = None
-        self.image_name = None
-        self.image_tag = None
-        self.image_hash = None
-
-    @property
-    def repo_url(self):
-        return self.__repo_url
-
-    @repo_url.setter
-    def repo_url(self, value):
-        self.__repo_url = value
-        self.__parse_repourl()
-
-    @property
-    def repo_protocol(self):
-        """Returns the Git server protocol"""
-        return self.__repo_protocol
-
-    @property
-    def git_fqdn(self):
-        """Returns the Git server FQDN"""
-        return self.__repo_fqdn
-
-    @property
-    def repo_group(self):
-        return self.__repo_group
-
-    @property
-    def repo_name(self):
-        """Returns the Git repo name, example: myrepo.git"""
-        return self.__repo_name
-
-    @property
-    def repo_project(self):
-        """Returns the Git project name, this is normally the repo_name with '.git' parsed off the end."""
-        return self.__repo_project
-
-    @property
-    def git_server(self):
-        """Returns the Git server FQDN with the protocol"""
-        return str(self.__repo_protocol + '://' + self.__repo_fqdn)
-
-    def __parse_repourl(self):
-        """Parse the repo_url into individual pieces"""
-        if self.__repo_url is None:
-            return
-
-        url_tokens = self.__repo_url.split("/")
-        self.__repo_protocol = url_tokens[0]
-        if self.__repo_protocol.endswith(':'):
-            self.__repo_protocol = self.__repo_protocol[:-1]
-        # token 1 is always a blank
-        self.__repo_fqdn = url_tokens[2]
-        self.__repo_group = url_tokens[3]
-        self.__repo_name = url_tokens[-1]
-        if self.__repo_name.endswith('.git'):
-            self.__repo_project = self.__repo_name[:-4]
-        else:
-            self.__repo_project = self.__repo_name
