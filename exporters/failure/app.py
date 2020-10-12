@@ -16,9 +16,9 @@ class TrackerFactory:
     @staticmethod
     def getCollector(username, token, tracker_api, project, tracker_provider):
         if tracker_provider == "jira":
-            return JiraFailureCollector(username, token, tracker_api, project)
+            return JiraFailureCollector(username, token, tracker_api)
         if tracker_provider == "servicenow":
-            return ServiceNowFailureCollector(username, token, tracker_api, project)
+            return ServiceNowFailureCollector(username, token, tracker_api)
 
 
 if __name__ == "__main__":

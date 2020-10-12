@@ -163,3 +163,4 @@ This exporter provides several configuration options, passed via environment var
 | `USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
 | `TRACKER_QUERY` | no | Used for ServiceNow integration, query used to gather incidents or problems. ex: "/api/now/table/incident?sysparm_fields=closed_at%2Copened_at%2Cstate%2Cnumber&state=6&category=" | unset |
+| `APP_LABEL_FIELD` | yes | ServiceNow field used for the Application label. ex: "u_applabel" | unset |
