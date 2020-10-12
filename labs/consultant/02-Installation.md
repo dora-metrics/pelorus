@@ -1,37 +1,55 @@
 # Installing Pelorus
 
-## Start Lab Setup
+Assumptions about this lab:
 
-// Get directions from Sha on general Lab setup instructions
+* You have a freshly installed OpenShift cluster
+* You have a RHEL-based bastion server on which you can run the provided commands.
+  * This bastion server is connected to the internet
+  * You are logged in to the cluster as an admin user
 
-## Understand Pelorus Architecture
-Link to Architecture
-
-## Install Pelorus via install script
-1. Run the following script to install Pelorus.
-`oc create namespace pelorus
-helm install operators charts/operators --namespace pelorus
-helm install pelorus charts/pelorus --namespace pelorus# Installation
+# Installation
 
 The following will walk through the deployment of Pelorus.
 
-## Prerequisites
+## Step 1: Install dependencies
 
-Before deploying the tooling, we must install the following:
 
-* The OpenShift Command Line Tool (oc)
-* [Helm3](https://github.com/helm/helm/releases)
-  
-* jq
+Run the following commands to install dependencies:
 
-Additionally, if you are planning to use the out of the box exporters to collect Software Delivery data, you will need:
+Install Helm:
 
-* A [Github Personal Access Token](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line)
-* A [Jira Personal Access Token](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
+    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
 
-## Initial Deployment
+    chmod 700 get_helm.sh
 
-Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.
+    ./get_helm.sh
+
+Install JQ
+
+    sudo yum install jq
+    
+Install Ansible
+
+    sudo yum install ansible
+
+## Step 2: Check out the latest release of Pelorus
+
+Clone the Pelorus repository
+
+    git clone https://github.com/redhat-cop/pelorus.git
+
+    git checkout v1.2.2
+
+    chmod 700 .openshift/create_user.sh
+
+
+## Step 3: Initial deployment of Pelorus core stack
+
+Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. The below instructions install into a namespace called `pelorus`.
+
+
+
+Install helm charts
 
     oc create namespace pelorus
     helm install operators charts/operators --namespace pelorus
