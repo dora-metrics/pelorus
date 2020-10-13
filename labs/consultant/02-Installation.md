@@ -45,7 +45,7 @@ This will allow you to log in with the credentials admin/admin
     ---
     apiVersion: v1
     data:
-      htpasswd:     YWRtaW46JDJ5JDA1JHBxVFlQbkdERUcxUi9OZWlTdGc5bXVockFtdHBIQTlrbkF0LzVnNzB5    N2JRby9zcTlLMW9pCg==
+      htpasswd: YWRtaW46JDJ5JDA1JHBxVFlQbkdERUcxUi9OZWlTdGc5bXVockFtdHBIQTlrbkF0LzVnNzB5N2JRby9zcTlLMW9pCg==
     kind: Secret
     metadata:
       name: htpass-secret
