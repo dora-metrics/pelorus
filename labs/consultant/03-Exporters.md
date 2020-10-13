@@ -29,7 +29,7 @@ In the next few sections, we'll deploy some exporters that collect data in a sim
 
 ### Deploy Time Exporter
 
-Take a look at the exporter defined by default in `charts/pelorus/values.yaml`
+`Change into the `pelorus` directory take a look at the exporter defined by default in `charts/pelorus/values.yaml`
 
     exporters:
       instances:
@@ -80,6 +80,15 @@ Commit some changes to your fork of the sample app repository to see commit data
 For failures, we need to configure credentials for access to Jira.
 
 Confirm you have a [Jira Personal Access Token](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
+
+Steps:
+  - Navigate to Jira
+  - Click on your profile picture
+  - Account settings
+  - Security
+  - Create and manage API tokens
+
+Ensure that you save the token upon generation, as it will disapear after closing the dialog box. 
 
 Use the token information and the command below to generate a Jira secret:
 
