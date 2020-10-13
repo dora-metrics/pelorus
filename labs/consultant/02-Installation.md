@@ -24,11 +24,11 @@ Install Helm:
 
 Install JQ
 
-    sudo yum install jq
+    sudo yum install -y jq
     
 Install Ansible (Used for the demo app)
 
-    sudo yum install ansible
+    sudo yum install -y ansible
 
 ## Step 2: Clone the Pelorus repository
 
@@ -85,6 +85,7 @@ This will allow you to log in with the credentials admin/admin
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. The below instructions install into a namespace called `pelorus`.
 
     oc create namespace pelorus
+    cd pelorus
     helm install operators charts/operators --namespace pelorus
     helm install pelorus charts/pelorus --namespace pelorus
 
