@@ -5,7 +5,8 @@ Assumptions about this lab:
 * You have a freshly installed OpenShift cluster
 * You have a RHEL-based bastion server on which you can run the provided commands.
   * This bastion server is connected to the internet
-  * You are logged in to the cluster as an admin user
+  * The appropriate oc client tools are installed
+  * You are logged in to the cluster as an admin user on the bastion server
 
 # Installation
 
@@ -29,16 +30,16 @@ Install Ansible (Used for the demo app)
 
     sudo yum install ansible
 
-## Step 2: Clone the master branch of the Pelorus repository
+## Step 2: Clone the Pelorus repository
 
     git clone https://github.com/redhat-cop/pelorus.git
 
 
-## Step 3: Create identity provider and admin account for Pelorus user
+## Step 3: Create cluster Admin account to install Pelorus 
 
 This will allow you to log in with the credentials admin/admin
 
-(You can skip this step if you already have a non-system user with cluster admin)
+(You can skip this step if you already have a non-system cluster admin user) 
 
     echo "
     ---
@@ -83,12 +84,11 @@ This will allow you to log in with the credentials admin/admin
 
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. The below instructions install into a namespace called `pelorus`.
 
-
     oc create namespace pelorus
     helm install operators charts/operators --namespace pelorus
     helm install pelorus charts/pelorus --namespace pelorus
 
-In a few seconds, you will see a number of resources get created. The above commands will result in the following being deployed:
+In a few seconds, you will see a number of resources get created:
 
 * Prometheus and Grafana operators
 * The core Pelorus stack, which includes:

@@ -2,7 +2,7 @@
 
 Exporters are the bots that gather the data we use to populate the dashboards. First, let's make some data!
 
-## Step 5: Install the dummy application
+## Step 1: Install the dummy application
 
 In order for Pelorus to collect data, we are going to deploy an application pipeline to build and deploy a sample application.  Make your own fork of this sample repository so that you can make changes to it:
 
@@ -25,9 +25,11 @@ And then the deployed application.
 
 In the next few sections, we'll deploy some exporters that collect data in a similar way to these commands.
 
-## Deploy Time Exporter
+## Step 2: Inspect your first exporter
 
-Take a look at the exporter defined by default in charts/pelorus/values.yaml
+### Deploy Time Exporter
+
+Take a look at the exporter defined by default in `charts/pelorus/values.yaml`
 
     exporters:
       instances:
@@ -40,9 +42,12 @@ Take a look at the exporter defined by default in charts/pelorus/values.yaml
         source_ref: master
         source_url: https://github.com/redhat-cop/pelorus.git
 
-We get the information we need about deploy time from Openshift, so this exporter works out of the box!
+We get the information we need about deploy time from OpenShift, so this exporter works out-of-the-box!
 
-## Commit Time Exporter
+
+## Step 3: 
+
+### Commit Time Exporter
 
 This exporter relies on information from Git, and so we have to configure our credentials before we can deploy it.
 
@@ -54,7 +59,7 @@ Use the token information and the command below to generate a Github secret:
       --from-literal=GIT_USER=<username> \
       --from-literal=GIT_TOKEN=<personal access token> -n pelorus
 
-Update the values yaml and then upgrade our helm installation of Pelorus to add an additional exporter to the instance list:
+Update the `values.yaml` and then upgrade our helm installation of Pelorus to add an additional exporter to the `instances` list:
 
       - app_name: committime-github
         env_from_secrets:
