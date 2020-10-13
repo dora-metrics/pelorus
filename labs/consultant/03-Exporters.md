@@ -85,7 +85,7 @@ Use the token information and the command below to generate a Jira secret:
 
        oc create secret generic jira-secret \
         --from-literal=SERVER=<Jira Server> \
-        --from-literal=USER=<username> \
+        --from-literal=USER=<email> \
         --from-literal=TOKEN=<personal access token> \
         --from-literal=PROJECT=<Jira Project> \
         -n pelorus
