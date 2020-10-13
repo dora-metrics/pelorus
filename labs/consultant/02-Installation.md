@@ -11,10 +11,7 @@ Assumptions about this lab:
 
 The following will walk through the deployment of Pelorus.
 
-## Step 1: Install dependencies
-
-
-Run the following commands to install dependencies:
+## Step 1: Install local dependencies
 
 Install Helm:
 
@@ -28,34 +25,70 @@ Install JQ
 
     sudo yum install jq
     
-Install Ansible
+Install Ansible (Used for the demo app)
 
     sudo yum install ansible
 
-## Step 2: Check out the latest release of Pelorus
-
-Clone the Pelorus repository
+## Step 2: Clone the master branch of the Pelorus repository
 
     git clone https://github.com/redhat-cop/pelorus.git
 
-    git checkout v1.2.2
 
-    chmod 700 .openshift/create_user.sh
+## Step 3: Create identity provider and admin account for Pelorus user
+
+This will allow you to log in with the credentials admin/admin
+
+(You can skip this step if you already have a non-system user with cluster admin)
+
+    echo "
+    ---
+    apiVersion: v1
+    data:
+      htpasswd:     YWRtaW46JDJ5JDA1JHBxVFlQbkdERUcxUi9OZWlTdGc5bXVockFtdHBIQTlrbkF0LzVnNzB5    N2JRby9zcTlLMW9pCg==
+    kind: Secret
+    metadata:
+      name: htpass-secret
+      namespace: openshift-config
+    type: Opaque
+    ---
+    apiVersion: config.openshift.io/v1
+    kind: OAuth
+    metadata:
+      name: cluster
+    spec:
+      identityProviders:
+      - name: my_htpasswd_provider 
+        mappingMethod: claim 
+        type: HTPasswd
+        htpasswd:
+          fileData:
+            name: htpass-secret
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: lab-admins
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    subjects:
+    - apiGroup: rbac.authorization.k8s.io
+      kind: User
+      name: admin
+    " | oc apply -f-
 
 
-## Step 3: Initial deployment of Pelorus core stack
+## Step 4: Deployment of Pelorus core stack
 
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. The below instructions install into a namespace called `pelorus`.
 
-
-
-Install helm charts
 
     oc create namespace pelorus
     helm install operators charts/operators --namespace pelorus
     helm install pelorus charts/pelorus --namespace pelorus
 
-In a few seconds, you will see a number of resourced get created. The above commands will result in the following being deployed:
+In a few seconds, you will see a number of resources get created. The above commands will result in the following being deployed:
 
 * Prometheus and Grafana operators
 * The core Pelorus stack, which includes:
