@@ -1,6 +1,8 @@
+from unittest.mock import MagicMock
+
 import pytest
 import pelorus
-from committime.commit_metric import CommitMetric
+from committime.collector_base import CommitMetric
 
 
 @pytest.mark.parametrize("start_time,end_time,format",

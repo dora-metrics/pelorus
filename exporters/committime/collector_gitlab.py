@@ -34,8 +34,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
         project = None
         try:
             logging.debug("Searching for project: %s" % project_name)
-            project_map = gl.projects.list(search=project_name)
-            project = self.get_matched_project(project_map, metric.repo_url)
+            project = self._get_next_results(gl, project_name, metric.repo_url, 0)
             logging.debug("Setting project to %s : %s" % (project.name, str(project.id)))
         except Exception:
             logging.error("Failed to find project: %s, repo: %s for build %s" % (
@@ -54,9 +53,30 @@ class GitLabCommitCollector(AbstractCommitCollector):
             metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(metric.commit_time, self._timedate_format)
         except Exception:
             logging.error("Failed processing commit time for build %s" % metric.build_name, exc_info=True)
-            logging.debug(commit)
             raise
         return metric
+
+    @staticmethod
+    def _get_next_results(gl, project_name, git_url, page):
+        """
+        Returns a list of projects according to the search term project_name.
+        :param gl: Gitlab library
+        :param project_name: search term in the form of a string
+        :param git_url: Repository url stored in the metric
+        :param page: int represents the next page to retrieve
+        :return: matching project or None if no match is found
+        """
+        if page is 0:
+            project_list = gl.search('projects', project_name)
+        else:
+            project_list = gl.search('projects', project_name, page=page)
+        if project_list:
+            project = GitLabCommitCollector.get_matched_project(project_list, git_url)
+            if project:
+                return gl.projects.get(project['id'])
+            else:
+                GitLabCommitCollector.get_next_results(gl, project_name, git_url, page + 1)
+        return None
 
     @staticmethod
     def get_matched_project(project_list, git_url):
@@ -67,6 +87,6 @@ class GitLabCommitCollector(AbstractCommitCollector):
         :return: Matching project or None if there is no match
         """
         for p in project_list:
-            if p.http_url_to_repo == git_url or p.ssh_url_to_repo == git_url:
+            if p.get('http_url_to_repo') == git_url or p.get('ssh_url_to_repo') == git_url:
                 return p
         return None
