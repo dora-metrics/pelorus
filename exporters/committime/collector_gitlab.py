@@ -66,7 +66,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
         :param page: int represents the next page to retrieve
         :return: matching project or None if no match is found
         """
-        if page is 0:
+        if page == 0:
             project_list = gl.search('projects', project_name)
         else:
             project_list = gl.search('projects', project_name, page=page)

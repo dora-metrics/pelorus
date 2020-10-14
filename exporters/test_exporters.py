@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 import pelorus
 from committime.collector_base import CommitMetric
