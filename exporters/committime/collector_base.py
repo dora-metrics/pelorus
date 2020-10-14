@@ -236,13 +236,25 @@ class CommitMetric():
         if self.__repo_url is None:
             return
         parsed = giturlparse.parse(self.__repo_url)
-        self.__repo_protocol = parsed.resource
-        # In the case of an http or https url the pathname will contain the hostname
+        # In the case of multiple subgroups the host will be in the pathname
         # Otherwise, it will be in the resource
-        if parsed.pathname.startswith('/'):
+        if parsed.pathname.startswith('//'):
             self.__repo_fqdn = parsed.pathname.split("/")[2]
         else:
             self.__repo_fqdn = parsed.resource
+        # This ugly block of code is due to the regex handling of the protocol in git-url-parse package
+        # In cases where the protocol is found to be 'git', 'http(s)' or 'ssh' it is handled fine
+        # but is not graceful for strange urls like 'kmoos://myhost/mygroup/repo.git'
+        if parsed.protocol == 'ssh' and len(parsed.protocols) > 0:
+            if parsed.protocols[0] == 'https':
+                self.__repo_protocol = parsed.protocols[0]
+            elif parsed.protocols[0] not in ['http', 'https', 'git', 'ssh']:
+                self.__repo_protocol = parsed.protocol
+                self.__repo_fqdn = self.__repo_url.split('/')[2]
+            else:
+                self.__repo_protocol = parsed.protocol
+        else:
+            self.__repo_protocol = parsed.protocol
         self.__repo_group = parsed.owner
         self.__repo_name = parsed.name
         self.__repo_project = parsed.name
