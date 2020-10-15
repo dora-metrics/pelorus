@@ -240,7 +240,7 @@ class CommitMetric:
             return
         parsed = giturlparse.parse(self.__repo_url)
         if len(parsed.protocols) > 0 and parsed.protocols[0] not in CommitMetric.supported_protocols:
-            raise Exception("Unsupported protocol %s", parsed.protocols[0])
+            raise ValueError("Unsupported protocol %s", parsed.protocols[0])
         self.__repo_protocol = parsed.protocol
         # In the case of multiple subgroups the host will be in the pathname
         # Otherwise, it will be in the resource

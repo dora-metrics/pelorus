@@ -74,5 +74,5 @@ def test_malformed_git_url(malformed_url):
     test_name = 'pytest'
     metric = CommitMetric(test_name)
     metric.name = test_name
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         metric.repo_url = malformed_url
