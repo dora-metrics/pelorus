@@ -42,8 +42,6 @@ def test_commitmetric_initial(appname):
                              ('http://noabank.git.foo/chase/git.git', 'http', 'noabank.git.foo', 'git'),
                              ('ssh://git.moos.foo/maverick/tootsie.git', 'ssh', 'git.moos.foo', 'tootsie'),
                              ('git@github.com:redhat-cop/pelorus.git', 'ssh', 'github.com', 'pelorus'),
-                             ('notvalid://breakme/snoopy/gtist.git', 'notvalid', 'breakme', 'gtist'),
-                             ('kmoos://myprotocol.com/buffy/noext/noext', 'ssh', 'myprotocol.com', 'noext'),
                              ('https://gitlab.com/firstgroup/secondgroup/myrepo.git', 'https', 'gitlab.com', 'myrepo')
                          ]
                          )
@@ -66,3 +64,15 @@ def test_commitmetric_repos(url, repo_protocol, fqdn, project_name):
     assert metric.git_fqdn == fqdn
 #    assert metric.git_server == str(protocol + '://' + fqdn)
     assert metric.repo_project == project_name
+
+
+@pytest.mark.parametrize("malformed_url", [
+    "kmoos://myprotocol/buffy/noext/noext",
+    "notvalid://breakme/snoopy/gtist.git"
+])
+def test_malformed_git_url(malformed_url):
+    test_name = 'pytest'
+    metric = CommitMetric(test_name)
+    metric.name = test_name
+    with pytest.raises(Exception):
+        metric.repo_url = malformed_url
