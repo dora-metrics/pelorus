@@ -6,8 +6,10 @@ import requests
 import os
 from datetime import datetime
 
-# Set proper headers
-headers = {"Content-Type": "application/json", "Accept": "application/json"}
+SN_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
+SN_QUERY = '/api/now/table/incident?sysparm_fields={0}%2C{1}%2Cstate%2Cnumber%2C{2}&sysparm_display_value=true&state=6'
+SN_OPENED_FIELD = "opened_at"
+SN_RESOLVED_FIELD = "resolved_at"
 
 
 class ServiceNowFailureCollector(AbstractFailureCollector):
@@ -16,12 +18,10 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
     """
 
     def __init__(self, user, apikey, server):
-        if not os.environ.get('TRACKER_QUERY'):
-            raise AttributeError("Missing Query Parameter")
         if not os.environ.get('APP_LABEL_FIELD'):
             raise AttributeError("Missing Application Label Field Parameter")
-        self.tracker_query = os.environ.get('TRACKER_QUERY')
         self.app_name_field = os.environ.get('APP_LABEL_FIELD')
+        self.tracker_query = SN_QUERY.format(SN_OPENED_FIELD, SN_RESOLVED_FIELD, self.app_name_field)
         super().__init__(server, user, apikey)
 
     def search_issues(self):
@@ -30,7 +30,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         tracker_url = self.server + self.tracker_query
 
         # Do the HTTP request
-        response = requests.get(tracker_url, auth=(self.user, self.apikey), headers=headers)
+        response = requests.get(tracker_url, auth=(self.user, self.apikey), headers=SN_HEADERS)
         # Check for HTTP codes other than 200
         if response.status_code != 200:
             logging.error("Status:, %s, Headers:, %s, Error Response: %s",
@@ -44,14 +44,14 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         critical_issues = []
         for issue in data['result']:
             logging.info('Found issue opened: %s, %s: %s', issue.get('number'),
-                         issue.get('opened_at'), issue.get('closed_at'))
+                         issue.get(SN_OPENED_FIELD), issue.get(SN_RESOLVED_FIELD))
             # Create the JiraFailureMetric
-            created_ts = self.convert_timestamp(issue['opened_at'])
+            created_ts = self.convert_timestamp(issue[SN_OPENED_FIELD])
             resolution_ts = None
-            if issue['closed_at']:
-                logging.info('Found issue close: %s, %s: %s', issue.get('closed_at'),
-                             issue.get('number'), issue.get('opened_at'))
-                resolution_ts = self.convert_timestamp(issue.get('closed_at'))
+            if issue[SN_RESOLVED_FIELD]:
+                logging.info('Found issue close: %s, %s: %s', issue.get(SN_RESOLVED_FIELD),
+                             issue.get('number'), issue.get(SN_OPENED_FIELD))
+                resolution_ts = self.convert_timestamp(issue.get(SN_RESOLVED_FIELD))
             tracker_issue = TrackerIssue(issue.get('number'), created_ts, resolution_ts, self.get_app_name(issue))
             critical_issues.append(tracker_issue)
 
