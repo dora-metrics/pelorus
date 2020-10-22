@@ -18,9 +18,9 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
     """
 
     def __init__(self, user, apikey, server):
-        if not os.environ.get('APP_LABEL_FIELD'):
-            raise AttributeError("Missing Application Label Field Parameter")
-        self.app_name_field = os.environ.get('APP_LABEL_FIELD')
+        if not os.environ.get('APP_FIELD'):
+            raise AttributeError("Missing Application Name Field Parameter")
+        self.app_name_field = os.environ.get('APP_FIELD')
         self.tracker_query = SN_QUERY.format(SN_OPENED_FIELD, SN_RESOLVED_FIELD, self.app_name_field)
         super().__init__(server, user, apikey)
 
