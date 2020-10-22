@@ -170,7 +170,7 @@ This exporter provides several configuration options, passed via environment var
 | `SERVER` | yes | URL to the Jira or ServiceNowServer  | unset  |
 | `USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
-| `APP_LABEL_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_applabel" | unset |
+| `APP_LABEL_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
 
 ### ServiceNow exporter details
 

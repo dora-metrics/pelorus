@@ -12,6 +12,7 @@ DEFAULT_LOG_DATE_FORMAT = '%m-%d-%Y %H:%M:%S'
 DEFAULT_GIT = "github"
 DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = 'unknown'
+DEFAULT_TRACKER_APP_FIELD = 'u_application'
 
 loglevel = os.getenv('LOG_LEVEL', DEFAULT_LOG_LEVEL)
 numeric_level = getattr(logging, loglevel.upper(), None)
