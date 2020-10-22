@@ -75,7 +75,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
             if project:
                 return gl.projects.get(project['id'])
             else:
-                GitLabCommitCollector.get_next_results(gl, project_name, git_url, page + 1)
+                GitLabCommitCollector._get_next_results(gl, project_name, git_url, page + 1)
         return None
 
     @staticmethod
