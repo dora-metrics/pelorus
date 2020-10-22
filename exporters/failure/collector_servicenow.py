@@ -19,7 +19,8 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
 
     def __init__(self, user, apikey, server):
         if not os.environ.get('APP_FIELD'):
-            logging.warn("Missing Application Name Field Parameter defaulting to '%s'", pelorus.DEFAULT_TRACKER_APP_FIELD)
+            logging.warn("Missing Application Name Field Parameter defaulting to '%s'",
+                         pelorus.DEFAULT_TRACKER_APP_FIELD)
             self.app_name_field = pelorus.DEFAULT_TRACKER_APP_FIELD
         self.app_name_field = os.environ.get('APP_FIELD')
         self.tracker_query = SN_QUERY.format(SN_OPENED_FIELD, SN_RESOLVED_FIELD, self.app_name_field)
