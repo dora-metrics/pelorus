@@ -79,7 +79,7 @@ Commit some changes to your fork of the sample app repository to see commit data
 
 For failures, we need to configure credentials for access to Jira.
 
-Confirm you have a [Jira Personal Access Token](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
+Confirm you have a [Jira Personal Access Token](https://id.atlassian.com/manage-profile/security/api-tokens)
 
 Steps:
   - Navigate to Jira
@@ -94,7 +94,7 @@ Use the token information and the command below to generate a Jira secret:
 
        oc create secret generic jira-secret \
         --from-literal=SERVER=<Jira Server> \
-        --from-literal=USER=<username> \
+        --from-literal=USER=<email> \
         --from-literal=TOKEN=<personal access token> \
         --from-literal=PROJECT=<Jira Project> \
         -n pelorus
