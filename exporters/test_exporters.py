@@ -35,19 +35,17 @@ def test_commitmetric_initial(appname):
     assert metric.repo_project is None
 
 
-@pytest.mark.parametrize("url,project_name",
+@pytest.mark.parametrize("url,repo_protocol,fqdn,project_name",
                          [
-                             ('https://dogs.git.foo/dogs/repo.git', 'repo'),
-                             ('http://dogs.git.foo/dogs/repo.git', 'repo'),
-                             ('http://noabank.git.foo/chase/git.git', 'git'),
-                             ('ssh://git.moos.foo/maverick/tootsie.git', 'tootsie'),
-                             # TODO: make this work in the future
-                             # ('git@github.com:redhat-cop/pelorus.git', 'pelorus'),
-                             ('notvalid://breakme/snoopy/gtist.git', 'gtist'),
-                             ('kmoos://myprotocol/buffy/noext/noext', 'noext'),
+                             ('https://dogs.git.foo/dogs/repo.git', 'https', 'dogs.git.foo', 'repo'),
+                             ('http://dogs.git.foo/dogs/repo.git', 'http', 'dogs.git.foo', 'repo'),
+                             ('http://noabank.git.foo/chase/git.git', 'http', 'noabank.git.foo', 'git'),
+                             ('ssh://git.moos.foo/maverick/tootsie.git', 'ssh', 'git.moos.foo', 'tootsie'),
+                             ('git@github.com:redhat-cop/pelorus.git', 'ssh', 'github.com', 'pelorus'),
+                             ('https://gitlab.com/firstgroup/secondgroup/myrepo.git', 'https', 'gitlab.com', 'myrepo')
                          ]
                          )
-def test_commitmetric_repos(url, project_name):
+def test_commitmetric_repos(url, repo_protocol, fqdn, project_name):
     test_name = 'pytest'
     metric = CommitMetric(test_name)
     metric.name == test_name
@@ -59,11 +57,22 @@ def test_commitmetric_repos(url, project_name):
     metric.repo_url = url
     assert metric.repo_url is not None
     assert metric.repo_url == url
-    assert metric.repo_protocol is not None
+    assert metric.repo_protocol == repo_protocol
     assert metric.git_fqdn is not None
     assert metric.repo_group is not None
     assert metric.repo_project is not None
-#    assert metric.repo_protocol == protocol
-#    assert metric.git_fqdn == fqdn
+    assert metric.git_fqdn == fqdn
 #    assert metric.git_server == str(protocol + '://' + fqdn)
     assert metric.repo_project == project_name
+
+
+@pytest.mark.parametrize("malformed_url", [
+    "kmoos://myprotocol/buffy/noext/noext",
+    "notvalid://breakme/snoopy/gtist.git"
+])
+def test_malformed_git_url(malformed_url):
+    test_name = 'pytest'
+    metric = CommitMetric(test_name)
+    metric.name = test_name
+    with pytest.raises(ValueError):
+        metric.repo_url = malformed_url
