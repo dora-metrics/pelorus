@@ -49,40 +49,41 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         sha = metric.commit_hash
         group = metric.repo_group
 
-        # set API variables depending on the version
-        if api_version == '1.0':
-            # start with the V1 globals
-            api_root = self.V1_API_ROOT
-            api_pattern = self.V1_API_PATTERN
-            # Due to the BB V1 git pattern differences, need remove '/scm' and parse again.
-            old_url = metric.repo_url
-            # Parse out the V1 /scm, for whatever reason why it is present.
-            new_url = old_url.replace('/scm', '')
-            # set the new url, so the parsing will happen
-            metric.repo_url = new_url
-            # set the new project name
-            project_name = metric.repo_project
-            # set the new group
-            group = metric.repo_group
-            # set the URL back to the original
-            metric.repo_url = old_url
-        elif api_version == '2.0':
-            # Just set the V2 globals
-            api_root = self.V2_API_ROOT
-            api_pattern = self.V2_API_PATTERN
-
-        # Create the API server from the Git server and API Root
-        api_server = pelorus.url_joiner(git_server, api_root)
-
-        # Finally, make the API call
-        api_response = self.get_commit_information(api_pattern, api_server, group, project_name, sha, metric)
-
-        # Check for a valid response and continue if none is found
-        if api_response is None or api_response.status_code != 200 or api_response.text is None:
-            logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
-                metric.build_name, metric.commit_hash, metric.repo_fqdn, str(api_response.status_code)))
-            return metric
         try:
+            # set API variables depending on the version
+            if api_version == '1.0':
+                # start with the V1 globals
+                api_root = self.V1_API_ROOT
+                api_pattern = self.V1_API_PATTERN
+                # Due to the BB V1 git pattern differences, need remove '/scm' and parse again.
+                old_url = metric.repo_url
+                # Parse out the V1 /scm, for whatever reason why it is present.
+                new_url = old_url.replace('/scm', '')
+                # set the new url, so the parsing will happen
+                metric.repo_url = new_url
+                # set the new project name
+                project_name = metric.repo_project
+                # set the new group
+                group = metric.repo_group
+                # set the URL back to the original
+                metric.repo_url = old_url
+            elif api_version == '2.0':
+                # Just set the V2 globals
+                api_root = self.V2_API_ROOT
+                api_pattern = self.V2_API_PATTERN
+
+            # Create the API server from the Git server and API Root
+            api_server = pelorus.url_joiner(git_server, api_root)
+
+            # Finally, make the API call
+            api_response = self.get_commit_information(api_pattern, api_server, group, project_name, sha, metric)
+
+            # Check for a valid response and continue if none is found
+            if api_response is None or api_response.status_code != 200 or api_response.text is None:
+                logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
+                    metric.build_name, metric.commit_hash, metric.repo_fqdn, str(api_response.status_code)))
+                return metric
+
             logging.debug("API call returned: %s" % (api_response.text))
             api_j = json.loads(api_response.text)
             if api_version == '2.0':

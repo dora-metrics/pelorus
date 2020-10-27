@@ -5,6 +5,7 @@ import pelorus
 import re
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
+import giturlparse
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -100,10 +101,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         for app in apps:
 
             builds = apps[app]
-
             jenkins_builds = list(filter(lambda b: b.spec.strategy.type == 'JenkinsPipeline', builds))
-            code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary'], builds))
-
+            code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary', 'Docker'], builds))
             # assume for now that there will only be one repo/branch per app
             # For jenkins pipelines, we need to grab the repo data
             # then find associated s2i/docker builds from which to pull commit & image data
@@ -173,7 +172,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             return None
 
 
-class CommitMetric():
+class CommitMetric:
+
+    supported_protocols = ['http', 'https', 'ssh', 'git']
+
     def __init__(self, app_name):
         self.name = app_name
         self.labels = None
@@ -236,16 +238,17 @@ class CommitMetric():
         """Parse the repo_url into individual pieces"""
         if self.__repo_url is None:
             return
-
-        url_tokens = self.__repo_url.split("/")
-        self.__repo_protocol = url_tokens[0]
-        if self.__repo_protocol.endswith(':'):
-            self.__repo_protocol = self.__repo_protocol[:-1]
-        # token 1 is always a blank
-        self.__repo_fqdn = url_tokens[2]
-        self.__repo_group = url_tokens[3]
-        self.__repo_name = url_tokens[4]
-        if self.__repo_name.endswith('.git'):
-            self.__repo_project = self.__repo_name[:-4]
+        parsed = giturlparse.parse(self.__repo_url)
+        if len(parsed.protocols) > 0 and parsed.protocols[0] not in CommitMetric.supported_protocols:
+            raise ValueError("Unsupported protocol %s", parsed.protocols[0])
+        self.__repo_protocol = parsed.protocol
+        # In the case of multiple subgroups the host will be in the pathname
+        # Otherwise, it will be in the resource
+        if parsed.pathname.startswith('//'):
+            self.__repo_fqdn = parsed.pathname.split("/")[2]
+            self.__repo_protocol = parsed.protocols[0]
         else:
-            self.__repo_project = self.__repo_name
+            self.__repo_fqdn = parsed.resource
+        self.__repo_group = parsed.owner
+        self.__repo_name = parsed.name
+        self.__repo_project = parsed.name
