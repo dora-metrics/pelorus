@@ -30,7 +30,7 @@ if __name__ == "__main__":
     username = os.environ.get('USER')
     token = os.environ.get('TOKEN')
     tracker_api = os.environ.get('SERVER')
-    tracker_provider = os.environ.get('TRACKER_PROVIDER', pelorus.DEFAULT_TRACKER)
+    tracker_provider = os.environ.get('PROVIDER', pelorus.DEFAULT_TRACKER)
     logging.info("Server: " + tracker_api)
     logging.info("User: " + username)
     start_http_server(8080)
