@@ -137,7 +137,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 repo_url = build.spec.source.git.uri
             else:
                 repo_url = self._get_repo_from_build_config(build)
-                logging.debug("BuildConfig had repo_url = %s" % repo_url)
 
             metric.repo_url = repo_url
             commit_sha = build.spec.revision.git.commit
@@ -183,9 +182,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         :return: repo_url as a str or None if not found
         """
         v1_build_configs = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='BuildConfig')
-        # only use builds that have the app label
         build_config = v1_build_configs.get(namespace=build.status.config.namespace,
-                                             name=build.status.config.name)
+                                            name=build.status.config.name)
         if build_config:
             if build_config.spec.source.git:
                 git_uri = str(build_config.spec.source.git.uri)
@@ -264,7 +262,6 @@ class CommitMetric:
         if self.__repo_url is None:
             return
         parsed = giturlparse.parse(self.__repo_url)
-        logging.debug(parsed)
         if len(parsed.protocols) > 0 and parsed.protocols[0] not in CommitMetric.supported_protocols:
             raise ValueError("Unsupported protocol %s", parsed.protocols[0])
         self.__repo_protocol = parsed.protocol
