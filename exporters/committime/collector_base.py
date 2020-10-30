@@ -188,7 +188,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                                              name=build.status.config.name)
         if build_config:
             if build_config.spec.source.git:
-                git_uri = str(build_config.spec.source.git)
+                git_uri = str(build_config.spec.source.git.uri)
                 if git_uri.endswith('.git'):
                     return git_uri
                 else:
