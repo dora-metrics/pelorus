@@ -108,14 +108,22 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # then find associated s2i/docker builds from which to pull commit & image data
             repo_url = None
             if jenkins_builds:
-                # we will default to the repo listed in '.spec.source.git'
-                repo_url = jenkins_builds[0].spec.source.git.uri
+                try:
+                    # we will default to the repo listed in '.spec.source.git'
+                    repo_url = jenkins_builds[0].spec.source.git.uri
+                except AttributeError:
+                    logging.debug(
+                        "JenkinsPipelineStrategy build %s has no git repo configured. " % jenkins_builds[0].metadata.name
+                        + "Will check for source URLs in params."
+                        )
 
                 # however, in cases where the Jenkinsfile and source code are separate, we look for params
-                git_repo_regex = re.compile(r"(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
+                git_repo_regex = re.compile(r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
                 for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
+                    logging.debug("Searching %s=%s for git urls" % (env.name, env.value))
                     result = git_repo_regex.match(env.value)
                     if result:
+                        logging.debug("Found result %s" % env.name)
                         repo_url = env.value
 
             for build in code_builds:
