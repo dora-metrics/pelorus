@@ -25,7 +25,7 @@ Install Helm:
 Install JQ
 
     sudo yum install -y jq
-    
+
 Install Ansible (Used for the demo app)
 
     sudo yum install -y ansible
@@ -35,11 +35,11 @@ Install Ansible (Used for the demo app)
     git clone https://github.com/redhat-cop/pelorus.git
 
 
-## Step 3: Create cluster Admin account to install Pelorus 
+## Step 3: Create cluster Admin account to install Pelorus
 
 This will allow you to log in with the credentials admin/admin
 
-(You can skip this step if you already have a non-system cluster admin user) 
+(You can skip this step if you already have a non-system cluster admin user)
 
     echo "
     ---
@@ -58,8 +58,8 @@ This will allow you to log in with the credentials admin/admin
       name: cluster
     spec:
       identityProviders:
-      - name: my_htpasswd_provider 
-        mappingMethod: claim 
+      - name: my_htpasswd_provider
+        mappingMethod: claim
         type: HTPasswd
         htpasswd:
           fileData:
