@@ -77,7 +77,7 @@ If you don't have an object storage provider, we recommend [MinIO](https://min.i
 
 ### Deploying Across Multiple Clusters
 
-By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this thanos can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](/page/Architecture.md#Pelorus Multi-Cluster Architecture) for details.
+By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](/page/Architecture.md) for details.
 
 ## Uninstalling
 
