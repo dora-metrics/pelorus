@@ -77,26 +77,7 @@ If you don't have an object storage provider, we recommend [MinIO](https://min.i
 
 ### Deploying Across Multiple Clusters
 
-By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, we need to point the Pelorus instance at these other clusters.
-
-To do this, create a new variables file , `extra_prometheus_hosts.yaml`.  It is a yaml file with an array of entries with the following parameters:
-
-* id - a description of the prometheus host (this will be used as a label to select metrics in the federated instance).
-* hostname - the fully qualified domain name or ip address of the host with the extra prometheus instance
-* password - the password used for the 'internal' basic auth account (this is provided by the k8s metrics prometheus instances in a secret).
-
-For example:
-
-    extra_prometheus_hosts:
-      - id: "ci-1"
-        hostname: "prometheus-k8s-openshift-monitoring.apps.ci-1.example.com"
-        password: "<redacted>"
-
-Once you are finished adding your extra hosts, you can update your stack by re-running the helm command above, passing your values file with `--values extra-prometheus-hosts.yaml`
-
-```
-helm upgrade pelorus charts/deploy --namespace pelorus -v extra-prometheus-hosts.yaml
-```
+By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this thanos can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](/page/Architecture.md#Pelorus Multi-Cluster Architecture) for details.
 
 ## Uninstalling
 
