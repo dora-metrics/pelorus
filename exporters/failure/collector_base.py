@@ -25,7 +25,6 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                                            labels=['app', 'issue_number'])
 
         critical_issues = self.search_issues()
-        metrics = self.generate_metrics(critical_issues)
 
         if len(critical_issues) > 0:
             metrics = self.generate_metrics(critical_issues)
@@ -34,12 +33,12 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                     logging.info("Collected failure_creation_timestamp{ app=%s, issue_number=%s } %s"
                                  % (m.labels[0], m.labels[1], m.time_stamp))
                     creation_metric.add_metric(m.labels, m.get_value())
-                    yield(creation_metric)
                 else:
                     logging.info("Collected failure_resolution_timestamp{ app=%s, issue_number=%s } %s"
                                  % (m.labels[0], m.labels[1], m.time_stamp))
                     failure_metric.add_metric(m.labels, m.get_value())
-                    yield(failure_metric)
+            yield(creation_metric)
+            yield(failure_metric)
 
     def generate_metrics(self, issues):
         metrics = []
