@@ -138,7 +138,7 @@ This exporter provides several configuration options, passed via environment var
 
 The job of the deploy time exporter is to capture the timestamp at which a failure occurs in a production environment and when it is resolved.
 
-#### Suggeste Secrets
+#### Suggested Secrets
 
 Create a secret containing your Jira information.
 
@@ -150,7 +150,7 @@ Create a secret containing your Jira information.
 
 For ServiceNow create a secret containing your ServiceNow information.
 
-    oc create secret generic jira-secret \
+    oc create secret generic snow-secret \
     --from-literal=SERVER=<ServiceNow Server> \
     --from-literal=USER=<username> \
     --from-literal=TOKEN=<personal access token> \
