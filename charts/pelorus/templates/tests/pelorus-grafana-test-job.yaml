@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: grafana-dashboard-test
-        image: docker.io/dwdraju/alpine-curl-jq # TODO: decide  what image to use...
+        image: registry.redhat.io/web-terminal-tech-preview/web-terminal-tooling-rhel8:1.0.1
         env:
         - name: PELORUS_DASHBOARDS
           value: "software-delivery-performance,software-delivery-performance-by-app"
@@ -24,6 +24,10 @@ spec:
         - /bin/bash
         - -c
         - |
+          # Install jq. Not friendly with disconnected environments...
+          curl -so jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+          chmod +x jq
+
           # Check if all the Pelorus Dashboards are defined in Grafana.
           # Pelorus Dashboards should be provided by and env var.
           # PELORUS_DASHBOARDS -> Comma separated list of dashboards. E.g: "software-delivery-performance,software-delivery-performance-by-app"
@@ -52,7 +56,7 @@ spec:
           echo -e "Pelorus dashboards: $PELORUS_DASHBOARDS \n"
 
           # Get Grafana dashboards
-          _GRAFANA_DASHBOARDS=$(curl -k -v -s "${_GRAFANA_API_PELORUS_FOLDERS_URL}" |  jq -r '.[].uri')
+          _GRAFANA_DASHBOARDS=$(curl -k -v -s "${_GRAFANA_API_PELORUS_FOLDERS_URL}" |  ./jq -r '.[].uri')
 
           # Test all Pelorus dashboards exists in Grafana.
           echo -e "\nChecking Pelorus dashboards...\n"
