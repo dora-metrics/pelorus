@@ -83,18 +83,33 @@ spec:
               chmod +x jq
 
               # Grab the information we need to make initial api calls to grafana
-              admin_pw=$(oc get secrets grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d)
-              grafana_url=$(oc get route grafana-route -o jsonpath='{.spec.host}')
+              echo "Get grafana URL and Credentials"
+              secret=1
+              route=1
+              until [ $secret -eq 0 ] && [ $route -eq 0 ]; do
+                sleep 1
+                admin_pw=$(oc get secrets grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d)
+                secret=$?
+                grafana_url=$(oc get route grafana-route -o jsonpath='{.spec.host}')
+                route=$?
+              done
 
-              orgId=1
-              echo $orgId
+
+              # Wait until grafana api is up
+              echo "Wait for grafana to be up"
+              up=1
+              until [ $up -eq 0 ] && [ "$(echo $health | ./jq -r .database)" == "ok" ]; do
+                health=$(curl -s -k -X GET https://admin:${admin_pw}@${grafana_url}/api/health)
+                up=$?
+              done
 
               # Switch to the new org context
-              curl -s -k -X POST https://admin:${admin_pw}@${grafana_url}/api/user/using/${orgId}
+              orgId=1
+              curl -s -k -X POST https://admin:${admin_pw}@${grafana_url}/api/user/using/${orgId} || exit 1
 
               # Create the apikey we will use in the future
+              echo "Creating new api key"
               apikey=$(curl -s -k -X POST -H "Content-Type: application/json" -d '{"name":"apikeycurl", "role": "Admin"}' https://admin:${admin_pw}@${grafana_url}/api/auth/keys)
-              echo "$apikey"
               message=$(echo $apikey | ./jq -r .message)
               if [ "${message}" == "API Key Organization ID And Name Must Be Unique" ]; then
                 # Key already exists and we can't fetch the key. Delete the key and recreate.
@@ -105,17 +120,21 @@ spec:
               fi
               apikey_name=$(echo $apikey | ./jq -r .name)
               apikey_key=$(echo $apikey | ./jq -r .key)
-              echo $apikey_name
 
               # Save apikey as a secret
-              echo "apiVersion: v1
-              stringData:
-                name: $apikey_name
-                key: $apikey_key
-              kind: Secret
-              metadata:
-                name: grafana-apikey
-              type: Opaque" | oc apply -f- 
+              echo "{
+                \"apiVersion\": \"v1\",
+                \"stringData\": {
+                    \"name\": \"${apikey_name}\",
+                    \"key\": \"${apikey_key}\"
+                },
+                \"kind\": \"Secret\",
+                \"metadata\": {
+                    \"name\": \"grafana-apikey\",
+                    \"type\": \"Opaque\"
+                }
+              }" | oc apply -f- 
+              echo "API Key saved to secret."
 
           imagePullPolicy: Always
           name: main
