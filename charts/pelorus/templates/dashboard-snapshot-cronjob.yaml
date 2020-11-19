@@ -67,7 +67,7 @@ spec:
               dashboard_search=$(curl -s -k -H "Authorization: Bearer $apikey" "https://${grafana_url}/api/search?query=Software&tag=global&type=dash-db")
               dash_uid=$(echo $dashboard_search | ./jq -r .[0].uid)
               dashboard_data=$(curl -s -k -H "Authorization: Bearer $apikey" "https://${grafana_url}/api/dashboards/uid/${dash_uid}")
-              dashboard="{ \"dashboard\": $(echo $dashboard_data | ./jq .dashboard) }"
+              dashboard="{ \"dashboard\": $(echo "$dashboard_data" | ./jq .dashboard) }"
               snapshot=$(curl -s -k -X POST -H "Authorization: Bearer $apikey" -H "Content-Type: application/json" -d "${dashboard}" "https://${grafana_url}/api/snapshots")
               snap_key=$(echo $snapshot | ./jq -r .key)
 
