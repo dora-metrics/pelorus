@@ -49,11 +49,13 @@ def image_sha(img_url):
     try:
         return sha_regex.search(img_url).group()
     except AttributeError:
-        truncated_img_url = img_url.split(':')[1]
-        image_regex = re.compile(r":[a-f0-9]{5,40}")
-        m = image_regex.search(truncated_img_url)
-        if m:
-            return m.group()
+        img_url_split = img_url.split(':')
+        if len(img_url_split) > 1:
+            truncated_img_url = img_url_split[1]
+            image_regex = re.compile(r":[a-f0-9]{5,40}")
+            m = image_regex.search(truncated_img_url)
+            if m:
+                return m.group()
         logging.debug("Skipping unresolved image reference: %s" % img_url)
         return None
 
