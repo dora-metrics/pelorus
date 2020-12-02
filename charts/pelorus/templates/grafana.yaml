@@ -35,7 +35,7 @@ spec:
 {{- if .Values.custom_ca }}
     - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
 {{- end}}
-    - '-skip-auth-regex=^/metrics'
+    - '-skip-auth-regex=^/metrics|^/dashboard/snapshot|^/public|^/api'
     image: 'quay.io/openshift/origin-oauth-proxy:4.2'
     name: grafana-proxy
     ports:
