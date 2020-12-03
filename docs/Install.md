@@ -77,7 +77,38 @@ If you don't have an object storage provider, we recommend [MinIO](https://min.i
 
 ### Deploying Across Multiple Clusters
 
-By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](/page/Architecture.md) for details.
+By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](/page/Architecture.md) for details. You define exporters for the desired meterics in each of the clusters which metrics will be evaluated.  The main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
+
+#### Configure main Pelorus instance to save and pull data from Thanos using an S3 Bucket.     
+
+Sample primary values using AWS S3:
+
+```
+bucket_access_point: s3.us-east-2.amazonaws.com
+bucket_access_key: <your access key>
+bucket_secret_access_key: <your secret access key>
+thanos_bucket_name: <bucket name here>```
+
+exporters:
+  instances:
+  ... 
+```
+
+#### Configure exporters in additinal clusters to push data into an S3 Bucket.
+
+Sample secondary configuration values using AWS S3:
+
+```
+bucket_access_point: s3.us-east-2.amazonaws.com
+bucket_access_key: <your access key>
+bucket_secret_access_key: <your secret access key>
+thanos_bucket_name: <bucket name here>```
+
+exporters:
+  instances:
+  ...
+```
+
 
 ## Uninstalling
 
