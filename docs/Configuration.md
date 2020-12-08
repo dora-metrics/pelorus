@@ -139,7 +139,7 @@ This exporter provides several configuration options, passed via environment var
 
 The job of the deploy time exporter is to capture the timestamp at which a failure occurs in a production environment and when it is resolved.
 
-#### Suggeste Secrets
+#### Suggested Secrets
 
 Create a secret containing your Jira information.
 
@@ -147,7 +147,16 @@ Create a secret containing your Jira information.
     --from-literal=SERVER=<Jira Server> \
     --from-literal=USER=<username> \
     --from-literal=TOKEN=<personal access token> \
-    --from-literal=PROJECT=<Jira Project> \
+    -n pelorus
+
+For ServiceNow create a secret containing your ServiceNow information.
+
+    oc create secret generic snow-secret \
+    --from-literal=SERVER=<ServiceNow Server> \
+    --from-literal=USER=<username> \
+    --from-literal=TOKEN=<personal access token> \
+    --from-literal=TRACKER_PROVICER=servicenow \
+    --from-literal=APP_FIELD=<Custom app label field> \
     -n pelorus
 
 #### Environment Variables
@@ -156,8 +165,20 @@ This exporter provides several configuration options, passed via environment var
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
+| `PROVIDER` | no | Set the type of failure provider. One of `jira`, `servicenow` | `jira` |
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `SERVER` | yes | URL to the Jira Server  | unset  |
-| `PROJECT` | yes | Jira project to scan | unset |
-| `USER` | yes | Jira Username | unset |
+| `SERVER` | yes | URL to the Jira or ServiceNowServer  | unset  |
+| `USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
+| `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
+
+### ServiceNow exporter details
+
+The integration with ServiceNow is configured to process Incident objects that have been resolved (stage=6).  Since there are not Tags in all versions of ServiceNow there may be a need to configure a custom field on the Incident object to provide an application name to match Openshift Labels.  The exporter uses the opened_at field for created timestamp and the resolved_at field for the resolution timestamp.  The exporter will traverse through all the incidents and when a resolved_at field is populated it will create a resolution record.
+
+A custom field can be configure with the following steps:
+
+- Navigate to an existing Incident
+- Use the upper left Menu and select Configure -> Form Layout
+- Create a new field (String, Table or reference a List)
+- You can use the API Explorer to verify the name of the field to be used as the APP_FIELD

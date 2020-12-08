@@ -26,3 +26,5 @@ exporters:
       value: deploytime/app.py
     source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
+
+snapshot_schedule: "@monthly"

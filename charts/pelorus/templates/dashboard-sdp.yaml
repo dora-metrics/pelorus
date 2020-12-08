@@ -1643,8 +1643,8 @@ spec:
     ],
     "refresh": "30s",
     "schemaVersion": 21,
-    "style": "dark",
-    "tags": [],
+    "style": "light",
+    "tags": ["global", "software-delivery-performance"],
     "templating": {
         "list": []
     },
@@ -1679,6 +1679,6 @@ spec:
     },
     "timezone": "",
     "title": "Software Delivery Performance",
-    "uid": "eee3570b25fea8ce185d751082908fff",
-    "version": 2
+    "uid": "sdp-global",
+    "version": 3
     }
