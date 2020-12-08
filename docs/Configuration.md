@@ -21,7 +21,7 @@ The following configurations may be made through the `values.yaml` file:
 ## Configuring Exporters
 
 An _exporter_ is a data collection application that pulls data from various tools and platforms and exposes it such that it can be consumed by Pelorus dashboards. Each exporter gets deployed individually alongside the core Pelorus stack.
-
+https://prometheus.io/
 Exporters can be deployed and configured via the `exporters.instances` list of a `values.yaml` file. Some exporters also require secrets to be created when integrating with external tools and platforms. A sample exporter configuration may look like this:
 
 ```
