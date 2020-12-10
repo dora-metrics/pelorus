@@ -1,0 +1,78 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pelorus-prometheus-test
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: pelorus-prometheus-test
+    spec:
+      containers:
+      - name: prometheus-targets-test
+        image: registry.redhat.io/web-terminal-tech-preview/web-terminal-tooling-rhel8:1.0.1
+        env:
+        - name: PROM_HOSTNAME
+          value: "http://prometheus-pelorus:9090"
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install jq. Not friendly with disconnected environments...
+          curl -so jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+          chmod +x jq
+
+          # Check if all the discovered targets health are "UP".
+
+          # If this file exists, then I am inside a Pod.
+          _K8s_SA_TOKEN_FILE="/var/run/secrets/kubernetes.io/serviceaccount/token"
+          # Default Pometheus config settings
+          _PROM_API_TARGETS="/api/v1/targets"
+
+          echo -e "Checking Prometheus Targets Health.\n"
+
+          if [[ -f "${_K8s_SA_TOKEN_FILE}" ]]
+          then
+              echo -e "Executing tests inside a Kubernetes Pod.\n"
+              _POD_SA_TOKEN="$(cat "${_K8s_SA_TOKEN_FILE}")"
+
+          else
+              echo -e "Executing tests outside a Kubernetes Pod.\n"
+              _POD_SA_TOKEN=""
+          fi
+
+          # Composing vars
+          _PROM_URL="${PROM_HOSTNAME}${_PROM_API_TARGETS}"
+
+          # Show vars for debug purposes
+          echo -e "Final URL: $_PROM_URL \n"
+
+          # Get targets array
+          _PROM_TARGETS=$(curl -k -v -s "${_PROM_URL}" | ./jq -r -c '.data.activeTargets[]')
+
+          echo -e "\nChecking if all Prometheus targets are UP...\n"
+
+          IFS=$'\n'
+          for t in ${_PROM_TARGETS}
+          do
+
+              HEALTH=$(echo "$t" | ./jq -r '.health')
+              TARGET_URL=$(echo "$t" | ./jq -r '.scrapeUrl')
+              TARGET_POOL_NAME=$(echo "$t" | ./jq -r '.scrapePool')
+              if [[ "$HEALTH" != "up" ]]
+              then
+                  echo -e "Test failed, $TARGET_POOL_NAME = $TARGET_URL is not UP.\n"
+                  exit -1
+              else
+                  echo -e "Target $TARGET_POOL_NAME = $TARGET_URL is UP.\n"
+              fi
+
+          done
+
+          echo -e "All Prometheus targets are UP. Test OK!!\n"
+          exit 0
+      restartPolicy: Never

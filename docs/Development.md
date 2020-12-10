@@ -286,6 +286,15 @@ For testing changes to the helm chart, you should just follow the [standard inst
 
 We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.
 
+### Helm tests
+
+Once Pelorus has been successfully installed, and after waiting a couple of minutes so all Pelorus components (Grafana, Prometheus, etc) are up and running, helm tests can be run.
+At the moment the number of helm tests is small, hopefully in the future it will be larger. Bear in mind that helm tests main purposes is to be part of the Pelorus CI workflow.
+
+```bash
+helm test pelorus -n pelorus
+```
+
 ## Release Management Process
 
 The following is a walkthrough of the process we follow to create and manage versioned releases of Pelorus.
