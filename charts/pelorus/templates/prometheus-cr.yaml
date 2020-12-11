@@ -13,6 +13,17 @@ spec:
       key: thanos.yaml
       name: thanos-objstore-config
   {{- end }}
+  {{- if .Values.storage }}
+  storage:
+    volumeClaimTemplate:
+      spec:
+      {{- if .Values.storage.storage_class_name }}
+        storageClassName: {{ .Values.storage.storage_class_name }}
+      {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.storage.volume_size }}
+  {{- end }}
   replicas: 2
   replicaExternalLabelName: ""
   ruleNamespaceSelector: {}

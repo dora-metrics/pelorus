@@ -16,6 +16,11 @@ deployment:
     app.kubernetes.io/name: pelorus
     app.kubernetes.io/version: v0.33.0
 
+# Uncomment this if you want to persist Prometheus metrics.
+#storage:
+#  volume_size: 10Gi # PV size per Prometheus Pod. Make sure you define volume size according to your environment size and retention needs.
+#  storage_class_name: cinder-cs # Optional, otheriwse the default SC is used. Use a block storage SC if possible.
+
 exporters:
   instances:
     # Values file for exporter helm chart
