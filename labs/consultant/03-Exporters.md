@@ -7,10 +7,17 @@ Exporters are the bots that gather the data we use to populate the dashboards. F
 In order for Pelorus to collect data, we are going to deploy an application pipeline to build and deploy a sample application.  Make your own fork of this sample repository so that you can make changes to it:
 
 https://github.com/kkoller/container-pipelines.git
-    
+
+Clone your fork:
+
     git clone https://github.com/<Your Repo>/container-pipelines.git
     cd container-pipelines/basic-nginx
     ansible-galaxy install -r requirements.yml -p galaxy
+
+Replace the `source_code_url` variable with your fork repo and `skip_manual_promotion` to `true`, then deploy it.
+
+    sed -i '/source_code_url:/c\source_code_url: https://github.com/<Your Repo>/container-pipelines.git' .applier/group_vars/seed-hosts.yml
+    sed -i '/skip_manual_promotion:/c\skip_manual_promotion: true' .applier/group_vars/seed-hosts.yml
     ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml
 
 Let's take a look at the data points in the app that Pelorus will look to collect.
@@ -19,7 +26,7 @@ First, the build.
 
     oc get builds -l app.kubernetes.io/name -n basic-nginx-build
 
-And then the deployed application.
+Wait a few minutes for the app to be promoted, then check application in production.
 
     oc get pods -l app.kubernetes.io/name -n basic-nginx-prod
 
@@ -44,8 +51,7 @@ In the next few sections, we'll deploy some exporters that collect data in a sim
 
 We get the information we need about deploy time from OpenShift, so this exporter works out-of-the-box!
 
-
-## Step 3: 
+## Step 3:
 
 ### Commit Time Exporter
 
@@ -88,7 +94,7 @@ Steps:
   - Security
   - Create and manage API tokens
 
-Ensure that you save the token upon generation, as it will disapear after closing the dialog box. 
+Ensure that you save the token upon generation, as it will disapear after closing the dialog box.
 
 Use the token information and the command below to generate a Jira secret:
 
