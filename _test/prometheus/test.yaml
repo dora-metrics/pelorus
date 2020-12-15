@@ -1,0 +1,144 @@
+# This is the main input for unit testing.
+# Only this file is passed as command line argument.
+
+rule_files:
+  - rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+# Test 1.
+- interval: 1m
+  # Series data.
+  input_series:
+      - series: deploy_timestamp{app="basic-nginx", endpoint="http", exported_namespace="basic-nginx-prod", image_sha="sha256:a344eb5673e7e3faf871e7375762f1869c823c957aa126ce8f52033395f2b358", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1594759735'
+      - series: deploy_timestamp{app="basic-nginx", endpoint="http", exported_namespace="basic-nginx-dev", image_sha="sha256:9e1348e33d416072d6301e5dc35e2c54b8dc95772b0a89ff2036fa79b368864d", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1594761060'
+      - series: deploy_timestamp{app="basic-nginx", endpoint="http", exported_namespace="basic-nginx-prod", image_sha="sha256:3131dfa239ec3db1e876ebea141b9d92627a432ca94949c7a6197d05261b0f84", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1597679100'
+      - series: deploy_timestamp{app="basic-nginx", endpoint="http", exported_namespace="basic-nginx-prod", image_sha="sha256:c291840e51a8305a4ce0b8dda4fdc9a4512e557d203e506a35d937d549958dee", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1594164059'
+      - series: deploy_timestamp{app="basic-nginx", endpoint="http", exported_namespace="basic-nginx-prod", image_sha="sha256:37452860725ffee5fef1ceddb9936088dd8c84b0ebadd0b1017112d6ba99f829", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1594759265'
+      - series: deploy_timestamp{app="basic-nginx", endpoint="http", exported_namespace="basic-nginx-prod", image_sha="sha256:1e4ae2dd0ee1eba759669a179c8fc3bdb869c3ba3fd78e7a70788a2fcb775854", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1594759432'
+      - series: deploy_timestamp{app="kenwilli-basic-spring-boot", endpoint="http", exported_namespace="kenwilli-basic-spring-boot-prod", image_sha="sha256:08ab5ef50c3fa51993e4d40b62533afe6619558aaba9e3a179c451b2676db7ed", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1591796089'
+      - series: deploy_timestamp{app="kenwilli-basic-spring-boot", endpoint="http", exported_namespace="kenwilli-basic-spring-boot-prod", image_sha="sha256:46332b417660900361f7185830a4eb6d5ddc7e3002944ba26ed260e83f415197", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1591813199'
+      - series: deploy_timestamp{app="kenwilli-basic-spring-boot", endpoint="http", exported_namespace="kenwilli-basic-spring-boot-prod", image_sha="sha256:382947b77566babcc7c6c55f50cb17469c7d068bc4b0cfbdcd4b8b33e091d133", instance="10.129.1.254:8080", job="deploytime-exporter", namespace="app-name-consistency", pod="deploytime-exporter-1-66w2p", service="deploytime-exporter"}
+        values: '1591814663'
+      - series: commit_timestamp{app="basic-nginx", commit="c8683ac2ae37cb9dd7c4c576747bf8f3d74c4f28", endpoint="http", exported_namespace="basic-nginx-build", image_sha="sha256:3131dfa239ec3db1e876ebea141b9d92627a432ca94949c7a6197d05261b0f84", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1594760961'
+      - series: commit_timestamp{app="basic-nginx", commit="b4db23e0d91699165e92ea38ba03ac277c778397", endpoint="http", exported_namespace="basic-nginx-build", image_sha="sha256:a344eb5673e7e3faf871e7375762f1869c823c957aa126ce8f52033395f2b358", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1594759624'
+      - series: commit_timestamp{app="basic-nginx", commit="800f7c667ca08a4b596dc710de084de934facdc8", endpoint="http", exported_namespace="basic-nginx-build", image_sha="sha256:748783c99fd6639005692c6a52e75ef30a79c4e28afd48a4b486384ec606c724", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1594759788'
+      - series: commit_timestamp{app="basic-nginx", commit="9421e2898111a38fd5b6a17d6c94c2e3569b5c2f", endpoint="http", exported_namespace="basic-nginx-build", image_sha="sha256:9e1348e33d416072d6301e5dc35e2c54b8dc95772b0a89ff2036fa79b368864d", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1594760778'
+      - series: commit_timestamp{app="basic-nginx", commit="c8683ac2ae37cb9dd7c4c576747bf8f3d74c4f28", endpoint="http", exported_namespace="basic-nginx-build", image_sha="sha256:d33162494e4be33ab9fa731591840be288dece7041c03d7543d461a1cf0b4b62", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1594760961'
+      - series: commit_timestamp{app="deploytime-exporter", commit="1403b8d93a8e3ad8a386f0f770bb16bf885b02fa", endpoint="http", exported_namespace="deploytime-api-fix", image_sha="sha256:3a1616402ae774f8f446211c283888542b7af94db00c1f555829a5fd8d163c8f", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1599071744'
+      - series: commit_timestamp{app="kenwilli-basic-spring-boot", commit="1a97f4bb5f05c9ef2e3791de01c02cb0610663e6", endpoint="http", exported_namespace="kenwilli-basic-spring-boot-build", image_sha="sha256:92e61fcec3cbc9a5f75793140b3d6996a864b326b0954dd7efd692cb9d3f45af", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1590532194'
+      - series: commit_timestamp{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d", endpoint="http", exported_namespace="kenwilli-basic-spring-boot-build", image_sha="sha256:08ab5ef50c3fa51993e4d40b62533afe6619558aaba9e3a179c451b2676db7ed", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1590767500'
+      - series: commit_timestamp{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d", endpoint="http", exported_namespace="kenwilli-basic-spring-boot-build", image_sha="sha256:46332b417660900361f7185830a4eb6d5ddc7e3002944ba26ed260e83f415197", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1590767500'
+      - series: commit_timestamp{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d", endpoint="http", exported_namespace="kenwilli-basic-spring-boot-build", image_sha="sha256:382947b77566babcc7c6c55f50cb17469c7d068bc4b0cfbdcd4b8b33e091d133", instance="10.130.0.85:8080", job="github-exporter", namespace="app-name-consistency", pod="github-exporter-3-pjmmj", service="github-exporter"}
+        values: '1590767500'
+      - series: failure_creation_timestamp{app="foo",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-7",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1600719815'
+      - series: failure_creation_timestamp{app="basic-nginx",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-6",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1597170899'
+      - series: failure_creation_timestamp{app="basic-nginx",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-4",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1588262309'
+      - series: failure_creation_timestamp{app="kenwilli-basic-spring-boot",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-3",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1587750306'
+      - series: failure_resolution_timestamp{app="basic-nginx",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-6",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1597175474'
+      - series: failure_resolution_timestamp{app="basic-nginx",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-4",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1588262346'
+      - series: failure_resolution_timestamp{app="kenwilli-basic-spring-boot",endpoint="http",instance="10.129.1.140:8080",issue_number="MDT-3",job="failure-exporter",namespace="sdp-byapp-dashboard",pod="failure-exporter-4-c8pct",service="failure-exporter"}
+        values: '1587750584'
+
+  # Unit tests for promql expressions.
+  promql_expr_test:
+  # Check that the expected number of deploy_timestamp entries are present
+  - expr: count(deploy_timestamp)
+    eval_time: 1m
+    exp_samples:
+    # Sample 1.
+    - labels: '{}'
+      value: 9
+  # Check that the expected number of commit_timestamp entries are present
+  - expr: count(commit_timestamp)
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 10
+  # Ensure expected values for lead time for app 1
+  - expr: sdp:lead_time:by_commit{app="basic-nginx"}
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="b4db23e0d91699165e92ea38ba03ac277c778397"}'
+      value: 111
+    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="9421e2898111a38fd5b6a17d6c94c2e3569b5c2f"}'
+      value: 282
+    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="c8683ac2ae37cb9dd7c4c576747bf8f3d74c4f28"}'
+      value: 2918139
+  # Ensure expected values for lead time for app 2
+  - expr: sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot"}
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d"}'
+      value: 1028589
+  # Check calculation of average lead time per application
+  - expr: sdp:lead_time:by_app
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:lead_time:by_app{app="basic-nginx"}'
+      value: 972844
+    - labels: 'sdp:lead_time:by_app{app="kenwilli-basic-spring-boot"}'
+      value: 1028589
+  - expr: sdp:lead_time:global
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:lead_time:global'
+      value: 1000716.5
+  - expr: count(sdp:time_to_restore:by_issue)
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 3
+  - expr: count(sdp:time_to_restore:by_app)
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: sdp:time_to_restore:by_app
+    eval_time: 1m
+    exp_samples:
+    - labels: sdp:time_to_restore:by_app{app="basic-nginx"}
+      value: 2306
+    - labels: sdp:time_to_restore:by_app{app="kenwilli-basic-spring-boot"}
+      value: 278
+  - expr: sdp:time_to_restore:global
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:time_to_restore:global{}'
+      value: 1292
+  - expr: sdp:change_failure_rate:by_app
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:change_failure_rate:by_app{app="basic-nginx"}'
+      value: .6666666666666666
+    - labels: 'sdp:change_failure_rate:by_app{app="kenwilli-basic-spring-boot"}'
+      value: 1
+  - expr: sdp:change_failure_rate:global
+    eval_time: 1m
+    exp_samples:
+    - labels: 'sdp:change_failure_rate:global{}'
+      value: .8333333333333333

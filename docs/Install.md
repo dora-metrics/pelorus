@@ -20,37 +20,35 @@ Additionally, if you are planning to use the out of the box exporters to collect
 
 ## Initial Deployment
 
-The `runhelm.sh` script is used to deploy the core Pelorus stack. We suggest starting with a basic install, which will deploy all Pelorus components to a newly created namespace called `pelorus`.
+Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.
 
-1. Deploy the Pelorus stack
+    oc create namespace pelorus
+    helm install operators charts/operators --namespace pelorus
+    helm install pelorus charts/pelorus --namespace pelorus
 
-        ./runhelm.sh
+In a few seconds, you will see a number of resourced get created. The above commands will result in the following being deployed:
 
-    If you would prefer to install Pelorus in a different namespace, you can do so with the `-n` flag.
+* Prometheus and Grafana operators
+* The core Pelorus stack, which includes:
+  * A `Prometheus` instance
+  * A `Grafana` instance
+  * A `ServiceMonitor` instance for scraping the Pelorus exporters.
+  * A `GrafanaDatasource` pointing to Prometheus.
+  * A set of `GrafanaDashboards`. See the [dashboards documentation](/page/Dashboards/) for more details.
+* The following exporters:
+  * Deploy Time
 
-        ./runhelm.sh -n my-pelorus
+From here, some additional configuration is required in order to deploy other exporters, and make the Pelorus
 
-    In a few seconds, you will see a number of resourced get created.
-2. Create the exporter secrets
-    1. For Github
+See the [Configuration Guide](/page/Configuration) for more information on exporters.
 
-            oc create secret generic github-secret --from-literal=GITHUB_USER=<username> --from-literal=GITHUB_TOKEN=<personal access token> -n pelorus
-    2. For Jira
-
-            oc create secret generic jira-secret --from-literal=SERVER=<Jira Server> --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=PROJECT=<Jira Project> -n pelorus
-3. Deploy Exporters
-
-        helm template charts/exporter/ -f exporters/committime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
-        helm template charts/exporter/ -f exporters/deploytime/values.yaml --namespace pelorus | oc apply -f- -n pelorus
-        helm template charts/exporter/ -f exporters/failure/values.yaml --namespace pelorus | oc apply -f- -n pelorus
-
-See the [Configuration Guide](/docs/Configuration.md) for more information on exporters.
+You may additionally want to enabled other features for the core stack. Read on to understand those options.
 
 ## Customizing Pelorus
 
-See [Configuring the Pelorus Stack](/docs/Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
+See [Configuring the Pelorus Stack](/page/Configuration) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
 
-### Configure Long Term Storage
+### Configure Long Term Storage (Recommended)
 
 The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
 
@@ -72,23 +70,10 @@ thanos_bucket_name: <bucket name here>
 Then pass this to runhelm.sh like this:
 
 ```
-./runhelm.sh -v values.yaml
+helm upgrade pelorus charts/deploy --namespace pelorus --values values.yaml
 ```
 
-The thanos instance can also be configured by setting the same variables as arguments to the installation script:
-
-```
-./runhelm.sh -s bucket_access_point=$INTERNAL_S3_ENDPOINT -s bucket_access_key=$AWS_ACCESS_KEY -s bucket_secret_access_key=$AWS_SECRET_ACCESS_KEY -s thanos_bucket_name=somebucket
-```
-
-
-And then:
-
-```
-./runhelm.sh -v file_with_bucket_config.yaml
-```
-
-If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](/docs/MinIO.md) to host an instance on OpenShift and configure Pelorus to use it.
+If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](/page/MinIO) to host an instance on OpenShift and configure Pelorus to use it.
 
 ### Deploying Across Multiple Clusters
 
@@ -110,12 +95,13 @@ For example:
 Once you are finished adding your extra hosts, you can update your stack by re-running the helm command above, passing your values file with `--values extra-prometheus-hosts.yaml`
 
 ```
-./runhelm.sh -v extra-prometheus-hosts.yaml
+helm upgrade pelorus charts/deploy --namespace pelorus -v extra-prometheus-hosts.yaml
 ```
 
 ## Uninstalling
 
 Cleaning up Pelorus is very simple.
 
-    helm template --namespace pelorus pelorus ./charts/deploy/ | oc delete -f- -n pelorus
+    helm uninstall pelorus --namespace pelorus
+    helm uninstall operators --namespace pelorus
 
