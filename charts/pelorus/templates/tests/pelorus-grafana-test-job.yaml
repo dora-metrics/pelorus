@@ -1,0 +1,91 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pelorus-grafana-test
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: pelorus-grafana-test
+    spec:
+      containers:
+      - name: grafana-dashboard-test
+        image: registry.redhat.io/web-terminal-tech-preview/web-terminal-tooling-rhel8:1.0.1
+        env:
+        - name: PELORUS_DASHBOARDS
+          value: "software-delivery-performance,software-delivery-performance-by-app"
+        - name: GRAFANA_HOSTNAME
+          value: "http://grafana-service:3000"
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install jq. Not friendly with disconnected environments...
+          curl -so jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+          chmod +x jq
+
+          # Check if all the Pelorus Dashboards are defined in Grafana.
+          # Pelorus Dashboards should be provided by and env var.
+          # PELORUS_DASHBOARDS -> Comma separated list of dashboards. E.g: "software-delivery-performance,software-delivery-performance-by-app"
+
+          # If this file exists, then I am inside a Pod.
+          _K8s_SA_TOKEN_FILE="/var/run/secrets/kubernetes.io/serviceaccount/token"
+          # Assuming here Pelorus means folderId=1 inside Grafana.
+          _GRAFANA_API_PELORUS_FOLDER="/api/search?folderIds=1&query=&starred=false"
+
+          echo -e "Checking Pelorus dashboards in Grafana.\n"
+
+          if [[ -f "${_K8s_SA_TOKEN_FILE}" ]]
+          then
+              echo -e "Executing tests inside a Kubernetes Pod.\n"
+              _POD_SA_TOKEN="$(cat "${_K8s_SA_TOKEN_FILE}")"
+
+          else
+              echo -e "Executing tests outside a Kubernetes Pod.\n"
+              _POD_SA_TOKEN=""
+          fi
+
+          # Composing vars
+          _GRAFANA_API_PELORUS_FOLDERS_URL="${GRAFANA_HOSTNAME}${_GRAFANA_API_PELORUS_FOLDER}"
+          # Show vars for debug purposes
+          echo -e "Pelorus folders URL in Grafana: $_GRAFANA_API_PELORUS_FOLDERS_URL \n"
+          echo -e "Pelorus dashboards: $PELORUS_DASHBOARDS \n"
+
+          # Get Grafana dashboards
+          _GRAFANA_DASHBOARDS=$(curl -k -v -s "${_GRAFANA_API_PELORUS_FOLDERS_URL}" |  ./jq -r '.[].uri')
+
+          # Test all Pelorus dashboards exists in Grafana.
+          echo -e "\nChecking Pelorus dashboards...\n"
+          for pd in ${PELORUS_DASHBOARDS//,/ }
+          do
+
+            FOUND="false"
+            echo -e "Checking Pelorus dashboard: $pd.\n"
+            for gd in ${_GRAFANA_DASHBOARDS}
+            do
+
+                 # Remove Grafana dashboard prefix: db/software-delivery-performance -> software-delivery-performance
+                 gd_name=${gd//db\//}
+                 if [[ "${gd_name}" == ${pd} ]]
+                 then
+                    echo -e "Pelorus dashboard present in Grafana: $pd.\n"
+                    FOUND="true"
+                 fi
+
+            done
+
+            if [[ "${FOUND}" == "false" ]]
+            then
+                echo -e "Pelorus dashboard not found in Grafana: $pd. Failing Tests!!\n"
+                exit -1
+            fi
+
+          done
+
+          echo -e "All Pelorus dashboards are present in Grafana. Test OK!!\n"
+          exit 0
+      restartPolicy: Never
