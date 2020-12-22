@@ -2,7 +2,6 @@ from abc import abstractmethod
 import json
 import logging
 import pelorus
-import re
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 import giturlparse
