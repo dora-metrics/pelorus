@@ -79,9 +79,49 @@ If you don't have an object storage provider, we recommend [MinIO](https://min.i
 
 By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](/page/Architecture.md) for details. You define exporters for the desired meterics in each of the clusters which metrics will be evaluated.  The main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
 
-#### Configure main Pelorus instance to save and pull data from Thanos using a shared S3 Bucket.     
+#### Configure Development Cluster.     
 
-Sample primary values using AWS S3:
+The development configuration uses same AWS S3 bucket and tracks commits and failure resolution to development:
+
+```
+# Define shared S3 storage
+#
+bucket_access_point: s3.us-east-2.amazonaws.com
+bucket_access_key: <your access key>
+bucket_secret_access_key: <your secret access key>
+thanos_bucket_name: <bucket name here>```
+
+deployment:
+  labels:
+    app.kubernetes.io/component: development
+    app.kubernetes.io/name: pelorus
+    app.kubernetes.io/version: v0.33.0
+
+exporters:
+  instances:
+  - app_name: committime-exporter
+    env_from_secrets: 
+    - github-secret
+    source_context_dir: exporters/
+    extraEnv:
+    - name: APP_FILE
+      value: committime/app.py
+    source_ref: master
+    source_url: https://github.com/redhat-cop/pelorus.git
+  - app_name: failuretime-exporter
+    env_from_secrets:
+    - sn-secret
+    source_context_dir: exporters/
+    extraEnv:
+    - name: APP_FILE
+      value: failure/app.py
+    source_ref: service-now-exporter
+    source_url: https://github.com/redhat-cop/pelorus.git
+```
+
+#### Configure Production Cluster.
+
+The produciton configuration uses same AWS S3 bucket and tracks deployments to production:
 
 ```
 bucket_access_point: s3.us-east-2.amazonaws.com
@@ -89,24 +129,24 @@ bucket_access_key: <your access key>
 bucket_secret_access_key: <your secret access key>
 thanos_bucket_name: <bucket name here>```
 
-exporters:
-  instances:
-  ... 
-```
-
-#### Configure exporters in additinal clusters to push data into the shared S3 Bucket.
-
-Sample secondary configuration values using AWS S3:
-
-```
-bucket_access_point: s3.us-east-2.amazonaws.com
-bucket_access_key: <your access key>
-bucket_secret_access_key: <your secret access key>
-thanos_bucket_name: <bucket name here>```
+deployment:
+  labels:
+    app.kubernetes.io/component: production
+    app.kubernetes.io/name: pelorus
+    app.kubernetes.io/version: v0.33.0
 
 exporters:
   instances:
-  ...
+  - app_name: deploytime-exporter
+    extraEnv: 
+    - name: APP_LABEL
+      value: app.kubernetes.io/name
+    - name: APP_FILE
+      value: deploytime/app.py
+    source_context_dir: exporters/
+    source_ref: master
+    source_url: https://github.com/redhat-cop/pelorus.git
+
 ```
 
 
