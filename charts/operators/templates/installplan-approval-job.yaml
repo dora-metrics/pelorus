@@ -13,7 +13,7 @@ spec:
   template:
     spec:
       containers:
-        - image: registry.redhat.io/openshift4/ose-cli:v4.4
+        - image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/bash
             - -c

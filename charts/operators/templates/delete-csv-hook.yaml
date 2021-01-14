@@ -13,12 +13,12 @@ spec:
   template:
     spec:
       containers:
-        - image: registry.redhat.io/openshift4/ose-cli:v4.4
+        - image: quay.io/openshift/origin-cli:latest
           command:
             - /bin/bash
             - -c
             - |
-              oc delete $(oc get csv -o name)
+              oc delete $(oc get csv -l 'olm.copiedFrom notin (openshift-operators)' -o name)
           imagePullPolicy: Always
           name: installplan-approver
       dnsPolicy: ClusterFirst
