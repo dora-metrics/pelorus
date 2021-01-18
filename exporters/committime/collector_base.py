@@ -2,6 +2,7 @@ from abc import abstractmethod
 import json
 import logging
 import pelorus
+import re
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 import giturlparse
@@ -94,8 +95,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 
+    # get_metrics_from_apps - expects a sorted array of build data sorted by app label
     def get_metrics_from_apps(self, apps, namespace):
-        """Expects a sorted array of build data sorted by app label"""
         metrics = []
         for app in apps:
 
@@ -105,8 +106,17 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # assume for now that there will only be one repo/branch per app
             # For jenkins pipelines, we need to grab the repo data
             # then find associated s2i/docker builds from which to pull commit & image data
-            repo_url = self.get_repo_from_jenkins(jenkins_builds)
-            logging.debug("Repo URL for app %s is currently %s" % (app, repo_url))
+            repo_url = None
+            if jenkins_builds:
+                # we will default to the repo listed in '.spec.source.git'
+                repo_url = jenkins_builds[0].spec.source.git.uri
+
+                # however, in cases where the Jenkinsfile and source code are separate, we look for params
+                git_repo_regex = re.compile(r"(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
+                for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
+                    result = git_repo_regex.match(env.value)
+                    if result:
+                        repo_url = env.value
 
             for build in code_builds:
                 try:
@@ -115,7 +125,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     logging.error("Cannot collect metrics from build: %s" % (build.metadata.name))
 
                 if metric:
-                    logging.debug("Adding metric for app %s" % app)
                     metrics.append(metric)
         return metrics
 
