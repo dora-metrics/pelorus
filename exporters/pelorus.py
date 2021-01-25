@@ -19,7 +19,7 @@ numeric_level = getattr(logging, loglevel.upper(), None)
 if not isinstance(numeric_level, int):
     raise ValueError('Invalid log level: %s' % loglevel)
 logging.basicConfig(format=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT, level=numeric_level)
-print("Initializing Logger wit LogLevel: %s" % loglevel.upper())
+print("Initializing Logger with LogLevel: %s" % loglevel.upper())
 
 
 def load_kube_config():

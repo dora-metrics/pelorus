@@ -112,6 +112,7 @@ This exporter provides several configuration options, passed via environment var
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
+| `NO_IMAGE_STREAM` | no | If `True` will set the commit hash as the expected value for deployment of the image | `False` |
 | DEPRECATED `GITHUB_USER` | no | User's github username | unset |
 | DEPRECATED `GITHUB_TOKEN` | no | User's Github API Token | unset |
 | DEPRECATED `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |

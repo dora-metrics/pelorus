@@ -25,5 +25,5 @@ Then we get commit data from the following systems through their respective APIs
 
 * GitHub
 * GitHub Enterprise (including private endpoints)
+* Gitlab
 * Bitbucket _(coming soon)_
-* Gitlab _(coming soon)_

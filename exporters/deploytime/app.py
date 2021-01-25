@@ -92,8 +92,8 @@ def generate_metrics(namespaces):
             ownerRefs = pod.metadata.ownerReferences
             namespace = pod.metadata.namespace
 
-            # use the replica controller/replicasets to get deploy timestame.  The ownerRef of pod is used to get
-            # replicaiton controller.  A dictionary is used to handle dups when multiple pods are running.
+            # use the replica controller/replicasets to get deploy timestamp.  The ownerRef of pod is used to get
+            # replication controller.  A dictionary is used to handle dups when multiple pods are running.
             for ownerRef in ownerRefs:
                 if (ownerRef.kind in supported_replica_objects and
                    not pod_replica_dict.get(namespace + "/" + ownerRef.name)):

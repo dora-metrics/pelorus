@@ -14,17 +14,19 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, kube_client, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
+    # def __init__(self, kube_client, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
+    def __init__(self, kube_client, git_provider_info, exporter_opts):
         """Constructor"""
         self._kube_client = kube_client
-        self._username = username
-        self._token = token
-        self._namespaces = namespaces
-        self._apps = apps
-        self._git_api = git_api
+        self._username = git_provider_info.username
+        self._token = git_provider_info.token
+        self._git_api = git_provider_info.git_api
+        self._timedate_format = git_provider_info.timedate_format
+        self._collector_name = git_provider_info.collector_name
+        self._namespaces = exporter_opts.namespaces
+        self._apps = exporter_opts.apps
+        self._no_image_stream = exporter_opts.no_image_stream
         self._commit_dict = {}
-        self._timedate_format = timedate_format
-        self._collector_name = collector_name
         logging.info("=====Using %s Collector=====" % (self._collector_name))
 
     def collect(self):
@@ -148,9 +150,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             metric.commit_hash = commit_sha
             metric.name = app
-            metric.commiter = build.spec.revision.git.author.name
+            metric.committer = build.spec.revision.git.author.name
             metric.image_location = build.status.outputDockerImageReference
-            if build.spec.output.to.kind == "DockerImage":
+            if build.spec.output.to.kind == "DockerImage" and self._no_image_stream:
                 metric.image_hash = commit_sha
             else:
                 metric.image_hash = build.status.output.to.imageDigest
@@ -211,7 +213,7 @@ class CommitMetric:
         self.__repo_group = None
         self.__repo_name = None
         self.__repo_project = None
-        self.commiter = None
+        self.committer = None
         self.commit_hash = None
         self.commit_time = None
         self.commit_timestamp = None

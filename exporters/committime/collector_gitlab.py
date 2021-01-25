@@ -3,14 +3,14 @@ import requests
 import logging
 import pelorus
 from collector_base import AbstractCommitCollector
-# import urllib3
-# urllib3.disable_warnings()
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
 
-    def __init__(self, kube_client, username, token, namespaces, apps):
-        super().__init__(kube_client, username, token, namespaces, apps, 'GitLab', '%Y-%m-%dT%H:%M:%S.%f%z')
+    def __init__(self, kube_client, git_provider_info, exporter_opts):
+        git_provider_info.timedate_format = '%Y-%m-%dT%H:%M:%S.%f%z'
+        git_provider_info.collector_name = 'GitLab'
+        super().__init__(kube_client, git_provider_info, exporter_opts )
 
     # base class impl
     def get_commit_time(self, metric):
