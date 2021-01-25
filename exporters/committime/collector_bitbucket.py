@@ -23,7 +23,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
     def __init__(self, kube_client, git_provider_info, exporter_opts):
         git_provider_info.collector_name = 'BitBucket'
         git_provider_info.timedate_format = '%Y-%m-%dT%H:%M:%S%z'
-        super().__init__(kube_client, git_provider_info, exporter_opts )
+        super().__init__(kube_client, git_provider_info, exporter_opts)
         self.__server_dict = {}
         self.__session = requests.Session()
 

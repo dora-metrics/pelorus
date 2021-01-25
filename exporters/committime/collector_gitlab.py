@@ -10,7 +10,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
     def __init__(self, kube_client, git_provider_info, exporter_opts):
         git_provider_info.timedate_format = '%Y-%m-%dT%H:%M:%S.%f%z'
         git_provider_info.collector_name = 'GitLab'
-        super().__init__(kube_client, git_provider_info, exporter_opts )
+        super().__init__(kube_client, git_provider_info, exporter_opts)
 
     # base class impl
     def get_commit_time(self, metric):

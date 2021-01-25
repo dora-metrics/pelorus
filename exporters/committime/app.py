@@ -6,7 +6,7 @@ import os
 import pelorus
 import sys
 import time
-from util import *
+from util import dict2obj
 from kubernetes import client
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
