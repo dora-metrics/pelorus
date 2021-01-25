@@ -15,3 +15,12 @@ Pelorus is composed of the following open source components.
   * Commit Time
   * Deploy Time
   * Failure
+
+
+## Pelorus Multi-Cluster Architecture
+
+The following diagram shows how a multi-cluster implementation is configured.
+
+![Pelorus Multi-Cluster Architecture Diagram](img/multi-cluster-architecture.png)
+
+In the multi-cluster configuration there is a shared S3 bucket that Thanos uses to serve metrics.
