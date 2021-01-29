@@ -72,7 +72,6 @@ if __name__ == "__main__":
     dyn_client = DynamicClient(k8s_client)
 
     collector = GitFactory.get_collector(dyn_client, git_provider(), exporter_options())
-
     start_http_server(8080)
     REGISTRY.register(collector)
 
