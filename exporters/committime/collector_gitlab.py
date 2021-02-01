@@ -10,6 +10,8 @@ class GitLabCommitCollector(AbstractCommitCollector):
     def __init__(self, kube_client, git_provider_info, exporter_opts):
         git_provider_info.timedate_format = '%Y-%m-%dT%H:%M:%S.%f%z'
         git_provider_info.collector_name = 'GitLab'
+        #disable urllib3 request warnings
+        requests.packages.urllib3.disable_warnings()
         super().__init__(kube_client, git_provider_info, exporter_opts)
 
     # base class impl
@@ -35,7 +37,8 @@ class GitLabCommitCollector(AbstractCommitCollector):
         try:
             logging.debug("Searching for project: %s" % project_name)
             project = self._get_next_results(gl, project_name, metric.repo_url, 0)
-            logging.debug("Setting project to %s : %s" % (project.name, str(project.id)))
+            if project:
+                logging.debug("Setting project to %s : %s" % (project.name, str(project.id)))
         except Exception:
             logging.error("Failed to find project: %s, repo: %s for build %s" % (
                 metric.repo_url, project_name, metric.build_name), exc_info=True)
