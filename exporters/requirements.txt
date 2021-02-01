@@ -4,5 +4,5 @@ openshift
 jsonpath_ng
 jira
 pytz
-python-gitlab >= 2.4.0
+python-gitlab >= 2.6.0
 git-url-parse

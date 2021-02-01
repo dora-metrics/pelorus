@@ -10,8 +10,9 @@ class GitLabCommitCollector(AbstractCommitCollector):
     def __init__(self, kube_client, git_provider_info, exporter_opts):
         git_provider_info.timedate_format = '%Y-%m-%dT%H:%M:%S.%f%z'
         git_provider_info.collector_name = 'GitLab'
-        #disable urllib3 request warnings
+        # disable urllib3 request warnings
         requests.packages.urllib3.disable_warnings()
+        self._projects = {}  # Map that will hold the Gitlab projects found
         super().__init__(kube_client, git_provider_info, exporter_opts)
 
     # base class impl
@@ -29,20 +30,22 @@ class GitLabCommitCollector(AbstractCommitCollector):
 
         # Private or personal token
         gl = gitlab.Gitlab(git_server, private_token=self._token, api_version=4, session=session)
-        # oauth token authentication
-        # gl = gitlab.Gitlab(git_server, oauth_token='my_long_token_here', api_version=4, session=session)
 
         # get the project id from the map by search for the project_name
-        project = None
-        try:
-            logging.debug("Searching for project: %s" % project_name)
-            project = self._get_next_results(gl, project_name, metric.repo_url, 0)
-            if project:
-                logging.debug("Setting project to %s : %s" % (project.name, str(project.id)))
-        except Exception:
-            logging.error("Failed to find project: %s, repo: %s for build %s" % (
-                metric.repo_url, project_name, metric.build_name), exc_info=True)
-            raise
+        # project_name must be unique for the cluster
+        project = self._projects.get(project_name)
+        if project is None:
+            try:
+                logging.debug("Searching for project: %s" % project_name)
+                project = self._get_next_results(gl, project_name, metric.repo_url, 0)
+                if project:
+                    logging.debug("Setting project to %s : %s" % (project.name, str(project.id)))
+                    self._projects[project_name] = project
+            except Exception:
+                logging.error("Failed to find project: %s, repo: %s for build %s" % (
+                    metric.repo_url, project_name, metric.build_name), exc_info=True)
+                raise
+
         # Using the project id, get the project
         if project is None:
             raise TypeError("Failed to find repo project: %s, for build %s" % (metric.repo_url, metric.build_name))
@@ -69,16 +72,13 @@ class GitLabCommitCollector(AbstractCommitCollector):
         :param page: int represents the next page to retrieve
         :return: matching project or None if no match is found
         """
-        if page == 0:
-            project_list = gl.search('projects', project_name)
-        else:
-            project_list = gl.search('projects', project_name, page=page)
+        project_list = gl.search(gitlab.SEARCH_SCOPE_PROJECTS, project_name, page=page)
         if project_list:
             project = GitLabCommitCollector.get_matched_project(project_list, git_url)
             if project:
                 return gl.projects.get(project['id'])
             else:
-                GitLabCommitCollector._get_next_results(gl, project_name, git_url, page + 1)
+                return GitLabCommitCollector._get_next_results(gl, project_name, git_url, page + 1)
         return None
 
     @staticmethod
