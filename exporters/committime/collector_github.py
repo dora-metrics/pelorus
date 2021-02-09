@@ -21,7 +21,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
 
     def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
-        logging.debug("Metric Value from get_metric_from_build: %s" % (json.dumps(metric)))
+        logging.debug("Metric Value from get_metric_from_build: %s" % (metric.__dict__))
         git_server = metric.git_fqdn
         logging.debug("Git server value: %s" % (git_server))
         # check for gitlab or bitbucket

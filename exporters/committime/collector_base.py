@@ -154,7 +154,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.image_hash = build.status.output.to.imageDigest
             # Check the cache for the commit_time, if not call the API
             metric_ts = self._commit_dict.get(commit_sha)
-            logging.debug("Metric Value from get_metric_from_build: %s" % (json.dumps(metric)))
+            logging.debug("Metric Value from get_metric_from_build: %s" % (metric.__dict__))
             if metric_ts is None:
                 logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
                 metric = self.get_commit_time(metric)
