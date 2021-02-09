@@ -24,7 +24,20 @@ exporters:
     extraEnv:
     - name: APP_FILE
       value: deploytime/app.py
+    - name: LOG_LEVEL
+      value: DEBUG
     source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
+  - app_name: committime-github
+    env_from_secrets: 
+    - github-secret
+    source_context_dir: exporters/
+    extraEnv:
+    - name: APP_FILE
+      value: committime/app.py
+    - name: LOG_LEVEL
+      value: DEBUG
+    source_ref: master
+    source_url: https://github.com/haithamshahin333/pelorus.git
 
 snapshot_schedule: "@monthly"
