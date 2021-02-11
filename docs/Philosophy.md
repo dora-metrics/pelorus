@@ -1,14 +1,28 @@
 # Our Philosophy
 
-We believe that a shared focus on measuring and improving on a specific set of measurable business outcomes within an IT organization will result in a notable positive impact on the organization as a whole.
+Studies have shown that elite digital organizations tend to outperform their peers in software delivery and operational performance.
+
+Having worked with organizations around the world, we've found that very few of them are actually measuring their software delivery and operational performance in a meaningful way, despite the evidence that shows how this performance leads to higher organizational performance.
+
+Fewer still are using that information to learn and continuously improve their organization.
+
+As software delivery and operational performance has a proven correlation to organizational performance, we believe that there are other similar bridge outcomes that organizations can build a shared focus on measuring and improving to impact the organization as a whole.
+
+We believe that a shared focus on measuring and improving on a specific set of business outcomes within an IT organization will result in a notable positive impact on the organization as a whole.
 
 The mission of Pelorus is to help IT organizations use business value-based metrics to understand how technology-related investments impact organizational performance and to provide specific tools and guidance to help improve those metrics.
 
 ## The Problem Today
 
-Most of the work that goes on in IT is invisible today. Code deployments, changes to server configuration, network and firewall updates... these are all critically important to the success of an organization, yet the people who are in charge can rarely see and verify these things happening for themselves. Even if a Director or VP were to walk to an engineer's desk and ask to see the result of a task that was just delivered, the information would rarely be meaningful to them. We know that the work we do is important, but how can we express and communicate how well we are doing at delivering value as a team, department, or organization in a meaningful way?
+Most of the context around work that happens in IT is easily hidden today.  At an implementation level, engineers are working towards code deployments, changes to server configuration, network and firewall updates--all of which are critically important to the success of an organization. Any specific implementation details are generalized through summary reporting to anyone outside the work.  Even if a Director or VP were to walk to an engineer's desk and ask to see the result of a task that was just delivered, the information would rarely be meaningful to them.  This gap exists across every vertical and horizontal relationship between business stakeholders, IT engineers, managers and leaders.
 
-The concepts of Lean Thinking have been changing the way that businesses think about value and about the customer. Agile and Kanban frameworks have provided teams with ways to apply Lean principles to plan and manage their work in ways that are more visible and meaningful. Still, measuring progress across teams, especially when there are many teams, remains a very difficult challenge.
+The goal is for everyone in an organization to be able to effectively communicate the value of their work by relating them to Bridge Outcomes.
+
+The concepts of Lean Thinking have been changing the way that businesses think about value and about the customer. Agile and Kanban frameworks have provided teams with ways to apply Lean principles to plan and manage their work in ways that are more visible and impactful to business. Still, measuring the evolution of an organization, especially when there are many teams, remains a very difficult challenge.
+
+This is the problem we want to solve.
+
+The true complexity of this problem becomes more obvious when we realize that not only do we have to master the flow of work across multiple teams, but often, we have to either aggregate or break down the work with the right context so that it makes sense to different audiences within IT--all of whom think in varying scopes of time. To talk about this, we leverage the 5 Elements model below.
 
 **This is the problem we want to help solve.**
 
@@ -18,7 +32,7 @@ The true complexity of this problem becomes more obvious when we realize that no
 
 The 5 Elements of IT is a conceptual model that hypothesizes that any given IT organization is made up of, at a minimum, five very distinct functions. These Five Elements need to work together in balance to deliver the organization's needs. It also theorizes that many common areas of pain or dysfunction can be traced back to communication gaps or breakdowns between at least 2 of the 5 elements.
 
-| Element 	| Capability 	| What failure looks like 	| Time scope |
+| Element 	| Capability 	| What failure looks like 	| For what time frame [element] has context|
 |----------------------------	| -----------	| -------------------------	| ---------- |
 | Leadership | Provides executive sponsorship | Teams are afraid to try something new | 1-5 Years |
 | Architecture | Makes the right thing easy |  Teams are repeatedly solving the same problem | 3-12 Months |
@@ -26,12 +40,11 @@ The 5 Elements of IT is a conceptual model that hypothesizes that any given IT o
 | Development | Delivers the features | Software does not meet defined need requirements| 2-3 Weeks |
 | Operations  | Keeps the systems running | Ongoing outages and incidents | 1-5 Days |
 
-
 The Pelorus philosophy proposes that a common language of measurable outcomes can be used to bridge the gaps that often arise across these 5 elements. **We refer to these as _Bridge Outcomes_.**
 
 ## Finding the right Bridge Outcomes
 
-The term _Outcome_ refers to an measurable change in human, team, or organizational behavior that acheives a desired business result. A _business result_ typically falls into one of the following categories:
+The term _Outcome_ refers to an measurable change in human, team, or organizational behavior that achieves a desired business result. A _business result_ typically falls into one of the following categories:
 
 * an Increase in Value (e.g. Revenue)
 * a Decrease in Cost
@@ -46,15 +59,13 @@ The term _Outcome_ refers to an measurable change in human, team, or organizatio
 
 ### Searching for communication gaps
 
-Over time, communication gaps arise between the Five Elements naturally.  Each function cares about different types of work and think in varying scopes of time. These simple differences can grow into organizational silos if organizations lack shared outcomes.
+Over time, communication gaps arise between the Five Elements naturally. Each function cares about different types of work and thinks in varying scopes of time. These simple differences can grow into organizational silos if organizations lack shared outcomes.
 
 ![Elements of IT](img/MDT-Five-Elements_chart.png)
 
 While alignment may seem to call for major trade-offs between the five functions, shared measurable outcomes can help bridge these communication gaps.
 
-When picking a metric that teams can align on, consider whether the 
-
-### Picking a good outcome
+### How we’ve picked our outcomes
 
 * Focus on Outcomes over Outputs
 * Aim to improve relationships between the five elements to prevent failures
@@ -63,7 +74,7 @@ When picking a metric that teams can align on, consider whether the
 
 ### Exploring Bridge Outcomes
 
-These are some organizational outcomes that satisfy the good metric criteria and correlate to organizational performance.  Organizations should choose which specific outcomes reflect their vision of success that they want to invest in regularly measuring.  This is intended to be an iterative list of Bridge outcomes.  Each outcome has a Dashboard Detail page that describes the outcome, each measure, and the data points required for calculation. Note: Software Delivery Performance is the only outcome readily available in Pelorus.
+These are some organizational outcomes that satisfy the good metric criteria and correlate to organizational performance. Organizations should choose which specific outcomes reflect their vision of success that they want to invest in regularly measuring. This is intended to be an iterative list of Bridge outcomes. Each outcome has a Dashboard Detail page that describes the outcome, each measure, and the data points required for calculation. Note: Software Delivery Performance is the only outcome readily available in Pelorus.
 
 | Outcome 	| Definition 	| Measures(KPIs) 	| Why it matters |
 |----------	| -----------	| ---------------	| -------------- |
