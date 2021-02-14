@@ -1,0 +1,8 @@
+click==7.1.2
+Flask==1.1.2
+Flask-HTTPAuth==4.2.0
+itsdangerous==1.1.0
+Jinja2==2.11.3
+MarkupSafe==1.1.1
+pymongo==3.11.3
+Werkzeug==1.0.1

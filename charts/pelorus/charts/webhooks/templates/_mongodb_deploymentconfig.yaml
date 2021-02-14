@@ -1,0 +1,94 @@
+{{- define "mongodb.deploymentconfig" }}
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: "mongodb-{{ .app_name }}"
+    application: {{ .app_name }}
+  name: "mongodb-{{ .app_name }}"
+spec:
+  replicas: 1
+  selector:
+    name: "mongodb-{{ .app_name }}"
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: "mongodb-{{ .app_name }}"
+    spec:
+      containers:
+      - capabilities: {}
+        env:
+        - name: MONGODB_USER
+          valueFrom:
+            secretKeyRef:
+              key: MONGODB_USER
+              name: "mongodb-{{ .app_name }}"
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: MONGODB_PASSWORD
+              name: "mongodb-{{ .app_name }}"
+        - name: MONGODB_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: MONGODB_ADMIN_PASSWORD
+              name: "mongodb-{{ .app_name }}"
+        - name: MONGODB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: MONGODB_DATABASE
+              name: "mongodb-{{ .app_name }}"
+        image: ' '
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          initialDelaySeconds: 30
+          tcpSocket:
+            port: 27017
+          timeoutSeconds: 1
+        name: mongodb
+        ports:
+        - containerPort: 27017
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -i
+            - -c
+            - mongo 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD
+              --eval="quit()"
+          initialDelaySeconds: 3
+          timeoutSeconds: 1
+        resources:
+          limits:
+            memory: {{ .mongodb.memory_limit }}
+        securityContext:
+          capabilities: {}
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        volumeMounts:
+        - mountPath: /var/lib/mongodb/data
+          name: "mongodb-{{ .app_name }}-data"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+      - emptyDir:
+          medium: ""
+        name: "mongodb-{{ .app_name }}-data"
+  triggers:
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - mongodb
+      from:
+        kind: ImageStreamTag
+        name: {{ .mongodb.imagestream }}
+        namespace: {{ .mongodb.namespace }}
+      lastTriggeredImage: ""
+    type: ImageChange
+  - type: ConfigChange
+status: {}
+{{- end }}

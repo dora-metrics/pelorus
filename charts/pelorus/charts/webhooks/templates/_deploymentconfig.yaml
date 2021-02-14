@@ -1,0 +1,52 @@
+{{- define "webhooks.deploymentconfig" }}
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .app_name }}
+    application: {{ .app_name }}
+  name: {{ .app_name }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app.kubernetes.io/name: {{ .app_name }}
+    app: {{ .app_name }}
+    deploymentconfig: {{ .app_name }}
+  strategy:
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .app_name }}
+        app: {{ .app_name }}
+        deploymentconfig: {{ .app_name }}
+        application: {{ .app_name}}
+    spec:
+      containers:
+      - name: {{ .app_name }}
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: mongodb-{{ .app_name }}
+        - secretRef:
+            name: {{ .app_name }}
+        env:
+{{- if .extraEnv }}
+{{ toYaml .extraEnv | indent 8 }}
+{{- end }}
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - {{ .app_name }}
+      from:
+        kind: ImageStreamTag
+        name: {{ .app_name }}:latest
+    type: ImageChange
+{{- end }}

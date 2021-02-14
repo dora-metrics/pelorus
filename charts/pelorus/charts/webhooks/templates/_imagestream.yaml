@@ -1,0 +1,10 @@
+{{- define "webhooks.imagestream" }}
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .app_name }}
+    app: {{ .app_name }}
+  name: {{ .app_name }}
+{{- end }}

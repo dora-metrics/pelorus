@@ -1,0 +1,20 @@
+{{- define "webhooks.service" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .app_name }}
+    k8s-app: {{ .app_name }}
+  name: {{ .app_name }}
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app.kubernetes.io/name: {{ .app_name }}
+    deploymentconfig: {{ .app_name }}
+  type: ClusterIP
+{{- end }}

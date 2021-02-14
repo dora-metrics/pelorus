@@ -1,0 +1,11 @@
+{{- range $index, $webhook := .Values.instances }}
+  {{ include "webhooks.buildconfig" $webhook }}
+  {{ include "webhooks.deploymentconfig" $webhook }}
+  {{ include "webhooks.imagestream" $webhook }}
+  {{ include "webhooks.route" $webhook }}
+  {{ include "webhooks.service" $webhook }}
+  {{ include "webhooks.secret" $webhook }}
+  {{ include "mongodb.service" $webhook }}
+  {{ include "mongodb.deploymentconfig" $webhook }}
+  {{ include "mongodb.secret" $webhook }}
+{{- end }}

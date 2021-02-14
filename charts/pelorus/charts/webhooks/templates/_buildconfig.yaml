@@ -1,0 +1,37 @@
+{{- define "webhooks.buildconfig" }}
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: {{ .app_name }}
+    app.kubernetes.io/name: {{ .app_name }}
+    application: {{ .app_name}}
+  name: {{ .app_name }}
+spec:
+  failedBuildsHistoryLimit: 5
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ .app_name }}:latest
+  source:
+    contextDir: {{ .source_context_dir }}
+    git:
+      ref: {{ .source_ref }}
+      uri: {{ .source_url }}
+    type: Git
+  strategy:
+    sourceStrategy:
+      from:
+        kind: DockerImage
+        name: registry.access.redhat.com/ubi8/python-38
+    type: Source
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - github:
+      secretReference:
+        name: github-secret
+    type: GitHub
+  - type: ConfigChange
+  - type: ImageChange
+{{- end }}
