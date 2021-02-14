@@ -11,8 +11,8 @@ class GitHubCommitCollector(AbstractCommitCollector):
     _prefix = _prefix_pattern % _defaultapi
     _suffix = "/commits/"
 
-    def __init__(self, username, token, mongo_client, git_api=None):
-        super().__init__(username, token, "GitHub", '%Y-%m-%dT%H:%M:%SZ', mongo_client, git_api)
+    def __init__(self, username, token, db, git_api=None):
+        super().__init__(username, token, "GitHub", '%Y-%m-%dT%H:%M:%SZ', db, git_api)
         if git_api is not None and len(git_api) > 0:
             logging.info("Using non-default API: %s" % (git_api))
         else:

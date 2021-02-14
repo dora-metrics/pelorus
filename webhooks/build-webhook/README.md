@@ -14,3 +14,5 @@ Expected data model of build info sent to webhook/mongodb is below. The records 
 "repo":"REPO URL", 
 "branch":"REPO BRANCH"}
 ```
+
+The mongodb secret that gets generated when the webhook is deployed will be `mongodb-{{app_name}}`. Be sure to include this secret as an env var when deploying the generic exporter so that the exporter can connect to mongodb.

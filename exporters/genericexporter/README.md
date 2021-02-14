@@ -17,3 +17,5 @@ Expected data model of build info sent to webhook/mongodb:
 "repo":"REPO URL", 
 "branch":"REPO BRANCH"}
 ```
+
+Be sure to provide the secret associated with the deployed webhook/mongodb instance so that the exporter can connect to mongodb. You will also need to provide a github secret that allows the exporter to reach out to the appropriate git provider.

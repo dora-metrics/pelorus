@@ -14,7 +14,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, username, token, collector_name, timedate_format, mongo_client, git_api=None, ):
+    def __init__(self, username, token, collector_name, timedate_format, db, git_api=None, ):
         """Constructor"""
         self._username = username
         self._token = token
@@ -22,7 +22,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self._commit_dict = {}
         self._timedate_format = timedate_format
         self._collector_name = collector_name
-        self._mongo_client = mongo_client
+        self._db = db
         logging.info("=====Using %s Collector=====" % (self._collector_name))
 
     def collect(self):
@@ -50,7 +50,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         print("generating metrics")
         metrics = []
 
-        for build in self._mongo_client.build.builds.find():
+        for build in self._db.builds.find():
             print(build)
             metrics.append(self.get_metric_from_build(build['app'], build['commit'], build['image_sha'], build['repo'], build['branch']))
 
