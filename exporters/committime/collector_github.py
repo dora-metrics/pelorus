@@ -2,7 +2,6 @@ from collector_base import AbstractCommitCollector
 import logging
 import pelorus
 import requests
-import json
 
 
 class GitHubCommitCollector(AbstractCommitCollector):
@@ -21,9 +20,8 @@ class GitHubCommitCollector(AbstractCommitCollector):
 
     def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
-        logging.debug("Metric Value from get_metric_from_build: %s" % (metric.__dict__))
+
         git_server = metric.git_fqdn
-        logging.debug("Git server value: %s" % (git_server))
         # check for gitlab or bitbucket
         if "gitlab" in git_server or "bitbucket" in git_server:
             logging.warn("Skipping non GitHub server, found %s" % (git_server))
