@@ -34,7 +34,7 @@ if __name__ == "__main__":
     mongo_servicename = os.environ.get('MONGODB_SERVICE_HOST')
     mongo_database = os.environ.get('MONGODB_DATABASE')
     uri = "mongodb://%s:%s@%s:27017/%s" % (mongo_username,mongo_password,mongo_servicename,mongo_database)
-    db = MongoClient(uri)[database]
+    db = MongoClient(uri)[mongo_database]
 
     username = os.environ.get('GIT_USER')
     token = os.environ.get('GIT_TOKEN')
