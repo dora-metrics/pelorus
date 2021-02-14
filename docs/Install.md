@@ -26,6 +26,10 @@ Pelorus gets installed via helm charts. The first deploys the operators on which
     helm install operators charts/operators --namespace pelorus
     helm install pelorus charts/pelorus --namespace pelorus
 
+    >:mag: **Note**<br/>
+    >Verify the operators are completely installed before starting the pelorus helm chart
+
+
 In a few seconds, you will see a number of resourced get created. The above commands will result in the following being deployed:
 
 * Prometheus and Grafana operators
