@@ -1,4 +1,4 @@
-![Pelorus](docs/img/Logo-Pelorus-A-Standard-RGB_smaller.png)
+![Pelorus](https://github.com/konveyor/community/raw/main/brand/logo/konveyor-logo-pelorus.jpg)
 
 ![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
 ![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)
