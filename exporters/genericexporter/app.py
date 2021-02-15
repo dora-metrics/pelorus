@@ -10,7 +10,13 @@ from prometheus_client.core import REGISTRY
 from prometheus_client import start_http_server
 from pymongo import MongoClient
 
-REQUIRED_CONFIG = ['MONGODB_USER', 'MONGODB_PASSWORD', 'MONGODB_SERVICE_HOST', 'MONGODB_DATABASE', 'GIT_USER', 'GIT_TOKEN']
+REQUIRED_CONFIG = ['MONGODB_USER',
+                   'MONGODB_PASSWORD',
+                   'MONGODB_SERVICE_HOST',
+                   'MONGODB_DATABASE',
+                   'GIT_USER',
+                   'GIT_TOKEN']
+
 
 class GitFactory:
     @staticmethod
@@ -22,8 +28,8 @@ class GitFactory:
         if git_provider == "bitbucket":
             pass
 
+
 if __name__ == "__main__":
-    print("starting app")
 
     if pelorus.missing_configs(REQUIRED_CONFIG):
         print("This program will exit.")
@@ -33,7 +39,7 @@ if __name__ == "__main__":
     mongo_password = os.environ.get('MONGODB_PASSWORD')
     mongo_servicename = os.environ.get('MONGODB_SERVICE_HOST')
     mongo_database = os.environ.get('MONGODB_DATABASE')
-    uri = "mongodb://%s:%s@%s:27017/%s" % (mongo_username,mongo_password,mongo_servicename,mongo_database)
+    uri = "mongodb://%s:%s@%s:27017/%s" % (mongo_username, mongo_password, mongo_servicename, mongo_database)
     db = MongoClient(uri)[mongo_database]
 
     username = os.environ.get('GIT_USER')

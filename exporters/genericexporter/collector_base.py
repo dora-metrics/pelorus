@@ -1,9 +1,6 @@
 from abc import abstractmethod
-import json
 import logging
 import pelorus
-import re
-from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 import giturlparse
 
@@ -52,7 +49,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
         for build in self._db.builds.find():
             print(build)
-            metrics.append(self.get_metric_from_build(build['app'], build['commit'], build['image_sha'], build['repo'], build['branch']))
+            metrics.append(self.get_metric_from_build(build['app'],
+                                                      build['commit'],
+                                                      build['image_sha'],
+                                                      build['repo'],
+                                                      build['branch']))
 
         print("metrics generated")
         print(metrics)
@@ -71,7 +72,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.build_name = app
             metric.build_config_name = app
             metric.namespace = None
-            labels = None
             metric.labels = None
             metric.commit_hash = commit_sha
             metric.name = app
@@ -96,8 +96,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             return metric
 
         except Exception as e:
-            logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
-                            % (namespace, build.metadata.name, app))
             logging.debug(e, exc_info=True)
             return None
 

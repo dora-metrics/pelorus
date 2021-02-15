@@ -10,11 +10,13 @@ auth = HTTPTokenAuth(scheme='Bearer')
 db = None
 secret = None
 
+
 @auth.verify_token
 def verify_token(token):
     if token == secret:
         print("authenicated")
         return "authenticated"
+
 
 @app.route('/post/build', methods=['POST'])
 @auth.login_required
@@ -22,28 +24,31 @@ def insert_build():
     request_data = request.get_json()
 
     build = {"app": request_data["app"],
-            "commit": request_data["commit"],
-            "image_sha": request_data["image_sha"],
-            "git_provider": request_data["git_provider"],
-            "repo": request_data["repo"],
-            "branch": request_data["branch"],
-            "inserted_date": datetime.datetime.utcnow()}
+             "commit": request_data["commit"],
+             "image_sha": request_data["image_sha"],
+             "git_provider": request_data["git_provider"],
+             "repo": request_data["repo"],
+             "branch": request_data["branch"],
+             "inserted_date": datetime.datetime.utcnow()}
 
-    insert_build(build)
+    post_build(build)
 
     return "submitted"
 
-def insert_build(build):
+
+def post_build(build):
     print("submitting build: %s" % (build))
     build_id = db.builds.insert_one(build).inserted_id
     print("submitted build id: %s" % (build_id))
 
+
 def create_mongo_client_connection(username, password, host, database):
-    uri = "mongodb://%s:%s@%s:27017/%s" % (username,password,host,database)
+    uri = "mongodb://%s:%s@%s:27017/%s" % (username, password, host, database)
     print(uri)
     return MongoClient(uri)[database]
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     print("starting app")
 
     mongo_username = os.environ.get('MONGODB_USER')

@@ -2,7 +2,6 @@ from collector_base import AbstractCommitCollector
 import logging
 import pelorus
 import requests
-import json
 
 
 class GitHubCommitCollector(AbstractCommitCollector):
