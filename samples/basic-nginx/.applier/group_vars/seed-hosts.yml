@@ -1,0 +1,36 @@
+source_code_url: https://github.com/konveyor/pelorus.git
+source_code_ref: master
+skip_manual_promotion: false
+
+openshift_cluster_content:
+- object: projectrequest
+  content:
+  - name: basic-nginx-spaces
+    file: "{{ inventory_dir }}/../.openshift/projects/projects.yml"
+    action: create
+- object: deployments
+  content:
+  - name: jenkins
+    namespace: basic-nginx-build
+    template: openshift//jenkins-ephemeral
+  - name: basic-nginx-dev
+    template: "{{ inventory_dir }}/../.openshift/deployment/template.yml"
+    params: "{{ inventory_dir }}/../.openshift/deployment/dev/params"
+  - name: basic-nginx-stage
+    template: "{{ inventory_dir }}/../.openshift/deployment/template.yml"
+    params: "{{ inventory_dir }}/../.openshift/deployment/stage/params"
+  - name: basic-nginx-prod
+    template: "{{ inventory_dir }}/../.openshift/deployment/template.yml"
+    params: "{{ inventory_dir }}/../.openshift/deployment/prod/params"
+  - name: pelorus-rolebinding
+    template: "{{ inventory_dir }}/../.openshift/rolebinding/template.yml"
+    params: "{{ inventory_dir }}/../.openshift/rolebinding/pelorus/params"
+- object: builds
+  content:
+  - name: jenkins
+    template: "{{ inventory_dir }}/../.openshift/builds/template.yml"
+    params: "{{ inventory_dir }}/../.openshift/builds/params"
+    params_from_vars:
+      SOURCE_REPOSITORY_URL: "{{ source_code_url }}"
+      SOURCE_REPOSITORY_REF: "{{ source_code_ref }}"
+      SKIP_MANUAL_PROMOTION: "{{ skip_manual_promotion }}"

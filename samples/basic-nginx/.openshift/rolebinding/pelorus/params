@@ -1,0 +1,4 @@
+APPLICATION_NAME=basic-nginx
+ENV=pelorus
+SA_NAME=jenkins
+SA_NAMESPACE=basic-nginx-build

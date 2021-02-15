@@ -1,0 +1,147 @@
+library identifier: "pipeline-library@1.6",
+retriever: modernSCM(
+  [
+    $class: "GitSCMSource",
+    remote: "https://github.com/redhat-cop/pipeline-library.git"
+  ]
+)
+
+
+openshift.withCluster() {
+  env.APP_NAME = "${JOB_NAME}".replaceAll(/-build.*/, '')
+  env.ARTIFACT_DIRECTORY = "samples/basic-nginx/build"
+  env.BUILD = openshift.project()
+  env.DEV = "${APP_NAME}-dev"
+  env.STAGE = "${APP_NAME}-stage"
+  env.PROD = "${APP_NAME}-prod"
+  env.PELORUS = "pelorus"
+  env.WEBHOOK_APP_NAME = "build-webhook"
+  echo "Starting Pipeline for ${APP_NAME}..."
+}
+
+pipeline {
+  agent {
+    label 'maven'
+  }
+
+  stages {
+    
+    stage('Git Checkout') {
+      steps {
+        git url: "${SOURCE_REPOSITORY_URL}", branch: "${SOURCE_REPOSITORY_REF}"
+        sh "echo ${GIT_COMMIT}"
+      }
+    }
+
+    stage('Build') {
+      steps {
+        script {
+          sh """
+              cd samples/basic-nginx
+              mkdir build
+              cp index.html build/index.html
+              cp nginx.conf build/nginx.conf
+            """
+        }
+      }
+    }
+
+    stage('Image Build') {
+      steps {
+        binaryBuild(projectName: "${BUILD}", buildConfigName: "${APP_NAME}", buildFromPath: "${ARTIFACT_DIRECTORY}")
+      }
+    }
+
+    stage('Send Data to Pelorus') {
+      steps {
+        script {
+          openshift.withCluster() {
+            openshift.withProject("${env.BUILD}") {
+              def image = openshift.selector("imagestream/${env.APP_NAME}").object()
+              env.IMAGE_SHA = image.status.tags[0].items[0].image
+            }
+            openshift.withProject("${env.PELORUS}") {
+              def route = openshift.selector("route/${env.WEBHOOK_APP_NAME}").object()
+              env.WEBHOOK_ROUTE = route.spec.host
+
+              def webhook_secret = openshift.selector("secret/${env.WEBHOOK_APP_NAME}").object()
+              env.WEBHOOK_SECRET = sh(script: "echo ${webhook_secret.data.WEBHOOK_SECRET} | base64 --decode", returnStdout: true).trim()
+            }
+          }
+        }
+        script {
+          echo "printing image sha"
+          echo "${env.IMAGE_SHA}"
+        }
+        sh """
+        echo "running curl command"
+        curl --request POST 'http://${env.WEBHOOK_ROUTE}/post/build' \
+        --header 'Authorization: Bearer ${env.WEBHOOK_SECRET}' \
+        --header 'Content-Type: application/json' \
+        --data-raw '{"app": "${env.APP_NAME}", 
+        "commit":"${env.GIT_COMMIT}", 
+        "image_sha":"${env.IMAGE_SHA}", 
+        "git_provider": "github", 
+        "repo":"${SOURCE_REPOSITORY_URL}", 
+        "branch":"${SOURCE_REPOSITORY_REF}"}'
+        """
+      }
+    }
+
+    stage('Promote from Build to Dev') {
+      steps {
+        tagImage(sourceImageName: env.APP_NAME, sourceImagePath: env.BUILD, toImagePath: env.DEV)
+      }
+    }
+
+    stage('Verify Deployment to Dev') {
+      steps {
+        verifyDeployment(projectName: env.DEV, targetApp: env.APP_NAME)
+      }
+    }
+
+    stage('Promotion gate (Stage)') {
+      steps {
+        script {
+	  if(!("${SKIP_MANUAL_PROMOTION}").toBoolean()) {
+            input message: 'Promote Application to Stage?'
+          }
+        }
+      }
+    }
+
+    stage('Promote from Dev to Stage') {
+      steps {
+        tagImage(sourceImageName: env.APP_NAME, sourceImagePath: env.DEV, toImagePath: env.STAGE)
+      }
+    }
+
+    stage('Verify Deployment to Stage') {
+      steps {
+        verifyDeployment(projectName: env.STAGE, targetApp: env.APP_NAME)
+      }
+    }
+
+    stage('Promotion gate (Prod)') {
+      steps {
+        script {
+          if(!("${SKIP_MANUAL_PROMOTION}").toBoolean()) {
+            input message: 'Promote Application to Prod?'
+          }
+        }
+      }
+    }
+
+    stage('Promote from Stage to Prod') {
+      steps {
+        tagImage(sourceImageName: env.APP_NAME, sourceImagePath: env.STAGE, toImagePath: env.PROD)
+      }
+    }
+
+    stage('Verify Deployment to Prod') {
+      steps {
+        verifyDeployment(projectName: env.PROD, targetApp: env.APP_NAME)
+      }
+    }
+  }
+}
