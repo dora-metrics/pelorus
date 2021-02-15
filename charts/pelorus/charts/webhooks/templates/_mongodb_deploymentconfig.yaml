@@ -19,7 +19,7 @@ spec:
         name: "mongodb-{{ .app_name }}"
     spec:
       containers:
-      - capabilities: {}
+      - name: mongodb
         env:
         - name: MONGODB_USER
           valueFrom:
@@ -41,14 +41,12 @@ spec:
             secretKeyRef:
               key: MONGODB_DATABASE
               name: "mongodb-{{ .app_name }}"
-        image: ' '
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         livenessProbe:
           initialDelaySeconds: 30
           tcpSocket:
             port: 27017
           timeoutSeconds: 1
-        name: mongodb
         ports:
         - containerPort: 27017
           protocol: TCP
@@ -65,15 +63,9 @@ spec:
         resources:
           limits:
             memory: {{ .mongodb.memory_limit }}
-        securityContext:
-          capabilities: {}
-          privileged: false
-        terminationMessagePath: /dev/termination-log
         volumeMounts:
         - mountPath: /var/lib/mongodb/data
           name: "mongodb-{{ .app_name }}-data"
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
       volumes:
       - emptyDir:
           medium: ""
@@ -90,5 +82,4 @@ spec:
       lastTriggeredImage: ""
     type: ImageChange
   - type: ConfigChange
-status: {}
 {{- end }}
