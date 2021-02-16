@@ -2,4 +2,4 @@ instances:
 - app_name: build-webhook
   source_context_dir: webhooks/
   source_ref: master
-  source_url: https://github.com/redhat-cop/pelorus.git
+  source_url: https://github.com/konveyor/pelorus.git

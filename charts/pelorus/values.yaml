@@ -27,7 +27,7 @@ exporters:
     - name: LOG_LEVEL
       value: DEBUG
     source_ref: master
-    source_url: https://github.com/redhat-cop/pelorus.git
+    source_url: https://github.com/konveyor/pelorus.git
   - app_name: committime-generic
     env_from_secrets:
     - github-secret
@@ -39,7 +39,7 @@ exporters:
     - name: LOG_LEVEL
       value: DEBUG
     source_ref: master
-    source_url: https://github.com/redhat-cop/pelorus.git
+    source_url: https://github.com/konveyor/pelorus.git
 
 webhooks:
   instances:
@@ -51,7 +51,7 @@ webhooks:
     - name: LOG_LEVEL
       value: DEBUG
     source_ref: master
-    source_url: https://github.com/redhat-cop/pelorus.git
+    source_url: https://github.com/konveyor/pelorus.git
     mongodb:
       namespace: openshift
       imagestream: "mongodb:3.6"
