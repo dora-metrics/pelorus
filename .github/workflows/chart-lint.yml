@@ -11,9 +11,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v1
-    
+
       - name: Lint Helm charts
         uses: helm/chart-testing-action@v1.0.0-rc.2
         with:
+          version: 3.5.2
           command: lint
           config: ct.yaml

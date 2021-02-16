@@ -19,3 +19,9 @@ version: 1.2.12
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application.
 appVersion: 1.2.2+13.g8d66bdd
+
+dependencies:
+  - name: webhooks
+    version: v1.1.1
+  - name: exporters
+    version: v1.1.1
