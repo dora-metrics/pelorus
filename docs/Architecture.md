@@ -34,3 +34,4 @@ An [exporter](https://prometheus.io/docs/instrumenting/exporters/) is a Promethe
 In production environments, Pelorus will typically need to be installed across multiple kubernetes clusters. In most cases, the two clusters that matter are the "Development" cluster (where builds are happening)
 
 ![Pelorus Multi-Cluster Architecture](img/multi-cluster_architecture.png)
+

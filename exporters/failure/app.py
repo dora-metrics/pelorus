@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 from collector_jira import JiraFailureCollector
+from collector_servicenow import ServiceNowFailureCollector
 import os
 import logging
 import pelorus
@@ -16,6 +17,8 @@ class TrackerFactory:
     def getCollector(username, token, tracker_api, project, tracker_provider):
         if tracker_provider == "jira":
             return JiraFailureCollector(username, token, tracker_api)
+        if tracker_provider == "servicenow":
+            return ServiceNowFailureCollector(username, token, tracker_api)
 
 
 if __name__ == "__main__":
@@ -27,7 +30,7 @@ if __name__ == "__main__":
     username = os.environ.get('USER')
     token = os.environ.get('TOKEN')
     tracker_api = os.environ.get('SERVER')
-    tracker_provider = os.environ.get('TRACKER_PROVIDER', pelorus.DEFAULT_TRACKER)
+    tracker_provider = os.environ.get('PROVIDER', pelorus.DEFAULT_TRACKER)
     logging.info("Server: " + tracker_api)
     logging.info("User: " + username)
     start_http_server(8080)

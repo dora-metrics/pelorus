@@ -29,6 +29,194 @@ spec:
     "links": [],
     "panels": [
         {
+        "content": "\n# Software Delivery Performance\n\n\n",
+        "datasource": null,
+        "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 0
+        },
+        "id": 79,
+        "mode": "markdown",
+        "options": {},
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "",
+        "type": "text"
+        },
+        {
+        "cacheTimeout": null,
+        "colorBackground": true,
+        "colorPostfix": false,
+        "colorValue": false,
+        "colors": [
+            "#d44a3a",
+            "rgba(237, 129, 40, 0.89)",
+            "#299c46"
+        ],
+        "datasource": "prometheus",
+        "decimals": 2,
+        "format": "percentunit",
+        "gauge": {
+            "maxValue": 100,
+            "minValue": 0,
+            "show": false,
+            "thresholdLabels": false,
+            "thresholdMarkers": true
+        },
+        "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 2
+        },
+        "id": 75,
+        "interval": null,
+        "links": [],
+        "mappingType": 1,
+        "mappingTypes": [
+            {
+            "name": "value to text",
+            "value": 1
+            },
+            {
+            "name": "range to text",
+            "value": 2
+            }
+        ],
+        "maxDataPoints": 100,
+        "nullPointMode": "connected",
+        "nullText": null,
+        "options": {},
+        "postfix": "",
+        "postfixFontSize": "50%",
+        "prefix": "",
+        "prefixFontSize": "50%",
+        "rangeMaps": [
+            {
+            "from": "null",
+            "text": "N/A",
+            "to": "null"
+            }
+        ],
+        "sparkline": {
+            "fillColor": "rgba(31, 118, 189, 0.18)",
+            "full": true,
+            "lineColor": "rgb(31, 120, 193)",
+            "show": true,
+            "ymax": null,
+            "ymin": null
+        },
+        "tableColumn": "",
+        "targets": [
+            {
+            "expr": "( 0\n- ( 2 * ((sdp:lead_time:global) - (sdp:lead_time:global offset $__range)) / (sdp:lead_time:global offset $__range) or vector(0) )\n+ ( 2 * (count (count_over_time (deploy_timestamp [$__range]) ) - count (count_over_time (deploy_timestamp [$__range] offset $__range) ) ) / count (count_over_time (deploy_timestamp [$__range] offset $__range) ) or vector(0) )\n- ( 2 * ((sdp:time_to_restore:global ) - (sdp:time_to_restore:global  offset $__range)) / (sdp:time_to_restore:global  offset $__range) or vector(0) ) \n- ( ((avg_over_time(sdp:change_failure_rate:global [$__range])) - (avg_over_time(sdp:change_failure_rate:global [$__range] offset $__range) ) ) / (avg_over_time(sdp:change_failure_rate:global [$__range] offset $__range) ) or vector(0) )\n) / 7",
+            "refId": "A"
+            }
+        ],
+        "thresholds": ".01,-.01",
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Software Delivery Performance Score",
+        "type": "singlestat",
+        "valueFontSize": "80%",
+        "valueMaps": [
+            {
+            "op": "=",
+            "text": "N/A",
+            "value": "null"
+            }
+        ],
+        "valueName": "current"
+        },
+        {
+        "aliasColors": {},
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "prometheus",
+        "fill": 1,
+        "fillGradient": 0,
+        "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 2
+        },
+        "hiddenSeries": false,
+        "id": 77,
+        "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "nullPointMode": "null",
+        "options": {
+            "dataLinks": []
+        },
+        "percentage": false,
+        "pointradius": 2,
+        "points": false,
+        "renderer": "flot",
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+            {
+            "expr": "( 0\n- ( 2 * ((sdp:lead_time:global) - (sdp:lead_time:global offset $__range)) / (sdp:lead_time:global offset $__range) or vector(0) )\n+ ( 2 * (count (count_over_time (deploy_timestamp [$__range]) ) - count (count_over_time (deploy_timestamp [$__range] offset $__range) ) ) / count (count_over_time (deploy_timestamp [$__range] offset $__range) ) or vector(0) )\n- ( 2 * ((sdp:time_to_restore:global ) - (sdp:time_to_restore:global  offset $__range)) / (sdp:time_to_restore:global  offset $__range) or vector(0) ) \n- ( ((avg_over_time(sdp:change_failure_rate:global [$__range])) - (avg_over_time(sdp:change_failure_rate:global [$__range] offset $__range) ) ) / (avg_over_time(sdp:change_failure_rate:global [$__range] offset $__range) ) or vector(0) )\n) / 7",
+            "refId": "A"
+            }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeRegions": [],
+        "timeShift": null,
+        "title": "Software Delivery Performance Over Time",
+        "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+        },
+        "yaxes": [
+            {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+            },
+            {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+            }
+        ],
+        "yaxis": {
+            "align": false,
+            "alignLevel": null
+        }
+        },
+        {
         "content": "# Lead Time for Change",
         "datasource": null,
         "description": "Lead Time for Change: The time it takes to move from code commited to code deployed in production.",
@@ -36,7 +224,7 @@ spec:
             "h": 2,
             "w": 6,
             "x": 0,
-            "y": 0
+            "y": 7
         },
         "id": 39,
         "links": [],
@@ -52,7 +240,7 @@ spec:
             "h": 2,
             "w": 6,
             "x": 6,
-            "y": 0
+            "y": 7
         },
         "id": 40,
         "links": [],
@@ -68,7 +256,7 @@ spec:
             "h": 2,
             "w": 6,
             "x": 12,
-            "y": 0
+            "y": 7
         },
         "id": 41,
         "links": [],
@@ -84,7 +272,7 @@ spec:
             "h": 2,
             "w": 6,
             "x": 18,
-            "y": 0
+            "y": 7
         },
         "id": 42,
         "links": [],
@@ -115,7 +303,7 @@ spec:
             "h": 4,
             "w": 3,
             "x": 0,
-            "y": 2
+            "y": 9
         },
         "id": 45,
         "interval": null,
@@ -201,7 +389,7 @@ spec:
             "h": 4,
             "w": 3,
             "x": 3,
-            "y": 2
+            "y": 9
         },
         "id": 54,
         "interval": null,
@@ -247,7 +435,7 @@ spec:
             "refId": "A"
             }
         ],
-        "thresholds": "0,.01",
+        "thresholds": "-.05,.05",
         "title": "Change since last interval",
         "type": "singlestat",
         "valueFontSize": "80%",
@@ -283,7 +471,7 @@ spec:
             "h": 4,
             "w": 3,
             "x": 6,
-            "y": 2
+            "y": 9
         },
         "id": 44,
         "interval": null,
@@ -367,7 +555,7 @@ spec:
             "h": 4,
             "w": 3,
             "x": 9,
-            "y": 2
+            "y": 9
         },
         "id": 37,
         "interval": null,
@@ -419,7 +607,7 @@ spec:
             "refId": "A"
             }
         ],
-        "thresholds": "0,.1",
+        "thresholds": "-.05,.05",
         "title": "Change since last interval",
         "type": "singlestat",
         "valueFontSize": "80%",
@@ -454,7 +642,7 @@ spec:
             "h": 4,
             "w": 3,
             "x": 12,
-            "y": 2
+            "y": 9
         },
         "id": 47,
         "interval": null,
@@ -537,7 +725,7 @@ spec:
             "h": 4,
             "w": 3,
             "x": 15,
-            "y": 2
+            "y": 9
         },
         "id": 49,
         "interval": null,
@@ -589,7 +777,7 @@ spec:
             "refId": "A"
             }
         ],
-        "thresholds": "0,.01",
+        "thresholds": "-.05,.05",
         "timeFrom": null,
         "timeShift": null,
         "title": "Change since last interval",
@@ -627,7 +815,7 @@ spec:
             "h": 4,
             "w": 3,
             "x": 18,
-            "y": 2
+            "y": 9
         },
         "id": 48,
         "interval": null,
@@ -710,7 +898,7 @@ spec:
             "h": 4,
             "w": 3,
             "x": 21,
-            "y": 2
+            "y": 9
         },
         "id": 60,
         "interval": null,
@@ -775,7 +963,7 @@ spec:
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 6
+            "y": 13
         },
         "hiddenSeries": false,
         "id": 52,
@@ -864,7 +1052,7 @@ spec:
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 6
+            "y": 13
         },
         "hiddenSeries": false,
         "id": 62,
@@ -950,7 +1138,7 @@ spec:
             "h": 6,
             "w": 6,
             "x": 12,
-            "y": 6
+            "y": 13
         },
         "hiddenSeries": false,
         "id": 65,
@@ -1037,7 +1225,7 @@ spec:
             "h": 6,
             "w": 6,
             "x": 18,
-            "y": 6
+            "y": 13
         },
         "hiddenSeries": false,
         "id": 56,
@@ -1122,7 +1310,7 @@ spec:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 12
+            "y": 19
         },
         "id": 67,
         "options": {},
@@ -1201,7 +1389,6 @@ spec:
         "type": "table"
         },
         {
-        "datasource": "prometheus",
         "cacheTimeout": null,
         "colorBackground": false,
         "colorValue": false,
@@ -1210,6 +1397,7 @@ spec:
             "rgba(237, 129, 40, 0.89)",
             "#d44a3a"
         ],
+        "datasource": "prometheus",
         "description": "This is the number of commits that are currently not being taken into account in the measures above because of missing information.",
         "format": "none",
         "gauge": {
@@ -1223,7 +1411,7 @@ spec:
             "h": 4,
             "w": 6,
             "x": 0,
-            "y": 19
+            "y": 26
         },
         "id": 71,
         "interval": null,
@@ -1285,7 +1473,6 @@ spec:
         "valueName": "avg"
         },
         {
-        "datasource": "prometheus",
         "cacheTimeout": null,
         "colorBackground": false,
         "colorPrefix": false,
@@ -1295,6 +1482,7 @@ spec:
             "rgba(237, 129, 40, 0.89)",
             "#d44a3a"
         ],
+        "datasource": "prometheus",
         "description": "This is the number of deployments that are currently not being taken into account in the measures above because of missing information.",
         "format": "none",
         "gauge": {
@@ -1308,7 +1496,7 @@ spec:
             "h": 4,
             "w": 6,
             "x": 6,
-            "y": 19
+            "y": 26
         },
         "id": 69,
         "interval": null,
@@ -1370,40 +1558,33 @@ spec:
         "valueName": "avg"
         },
         {
+        "cacheTimeout": null,
+        "colorBackground": false,
+        "colorValue": false,
+        "colors": [
+            "#299c46",
+            "rgba(237, 129, 40, 0.89)",
+            "#d44a3a"
+        ],
         "datasource": "prometheus",
-        "type": "singlestat",
-        "title": "Unknown Issues",
+        "format": "none",
+        "gauge": {
+            "maxValue": 100,
+            "minValue": 0,
+            "show": false,
+            "thresholdLabels": false,
+            "thresholdMarkers": true
+        },
         "gridPos": {
-            "x": 12,
-            "y": 19,
+            "h": 4,
             "w": 6,
-            "h": 4
+            "x": 12,
+            "y": 26
         },
         "id": 73,
-        "targets": [
-            {
-            "refId": "A",
-            "expr": "count(failure_creation_timestamp{app=\"unknown\"})"
-            }
-        ],
-        "timeFrom": null,
-        "timeShift": null,
-        "options": {},
-        "links": [],
-        "maxDataPoints": 100,
         "interval": null,
-        "cacheTimeout": null,
-        "format": "none",
-        "prefix": "",
-        "postfix": "",
-        "nullText": null,
-        "valueMaps": [
-            {
-            "value": "null",
-            "op": "=",
-            "text": "N/A"
-            }
-        ],
+        "links": [],
+        "mappingType": 1,
         "mappingTypes": [
             {
             "name": "value to text",
@@ -1414,49 +1595,56 @@ spec:
             "value": 2
             }
         ],
+        "maxDataPoints": 100,
+        "nullPointMode": "connected",
+        "nullText": null,
+        "options": {},
+        "postfix": "",
+        "postfixFontSize": "50%",
+        "prefix": "",
+        "prefixFontSize": "50%",
         "rangeMaps": [
             {
             "from": "null",
-            "to": "null",
-            "text": "N/A"
+            "text": "N/A",
+            "to": "null"
             }
         ],
-        "mappingType": 1,
-        "nullPointMode": "connected",
-        "valueName": "avg",
-        "prefixFontSize": "50%",
-        "valueFontSize": "80%",
-        "postfixFontSize": "50%",
-        "thresholds": "",
-        "colorBackground": false,
-        "colorValue": false,
-        "colors": [
-            "#299c46",
-            "rgba(237, 129, 40, 0.89)",
-            "#d44a3a"
-        ],
         "sparkline": {
-            "show": true,
+            "fillColor": "rgba(31, 118, 189, 0.18)",
             "full": false,
-            "ymin": null,
-            "ymax": null,
             "lineColor": "rgb(31, 120, 193)",
-            "fillColor": "rgba(31, 118, 189, 0.18)"
+            "show": true,
+            "ymax": null,
+            "ymin": null
         },
-        "gauge": {
-            "show": false,
-            "minValue": 0,
-            "maxValue": 100,
-            "thresholdMarkers": true,
-            "thresholdLabels": false
-        },
-        "tableColumn": ""
+        "tableColumn": "",
+        "targets": [
+            {
+            "expr": "count(failure_creation_timestamp{app=\"unknown\"})",
+            "refId": "A"
+            }
+        ],
+        "thresholds": "",
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Unknown Issues",
+        "type": "singlestat",
+        "valueFontSize": "80%",
+        "valueMaps": [
+            {
+            "op": "=",
+            "text": "N/A",
+            "value": "null"
+            }
+        ],
+        "valueName": "avg"
         }
     ],
-    "refresh": false,
+    "refresh": "30s",
     "schemaVersion": 21,
-    "style": "dark",
-    "tags": [],
+    "style": "light",
+    "tags": ["global", "software-delivery-performance"],
     "templating": {
         "list": []
     },
@@ -1491,6 +1679,6 @@ spec:
     },
     "timezone": "",
     "title": "Software Delivery Performance",
-    "uid": "b8cd6c1f7b2f2fd98a40083345b4ad7e",
+    "uid": "sdp-global",
     "version": 3
     }

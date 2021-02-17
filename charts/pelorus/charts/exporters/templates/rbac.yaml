@@ -37,8 +37,10 @@ rules:
   - build.openshift.io
   resources:
   - builds
+  - buildconfigs
   verbs:
   - list
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

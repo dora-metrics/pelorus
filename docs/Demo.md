@@ -39,6 +39,12 @@ The second argument the script takes is the url of the forked repo, so for examp
 An "idle" state could resemble:
 ![Idle-Data](img/pelorus-dashboard-idle-data.png)
 
+    >:mag: **Note**<br/>
+    >Dashboard can be found by going to grafana which url can found with:
+    >`oc get route grafana-route -o json | jq -r '.spec.host'`
+    >
+    > And navigating Home(top left) -> pelorus -> Softare Delivery Performance
+
 Run the demo script
 ``` 
 pelorus/demo/demo.sh <path to container-pipelines> <url to forked repo>

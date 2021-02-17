@@ -21,3 +21,16 @@ Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift clust
 ![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
 
 A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg).
+
+## Prior Knowledge
+
+In order to be successful deploying, managing and consuming Pelorus, the following prior knowledge is required:
+
+* Understanding of Software Development Life Cycle.
+* Understanding of [Kubernetes Operators](https://www.redhat.com/en/topics/containers/what-is-a-kubernetes-operator).
+* Understanding of [helm](https://helm.sh/).
+* Understanding of source version control systems: [Git](https://git-scm.com/).
+* Understanding of [OpenShift Builds](https://docs.openshift.com/container-platform/4.6/builds/understanding-image-builds.html) and [Pipelines](https://www.openshift.com/blog/jenkins-pipelines).
+* OpenShift administrator knowledge & permissions.
+* Understanding of Cloud Native monitoring tools: [Prometheus & Prometheus Exporters](https://prometheus.io/), [Thanos](https://thanos.io/) and [Grafana](https://grafana.com/).
+* Understanding of software development project tracking tools: [Jira](https://www.atlassian.com/software/jira).
