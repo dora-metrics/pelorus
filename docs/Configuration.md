@@ -23,6 +23,7 @@ An _exporter_ is a data collection application that pulls data from various tool
 
 Exporters can be deployed and configured via a list of `exporters.instances` inside the `values.yaml` file. Some exporters also require secrets to be created when integrating with external tools and platforms. A sample exporter configuration may look like this:
 
+
 ```
 exporters:
   instances:
