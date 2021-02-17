@@ -23,7 +23,5 @@ appVersion: 1.2.2+13.g8d66bdd
 dependencies:
   - name: webhooks
     version: v1.1.1
-    repository: file://./subcharts/webhooks
   - name: exporters
     version: v1.1.1
-    repository: file://./subcharts/exporters
