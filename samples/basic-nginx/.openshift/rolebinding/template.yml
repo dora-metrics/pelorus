@@ -1,0 +1,48 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  template: rolebinding-template
+metadata:
+  annotations:
+    description: rolebinding-template
+  name: rolebinding-template
+objects:
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    creationTimestamp: null
+    labels:
+      app.kubernetes.io/name: ${APPLICATION_NAME}
+      app.kubernetes.io/instance: ${APPLICATION_NAME}
+      app.kubernetes.io/component: api
+      app.kubernetes.io/part-of: ${APPLICATION_NAME}
+      app.kubernetes.io/managed-by: applier
+    name: jenkins_edit
+    namespace: ${ENV}
+  groupNames: null
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: edit
+  subjects:
+  - kind: ServiceAccount
+    name: ${SA_NAME}
+    namespace: ${SA_NAMESPACE}
+  userNames:
+  - system:serviceaccount:${SA_NAMESPACE}:${SA_NAME}
+parameters:
+- description: The name for the application.
+  name: APPLICATION_NAME
+  required: true
+  value: nginx-app
+- description: The environment
+  name: ENV
+  required: true
+- description: Name of a service account that can deploy to this project
+  name: SA_NAME
+  required: true
+  value: jenkins
+- description: Namespace of service account that can deploy to this project
+  name: SA_NAMESPACE
+  required: true
+  value: basic-nginx-build
