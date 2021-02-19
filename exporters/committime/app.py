@@ -12,7 +12,7 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 from pymongo import MongoClient
 
-REQUIRED_CONFIG = ['GIT_USER', 'GIT_TOKEN']
+REQUIRED_CONFIG = ['GIT_USER', 'GIT_TOKEN', 'PROVIDER']
 
 
 class GitFactory:
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     dyn_client = DynamicClient(k8s_client)
 
     db = None
-    if os.environ.get('MONGODB_DATABASE'):
+    if os.environ.get('PROVIDER') == "webhook":
         if pelorus.missing_configs(['MONGODB_USER', 'MONGODB_PASSWORD', 'MONGODB_SERVICE_HOST', 'MONGODB_DATABASE']):
             print("Missing configs for Mongo; exiting...")
             sys.exit(1)
