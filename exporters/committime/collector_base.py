@@ -58,7 +58,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                                                           build['image_sha'],
                                                           build['repo'],
                                                           build['branch']))
-            print('metrics generatred')
+            print('metrics generated')
             print(metrics)
             return metrics
 
@@ -194,7 +194,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.repo_url = repo_url
             metric.build_name = app
             metric.build_config_name = app
-            metric.namespace = None
+            metric.namespace = "webhook"
             metric.labels = None
             metric.commit_hash = commit_sha
             metric.name = app
