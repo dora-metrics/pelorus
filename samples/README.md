@@ -4,7 +4,7 @@
 
 1. Fork [this repo](https://github.com/konveyor/pelorus)
 2. Run `oc create namespace pelorus`
-3. Create a GitHub Personal Access Token and store it as a secret in OCP: 
+3. Create a GitHub Personal Access Token and store it as a secret in OCP:
 ```
 oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --namespace pelorus
 ```
@@ -31,9 +31,11 @@ exporters:
     source_context_dir: exporters/
     extraEnv:
     - name: APP_FILE
-      value: genericexporter/app.py
+      value: committime/app.py
     - name: LOG_LEVEL
       value: DEBUG
+    - name: PROVIDER
+      value: webhook
     source_ref: master
     source_url: https://github.com/konveyor/pelorus.git
 
@@ -56,7 +58,7 @@ webhooks:
 6. Run `helm install pelorus charts/pelorus --namespace pelorus`
 7. Run `cd samples/basic-nginx`
 8. Run `ansible-galaxy install -r requirements.yml --roles-path=galaxy`
-9. Run `ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e skip_manual_promotion=true -e source_code_url=<YOUR REPO>`
+9. Run `ansible-playbook -i ./.applier/ galaxy/openshift-applier/playbooks/openshift-cluster-seed.yml -e skip_manual_promotion=true -e source_code_url=<YOUR REPO> -e source_code_ref=<YOUR_GIT_REF>`
 10. View the Pelorus dashboard to see the metrics for the app.
 11. You can continue to make commits to your fork to update the nginx app (for example, make an update to the `index.html` file in `samples/basic-nginx` and push the update to your fork). From there, run `oc start-build basic-nginx-pipeline -n basic-nginx-build` to start the pipeline and see the metrics and app update.
 12. You can make updates to the values.yaml file and then run: `helm upgrade pelorus charts/deploy --namespace pelorus`. You should see that the generated secrets (mongodb secret and webhook secret) should not change from the initial installation.

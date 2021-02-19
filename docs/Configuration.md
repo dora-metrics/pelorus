@@ -107,6 +107,7 @@ This exporter provides several configuration options, passed via environment var
 |---|---|---|---|
 | `GIT_USER` | yes | User's github username | unset |
 | `GIT_TOKEN` | yes | User's Github API Token | unset |
+| PROVIDER | yes | Metric import provider | unset |
 | `GIT_API` | no | Github API FQDN.  This allows the override for Github Enterprise users.  Currently only applicable to `github` provider type. | `api.github.com` |
 | `GIT_PROVIDER` | no | Set Git provider type. Can be `github`, `gitlab`, or `bitbucket` | `github` |
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
@@ -117,6 +118,8 @@ This exporter provides several configuration options, passed via environment var
 | DEPRECATED `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
 
 #### Webhook exporter (Commit Time)
+
+**To enable, set the PROVIDER environment variable to "webhook".**
 
 The Webhook exporter is responsible for collecting the following metric from an associated webhook/mongodb instance:
 

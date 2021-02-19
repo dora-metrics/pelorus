@@ -147,3 +147,7 @@ policy/
 # BATS
 _test/test_helper/
 _test/prometheus/rules.yaml
+
+# Helm stuff to ignore
+Chart.lock
+charts/pelorus/charts/

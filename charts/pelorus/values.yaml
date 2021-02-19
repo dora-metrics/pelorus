@@ -35,9 +35,11 @@ exporters:
     source_context_dir: exporters/
     extraEnv:
     - name: APP_FILE
-      value: genericexporter/app.py
+      value: committime/app.py
     - name: LOG_LEVEL
       value: DEBUG
+    - name: PROVIDER
+      value: "webhook"
     source_ref: master
     source_url: https://github.com/konveyor/pelorus.git
 
