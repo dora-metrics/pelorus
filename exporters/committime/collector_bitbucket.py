@@ -20,8 +20,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
     # Default http headers needed for API calls
     DEFAULT_HEADERS = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 
-    def __init__(self, kube_client, username, token, namespaces, apps):
-        super().__init__(kube_client, username, token, namespaces, apps, 'BitBucket', '%Y-%m-%dT%H:%M:%S%z')
+    def __init__(self, kube_client, username, token, namespaces, apps, db=None):
+        super().__init__(kube_client, username, token, namespaces, apps, 'BitBucket', '%Y-%m-%dT%H:%M:%S%z', None, db)
         self.__server_dict = {}
         self.__session = requests.Session()
 

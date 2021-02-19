@@ -9,8 +9,8 @@ from collector_base import AbstractCommitCollector
 
 class GitLabCommitCollector(AbstractCommitCollector):
 
-    def __init__(self, kube_client, username, token, namespaces, apps):
-        super().__init__(kube_client, username, token, namespaces, apps, 'GitLab', '%Y-%m-%dT%H:%M:%S.%f%z')
+    def __init__(self, kube_client, username, token, namespaces, apps, db):
+        super().__init__(kube_client, username, token, namespaces, apps, 'GitLab', '%Y-%m-%dT%H:%M:%S.%f%z', None, db=None)
 
     # base class impl
     def get_commit_time(self, metric):

@@ -14,7 +14,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, kube_client, username, token, namespaces, apps, collector_name, timedate_format, git_api=None):
+    def __init__(self, kube_client, username, token, namespaces, apps, collector_name, timedate_format, git_api=None, db=None):
         """Constructor"""
         self._kube_client = kube_client
         self._username = username
@@ -25,6 +25,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self._commit_dict = {}
         self._timedate_format = timedate_format
         self._collector_name = collector_name
+        self._db = db
         logging.info("=====Using %s Collector=====" % (self._collector_name))
 
     def collect(self):
@@ -48,6 +49,19 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     def generate_metrics(self):
         """Method called by the collect to create a list of metrics to publish"""
         # This will loop and look at OCP builds (calls get_git_commit_time)
+        if self._db is not None:
+            metrics = []
+            for build in self._db.builds.find():
+                print(build)
+                metrics.append(self.get_metric_from_webhook(build['app']
+                                                          build['commit']
+                                                          build['image_sha']
+                                                          build['repo']
+                                                          build['branch']))
+            print('metrics generatred')
+            print(metrics)
+            return metrics
+
         if not self._namespaces:
             logging.info("No namespaces specified, watching all namespaces")
             v1_namespaces = self._kube_client.resources.get(api_version='v1', kind='Namespace')
@@ -171,6 +185,39 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         except Exception as e:
             logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
                             % (namespace, build.metadata.name, app))
+            logging.debug(e, exc_info=True)
+            return None
+
+    def get_metric_from_webhook(self, app, commit_sha, image_hash, repo_url, branch):
+        try:
+            metric = CommitMetric(app)
+            metric.repo_url = repo_url
+            metric.build_name = app
+            metric.build_config_name = app
+            metric.namespace = None
+            metric.labels = None
+            metric.commit_hash = commit_sha
+            metric.name = app
+            metric.commiter = None
+            metric.image_location = None
+            metric.image_hash = image_hash
+            #Check the cache for the commit_time, if not call the API
+            metric_ts = self._commit_dict.get(commit_sha)
+            if metric_ts is None:
+                logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
+                metric = self.get_commit_time(metric)
+                # If commit_time is None, then value could not be retrieved
+                if metric.commit_time is None:
+                    return None
+                # Add the timestamp to the cache
+                self._commit_dict[metric.commit_hash] = metric.commit_timestamp
+            else:
+                metric.commit_timestamp = self._commit_dict[commit_sha]
+                logging.debug("Returning sha: %s, commit_timestamp: %s, from cache." % (commit_sha, metric.commit_timestamp))
+
+            return metric
+
+        except Exception as e:
             logging.debug(e, exc_info=True)
             return None
 

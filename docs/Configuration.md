@@ -43,7 +43,7 @@ Additionally, you may want to deploy a single exporter multiple times to gather 
 exporters:
   instances:
   - app_name: committime-github
-    env_from_secrets: 
+    env_from_secrets:
     - github-credentials
     source_context_dir: exporters/
     extraEnv:
@@ -52,7 +52,7 @@ exporters:
     source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
   - app_name: committime-gh-enterprise
-    env_from_secrets: 
+    env_from_secrets:
     - github-enterprise-credentials
     source_context_dir: exporters/
     extraEnv:
@@ -68,7 +68,7 @@ Each exporter additionally takes a unique set of environment variables to furthe
 
 The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
 
-We require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label. 
+We require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label.
 
 Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issue or a pull request to add support for additional Git providers!
 
@@ -88,7 +88,7 @@ Create a secret containing your Git username, token, and API.  An API example is
 exporters:
   instances:
   - app_name: committime-exporter
-    env_from_secrets: 
+    env_from_secrets:
     - github-secret
     source_context_dir: exporters/
     extraEnv:
@@ -116,7 +116,27 @@ This exporter provides several configuration options, passed via environment var
 | DEPRECATED `GITHUB_TOKEN` | no | User's Github API Token | unset |
 | DEPRECATED `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
 
+#### Webhook exporter (Commit Time)
 
+The Webhook exporter is responsible for collecting the following metric from an associated webhook/mongodb instance:
+
+```
+commit_timestamp{app, commit_hash, image_sha} timestamp
+```
+
+Deploy an instance of a webhook/mongodb and post build information to the webhook as part of your build. From there, the generic exporter will retrieve the build information from the db and query the respective git provider to get the commit time associated with the build.
+
+Expected data model of build info sent to webhook/mongodb:
+```
+{"app": "APP NAME",
+"commit":"COMMIT HASH",
+"image_sha":"IMAGE HASH",
+"git_provider": "PROVIDER", (i.e. github, gitlab, bitbucket)
+"repo":"REPO URL",
+"branch":"REPO BRANCH"}
+```
+
+Be sure to provide the secret associated with the deployed webhook/mongodb instance so that the exporter can connect to mongodb. You will also need to provide a github secret that allows the exporter to reach out to the appropriate git provider.
 
 ### Deploy Time Exporter
 
@@ -134,7 +154,7 @@ This exporter provides several configuration options, passed via environment var
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `PROD_LABEL` | no | Changes the label key used to identify namespaces that are considered production environments. | unset; matches all namespaces |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-    
+
 ### Failure Time Exporter
 
 The job of the deploy time exporter is to capture the timestamp at which a failure occurs in a production environment and when it is resolved.
