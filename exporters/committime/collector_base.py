@@ -53,10 +53,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metrics = []
             for build in self._db.builds.find():
                 print(build)
-                metrics.append(self.get_metric_from_webhook(build['app']
-                                                          build['commit']
-                                                          build['image_sha']
-                                                          build['repo']
+                metrics.append(self.get_metric_from_webhook(build['app'],
+                                                          build['commit'],
+                                                          build['image_sha'],
+                                                          build['repo'],
                                                           build['branch']))
             print('metrics generatred')
             print(metrics)
