@@ -14,7 +14,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, kube_client, username, token, namespaces, apps, collector_name, timedate_format, git_api=None, db=None):
+    def __init__(self, kube_client, username, token, namespaces, apps,
+                 collector_name, timedate_format, git_api=None, db=None):
         """Constructor"""
         self._kube_client = kube_client
         self._username = username
@@ -54,10 +55,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             for build in self._db.builds.find():
                 print(build)
                 metrics.append(self.get_metric_from_webhook(build['app'],
-                                                          build['commit'],
-                                                          build['image_sha'],
-                                                          build['repo'],
-                                                          build['branch']))
+                                                            build['commit'],
+                                                            build['image_sha'],
+                                                            build['repo'],
+                                                            build['branch']))
             print('metrics generated')
             print(metrics)
             return metrics
@@ -201,7 +202,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.commiter = None
             metric.image_location = None
             metric.image_hash = image_hash
-            #Check the cache for the commit_time, if not call the API
+            # Check the cache for the commit_time, if not call the API
             metric_ts = self._commit_dict.get(commit_sha)
             if metric_ts is None:
                 logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
@@ -213,7 +214,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 self._commit_dict[metric.commit_hash] = metric.commit_timestamp
             else:
                 metric.commit_timestamp = self._commit_dict[commit_sha]
-                logging.debug("Returning sha: %s, commit_timestamp: %s, from cache." % (commit_sha, metric.commit_timestamp))
+                logging.debug("Returning sha: %s, commit_timestamp: %s, from cache."
+                              % (commit_sha, metric.commit_timestamp))
 
             return metric
 
