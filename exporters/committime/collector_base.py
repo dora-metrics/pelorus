@@ -95,8 +95,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 
-    # get_metrics_from_apps - expects a sorted array of build data sorted by app label
     def get_metrics_from_apps(self, apps, namespace):
+        """Expects a sorted array of build data sorted by app label"""
         metrics = []
         for app in apps:
 
@@ -106,17 +106,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # assume for now that there will only be one repo/branch per app
             # For jenkins pipelines, we need to grab the repo data
             # then find associated s2i/docker builds from which to pull commit & image data
-            repo_url = None
-            if jenkins_builds:
-                # we will default to the repo listed in '.spec.source.git'
-                repo_url = jenkins_builds[0].spec.source.git.uri
-
-                # however, in cases where the Jenkinsfile and source code are separate, we look for params
-                git_repo_regex = re.compile(r"(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
-                for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
-                    result = git_repo_regex.match(env.value)
-                    if result:
-                        repo_url = env.value
+            repo_url = self.get_repo_from_jenkins(jenkins_builds)
+            logging.debug("Repo URL for app %s is currently %s" % (app, repo_url))
 
             for build in code_builds:
                 try:
@@ -125,6 +116,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     logging.error("Cannot collect metrics from build: %s" % (build.metadata.name))
 
                 if metric:
+                    logging.debug("Adding metric for app %s" % app)
                     metrics.append(metric)
         return metrics
 
@@ -173,6 +165,31 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                             % (namespace, build.metadata.name, app))
             logging.debug(e, exc_info=True)
             return None
+
+    def get_repo_from_jenkins(self, jenkins_builds):
+        if jenkins_builds:
+            # First, check for cases where the source url is in pipeline params
+            git_repo_regex = re.compile(r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
+            for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
+                logging.debug("Searching %s=%s for git urls" % (env.name, env.value))
+                try:
+                    result = git_repo_regex.match(env.value)
+                except TypeError:
+                    result = None
+                if result:
+                    logging.debug("Found result %s" % env.name)
+                    return env.value
+
+            try:
+                # Then default to the repo listed in '.spec.source.git'
+                return jenkins_builds[0].spec.source.git.uri
+            except AttributeError:
+                logging.debug(
+                    "JenkinsPipelineStrategy build %s has no git repo configured. "
+                    % jenkins_builds[0].metadata.name
+                    + "Will check for source URLs in params."
+                    )
+        # If no repo is found, we will return None, which will be handled later on
 
     def _get_repo_from_build_config(self, build):
         """
