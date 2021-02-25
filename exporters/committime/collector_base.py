@@ -127,6 +127,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             if build.spec.source.git:
                 repo_url = build.spec.source.git.uri
+            else:
+                repo_url = self._get_repo_from_build_config(build)
+
             metric.repo_url = repo_url
             commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
@@ -187,6 +190,25 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     + "Will check for source URLs in params."
                     )
         # If no repo is found, we will return None, which will be handled later on
+
+    def _get_repo_from_build_config(self, build):
+        """
+        Determines the repository url from the parent BuildConfig that created the Build resource in case
+        the BuildConfig has the git uri but the Build does not
+        :param build: the Build resource
+        :return: repo_url as a str or None if not found
+        """
+        v1_build_configs = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='BuildConfig')
+        build_config = v1_build_configs.get(namespace=build.status.config.namespace,
+                                            name=build.status.config.name)
+        if build_config:
+            if build_config.spec.source.git:
+                git_uri = str(build_config.spec.source.git.uri)
+                if git_uri.endswith('.git'):
+                    return git_uri
+                else:
+                    return git_uri + '.git'
+
         return None
 
 
