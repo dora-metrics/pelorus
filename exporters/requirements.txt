@@ -1,6 +1,6 @@
 requests
 prometheus_client
-openshift
+openshift < 0.12
 jsonpath_ng
 jira
 pytz
