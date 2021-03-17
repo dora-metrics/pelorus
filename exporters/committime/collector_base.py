@@ -273,7 +273,6 @@ class CommitMetric:
     @property
     def git_server(self):
         """Returns the Git server FQDN with the protocol"""
-        logging.debug("Returns the Git server FQDN with the protocol: %s" % (self.__repo_protocol + '://' + self.__repo_fqdn))
         return str(self.__repo_protocol + '://' + self.__repo_fqdn)
 
     def __parse_repourl(self):

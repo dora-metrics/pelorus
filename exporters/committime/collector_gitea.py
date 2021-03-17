@@ -28,7 +28,6 @@ class GiteaCommitCollector(AbstractCommitCollector):
         session = requests.Session()
         session.verify = False
 
-        project_name = metric.repo_project
         git_server = metric.git_server
 
         if "github" in git_server or "bitbucket" in git_server or "gitlab" in git_server:
@@ -56,7 +55,8 @@ class GiteaCommitCollector(AbstractCommitCollector):
                 metric.commit_time = commit['commit']['committer']['date']
                 logging.info("metric.commit_time %s" % (str(metric.commit_time)[:19]))
                 logging.info("self._timedate_format %s" % (self._timedate_format))
-                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp((str(metric.commit_time)[:19]), self._timedate_format)
+                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
+                    (str(metric.commit_time)[:19]), self._timedate_format)
             except Exception:
                 logging.error("Failed processing commit time for build %s" % metric.build_name, exc_info=True)
                 logging.debug(commit)
