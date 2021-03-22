@@ -5,6 +5,7 @@ import logging
 import pelorus
 from collector_base import AbstractCommitCollector
 
+
 class AzureDevOpsCommitCollector(AbstractCommitCollector):
 
     def __init__(self, kube_client, username, token, namespaces, apps, git_api):
@@ -39,8 +40,8 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
 
         commit = git_client.get_commit(
             commit_id=metric.commit_hash, repository_id=metric.repo_project, project=metric.repo_project)
-        logging.debug("Commit %s" % ((commit.committer.date).isoformat("T","auto")))
-        if hasattr(commit,"innerExepction"):
+        logging.debug("Commit %s" % ((commit.committer.date).isoformat("T", "auto")))
+        if hasattr(commit, "innerExepction"):
             # This will occur when trying to make an API call to non-Github
             logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
                 metric.build_name, metric.commit_hash, metric.repo_url, str(commit.message)))
