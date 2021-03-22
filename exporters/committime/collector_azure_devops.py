@@ -1,14 +1,9 @@
 from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
-from urllib.parse import urlparse
-import os.path
 import requests
 import logging
 import pelorus
 from collector_base import AbstractCommitCollector
-# import urllib3
-# urllib3.disable_warnings()
-
 
 class AzureDevOpsCommitCollector(AbstractCommitCollector):
 
@@ -34,7 +29,6 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         # Fill in with your personal access token and org URL
         personal_access_token = self._token
         organization_url = self._git_api
-        #azure_devops_token = BasicAuthentication('', self._token)
 
         # Create a connection to the org
         credentials = BasicAuthentication('', personal_access_token)
@@ -43,13 +37,8 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         # Get a client (the "git" client provides access to commits)
         git_client = connection.clients.get_git_client()
 
-        #print("token: {}".format(azure_devops_token))
-        # oauth token authentication
-        # gs = gitlab.Gitlab(git_server, oauth_token='my_long_token_here', api_version=4, session=session)
-        # urlparse(metric.repo_url).path.strip('/').split("/")[0] # Azure proj
-         #urlparse(metric.repo_url).path.strip('/').split("/")[2] # Azure repo
-
-        commit = git_client.get_commit(commit_id=metric.commit_hash,repository_id=metric.repo_project,project=metric.repo_project)
+        commit = git_client.get_commit(
+            commit_id=metric.commit_hash, repository_id=metric.repo_project, project=metric.repo_project)
         logging.debug("Commit %s" % ((commit.committer.date).isoformat("T","auto")))
         if hasattr(commit,"innerExepction"):
             # This will occur when trying to make an API call to non-Github
@@ -57,7 +46,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
                 metric.build_name, metric.commit_hash, metric.repo_url, str(commit.message)))
         else:
             try:
-                metric.commit_time = commit.committer.date.isoformat("T","auto")
+                metric.commit_time = commit.committer.date.isoformat("T", "auto")
                 logging.info("metric.commit_time %s" % (str(metric.commit_time)[:19]))
                 logging.info("self._timedate_format %s" % (self._timedate_format))
                 metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(

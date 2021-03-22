@@ -1,4 +1,3 @@
-import gitea_client
 import requests
 import logging
 import pelorus
@@ -48,7 +47,8 @@ class GiteaCommitCollector(AbstractCommitCollector):
                 metric.commit_time = commit['commit']['committer']['date']
                 logging.debug("metric.commit_time %s" % (str(metric.commit_time)[:19]))
                 logging.debug("self._timedate_format %s" % (self._timedate_format))
-                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp((str(metric.commit_time)[:19]), self._timedate_format)
+                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp((
+                    str(metric.commit_time)[:19]), self._timedate_format)
             except Exception:
                 logging.error("Failed processing commit time for build %s" % metric.build_name, exc_info=True)
                 logging.debug(commit)
