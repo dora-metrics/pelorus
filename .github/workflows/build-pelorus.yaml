@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-committime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # recommended https://github.com/marketplace/actions/push-to-registry#note-about-github-runners-and-podman
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,16 +34,15 @@ jobs:
 
       # Push Image to Quay registry
       - name: Push To Quay Action
-        uses: redhat-actions/push-to-registry@v1
+        uses: redhat-actions/push-to-registry@v2
         with:
           image: 'committime-exporter'
-          tag: ${{ github.sha }},latest
-          registry: quay.io
-          repository: pelorus/committime-exporter
+          tag: ${{ github.sha }} latest
+          registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-deploytime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -59,16 +58,15 @@ jobs:
 
       # Push Image to Quay registry
       - name: Push To Quay Action
-        uses: redhat-actions/push-to-registry@v1
+        uses: redhat-actions/push-to-registry@v2
         with:
           image: 'deploytime-exporter'
-          tag: ${{ github.sha }},latest
-          registry: quay.io
-          repository: pelorus/deploytime-exporter
+          tag: ${{ github.sha }} latest
+          registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-failure:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -84,11 +82,10 @@ jobs:
 
       # Push Image to Quay registry
       - name: Push To Quay Action
-        uses: redhat-actions/push-to-registry@v1
+        uses: redhat-actions/push-to-registry@v2
         with:
           image: 'failure-exporter'
-          tag: ${{ github.sha }},latest
-          registry: quay.io
-          repository: pelorus/failure-exporter
+          tag: ${{ github.sha }} latest
+          registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
