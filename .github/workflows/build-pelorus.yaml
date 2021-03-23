@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-committime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # recommended https://github.com/marketplace/actions/push-to-registry#note-about-github-runners-and-podman
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -42,7 +42,7 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-deploytime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -66,7 +66,7 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-failure:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
