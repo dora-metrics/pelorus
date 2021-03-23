@@ -34,12 +34,11 @@ jobs:
 
       # Push Image to Quay registry
       - name: Push To Quay Action
-        uses: redhat-actions/push-to-registry@v1
+        uses: redhat-actions/push-to-registry@v2
         with:
           image: 'committime-exporter'
-          tag: ${{ github.sha }},latest
-          registry: quay.io
-          repository: pelorus/committime-exporter
+          tag: ${{ github.sha }} latest
+          registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-deploytime:
@@ -59,12 +58,11 @@ jobs:
 
       # Push Image to Quay registry
       - name: Push To Quay Action
-        uses: redhat-actions/push-to-registry@v1
+        uses: redhat-actions/push-to-registry@v2
         with:
           image: 'deploytime-exporter'
-          tag: ${{ github.sha }},latest
-          registry: quay.io
-          repository: pelorus/deploytime-exporter
+          tag: ${{ github.sha }} latest
+          registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-failure:
@@ -84,11 +82,10 @@ jobs:
 
       # Push Image to Quay registry
       - name: Push To Quay Action
-        uses: redhat-actions/push-to-registry@v1
+        uses: redhat-actions/push-to-registry@v2
         with:
           image: 'failure-exporter'
-          tag: ${{ github.sha }},latest
-          registry: quay.io
-          repository: pelorus/failure-exporter
+          tag: ${{ github.sha }} latest
+          registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
