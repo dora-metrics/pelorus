@@ -29,17 +29,17 @@ jobs:
         with:
           path_context: 'exporters'
           builder_image: 'registry.access.redhat.com/ubi8/python-38'
-          image_name: 'pelorus-committime-exporter'
+          image_name: 'committime-exporter'
           image_tag: ${{ github.sha }}
 
       # Push Image to Quay registry
       - name: Push To Quay Action
         uses: redhat-actions/push-to-registry@v1
         with:
-          image: 'pelorus-committime-exporter'
+          image: 'committime-exporter'
           tag: ${{ github.sha }},latest
           registry: quay.io
-          repository: pelorus/pelorus-committime-exporter
+          repository: pelorus/committime-exporter
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-deploytime:
@@ -54,17 +54,17 @@ jobs:
         with:
           path_context: 'exporters'
           builder_image: 'registry.access.redhat.com/ubi8/python-38'
-          image_name: 'pelorus-deploytime-exporter'
+          image_name: 'deploytime-exporter'
           image_tag: ${{ github.sha }}
 
       # Push Image to Quay registry
       - name: Push To Quay Action
         uses: redhat-actions/push-to-registry@v1
         with:
-          image: 'pelorus-deploytime-exporter'
+          image: 'deploytime-exporter'
           tag: ${{ github.sha }},latest
           registry: quay.io
-          repository: pelorus/pelorus-deploytime-exporter
+          repository: pelorus/deploytime-exporter
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-failure:
@@ -79,16 +79,16 @@ jobs:
         with:
           path_context: 'exporters'
           builder_image: 'registry.access.redhat.com/ubi8/python-38'
-          image_name: 'pelorus-failure-exporter'
+          image_name: 'failure-exporter'
           image_tag: ${{ github.sha }}
 
       # Push Image to Quay registry
       - name: Push To Quay Action
         uses: redhat-actions/push-to-registry@v1
         with:
-          image: 'pelorus-failure-exporter'
+          image: 'failure-exporter'
           tag: ${{ github.sha }},latest
           registry: quay.io
-          repository: pelorus/pelorus-failure-exporter
+          repository: pelorus/failure-exporter
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
