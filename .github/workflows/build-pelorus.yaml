@@ -1,0 +1,94 @@
+name: Pelorus Exporter Build
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - README.md
+      - samples/
+      - charts/
+      - demo/
+      - docs/
+      - labs/
+      - tests/
+      - storage/
+      - chart_schema.yaml
+      - CONTRIBUTING.md
+
+jobs:
+  build-committime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Setup S2i and Build container image
+      - name: Setup and Build
+        uses: redhat-actions/s2i-build@v1
+        with:
+          path_context: 'exporters'
+          builder_image: 'registry.access.redhat.com/ubi8/python-38'
+          image_name: 'committime-exporter'
+          image_tag: ${{ github.sha }}
+
+      # Push Image to Quay registry
+      - name: Push To Quay Action
+        uses: redhat-actions/push-to-registry@v1
+        with:
+          image: 'committime-exporter'
+          tag: ${{ github.sha }},latest
+          registry: quay.io
+          repository: pelorus/committime-exporter
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+  build-deploytime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Setup S2i and Build container image
+      - name: Setup and Build
+        uses: redhat-actions/s2i-build@v1
+        with:
+          path_context: 'exporters'
+          builder_image: 'registry.access.redhat.com/ubi8/python-38'
+          image_name: 'deploytime-exporter'
+          image_tag: ${{ github.sha }}
+
+      # Push Image to Quay registry
+      - name: Push To Quay Action
+        uses: redhat-actions/push-to-registry@v1
+        with:
+          image: 'deploytime-exporter'
+          tag: ${{ github.sha }},latest
+          registry: quay.io
+          repository: pelorus/deploytime-exporter
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+  build-failure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Setup S2i and Build container image
+      - name: Setup and Build
+        uses: redhat-actions/s2i-build@v1
+        with:
+          path_context: 'exporters'
+          builder_image: 'registry.access.redhat.com/ubi8/python-38'
+          image_name: 'failure-exporter'
+          image_tag: ${{ github.sha }}
+
+      # Push Image to Quay registry
+      - name: Push To Quay Action
+        uses: redhat-actions/push-to-registry@v1
+        with:
+          image: 'failure-exporter'
+          tag: ${{ github.sha }},latest
+          registry: quay.io
+          repository: pelorus/failure-exporter
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
