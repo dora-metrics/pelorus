@@ -37,7 +37,7 @@ jobs:
         uses: redhat-actions/push-to-registry@v2
         with:
           image: 'committime-exporter'
-          tag: ${{ github.sha }} latest
+          tags: ${{ github.sha }} latest
           registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
@@ -61,7 +61,7 @@ jobs:
         uses: redhat-actions/push-to-registry@v2
         with:
           image: 'deploytime-exporter'
-          tag: ${{ github.sha }} latest
+          tags: ${{ github.sha }} latest
           registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
@@ -85,7 +85,7 @@ jobs:
         uses: redhat-actions/push-to-registry@v2
         with:
           image: 'failure-exporter'
-          tag: ${{ github.sha }} latest
+          tags: ${{ github.sha }} latest
           registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
