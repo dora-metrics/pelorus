@@ -1,0 +1,45 @@
+name: Pelorus Release
+
+on:
+  release:
+    types:
+      - prereleased
+      - released
+
+jobs:
+  release:
+    runs-on:
+
+    steps:
+      - name: Checkout opl-content-api
+        uses: actions/checkout@v2
+
+      - name: Tag committime with (pre)release version
+        uses: tinact/docker.image-retag@1.0.2
+        with:
+          image_name: konveyor/pelorus-committime-exporter
+          image_old_tag: ${{ github.sha }}
+          image_new_tag: ${{ github.event.release.tag_name }}
+          registry: quay.io
+          registry_username: ${{ secrets.QUAY_USER }}
+          registry_password: ${{ secrets.QUAY_PASS }}
+
+      - name: Tag deploytime with (pre)released version
+        uses: tinact/docker.image-retag@1.0.2
+        with:
+          image_name: konveyor/pelorus-deploytime-exporter
+          image_old_tag: ${{ github.sha }}
+          image_new_tag: ${{ github.event.release.tag_name }}
+          registry: quay.io
+          registry_username: ${{ secrets.QUAY_USER }}
+          registry_password: ${{ secrets.QUAY_PASS }}
+
+      - name: Tag failure with (pre)released version
+        uses: tinact/docker.image-retag@1.0.2
+        with:
+          image_name: konveyor/pelorus-failure-exporter
+          image_old_tag: ${{ github.sha }}
+          image_new_tag: ${{ github.event.release.tag_name }}
+          registry: quay.io
+          registry_username: ${{ secrets.QUAY_USER }}
+          registry_password: ${{ secrets.QUAY_PASS }}
