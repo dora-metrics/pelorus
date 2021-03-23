@@ -39,7 +39,7 @@ jobs:
           image: 'pelorus-committime-exporter'
           tag: ${{ github.sha }},latest
           registry: quay.io
-          repository: konveyor/pelorus-committime-exporter
+          repository: pelorus/pelorus-committime-exporter
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-deploytime:
@@ -64,7 +64,7 @@ jobs:
           image: 'pelorus-deploytime-exporter'
           tag: ${{ github.sha }},latest
           registry: quay.io
-          repository: konveyor/pelorus-deploytime-exporter
+          repository: pelorus/pelorus-deploytime-exporter
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
   build-failure:
@@ -89,6 +89,6 @@ jobs:
           image: 'pelorus-failure-exporter'
           tag: ${{ github.sha }},latest
           registry: quay.io
-          repository: konveyor/pelorus-failure-exporter
+          repository: pelorus/pelorus-failure-exporter
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}

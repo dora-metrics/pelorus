@@ -17,7 +17,7 @@ jobs:
       - name: Tag committime with (pre)release version
         uses: tinact/docker.image-retag@1.0.2
         with:
-          image_name: konveyor/pelorus-committime-exporter
+          image_name: pelorus/pelorus-committime-exporter
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ github.event.release.tag_name }}
           registry: quay.io
@@ -27,7 +27,7 @@ jobs:
       - name: Tag deploytime with (pre)released version
         uses: tinact/docker.image-retag@1.0.2
         with:
-          image_name: konveyor/pelorus-deploytime-exporter
+          image_name: pelorus/pelorus-deploytime-exporter
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ github.event.release.tag_name }}
           registry: quay.io
@@ -37,7 +37,7 @@ jobs:
       - name: Tag failure with (pre)released version
         uses: tinact/docker.image-retag@1.0.2
         with:
-          image_name: konveyor/pelorus-failure-exporter
+          image_name: pelorus/pelorus-failure-exporter
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ github.event.release.tag_name }}
           registry: quay.io
