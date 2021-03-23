@@ -1,0 +1,129 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  template: generic-nginx-jenkins-pipeline
+metadata:
+  annotations:
+    description: Application template for nginx applications built using a Jenkins Pipeline
+    iconClass: icon-nginx
+    tags: nginx,xpaas,jenkins-ci
+    version: 1.2.0
+  name: generic-nginx-jenkins-pipeline
+objects:
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app.kubernetes.io/name: ${APPLICATION_NAME}
+      app.kubernetes.io/instance: ${APPLICATION_NAME}-build
+      app.kubernetes.io/component: api
+      app.kubernetes.io/part-of: ${APPLICATION_NAME}
+      app.kubernetes.io/managed-by: applier
+    name: "${APPLICATION_NAME}-pipeline"
+    namespace: "${NAMESPACE}"
+  spec:
+    source:
+      type: Git
+      git:
+        uri: ${SOURCE_REPOSITORY_URL}
+        ref: ${SOURCE_REPOSITORY_REF}
+      contextDir: ${CONTEXT_DIR}
+    triggers:
+    - type: "GitHub"
+      github:
+        secret: ${GITHUB_WEBHOOK_SECRET}
+    - type: "ConfigChange"
+    strategy:
+      type: "JenkinsPipeline"
+      jenkinsPipelineStrategy:
+        jenkinsfilePath: ${PIPELINE_SCRIPT}
+        env:
+        - name: "SOURCE_REPOSITORY_URL"
+          value: "${SOURCE_REPOSITORY_URL}"
+        - name: "SOURCE_REPOSITORY_REF"
+          value: "${SOURCE_REPOSITORY_REF}"
+        - name: "CONTEXT_DIR"
+          value: "${CONTEXT_DIR}"
+        - name: "SKIP_MANUAL_PROMOTION"
+          value: "${SKIP_MANUAL_PROMOTION}"
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app.kubernetes.io/name: ${APPLICATION_NAME}
+      app.kubernetes.io/instance: ${APPLICATION_NAME}-build
+      app.kubernetes.io/component: api
+      app.kubernetes.io/part-of: ${APPLICATION_NAME}
+      app.kubernetes.io/managed-by: applier
+    name: ${APPLICATION_NAME}
+    namespace: "${NAMESPACE}"
+  spec:
+    failedBuildHistoryLimit: 3
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${APPLICATION_NAME}:latest
+    source:
+      binary: {}
+      type: Binary
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: ${IMAGE_STREAM_TAG_NAME}
+          namespace: ${IMAGE_STREAM_NAMESPACE}
+      type: Source
+    successfulBuildHistoryLimit: 3
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app.kubernetes.io/name: ${APPLICATION_NAME}
+      app.kubernetes.io/instance: ${APPLICATION_NAME}-build
+      app.kubernetes.io/component: api
+      app.kubernetes.io/part-of: ${APPLICATION_NAME}
+      app.kubernetes.io/managed-by: applier
+    name: ${APPLICATION_NAME}
+    namespace: ${NAMESPACE}
+parameters:
+- description: The name for the application.
+  name: APPLICATION_NAME
+  required: true
+  value: basic-nginx
+- description: The namespace to deploy into
+  name: NAMESPACE
+  required: true
+- description: Git source URI for application
+  name: SOURCE_REPOSITORY_URL
+  required: true
+- description: Git branch/tag reference
+  name: SOURCE_REPOSITORY_REF
+- description: skip promotion flag so manual process is waived
+  name: SKIP_MANUAL_PROMOTION
+- description: Path within Git project to build; empty for root project directory.
+  name: CONTEXT_DIR
+  value: "basic-nginx"
+- description: Path within Git project pointing to the pipeline run script
+  name: PIPELINE_SCRIPT
+  value: Jenkinsfile
+- description: GitHub trigger secret
+  from: '[a-zA-Z0-9]{8}'
+  generate: expression
+  name: GITHUB_WEBHOOK_SECRET
+  required: true
+- description: Generic build trigger secret
+  from: '[a-zA-Z0-9]{8}'
+  generate: expression
+  name: GENERIC_WEBHOOK_SECRET
+  required: true
+- description: Namespace in which the ImageStreams for Red Hat Middleware images are
+    installed. These ImageStreams are normally installed in the openshift namespace.
+    You should only need to modify this if you've installed the ImageStreams in a
+    different namespace/project.
+  name: IMAGE_STREAM_NAMESPACE
+  required: true
+  value: openshift
+- description: Image stream tag for the image you'd like to use to build the application
+  name: IMAGE_STREAM_TAG_NAME
+  required: true
+  value: nginx:1.14

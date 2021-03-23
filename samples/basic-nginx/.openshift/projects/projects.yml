@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: project.openshift.io/v1
+  kind: ProjectRequest
+  metadata:
+    name: basic-nginx-dev
+    creationTimestam: null
+  displayName: Basic Nginx App - Dev
+- apiVersion: project.openshift.io/v1
+  kind: ProjectRequest
+  metadata:
+    name: basic-nginx-stage
+    creationTimestam: null
+  displayName: Basic Nginx App - Stage
+- apiVersion: project.openshift.io/v1
+  kind: ProjectRequest
+  metadata:
+    name: basic-nginx-prod
+    creationTimestam: null
+  displayName: Basic Tomcat App - Prod
+- apiVersion: project.openshift.io/v1
+  kind: ProjectRequest
+  metadata:
+    name: basic-nginx-build
+    creationTimestam: null
+  displayName: Basic Nginx App - Build

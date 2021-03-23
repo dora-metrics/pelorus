@@ -1,0 +1,3 @@
+NAMESPACE=basic-nginx-build
+IMAGE_STREAM_TAG_NAME=nginx:1.14-el8
+CONTEXT_DIR=samples/basic-nginx
