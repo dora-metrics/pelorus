@@ -49,8 +49,8 @@ jobs:
           image_old_tag: ${{ github.sha }}
           image_new_tag: latest
           registry: quay.io/pelorus
-          registry_username: ${{ secrets.QUAY_USER }}
-          registry_password: ${{ secrets.QUAY_PASS }}
+          registry_username: ${{ secrets.QUAY_USERNAME }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}
 
   build-deploytime:
     runs-on: ubuntu-20.04
@@ -84,8 +84,8 @@ jobs:
           image_old_tag: ${{ github.sha }}
           image_new_tag: latest
           registry: quay.io/pelorus
-          registry_username: ${{ secrets.QUAY_USER }}
-          registry_password: ${{ secrets.QUAY_PASS }}
+          registry_username: ${{ secrets.QUAY_USERNAME }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}
 
   build-failure:
     runs-on: ubuntu-20.04
@@ -119,5 +119,5 @@ jobs:
           image_old_tag: ${{ github.sha }}
           image_new_tag: latest
           registry: quay.io/pelorus
-          registry_username: ${{ secrets.QUAY_USER }}
-          registry_password: ${{ secrets.QUAY_PASS }}
+          registry_username: ${{ secrets.QUAY_USERNAME }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}

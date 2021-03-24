@@ -8,7 +8,7 @@ on:
 
 jobs:
   release:
-    runs-on:
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout opl-content-api
@@ -21,8 +21,8 @@ jobs:
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ github.event.release.tag_name }}
           registry: quay.io
-          registry_username: ${{ secrets.QUAY_USER }}
-          registry_password: ${{ secrets.QUAY_PASS }}
+          registry_username: ${{ secrets.QUAY_USERNAME }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Tag deploytime with (pre)released version
         uses: tinact/docker.image-retag@1.0.2
@@ -31,8 +31,8 @@ jobs:
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ github.event.release.tag_name }}
           registry: quay.io
-          registry_username: ${{ secrets.QUAY_USER }}
-          registry_password: ${{ secrets.QUAY_PASS }}
+          registry_username: ${{ secrets.QUAY_USERNAME }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Tag failure with (pre)released version
         uses: tinact/docker.image-retag@1.0.2
@@ -41,5 +41,5 @@ jobs:
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ github.event.release.tag_name }}
           registry: quay.io
-          registry_username: ${{ secrets.QUAY_USER }}
-          registry_password: ${{ secrets.QUAY_PASS }}
+          registry_username: ${{ secrets.QUAY_USERNAME }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}
