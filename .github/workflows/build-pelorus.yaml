@@ -37,10 +37,21 @@ jobs:
         uses: redhat-actions/push-to-registry@v2
         with:
           image: 'committime-exporter'
-          tags: ${{ github.sha }} latest
+          tags: ${{ github.sha }}
           registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Tag latest
+        uses: tinact/docker.image-retag@1.0.2
+        with:
+          image_name: committime-exporter
+          image_old_tag: ${{ github.sha }}
+          image_new_tag: latest
+          registry: quay.io/pelorus
+          registry_username: ${{ secrets.QUAY_USER }}
+          registry_password: ${{ secrets.QUAY_PASS }}
+
   build-deploytime:
     runs-on: ubuntu-20.04
     steps:
@@ -61,10 +72,21 @@ jobs:
         uses: redhat-actions/push-to-registry@v2
         with:
           image: 'deploytime-exporter'
-          tags: ${{ github.sha }} latest
+          tags: ${{ github.sha }}
           registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Tag latest
+        uses: tinact/docker.image-retag@1.0.2
+        with:
+          image_name: deploytime-exporter
+          image_old_tag: ${{ github.sha }}
+          image_new_tag: latest
+          registry: quay.io/pelorus
+          registry_username: ${{ secrets.QUAY_USER }}
+          registry_password: ${{ secrets.QUAY_PASS }}
+
   build-failure:
     runs-on: ubuntu-20.04
     steps:
@@ -85,7 +107,17 @@ jobs:
         uses: redhat-actions/push-to-registry@v2
         with:
           image: 'failure-exporter'
-          tags: ${{ github.sha }} latest
+          tags: ${{ github.sha }}
           registry: quay.io/pelorus
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Tag latest
+        uses: tinact/docker.image-retag@1.0.2
+        with:
+          image_name: failure-exporter
+          image_old_tag: ${{ github.sha }}
+          image_new_tag: latest
+          registry: quay.io/pelorus
+          registry_username: ${{ secrets.QUAY_USER }}
+          registry_password: ${{ secrets.QUAY_PASS }}
