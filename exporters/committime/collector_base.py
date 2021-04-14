@@ -125,10 +125,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             metric = CommitMetric(app)
 
-            if build.spec.source.git:
-                repo_url = build.spec.source.git.uri
-            else:
-                repo_url = self._get_repo_from_build_config(build)
+            if not repo_url:
+                if build.spec.source.git:
+                    repo_url = build.spec.source.git.uri
+                else:
+                    repo_url = self._get_repo_from_build_config(build)
 
             metric.repo_url = repo_url
             commit_sha = build.spec.revision.git.commit
@@ -275,10 +276,12 @@ class CommitMetric:
         return str(self.__repo_protocol + '://' + self.__repo_fqdn)
 
     def __parse_repourl(self):
+        logging.debug(self.__repo_url)
         """Parse the repo_url into individual pieces"""
         if self.__repo_url is None:
             return
         parsed = giturlparse.parse(self.__repo_url)
+        logging.debug(self.__repo_url)
         if len(parsed.protocols) > 0 and parsed.protocols[0] not in CommitMetric.supported_protocols:
             raise ValueError("Unsupported protocol %s", parsed.protocols[0])
         self.__repo_protocol = parsed.protocol

@@ -2,6 +2,8 @@
 from collector_bitbucket import BitbucketCommitCollector
 from collector_gitlab import GitLabCommitCollector
 from collector_github import GitHubCommitCollector
+from collector_gitea import GiteaCommitCollector
+from collector_azure_devops import AzureDevOpsCommitCollector
 import os
 import pelorus
 import sys
@@ -23,6 +25,10 @@ class GitFactory:
             return GitHubCommitCollector(kube_client, username, token, namespaces, apps, git_api)
         if git_provider == "bitbucket":
             return BitbucketCommitCollector(kube_client, username, token, namespaces, apps)
+        if git_provider == "gitea":
+            return GiteaCommitCollector(kube_client, username, token, namespaces, apps, git_api)
+        if git_provider == "azure-devops":
+            return AzureDevOpsCommitCollector(kube_client, username, token, namespaces, apps, git_api)
 
 
 if __name__ == "__main__":
