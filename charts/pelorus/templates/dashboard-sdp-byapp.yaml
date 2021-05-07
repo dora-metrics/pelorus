@@ -980,7 +980,7 @@ spec:
         "steppedLine": false,
         "targets": [
             {
-            "expr": "fr:time_to_restore:global",
+            "expr": "sdp:time_to_restore:by_app{app=\"$app\"}",
             "refId": "A"
             }
         ],
@@ -1068,7 +1068,7 @@ spec:
         "steppedLine": false,
         "targets": [
             {
-            "expr": "avg_over_time(fr:change_failure_rate [$__range])",
+            "expr": "avg_over_time(sdp:change_failure_rate:by_app{app=\"$app\"} [$__range])",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
