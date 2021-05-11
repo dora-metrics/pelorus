@@ -132,7 +132,7 @@ exporters/exporter/
 
 Running an exporter on your local machine should follow this process:
 
-1. Create a python virtual environment
+1. Create a python virtual environment (Optional, but recommended)
 
         python -m venv .venv
         source .venv/bin/activate
@@ -333,7 +333,7 @@ The following is a walkthrough of the process we follow to create and manage ver
 
 ## Testing the Docs
 
-Our documentation gets published via readthedocs, via the mkdocs framework. Mkdocs can be run locally for testing the rendering of the markdown files. If you followed the [local setup](#running-locally) instructions above, you should already have mkdocs installed.
+Our documentation gets published via [readthedocs](https://readthedocs.org/), via the [mkdocs](https://www.mkdocs.org/) framework. Mkdocs can be run locally for testing the rendering of the markdown files. If you followed the [local setup](#running-locally) instructions above, you should already have mkdocs installed.
 
 Stand up the local server by running:
 
