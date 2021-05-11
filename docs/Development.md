@@ -132,6 +132,11 @@ exporters/exporter/
 
 Running an exporter on your local machine should follow this process:
 
+1. Create a python virtual environment
+
+        python -m venv .venv
+        source .venv/bin/activate
+
 1. Install dependencies
 
         pip install -r exporters/requirements.txt
@@ -294,9 +299,11 @@ The following is a walkthrough of the process we follow to create and manage ver
 
         git tag <version>-rc
         git push -u upstream <version>-rc
+
 2. Generate git release notes from the `git log`.
 
         git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
+
 3. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
     * Select the tag that was pushed in the first step
     * The release _title_ should be `Release candidate for <version>`. 
@@ -313,11 +320,23 @@ The following is a walkthrough of the process we follow to create and manage ver
         git checkout <version>-rc
         git tag -a <version>
         git push -u upstream <version>
+
 8. Generate git release notes from the `git log`.
 
         git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
+
 7. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
     * Select the tag that was pushed in the previous step.
     * The release _title_ should be `Release <version>`. 
     * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
     * Click **Publish Release**.
+
+## Testing the Docs
+
+Our documentation gets published via readthedocs, via the mkdocs framework. Mkdocs can be run locally for testing the rendering of the markdown files. If you followed the [local setup](#running-locally) instructions above, you should already have mkdocs installed.
+
+Stand up the local server by running:
+
+    mkdocs serve
+
+The mkdocs config is controlled by the mkdocs.yml file in the root of this project. All of the documents that will be served are in the [/docs](/docs) folder.
