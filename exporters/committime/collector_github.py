@@ -28,7 +28,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
             return None
 
         url = self._prefix + metric.repo_group + "/" + metric.repo_project + self._suffix + metric.commit_hash
-        response = requests.get(url, auth=(self._username, self._token))
+        response = requests.get(url, auth=(self._username, self._token), verify=False)
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github
             logging.warning("Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s" % (
