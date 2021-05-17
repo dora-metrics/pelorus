@@ -15,7 +15,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
 
     def __init__(self, kube_client, username, token, namespaces, apps, collector_name,
-     timedate_format, git_api=None, tls_verify=None):
+                 timedate_format, git_api=None, tls_verify=None):
         """Constructor"""
         self._kube_client = kube_client
         self._username = username

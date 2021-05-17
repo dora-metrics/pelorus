@@ -12,7 +12,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
 
     def __init__(self, kube_client, username, token, namespaces, apps, git_api=None, tls_verify=None):
         super().__init__(kube_client, username, token, namespaces, apps, "GitHub", '%Y-%m-%dT%H:%M:%SZ',
-         git_api, tls_verify)
+                         git_api, tls_verify)
         if git_api is not None and len(git_api) > 0:
             logging.info("Using non-default API: %s" % (git_api))
         else:
