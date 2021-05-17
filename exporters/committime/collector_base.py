@@ -14,7 +14,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, kube_client, username, token, namespaces, apps, collector_name, timedate_format, git_api=None, tls_verify=None):
+    def __init__(self, kube_client, username, token, namespaces, apps, collector_name,
+     timedate_format, git_api=None, tls_verify=None):
         """Constructor"""
         self._kube_client = kube_client
         self._username = username
@@ -22,7 +23,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self._namespaces = namespaces
         self._apps = apps
         self._git_api = git_api
-        self._tls_verify= tls_verify
+        self._tls_verify = tls_verify
         self._commit_dict = {}
         self._timedate_format = timedate_format
         self._collector_name = collector_name
