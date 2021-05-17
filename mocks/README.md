@@ -32,7 +32,14 @@ export GIT_TOKEN=gittoken
 export GIT_API=localhost:3000
 export LOG_LEVEL=DEBUG
 export NAMESPACES=basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod
+export TLS_VERIFY=False
 ```
+---
+**NOTE**
+
+The env TLS_VERIFY is needed because the mocks server use a self-signed certificate.
+
+---
 
 Because the commit exporters search on Openshift the information from the build, first you need to execute "oc login" against the mock server
 
