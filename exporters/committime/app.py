@@ -12,6 +12,7 @@ from kubernetes import client
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
+from distutils.util import strtobool
 
 REQUIRED_CONFIG = ['GIT_USER', 'GIT_TOKEN']
 
@@ -22,7 +23,7 @@ class GitFactory:
         if git_provider == "gitlab":
             return GitLabCommitCollector(kube_client, username, token, namespaces, apps)
         if git_provider == "github":
-            return GitHubCommitCollector(kube_client, username, token, namespaces, apps, git_api)
+            return GitHubCommitCollector(kube_client, username, token, namespaces, apps, git_api, tls_verify)
         if git_provider == "bitbucket":
             return BitbucketCommitCollector(kube_client, username, token, namespaces, apps)
         if git_provider == "gitea":
@@ -46,6 +47,7 @@ if __name__ == "__main__":
     token = os.environ.get('GIT_TOKEN')
     git_api = os.environ.get('GIT_API')
     git_provider = os.environ.get('GIT_PROVIDER', pelorus.DEFAULT_GIT)
+    tls_verify = bool(strtobool(os.environ.get('TLS_VERIFY', pelorus.DEFAULT_TLS_VERIFY)))
     namespaces = None
     if os.environ.get('NAMESPACES') is not None:
         namespaces = [proj.strip() for proj in os.environ.get('NAMESPACES').split(",")]
