@@ -1,7 +1,7 @@
 import os
 import pytest
 from datetime import datetime, timezone
-from exporters import pelorus
+import pelorus
 
 
 @pytest.mark.parametrize("start_time,end_time,format",
