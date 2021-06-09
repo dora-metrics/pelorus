@@ -24,7 +24,7 @@ spec:
     sourceStrategy:
       from:
         kind: DockerImage
-        name: registry.access.redhat.com/ubi8/python-38
+        name: registry.access.redhat.com/ubi8/python-39
     type: Source
   successfulBuildsHistoryLimit: 5
   triggers:
