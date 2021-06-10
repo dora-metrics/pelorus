@@ -9,6 +9,7 @@ from openshift.dynamic.discovery import Discoverer  # type: ignore
 import pelorus
 from deploytime.app import DeployTimeMetric, generate_metrics, image_sha  # type: ignore
 from tests.openshift_mocks import *
+
 # pylama:ignore=W0401
 
 APP_LABEL = pelorus.get_app_label()
@@ -97,6 +98,7 @@ def test_generate_metrics() -> None:
     actual = generate_metrics(namespaces=[FOO_NS, BAR_NS], dyn_client=mock_client)
 
     assert actual == expected
+
 
 def test_image_sha() -> None:
     SHA = "sha256:f00ba7"
