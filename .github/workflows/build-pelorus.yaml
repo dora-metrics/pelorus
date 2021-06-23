@@ -28,7 +28,7 @@ jobs:
         uses: redhat-actions/s2i-build@v1
         with:
           path_context: 'exporters'
-          builder_image: 'registry.access.redhat.com/ubi8/python-38'
+          builder_image: 'registry.access.redhat.com/ubi8/python-39'
           image_name: 'committime-exporter'
           image_tag: ${{ github.sha }}
 
@@ -63,7 +63,7 @@ jobs:
         uses: redhat-actions/s2i-build@v1
         with:
           path_context: 'exporters'
-          builder_image: 'registry.access.redhat.com/ubi8/python-38'
+          builder_image: 'registry.access.redhat.com/ubi8/python-39'
           image_name: 'deploytime-exporter'
           image_tag: ${{ github.sha }}
 
@@ -98,7 +98,7 @@ jobs:
         uses: redhat-actions/s2i-build@v1
         with:
           path_context: 'exporters'
-          builder_image: 'registry.access.redhat.com/ubi8/python-38'
+          builder_image: 'registry.access.redhat.com/ubi8/python-39'
           image_name: 'failure-exporter'
           image_tag: ${{ github.sha }}
 
