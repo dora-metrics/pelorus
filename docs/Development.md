@@ -122,8 +122,6 @@ The following is a minimal directory structure for a Pelorus exporter.
 ```
 exporters/exporter/
 ├── app.py
-├── __init__.py
-├── pelorus -> ../pelorus
 ├── README.md
 └── values.yaml
 ```
@@ -141,6 +139,9 @@ Running an exporter on your local machine should follow this process:
 
         pip install -r exporters/requirements.txt
         pip install -r exporters/requirements-dev.txt
+
+1. Install the pelorus library
+        pip install exporters/
 
 1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](/page/Configuration.md#configuring-exporters) to see supported variables).
 

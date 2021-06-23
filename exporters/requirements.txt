@@ -7,3 +7,4 @@ pytz
 python-gitlab >= 2.4.0
 git-url-parse
 azure-devops
+attrs

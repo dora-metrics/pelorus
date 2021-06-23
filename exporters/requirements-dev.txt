@@ -2,3 +2,6 @@ pytest
 coverage
 semver
 mkdocs
+black
+isort
+pylama
