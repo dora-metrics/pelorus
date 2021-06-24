@@ -11,10 +11,14 @@ jobs:
           fetch-depth: 0
         # TODO: make it only check out only the latest commits from both branches and diff them.
         # Right now, without this, it thinks no code has changed.
+      - name: check for where stuff is installed
+        run: ls -alR /opt/hostedtoolcache/Python/
       - name: Set up Python 3.9
         uses: actions/setup-python@v1
         with:
           python-version: 3.9
+      - name: check for where stuff is installed
+        run: ls -alR /opt/hostedtoolcache/Python/
       - name: Cache pip installs
         uses: actions/cache@v2
         with:
@@ -24,8 +28,7 @@ jobs:
         run: |
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
-      - name: check for where stuff is installed
-        run: /opt/hostedtoolcache/Python/
+
       - name: Check for formatting
         id: formatting
         continue-on-error: true
