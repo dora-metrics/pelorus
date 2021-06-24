@@ -10,7 +10,7 @@ import pelorus
 from deploytime.app import DeployTimeMetric, generate_metrics, image_sha  # type: ignore
 from tests.openshift_mocks import *
 
-# pylama:ignore=W0401
+# pylava:ignore=W0401
 
 APP_LABEL = pelorus.get_app_label()
 
