@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+import argparse
+import subprocess
+import sys
+
+parser = argparse.ArgumentParser(
+    description="Format python code or check if formatting would change (for CI)"
+)
+parser.add_argument(
+    "--check",
+    action="store_true",
+    help="Check for any changes that need to be made, but don't make them (useful for CI)",
+)
+
+parser.add_argument(
+    "--base", default="master", help="The base to diff against (defaults to master)"
+)
+parser.add_argument("--head", help="The head to diff with (defaults to HEAD)")
+parser.add_argument("--verbose", action="store_true", help="Be verbose with our output")
+
+args = parser.parse_args()
+
+cmd = [
+    "git",
+    "--no-pager",
+    "diff",
+    "--name-only",
+    "--diff-filter=dr",
+    args.base,
+]
+if args.head:
+    cmd.append(args.head)
+cmd.append("--")
+
+print("Getting list of modified python files")
+result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
+result.check_returncode()
+if args.verbose:
+    print(f"git diff output:\n{result.stdout}")
+python_files = [file for file in result.stdout.splitlines() if file.endswith(".py")]
+
+if python_files:
+    print("Modified:")
+    for file in python_files:
+        print(file)
+else:
+    print("No files modified")
+    sys.exit(0)
+
+status = 0
+
+if args.check:
+    print("\nChecking black formatting")
+    cmd = ["black", "--check"] + python_files
+else:
+    print("\nFormatting with black")
+    cmd = ["black"] + python_files
+
+result = subprocess.run(cmd)
+if result.returncode == 0:
+    pass
+elif result.returncode == 1:
+    status = 1
+else:
+    sys.exit(result.returncode)
+
+if args.check:
+    print("\nChecking isort formatting")
+    cmd = ["isort", "--check"] + python_files
+else:
+    print("\nFormatting with isort")
+    cmd = ["isort"] + python_files
+
+result = subprocess.run(cmd)
+if result.returncode != 0:
+    sys.exit(result.returncode)
+
+sys.exit(status)
