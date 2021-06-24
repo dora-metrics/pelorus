@@ -25,7 +25,7 @@ jobs:
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
       - name: check for where stuff is installed
-        run: which black
+        run: /opt/hostedtoolcache/Python/
       - name: Check for formatting
         id: formatting
         continue-on-error: true
