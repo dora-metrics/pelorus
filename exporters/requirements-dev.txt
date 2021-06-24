@@ -4,4 +4,4 @@ semver
 mkdocs
 black
 isort
-pylama
+pylava

@@ -10,7 +10,7 @@ from tests.openshift_mocks import *
 
 import pelorus
 
-# pylama:ignore=W0401
+# pylava:ignore=W0401
 
 APP_LABEL = pelorus.get_app_label()
 
