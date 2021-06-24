@@ -25,7 +25,7 @@ jobs:
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
       - name: check for where stuff is installed
-        run: ls -al .local/bin
+        run: which black
       - name: Check for formatting
         id: formatting
         continue-on-error: true
