@@ -20,7 +20,7 @@ jobs:
       #     path: ~/.cache/pip
       #     key: pip-${{ hashFiles('exporters/requirements*.txt') }}
       - name: Install dependencies
-        run: pip install -r <(cat exporters/requirements.txt exporters/requirements-dev.txt)
+        run: pip install -r exporters/requirements.txt -r exporters/requirements-dev.txt
       - name: Test with pytest
         run: coverage run -m pytest
       - name: Generate coverage report
