@@ -14,11 +14,11 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
-      # - name: Cache pip installs
-      #   uses: actions/cache@v2
-      #   with:
-      #     path: ~/.cache/pip
-      #     key: pip-${{ hashFiles('exporters/requirements*.txt') }}
+      - name: Cache pip installs
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('exporters/requirements*.txt') }}
       - name: Install dependencies
         run: pip install -r exporters/requirements.txt -r exporters/requirements-dev.txt
       - name: Test with pytest
