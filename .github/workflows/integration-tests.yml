@@ -19,4 +19,4 @@ jobs:
       - name: Start Mockoon
         run: docker run -d --mount type=bind,source=$PWD/mocks,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000 
       - name: test curl
-        run: curl https://localhost:3000/ -k
+        run: curl -k https://localhost:3000/version
