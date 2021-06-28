@@ -20,11 +20,13 @@ jobs:
         run: docker run -d --mount type=bind,source=$PWD/mocks,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000 
       - name: test curl
         run: |
-          export GIT_USER=gituser
-          export GIT_TOKEN=gittoken
-          export GIT_API=localhost:3000
-          export LOG_LEVEL=DEBUG
-          export NAMESPACES=basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod
-          export TLS_VERIFY=False
-          pip install ./exporters
-          python exporters/committime/app.py
+          pip install httpie
+          http --verify no https://localhost:3000/
+          # export GIT_USER=gituser
+          # export GIT_TOKEN=gittoken
+          # export GIT_API=localhost:3000
+          # export LOG_LEVEL=DEBUG
+          # export NAMESPACES=basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod
+          # export TLS_VERIFY=False
+          # pip install ./exporters
+          # python exporters/committime/app.py
