@@ -16,14 +16,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
-      - name: set up node
-        uses: actions/setup-node@v2
-      - name: install mockoon
-        run: npm install -g @mockoon/cli
-      - name: run mockoon
-        run: mockoon-cli start --data=$PWD/mocks/commitexporter_github.json --name openshift -p 3000
-      # - name: Start Mockoon
-      #   run: docker run --name=mockoon -d --mount type=bind,source=$PWD/mocks/commitexporter_github.json,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000
+      # - name: set up node
+      #   uses: actions/setup-node@v2
+      # - name: install mockoon
+      #   run: npm install -g @mockoon/cli
+      # - name: run mockoon
+      #   run: mockoon-cli start --data=$PWD/mocks/commitexporter_github.json --name openshift -p 3000
+      - name: Start Mockoon
+        run: docker run --name=mockoon --mount type=bind,source=$PWD/mocks/commitexporter_github.json,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000
       - name: test curl
         continue-on-error: true
         run: |
@@ -38,5 +38,5 @@ jobs:
           # pip install ./exporters
           # python exporters/committime/app.py
       - name: view logs
-        # run: docker logs mockoon
-        run: for fi in ~/.mockoon-cli/logs/*; do echo $fi; cat $fi; done
+        run: docker logs mockoon
+        # run: for fi in ~/.mockoon-cli/logs/*; do echo $fi; cat $fi; done
