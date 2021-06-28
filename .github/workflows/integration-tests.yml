@@ -17,8 +17,9 @@ jobs:
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
       - name: Start Mockoon
-        run: docker run -d --mount type=bind,source=$PWD/mocks,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000 
+        run: docker run --name=mockoon -d --mount type=bind,source=$PWD/mocks,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000 
       - name: test curl
+        continue-on-error: true
         run: |
           pip install httpie
           http --verify no https://localhost:3000/
@@ -30,3 +31,5 @@ jobs:
           # export TLS_VERIFY=False
           # pip install ./exporters
           # python exporters/committime/app.py
+      - name: view logs
+        run: docker logs mockoon
