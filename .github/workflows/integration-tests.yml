@@ -28,7 +28,7 @@ jobs:
         continue-on-error: true
         run: |
           pip install httpie
-          http --verify no https://localhost:3000/
+          http --verify no https://localhost:3000/version
           # export GIT_USER=gituser
           # export GIT_TOKEN=gittoken
           # export GIT_API=localhost:3000
