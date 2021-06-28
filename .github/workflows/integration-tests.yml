@@ -7,16 +7,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      # - name: Set up Python 3.9
-      #   uses: actions/setup-python@v1
-      #   with:
-      #     python-version: 3.9
-      # - name: Install dependencies
-      #   run: |
-      #     python -m pip install --upgrade pip
-      #     pip install -r exporters/requirements.txt
-      #     pip install -r exporters/requirements-dev.txt
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r exporters/requirements.txt
+          pip install -r exporters/requirements-dev.txt
       - name: Start Mockoon
         run: docker run -d --mount type=bind,source=$PWD/mocks,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000 
       - name: test curl
-        run: curl -k https://localhost:3000/version
+        run: |
+          export GIT_USER=gituser
+          export GIT_TOKEN=gittoken
+          export GIT_API=localhost:3000
+          export LOG_LEVEL=DEBUG
+          export NAMESPACES=basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod
+          export TLS_VERIFY=False
+          pip install ./exporters
+          python exporters/committime/app.py
