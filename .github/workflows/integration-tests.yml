@@ -1,0 +1,22 @@
+name: Integration Tests
+on: [push, pull_request]
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      # - name: Set up Python 3.9
+      #   uses: actions/setup-python@v1
+      #   with:
+      #     python-version: 3.9
+      # - name: Install dependencies
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install -r exporters/requirements.txt
+      #     pip install -r exporters/requirements-dev.txt
+      - name: Start Mockoon
+        run: docker run -d --mount type=bind,source=$PWD/mocks,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000 
+      - name: test curl
+        run: curl https://localhost:3000/ -k
