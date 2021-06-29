@@ -31,4 +31,4 @@ jobs:
           export NAMESPACES=basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod
           export TLS_VERIFY=False
           pip install ./exporters
-          python exporters/committime/app.py
+          cd exporters && pytest -m integration
