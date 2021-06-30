@@ -1,11 +1,13 @@
-from abc import abstractmethod
 import json
 import logging
-import pelorus
 import re
+from abc import abstractmethod
+
+import giturlparse
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
-import giturlparse
+
+import pelorus
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -14,8 +16,18 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(self, kube_client, username, token, namespaces, apps, collector_name,
-                 timedate_format, git_api=None, tls_verify=None):
+    def __init__(
+        self,
+        kube_client,
+        username,
+        token,
+        namespaces,
+        apps,
+        collector_name,
+        timedate_format,
+        git_api=None,
+        tls_verify=None,
+    ):
         """Constructor"""
         self._kube_client = kube_client
         self._username = username
@@ -30,21 +42,32 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         logging.info("=====Using %s Collector=====" % (self._collector_name))
 
     def collect(self):
-        commit_metric = GaugeMetricFamily('commit_timestamp',
-                                          'Commit timestamp', labels=['namespace', 'app', 'commit', 'image_sha'])
+        commit_metric = GaugeMetricFamily(
+            "commit_timestamp",
+            "Commit timestamp",
+            labels=["namespace", "app", "commit", "image_sha"],
+        )
         commit_metrics = self.generate_metrics()
         for my_metric in commit_metrics:
-            logging.info("Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s"
-                         % (
-                             my_metric.namespace,
-                             my_metric.name,
-                             my_metric.commit_hash,
-                             my_metric.image_hash,
-                             str(float(my_metric.commit_timestamp))
-                         )
-                         )
-            commit_metric.add_metric([my_metric.namespace, my_metric.name, my_metric.commit_hash, my_metric.image_hash],
-                                     my_metric.commit_timestamp)
+            logging.info(
+                "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s"
+                % (
+                    my_metric.namespace,
+                    my_metric.name,
+                    my_metric.commit_hash,
+                    my_metric.image_hash,
+                    str(float(my_metric.commit_timestamp)),
+                )
+            )
+            commit_metric.add_metric(
+                [
+                    my_metric.namespace,
+                    my_metric.name,
+                    my_metric.commit_hash,
+                    my_metric.image_hash,
+                ],
+                my_metric.commit_timestamp,
+            )
             yield commit_metric
 
     def generate_metrics(self):
@@ -52,8 +75,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # This will loop and look at OCP builds (calls get_git_commit_time)
         if not self._namespaces:
             logging.info("No namespaces specified, watching all namespaces")
-            v1_namespaces = self._kube_client.resources.get(api_version='v1', kind='Namespace')
-            self._namespaces = [namespace.metadata.name for namespace in v1_namespaces.get().items]
+            v1_namespaces = self._kube_client.resources.get(
+                api_version="v1", kind="Namespace"
+            )
+            self._namespaces = [
+                namespace.metadata.name for namespace in v1_namespaces.get().items
+            ]
         else:
             logging.info("Watching namespaces: %s" % (self._namespaces))
 
@@ -65,14 +92,21 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             apps = []
             builds_by_app = {}
             app_label = pelorus.get_app_label()
-            logging.debug("Searching for builds with label: %s in namespace: %s" % (app_label, namespace))
+            logging.debug(
+                "Searching for builds with label: %s in namespace: %s"
+                % (app_label, namespace)
+            )
 
-            v1_builds = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='Build')
+            v1_builds = self._kube_client.resources.get(
+                api_version="build.openshift.io/v1", kind="Build"
+            )
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
             # use a jsonpath expression to find all values for the app label
-            jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
+            jsonpath_str = (
+                "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
+            )
             jsonpath_expr = parse(jsonpath_str)
 
             found = jsonpath_expr.find(builds)
@@ -86,7 +120,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             builds_by_app = {}
 
             for app in apps:
-                builds_by_app[app] = list(filter(lambda b: b.metadata.labels[app_label] == app, builds.items))
+                builds_by_app[app] = list(
+                    filter(lambda b: b.metadata.labels[app_label] == app, builds.items)
+                )
 
             metrics += self.get_metrics_from_apps(builds_by_app, namespace)
 
@@ -103,8 +139,15 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         for app in apps:
 
             builds = apps[app]
-            jenkins_builds = list(filter(lambda b: b.spec.strategy.type == 'JenkinsPipeline', builds))
-            code_builds = list(filter(lambda b: b.spec.strategy.type in ['Source', 'Binary', 'Docker'], builds))
+            jenkins_builds = list(
+                filter(lambda b: b.spec.strategy.type == "JenkinsPipeline", builds)
+            )
+            code_builds = list(
+                filter(
+                    lambda b: b.spec.strategy.type in ["Source", "Binary", "Docker"],
+                    builds,
+                )
+            )
             # assume for now that there will only be one repo/branch per app
             # For jenkins pipelines, we need to grab the repo data
             # then find associated s2i/docker builds from which to pull commit & image data
@@ -115,7 +158,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 try:
                     metric = self.get_metric_from_build(build, app, namespace, repo_url)
                 except Exception:
-                    logging.error("Cannot collect metrics from build: %s" % (build.metadata.name))
+                    logging.error(
+                        "Cannot collect metrics from build: %s" % (build.metadata.name)
+                    )
 
                 if metric:
                     logging.debug("Adding metric for app %s" % app)
@@ -139,7 +184,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.build_config_name = build.metadata.labels.buildconfig
             metric.namespace = build.metadata.namespace
             labels = build.metadata.labels
-            metric.labels = json.loads(str(labels).replace("\'", "\""))
+            metric.labels = json.loads(str(labels).replace("'", '"'))
 
             metric.commit_hash = commit_sha
             metric.name = app
@@ -149,7 +194,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # Check the cache for the commit_time, if not call the API
             metric_ts = self._commit_dict.get(commit_sha)
             if metric_ts is None:
-                logging.debug("sha: %s, commit_timestamp not found in cache, executing API call." % (commit_sha))
+                logging.debug(
+                    "sha: %s, commit_timestamp not found in cache, executing API call."
+                    % (commit_sha)
+                )
                 metric = self.get_commit_time(metric)
                 # If commit time is None, then we could not get the value from the API
                 if metric.commit_time is None:
@@ -158,21 +206,27 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 self._commit_dict[metric.commit_hash] = metric.commit_timestamp
             else:
                 metric.commit_timestamp = self._commit_dict[commit_sha]
-                logging.debug("Returning sha: %s, commit_timestamp: %s, from cache." % (
-                    commit_sha, metric.commit_timestamp))
+                logging.debug(
+                    "Returning sha: %s, commit_timestamp: %s, from cache."
+                    % (commit_sha, metric.commit_timestamp)
+                )
 
             return metric
 
         except Exception as e:
-            logging.warning("Build %s/%s in app %s is missing required attributes to collect data. Skipping."
-                            % (namespace, build.metadata.name, app))
+            logging.warning(
+                "Build %s/%s in app %s is missing required attributes to collect data. Skipping."
+                % (namespace, build.metadata.name, app)
+            )
             logging.debug(e, exc_info=True)
             return None
 
     def get_repo_from_jenkins(self, jenkins_builds):
         if jenkins_builds:
             # First, check for cases where the source url is in pipeline params
-            git_repo_regex = re.compile(r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
+            git_repo_regex = re.compile(
+                r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+){0,1}/*(.*)"
+            )
             for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
                 logging.debug("Searching %s=%s for git urls" % (env.name, env.value))
                 try:
@@ -191,7 +245,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     "JenkinsPipelineStrategy build %s has no git repo configured. "
                     % jenkins_builds[0].metadata.name
                     + "Will check for source URLs in params."
-                    )
+                )
         # If no repo is found, we will return None, which will be handled later on
 
     def _get_repo_from_build_config(self, build):
@@ -201,23 +255,26 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         :param build: the Build resource
         :return: repo_url as a str or None if not found
         """
-        v1_build_configs = self._kube_client.resources.get(api_version='build.openshift.io/v1', kind='BuildConfig')
-        build_config = v1_build_configs.get(namespace=build.status.config.namespace,
-                                            name=build.status.config.name)
+        v1_build_configs = self._kube_client.resources.get(
+            api_version="build.openshift.io/v1", kind="BuildConfig"
+        )
+        build_config = v1_build_configs.get(
+            namespace=build.status.config.namespace, name=build.status.config.name
+        )
         if build_config:
             if build_config.spec.source.git:
                 git_uri = str(build_config.spec.source.git.uri)
-                if git_uri.endswith('.git'):
+                if git_uri.endswith(".git"):
                     return git_uri
                 else:
-                    return git_uri + '.git'
+                    return git_uri + ".git"
 
         return None
 
 
 class CommitMetric:
 
-    supported_protocols = ['http', 'https', 'ssh', 'git']
+    supported_protocols = ["http", "https", "ssh", "git"]
 
     def __init__(self, app_name):
         self.name = app_name
@@ -275,7 +332,7 @@ class CommitMetric:
     @property
     def git_server(self):
         """Returns the Git server FQDN with the protocol"""
-        return str(self.__repo_protocol + '://' + self.__repo_fqdn)
+        return str(self.__repo_protocol + "://" + self.__repo_fqdn)
 
     def __parse_repourl(self):
         logging.debug(self.__repo_url)
@@ -284,12 +341,15 @@ class CommitMetric:
             return
         parsed = giturlparse.parse(self.__repo_url)
         logging.debug(self.__repo_url)
-        if len(parsed.protocols) > 0 and parsed.protocols[0] not in CommitMetric.supported_protocols:
+        if (
+            len(parsed.protocols) > 0
+            and parsed.protocols[0] not in CommitMetric.supported_protocols
+        ):
             raise ValueError("Unsupported protocol %s", parsed.protocols[0])
         self.__repo_protocol = parsed.protocol
         # In the case of multiple subgroups the host will be in the pathname
         # Otherwise, it will be in the resource
-        if parsed.pathname.startswith('//'):
+        if parsed.pathname.startswith("//"):
             self.__repo_fqdn = parsed.pathname.split("/")[2]
             self.__repo_protocol = parsed.protocols[0]
         else:
