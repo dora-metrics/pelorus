@@ -12,6 +12,7 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY, GaugeMetricFamily
 
 import pelorus
+from pelorus.logging import log_namespaces
 
 supported_replica_objects = {"ReplicaSet", "ReplicationController"}
 
@@ -82,10 +83,7 @@ def generate_metrics(
     logging.info("generate_metrics: start")
 
     v1_pods = dyn_client.resources.get(api_version="v1", kind="Pod")
-    if not namespaces:
-        logging.info("No namespaces specified, watching all namespaces")
-    else:
-        logging.info("Watching namespaces %s", namespaces)
+    log_namespaces(namespaces)
 
     def in_namespace(namespace: str) -> bool:
         return (not namespaces) or namespace in namespaces

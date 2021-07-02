@@ -2,6 +2,7 @@ import logging
 import os
 from abc import ABC
 from datetime import datetime, timezone
+from typing import Optional, Sequence
 
 from kubernetes import config
 
@@ -24,6 +25,10 @@ logging.basicConfig(
     format=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT, level=numeric_level
 )
 print("Initializing Logger wit LogLevel: %s" % loglevel.upper())
+
+# A NamespaceSpec lists namespaces to restrict the search to.
+# Use None or an empty list to include all namespaces.
+NamespaceSpec = Optional[Sequence[str]]
 
 
 def load_kube_config():

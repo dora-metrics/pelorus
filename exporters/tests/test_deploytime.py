@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 from random import randrange
-from typing import Any, Sequence
+from typing import Sequence
 from unittest.mock import NonCallableMock
 
 import pytest
