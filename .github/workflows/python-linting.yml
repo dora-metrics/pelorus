@@ -1,8 +1,8 @@
-name: Check Python Linting
+name: Pylama
 on: pull_request
 
 jobs:
-  lint:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
