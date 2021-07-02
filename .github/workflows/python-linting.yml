@@ -1,8 +1,8 @@
-name: Check Python Formatting
+name: Check Python Linting
 on: pull_request
 
 jobs:
-  format-check:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,6 +16,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
-      - name: Check for formatting
-        id: formatting
-        run: ./scripts/format --check
+      - name: Run pylava for linting
+        run: pylava
