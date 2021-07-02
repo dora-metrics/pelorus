@@ -2,7 +2,7 @@ name: Unit Tests
 on: [push, pull_request]
 
 jobs:
-  build:
+  unit-test:
     strategy:
       matrix:
         python-version: [3.9]
