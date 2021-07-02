@@ -1,15 +1,17 @@
 import logging
 import os
 import re
-import pelorus
 import time
-from typing import Optional, Iterable
+from typing import Iterable, Optional
+
+import attr
 from kubernetes import client
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from prometheus_client import start_http_server
-from prometheus_client.core import GaugeMetricFamily, REGISTRY
-import attr
+from prometheus_client.core import REGISTRY, GaugeMetricFamily
+
+import pelorus
 
 supported_replica_objects = ["ReplicaSet", "ReplicationController"]
 

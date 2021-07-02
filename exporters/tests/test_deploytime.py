@@ -3,12 +3,12 @@ from random import randrange
 from typing import Any
 from unittest.mock import NonCallableMock
 
+from deploytime.app import DeployTimeMetric, generate_metrics, image_sha  # type: ignore
 from openshift.dynamic import DynamicClient  # type: ignore
 from openshift.dynamic.discovery import Discoverer  # type: ignore
+from tests.openshift_mocks import *
 
 import pelorus
-from deploytime.app import DeployTimeMetric, generate_metrics, image_sha  # type: ignore
-from tests.openshift_mocks import *
 
 # pylama:ignore=W0401
 

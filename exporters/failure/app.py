@@ -1,15 +1,17 @@
 #!/usr/bin/python3
+import logging
+import os
+import sys
+import time
+
 from collector_jira import JiraFailureCollector
 from collector_servicenow import ServiceNowFailureCollector
-import os
-import logging
-import pelorus
-import time
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
-import sys
 
-REQUIRED_CONFIG = ['USER', 'TOKEN', 'SERVER']
+import pelorus
+
+REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
 
 
 class TrackerFactory:
@@ -26,16 +28,18 @@ if __name__ == "__main__":
     if pelorus.missing_configs(REQUIRED_CONFIG):
         print("This program will exit.")
         sys.exit(1)
-    project = os.environ.get('PROJECT')
-    username = os.environ.get('USER')
-    token = os.environ.get('TOKEN')
-    tracker_api = os.environ.get('SERVER')
-    tracker_provider = os.environ.get('PROVIDER', pelorus.DEFAULT_TRACKER)
+    project = os.environ.get("PROJECT")
+    username = os.environ.get("USER")
+    token = os.environ.get("TOKEN")
+    tracker_api = os.environ.get("SERVER")
+    tracker_provider = os.environ.get("PROVIDER", pelorus.DEFAULT_TRACKER)
     logging.info("Server: " + tracker_api)
     logging.info("User: " + username)
     start_http_server(8080)
 
-    collector = TrackerFactory.getCollector(username, token, tracker_api, project, tracker_provider)
+    collector = TrackerFactory.getCollector(
+        username, token, tracker_api, project, tracker_provider
+    )
     REGISTRY.register(collector)
 
     while True:
