@@ -4,11 +4,11 @@ import sys
 import time
 from distutils.util import strtobool
 
-from collector_azure_devops import AzureDevOpsCommitCollector
-from collector_bitbucket import BitbucketCommitCollector
-from collector_gitea import GiteaCommitCollector
-from collector_github import GitHubCommitCollector
-from collector_gitlab import GitLabCommitCollector
+from committime.collector_azure_devops import AzureDevOpsCommitCollector
+from committime.collector_bitbucket import BitbucketCommitCollector
+from committime.collector_gitea import GiteaCommitCollector
+from committime.collector_github import GitHubCommitCollector
+from committime.collector_gitlab import GitLabCommitCollector
 from kubernetes import client
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server

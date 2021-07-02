@@ -1,13 +1,19 @@
+from __future__ import annotations
+
 import json
 import logging
 import re
 from abc import abstractmethod
+from typing import Any, Iterable, Optional
 
+import attr
 import giturlparse
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
+
+SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -70,7 +76,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             )
             yield commit_metric
 
-    def generate_metrics(self):
+    def generate_metrics(self) -> Iterable[CollectorMetric]:
         """Method called by the collect to create a list of metrics to publish"""
         # This will loop and look at OCP builds (calls get_git_commit_time)
         if not self._namespaces:
@@ -188,7 +194,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             metric.commit_hash = commit_sha
             metric.name = app
-            metric.commiter = build.spec.revision.git.author.name
+            metric.committer = build.spec.revision.git.author.name
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
             # Check the cache for the commit_time, if not call the API
@@ -272,29 +278,31 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return None
 
 
+@attr.define
 class CommitMetric:
+    name: str = attr.field()
+    labels: Any = attr.field(default=None, kw_only=True)
+    namespace: Optional[str] = attr.field(default=None, kw_only=True)
 
-    supported_protocols = ["http", "https", "ssh", "git"]
+    __repo_url = attr.field(default=None, init=False)
+    __repo_protocol = attr.field(default=None, init=False)
+    __repo_fqdn = attr.field(default=None, init=False)
+    __repo_group = attr.field(default=None, init=False)
+    __repo_name = attr.field(default=None, init=False)
+    __repo_project = attr.field(default=None, init=False)
 
-    def __init__(self, app_name):
-        self.name = app_name
-        self.labels = None
-        self.__repo_url = None
-        self.__repo_protocol = None
-        self.__repo_fqdn = None
-        self.__repo_group = None
-        self.__repo_name = None
-        self.__repo_project = None
-        self.commiter = None
-        self.commit_hash = None
-        self.commit_time = None
-        self.commit_timestamp = None
-        self.build_name = None
-        self.build_config_name = None
-        self.image_location = None
-        self.image_name = None
-        self.image_tag = None
-        self.image_hash = None
+    committer: Optional[str] = attr.field(default=None, kw_only=True)
+    commit_hash: Optional[str] = attr.field(default=None, kw_only=True)
+    commit_time: Optional[str] = attr.field(default=None, kw_only=True)
+    commit_timestamp: Optional[float] = attr.field(default=None, kw_only=True)
+
+    build_name: Optional[str] = attr.field(default=None, kw_only=True)
+    build_config_name: Optional[str] = attr.field(default=None, kw_only=True)
+
+    image_location: Optional[str] = attr.field(default=None, kw_only=True)
+    image_name: Optional[str] = attr.field(default=None, kw_only=True)
+    image_tag: Optional[str] = attr.field(default=None, kw_only=True)
+    image_hash: Optional[str] = attr.field(default=None, kw_only=True)
 
     @property
     def repo_url(self):
@@ -341,10 +349,7 @@ class CommitMetric:
             return
         parsed = giturlparse.parse(self.__repo_url)
         logging.debug(self.__repo_url)
-        if (
-            len(parsed.protocols) > 0
-            and parsed.protocols[0] not in CommitMetric.supported_protocols
-        ):
+        if len(parsed.protocols) > 0 and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
             raise ValueError("Unsupported protocol %s", parsed.protocols[0])
         self.__repo_protocol = parsed.protocol
         # In the case of multiple subgroups the host will be in the pathname
