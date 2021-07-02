@@ -12,7 +12,7 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY, GaugeMetricFamily
 
 import pelorus
-from pelorus.logging import log_namespaces
+from pelorus.log import log_namespaces
 
 supported_replica_objects = {"ReplicaSet", "ReplicationController"}
 
