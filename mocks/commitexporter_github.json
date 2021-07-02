@@ -1,11 +1,11 @@
 {
-    "source": "mockoon:1.13.0",
+    "source": "mockoon:1.14.1",
     "data": [
         {
             "type": "environment",
             "item": {
                 "uuid": "",
-                "lastMigration": 13,
+                "lastMigration": 15,
                 "name": "openshift",
                 "endpointPrefix": "",
                 "latency": 0,
@@ -110,7 +110,8 @@
                             }
                         ],
                         "enabled": false,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -191,7 +192,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -259,7 +261,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -327,7 +330,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -395,7 +399,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -463,7 +468,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -531,7 +537,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -595,7 +602,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -659,7 +667,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -723,7 +732,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -791,7 +801,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -855,7 +866,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -995,7 +1007,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -1135,7 +1148,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -1203,7 +1217,8 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     },
                     {
                         "uuid": "",
@@ -1271,10 +1286,11 @@
                             }
                         ],
                         "enabled": true,
-                        "randomResponse": false
+                        "randomResponse": false,
+                        "sequentialResponse": false
                     }
                 ],
-                "proxyMode": true,
+                "proxyMode": false,
                 "proxyHost": "https://api.cluster-36cb.dynamic.opentlc.com:6443",
                 "https": true,
                 "cors": true,
@@ -1307,7 +1323,8 @@
                         "key": "",
                         "value": ""
                     }
-                ]
+                ],
+                "proxyRemovePrefix": false
             }
         }
     ]
