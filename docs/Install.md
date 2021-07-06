@@ -12,7 +12,6 @@ Before deploying the tooling, you must have the following prepared
   * The OpenShift Command Line Tool (oc)
   * [Helm3](https://github.com/helm/helm/releases)
   * jq
-* The repo cloned from the [GitHub repository](https://github.com/konveyor/pelorus)
 
 Additionally, if you are planning to use the out of the box exporters to collect Software Delivery data, you will need:
 
@@ -24,7 +23,8 @@ Additionally, if you are planning to use the out of the box exporters to collect
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.
 
 ```shell
-    git clone https://github.com/konveyor/pelorus
+    # clone the repo (you can use a different release or clone from master if you wish)
+    git clone --depth 1 --branch v1.3.0 https://github.com/konveyor/pelorus
     cd pelorus
     oc create namespace pelorus
     helm install operators charts/operators --namespace pelorus
