@@ -4,7 +4,7 @@ from typing import Optional
 
 import attr
 import pytest
-from committime.collector_base import CommitMetric
+from committime import CommitMetric
 from committime.collector_github import GitHubCommitCollector
 from kubernetes.client import ApiClient, Configuration
 from openshift.dynamic import DynamicClient
@@ -39,8 +39,6 @@ def setup_collector():
 
 
 def expected_commits() -> list[CommitMetricEssentials]:
-    ns = "basic-nginx-build"
-    name = "basic-nginx"
     metrics = [
         CommitMetricEssentials(
             commit_timestamp=1619381788.0,
