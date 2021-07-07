@@ -1,5 +1,13 @@
 name: Unit Tests
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
+  pull_request:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
 
 jobs:
   unit-test:

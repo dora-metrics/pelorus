@@ -2,8 +2,15 @@ name: Chart Lint
 on:
   push:
     branches: [ master ]
+    paths: 
+      - 'charts/**'
+      - 'lintconf.yaml'
   pull_request:
     branches: [ master ]
+    paths: 
+      - 'charts/**'
+      - 'lintconf.yaml'
+
 jobs:
   lint:
     name: Lint

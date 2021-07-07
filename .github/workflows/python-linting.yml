@@ -1,8 +1,13 @@
 name: Pylama
-on: pull_request
+on:
+  pull_request:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
+      - 'pylava.ini'
 
 jobs:
-  build:
+  python-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

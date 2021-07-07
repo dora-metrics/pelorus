@@ -1,6 +1,14 @@
 name: Conftest
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - '_test/**'
+      - 'charts/**'
+  pull_request:
+    paths:
+      - '_test/**'
+      - 'charts/**'
 
 jobs:
   conftest:
