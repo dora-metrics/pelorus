@@ -5,6 +5,7 @@ on:
       - 'exporters/**'
       - 'pyproject.toml'
       - 'scripts/format'
+      - '.github/workflows/python-formatting.yml'
 
 jobs:
   format-check:

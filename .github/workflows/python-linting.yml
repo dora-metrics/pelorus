@@ -5,6 +5,7 @@ on:
       - 'exporters/**'
       - 'pyproject.toml'
       - 'pylava.ini'
+      - '.github/workflows/python-linting.yml'
 
 jobs:
   python-lint:

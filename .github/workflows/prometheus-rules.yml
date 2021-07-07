@@ -4,10 +4,12 @@ on:
     paths:
       - '_test/**'
       - 'charts/pelorus/**'
+      - '.github/workflows/prometheus-rules.yml'
   pull_request:
     paths:
       - '_test/**'
       - 'charts/pelorus/**'
+      - '.github/workflows/prometheus-rules.yml'
 
 jobs:
   test:
