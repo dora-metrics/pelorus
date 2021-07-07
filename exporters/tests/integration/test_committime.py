@@ -87,7 +87,7 @@ class CommitMetricEssentials:
 
 
 @pytest.mark.integration
-def test_github_collector():
+def test_github_provider():
     collector = setup_collector()
 
     actual = [
