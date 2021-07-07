@@ -1,5 +1,11 @@
 name: Check Python Formatting
-on: pull_request
+on:
+  pull_request:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
+      - 'scripts/format'
+      - '.github/workflows/python-formatting.yml'
 
 jobs:
   format-check:
@@ -17,5 +23,4 @@ jobs:
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
       - name: Check for formatting
-        id: formatting
         run: ./scripts/format --check

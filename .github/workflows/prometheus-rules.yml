@@ -1,5 +1,15 @@
-name: Promteheus Rules Tests
-on: [push, pull_request]
+name: Prometheus Rules Tests
+on:
+  push:
+    paths:
+      - '_test/**'
+      - 'charts/pelorus/**'
+      - '.github/workflows/prometheus-rules.yml'
+  pull_request:
+    paths:
+      - '_test/**'
+      - 'charts/pelorus/**'
+      - '.github/workflows/prometheus-rules.yml'
 
 jobs:
   test:

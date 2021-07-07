@@ -1,8 +1,14 @@
 name: Pylama
-on: pull_request
+on:
+  pull_request:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
+      - 'pylava.ini'
+      - '.github/workflows/python-linting.yml'
 
 jobs:
-  build:
+  python-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

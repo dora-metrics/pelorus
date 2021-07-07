@@ -2,8 +2,17 @@ name: Chart Lint
 on:
   push:
     branches: [ master ]
+    paths: 
+      - 'charts/**'
+      - 'lintconf.yaml'
+      - '.github/workflows/chart-lint.yml'
   pull_request:
     branches: [ master ]
+    paths: 
+      - 'charts/**'
+      - 'lintconf.yaml'
+      - '.github/workflows/chart-lint.yml'
+
 jobs:
   lint:
     name: Lint

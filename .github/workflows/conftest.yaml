@@ -1,6 +1,16 @@
 name: Conftest
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - '_test/**'
+      - 'charts/**'
+      - '.github/workflows/conftest.yaml'
+  pull_request:
+    paths:
+      - '_test/**'
+      - 'charts/**'
+      - '.github/workflows/conftest.yaml'
 
 jobs:
   conftest:

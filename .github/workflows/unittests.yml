@@ -1,5 +1,15 @@
 name: Unit Tests
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
+      - '.github/workflows/unittests.yml'
+  pull_request:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
+      - '.github/workflows/unittests.yml'
 
 jobs:
   unit-test:
