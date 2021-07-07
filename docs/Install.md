@@ -12,6 +12,7 @@ Before deploying the tooling, you must have the following prepared
   * The OpenShift Command Line Tool (oc)
   * [Helm3](https://github.com/helm/helm/releases)
   * jq
+  * git
 
 Additionally, if you are planning to use the out of the box exporters to collect Software Delivery data, you will need:
 
