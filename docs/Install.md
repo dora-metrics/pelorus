@@ -22,13 +22,15 @@ Additionally, if you are planning to use the out of the box exporters to collect
 
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.
 
+```shell
+    # clone the repo (you can use a different release or clone from master if you wish)
+    git clone --depth 1 --branch v1.3.0 https://github.com/konveyor/pelorus
+    cd pelorus
     oc create namespace pelorus
     helm install operators charts/operators --namespace pelorus
+    # Verify the operators are completely installed before installing the pelorus helm chart
     helm install pelorus charts/pelorus --namespace pelorus
-
-    >:mag: **Note**<br/>
-    >Verify the operators are completely installed before starting the pelorus helm chart
-
+```
 
 In a few seconds, you will see a number of resourced get created. The above commands will result in the following being deployed:
 
