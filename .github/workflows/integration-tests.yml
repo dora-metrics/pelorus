@@ -1,5 +1,19 @@
 name: Integration Tests
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'exporters/**'
+      - 'mocks/**'
+      - '!mocks/README.md'
+      - 'pyproject.toml'
+      - '.github/workflows/integration-tests.yml'
+  pull_request:
+    paths:
+      - 'exporters/**'
+      - 'mocks/**'
+      - '!mocks/README.md'
+      - 'pyproject.toml'
+      - '.github/workflows/integration-tests.yml'
 
 jobs:
   integration-test:
