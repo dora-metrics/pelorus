@@ -35,8 +35,13 @@ class Pod:
 
 
 @attr.define
-class ReplicationController:
+class Replicator:
+    "Represents a ReplicationController or a ReplicaSet"
+    kind: str
     metadata: Metadata
+
+    def ref(self) -> OwnerRef:
+        return OwnerRef(kind=self.kind, name=self.metadata.name)
 
 
 Item = TypeVar("Item")
