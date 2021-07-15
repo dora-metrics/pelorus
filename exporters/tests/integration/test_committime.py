@@ -9,13 +9,6 @@ from committime.collector_github import GitHubCommitCollector
 from kubernetes.client import ApiClient, Configuration
 from openshift.dynamic import DynamicClient
 
-# export GIT_USER=gituser
-# export GIT_TOKEN=gittoken
-# export GIT_API=localhost:3000
-# export LOG_LEVEL=DEBUG
-# export NAMESPACES=basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod
-# export TLS_VERIFY=False
-
 
 def setup_collector():
     kube_config = Configuration()
