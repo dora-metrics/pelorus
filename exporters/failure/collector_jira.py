@@ -14,19 +14,9 @@ class JiraFailureCollector(AbstractFailureCollector):
     Jira implementation of a FailureCollector
     """
 
-    def __init__(self, user, apikey, server):
-        if not os.environ.get("PROJECT"):
-            logging.info(
-                "Missing Project Field Parameter, querying all projects.",
-            )
-            self.project_field = None
-        else:
-            logging.info(
-                "Querying issues from only '%s' projects.",
-                os.environ.get("PROJECT"),
-            )
-            self.project_field = os.environ.get("PROJECT")
+    def __init__(self, user, apikey, server, projects):
         super().__init__(server, user, apikey)
+        self.projects = projects
 
     def search_issues(self):
         options = {"server": self.server}
@@ -34,8 +24,8 @@ class JiraFailureCollector(AbstractFailureCollector):
         jira = JIRA(options, basic_auth=(self.user, self.apikey))
         # TODO FIXME This may need to be modified to suit needs and have a time period.
         query_string = "type=bug and priority=highest"
-        if self.project_field is not None:
-            query_string = query_string + " and project in (" + self.project_field + ")"
+        if self.projects is not None:
+            query_string = query_string + " and project in (" + self.projects + ")"
         jira = JIRA(options, basic_auth=(self.user, self.apikey))
         jira_issues = jira.search_issues(query_string)
         critical_issues = []
