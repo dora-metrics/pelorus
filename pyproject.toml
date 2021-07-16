@@ -3,3 +3,6 @@ profile = "black"
 
 [tool.pytest.ini_options]
 testpaths = ["exporters/tests"]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')"
+]

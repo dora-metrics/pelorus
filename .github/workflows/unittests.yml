@@ -30,6 +30,6 @@ jobs:
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
       - name: Test with pytest
-        run: coverage run -m pytest -rap
+        run: coverage run -m pytest -rap -m "not integration"
       - name: Generate coverage report
         run: coverage report
