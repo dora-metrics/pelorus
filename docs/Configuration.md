@@ -23,7 +23,6 @@ An _exporter_ is a data collection application that pulls data from various tool
 
 Exporters can be deployed and configured via a list of `exporters.instances` inside the `values.yaml` file. Some exporters also require secrets to be created when integrating with external tools and platforms. A sample exporter configuration may look like this:
 
-
 ```
 exporters:
   instances:
@@ -102,7 +101,6 @@ exporters:
 
 This exporter provides several configuration options, passed via environment variables.
 
-
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
 | `GIT_USER` | yes | User's github username | unset |
@@ -115,8 +113,6 @@ This exporter provides several configuration options, passed via environment var
 | DEPRECATED `GITHUB_USER` | no | User's github username | unset |
 | DEPRECATED `GITHUB_TOKEN` | no | User's Github API Token | unset |
 | DEPRECATED `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
-
-
 
 ### Deploy Time Exporter
 
@@ -171,6 +167,7 @@ This exporter provides several configuration options, passed via environment var
 | `USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
 | `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
+| `PROJECT` | no | Used for Jira Exporter to query issues from a list of project keys. List of project keys separated by coma. ex: "PROJECTKEY1,PROJECTKEY2" | unset |
 
 ### ServiceNow exporter details
 
