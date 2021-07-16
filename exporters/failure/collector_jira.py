@@ -31,8 +31,8 @@ class JiraFailureCollector(AbstractFailureCollector):
     def search_issues(self):
         options = {"server": self.server}
         # Connect to Jira
-        jira = JIRA(options, basic_auth=(self.user, self.apikey))                
-        # TODO FIXME This may need to be modified to suit needs and have a time period.        
+        jira = JIRA(options, basic_auth=(self.user, self.apikey))
+        # TODO FIXME This may need to be modified to suit needs and have a time period.
         query_string = "type=bug and priority=highest"
         if self.project_field is not None:
             query_string = query_string + " and project in (" + self.project_field + ")"
