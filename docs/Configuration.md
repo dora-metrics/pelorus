@@ -167,7 +167,7 @@ This exporter provides several configuration options, passed via environment var
 | `USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
 | `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
-| `PROJECT` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2` | unset |
+| `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2` | unset |
 
 ### ServiceNow exporter details
 
