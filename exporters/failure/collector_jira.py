@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 
 import pytz
@@ -14,14 +15,23 @@ class JiraFailureCollector(AbstractFailureCollector):
     """
 
     def __init__(self, user, apikey, server):
+        if not os.environ.get("PROJECT"):
+            logging.info(
+                "Missing Project Field Parameter, querying all projects."
+            )
+            self.project_field = None
+        else:
+            self.project_field = os.environ.get("PROJECT")
         super().__init__(server, user, apikey)
 
     def search_issues(self):
         options = {"server": self.server}
         # Connect to Jira
-        jira = JIRA(options, basic_auth=(self.user, self.apikey))
-        # TODO FIXME This may need to be modified to suit needs and have a time period.
+        jira = JIRA(options, basic_auth=(self.user, self.apikey))                
+        # TODO FIXME This may need to be modified to suit needs and have a time period.        
         query_string = "type=bug and priority=highest"
+        if self.project_field is not None:
+            query_string = query_string + " and project in (" + self.project_field + ")"
         jira = JIRA(options, basic_auth=(self.user, self.apikey))
         jira_issues = jira.search_issues(query_string)
         critical_issues = []
