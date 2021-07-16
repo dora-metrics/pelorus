@@ -13,8 +13,9 @@ class JiraFailureCollector(AbstractFailureCollector):
     Jira implementation of a FailureCollector
     """
 
-    def __init__(self, user, apikey, server):
+    def __init__(self, user, apikey, server, projects):
         super().__init__(server, user, apikey)
+        self.projects = projects
 
     def search_issues(self):
         options = {"server": self.server}
@@ -22,6 +23,8 @@ class JiraFailureCollector(AbstractFailureCollector):
         jira = JIRA(options, basic_auth=(self.user, self.apikey))
         # TODO FIXME This may need to be modified to suit needs and have a time period.
         query_string = "type=bug and priority=highest"
+        if self.projects is not None:
+            query_string = query_string + " and project in (" + self.projects + ")"
         jira = JIRA(options, basic_auth=(self.user, self.apikey))
         jira_issues = jira.search_issues(query_string)
         critical_issues = []

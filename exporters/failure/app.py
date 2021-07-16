@@ -16,9 +16,9 @@ REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
 
 class TrackerFactory:
     @staticmethod
-    def getCollector(username, token, tracker_api, project, tracker_provider):
+    def getCollector(username, token, tracker_api, projects, tracker_provider):
         if tracker_provider == "jira":
-            return JiraFailureCollector(username, token, tracker_api)
+            return JiraFailureCollector(username, token, tracker_api, projects)
         if tracker_provider == "servicenow":
             return ServiceNowFailureCollector(username, token, tracker_api)
 
@@ -28,7 +28,13 @@ if __name__ == "__main__":
     if pelorus.missing_configs(REQUIRED_CONFIG):
         print("This program will exit.")
         sys.exit(1)
-    project = os.environ.get("PROJECT")
+    projects = None
+    if os.environ.get("PROJECTS") is not None:
+        logging.info(
+            "Querying issues from '%s' projects.",
+            os.environ.get("PROJECTS"),
+        )
+        projects = os.environ.get("PROJECTS")
     username = os.environ.get("USER")
     token = os.environ.get("TOKEN")
     tracker_api = os.environ.get("SERVER")
@@ -38,7 +44,7 @@ if __name__ == "__main__":
     start_http_server(8080)
 
     collector = TrackerFactory.getCollector(
-        username, token, tracker_api, project, tracker_provider
+        username, token, tracker_api, projects, tracker_provider
     )
     REGISTRY.register(collector)
 
