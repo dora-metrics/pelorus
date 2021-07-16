@@ -21,6 +21,10 @@ class JiraFailureCollector(AbstractFailureCollector):
             )
             self.project_field = None
         else:
+            logging.info(
+                "Querying issues from only '%s' projects.",
+                os.environ.get("PROJECT"),
+            )
             self.project_field = os.environ.get("PROJECT")
         super().__init__(server, user, apikey)
 
