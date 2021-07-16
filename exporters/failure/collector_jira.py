@@ -17,7 +17,7 @@ class JiraFailureCollector(AbstractFailureCollector):
     def __init__(self, user, apikey, server):
         if not os.environ.get("PROJECT"):
             logging.info(
-                "Missing Project Field Parameter, querying all projects."
+                "Missing Project Field Parameter, querying all projects.",
             )
             self.project_field = None
         else:
