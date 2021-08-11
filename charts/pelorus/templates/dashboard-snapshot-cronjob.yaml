@@ -72,7 +72,7 @@ spec:
               snap_key=$(echo $snapshot | ./jq -r .key)
 
               echo "New Snapshot: https://${grafana_url}/dashboard/snapshot/${snap_key}"
-            image: registry.redhat.io/web-terminal-tech-preview/web-terminal-tooling-rhel8:1.0.1
+            image: quay.io/wto/web-terminal-tooling:1.2
             name: dashboard-snapshots
           dnsPolicy: ClusterFirst
           restartPolicy: Never
