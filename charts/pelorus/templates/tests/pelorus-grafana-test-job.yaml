@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: grafana-dashboard-test
-        image: registry.redhat.io/web-terminal-tech-preview/web-terminal-tooling-rhel8:1.0.1
+        image: quay.io/wto/web-terminal-tooling:1.2
         env:
         - name: PELORUS_DASHBOARDS
           value: "software-delivery-performance,software-delivery-performance-by-app"
