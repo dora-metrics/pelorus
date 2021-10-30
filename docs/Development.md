@@ -134,6 +134,7 @@ Running an exporter on your local machine should follow this process:
 
         python -m venv .venv
         source .venv/bin/activate
+        pip install --upgrade pip
 
 1. Install dependencies
 
@@ -141,6 +142,7 @@ Running an exporter on your local machine should follow this process:
         pip install -r exporters/requirements-dev.txt
 
 1. Install the pelorus library
+
         pip install exporters/
 
 1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](/page/Configuration.md#configuring-exporters) to see supported variables).
