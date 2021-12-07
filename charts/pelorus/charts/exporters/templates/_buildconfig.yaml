@@ -17,7 +17,7 @@ spec:
   source:
     contextDir: {{ .source_context_dir }}
     git:
-      ref: {{ .source_ref }}
+      ref: {{ .source_ref | default "1.3.0.1" }}
       uri: {{ .source_url }}
     type: Git
   strategy:
