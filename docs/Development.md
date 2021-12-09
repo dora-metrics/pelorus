@@ -316,17 +316,18 @@ The following is a walkthrough of the process we follow to create and manage ver
     * Ensure that you can install Pelorus from the tagged version of the code, including all exporters and optional configurations. (Ensure you update the values.yaml file you are using to refer to the tagged version of the code in all builds)
     * Follow the above guidance for testing Pull requests.
 5. If any bugs are found, open PRs to fix them, then delete the release and tag that was created, and start again from step 1.
-6. Create an annotated tag for the final release with the `-rc` suffix removed.
+6. Update the default exporter tag version to the new tag you're about to make. In `charts/pelorus/charts/exporters/templates/_buildconfig.yaml`, update `ref: {{ .source_ref | default "TAG_HERE" }}` accordingly.
+7. Create an annotated tag for the final release with the `-rc` suffix removed.
 
         git checkout <version>-rc
         git tag -a <version>
         git push -u upstream <version>
 
-8. Generate git release notes from the `git log`.
+9. Generate git release notes from the `git log`.
 
         git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
 
-7. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
+10. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
     * Select the tag that was pushed in the previous step.
     * The release _title_ should be `Release <version>`. 
     * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
