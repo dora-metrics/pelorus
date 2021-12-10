@@ -23,7 +23,46 @@ An _exporter_ is a data collection application that pulls data from various tool
 
 Exporters can be deployed and configured via a list of `exporters.instances` inside the `values.yaml` file. Some exporters also require secrets to be created when integrating with external tools and platforms. A sample exporter configuration may look like this:
 
+```yaml
+exporters:
+  instances:
+    # Values file for exporter helm chart
+  - app_name: deploytime-exporter
+    source_context_dir: exporters/
+    extraEnv:
+    - name: APP_FILE
+      value: deploytime/app.py
+    source_url: https://github.com/redhat-cop/pelorus.git
 ```
+
+Additionally, you may want to deploy a single exporter multiple times to gather data from different sources. For example, if you wanted to pull commit data from both GitHub and a private GitHub Enterprise instance, you would deploy two instances of the Commit Time Exporter like so:
+
+```yaml
+exporters:
+  instances:
+  - app_name: committime-github
+    env_from_secrets: 
+    - github-credentials
+    source_context_dir: exporters/
+    extraEnv:
+    - name: APP_FILE
+      value: committime/app.py
+    source_url: https://github.com/redhat-cop/pelorus.git
+  - app_name: committime-gh-enterprise
+    env_from_secrets: 
+    - github-enterprise-credentials
+    source_context_dir: exporters/
+    extraEnv:
+    - name: APP_FILE
+      value: committime/app.py
+    source_url: https://github.com/redhat-cop/pelorus.git
+```
+
+Each exporter additionally takes a unique set of environment variables to further configure its integrations and behavior. These can be set with literal keys names and values under `extraEnv` or by creating a kubernetes secret and listing the secret name under `env_from_secrets`. As detailed below.
+
+Any individual exporter can use a specific version of itself by specifying a git reference under `source_ref`. For example:
+
+```yaml
 exporters:
   instances:
     # Values file for exporter helm chart
@@ -36,32 +75,7 @@ exporters:
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
 
-Additionally, you may want to deploy a single exporter multiple times to gather data from different sources. For example, if you wanted to pull commit data from both GitHub and a private GitHub Enterprise instance, you would deploy two instances of the Commit Time Exporter like so:
-
-```
-exporters:
-  instances:
-  - app_name: committime-github
-    env_from_secrets: 
-    - github-credentials
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-      value: committime/app.py
-    source_ref: master
-    source_url: https://github.com/redhat-cop/pelorus.git
-  - app_name: committime-gh-enterprise
-    env_from_secrets: 
-    - github-enterprise-credentials
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-      value: committime/app.py
-    source_ref: master
-    source_url: https://github.com/redhat-cop/pelorus.git
-```
-
-Each exporter additionally takes a unique set of environment variables to further configure its integrations and behavior. These can be set with literal keys names and values under `extraEnv` or by creating a kubernetes secret and listing the secret name under `env_from_secrets`. As detailed below.
+If not specified, it will use the latest stable release tag.
 
 ### Commit Time Exporter
 
@@ -75,15 +89,19 @@ Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issu
 
 Create a secret containing your Git username and token.
 
-    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
+```shell
+oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
+```
 
 Create a secret containing your Git username, token, and API.  An API example is `github.mycompany.com/api/v3`
 
-    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
+```shell
+oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
+```
 
 #### Sample Values
 
-```
+```yaml
 exporters:
   instances:
   - app_name: committime-exporter
@@ -93,7 +111,6 @@ exporters:
     extraEnv:
     - name: APP_FILE
     value: committime/app.py
-    source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
 
@@ -139,21 +156,25 @@ The job of the deploy time exporter is to capture the timestamp at which a failu
 
 Create a secret containing your Jira information.
 
-    oc create secret generic jira-secret \
-    --from-literal=SERVER=<Jira Server> \
-    --from-literal=USER=<username> \
-    --from-literal=TOKEN=<personal access token> \
-    -n pelorus
+```shell
+oc create secret generic jira-secret \
+--from-literal=SERVER=<Jira Server> \
+--from-literal=USER=<username> \
+--from-literal=TOKEN=<personal access token> \
+-n pelorus
+```
 
 For ServiceNow create a secret containing your ServiceNow information.
 
-    oc create secret generic snow-secret \
-    --from-literal=SERVER=<ServiceNow Server> \
-    --from-literal=USER=<username> \
-    --from-literal=TOKEN=<personal access token> \
-    --from-literal=TRACKER_PROVICER=servicenow \
-    --from-literal=APP_FIELD=<Custom app label field> \
-    -n pelorus
+```shell
+oc create secret generic snow-secret \
+--from-literal=SERVER=<ServiceNow Server> \
+--from-literal=USER=<username> \
+--from-literal=TOKEN=<personal access token> \
+--from-literal=TRACKER_PROVICER=servicenow \
+--from-literal=APP_FIELD=<Custom app label field> \
+-n pelorus
+```
 
 #### Environment Variables
 
