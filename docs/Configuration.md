@@ -32,7 +32,6 @@ exporters:
     extraEnv:
     - name: APP_FILE
       value: deploytime/app.py
-    source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
 
@@ -48,7 +47,6 @@ exporters:
     extraEnv:
     - name: APP_FILE
       value: committime/app.py
-    source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
   - app_name: committime-gh-enterprise
     env_from_secrets: 
@@ -57,11 +55,27 @@ exporters:
     extraEnv:
     - name: APP_FILE
       value: committime/app.py
-    source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
 
 Each exporter additionally takes a unique set of environment variables to further configure its integrations and behavior. These can be set with literal keys names and values under `extraEnv` or by creating a kubernetes secret and listing the secret name under `env_from_secrets`. As detailed below.
+
+Any individual exporter can use a specific version of itself by specifying a git reference under `source_ref`. For example:
+
+```yaml
+exporters:
+  instances:
+    # Values file for exporter helm chart
+  - app_name: deploytime-exporter
+    source_context_dir: exporters/
+    extraEnv:
+    - name: APP_FILE
+      value: deploytime/app.py
+    source_ref: master
+    source_url: https://github.com/redhat-cop/pelorus.git
+```
+
+If not specified, it will use the latest stable release tag.
 
 ### Commit Time Exporter
 
@@ -97,7 +111,6 @@ exporters:
     extraEnv:
     - name: APP_FILE
     value: committime/app.py
-    source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
 
