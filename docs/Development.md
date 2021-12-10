@@ -37,11 +37,10 @@ When any of our Helm charts are updated, we need to bump the version number. Thi
 
 1. Install Helm's [chart-testing](https://github.com/helm/chart-testing) tool.
 1. Install the latest release of [vert](https://github.com/Masterminds/vert/releases/)
-    1. Run `vert -g ^1 $(git describe)` to test that its working.
+    1. Run `vert -g ^1 $(git describe)` to test that it is working.
 1. Copy the pre-commit hook into your git hooks directory.
-    ```
-    cp _test/pre-commit .git/hooks/pre-commit
-    ```
+
+        cp _test/pre-commit .git/hooks/pre-commit
 
 This script will use Helm's built-in linter to check whether a version bump is necessary, and if it is, it will take the current `version` from Chart.yaml and increment it one patch version. It will also keep `appVersion` fo the Pelorus chart up to date with the repo version using `git describe`.
 

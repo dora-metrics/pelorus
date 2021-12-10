@@ -24,26 +24,26 @@ Additionally, if you are planning to use the out of the box exporters to collect
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.
 
 ```shell
-    # clone the repo (you can use a different release or clone from master if you wish)
-    git clone --depth 1 --branch v1.3.0 https://github.com/konveyor/pelorus
-    cd pelorus
-    oc create namespace pelorus
-    helm install operators charts/operators --namespace pelorus
-    # Verify the operators are completely installed before installing the pelorus helm chart
-    helm install pelorus charts/pelorus --namespace pelorus
+# clone the repo (you can use a different release or clone from master if you wish)
+git clone --depth 1 --branch v1.3.0 https://github.com/konveyor/pelorus
+cd pelorus
+oc create namespace pelorus
+helm install operators charts/operators --namespace pelorus
+# Verify the operators are completely installed before installing the pelorus helm chart
+helm install pelorus charts/pelorus --namespace pelorus
 ```
 
 In a few seconds, you will see a number of resourced get created. The above commands will result in the following being deployed:
 
 * Prometheus and Grafana operators
 * The core Pelorus stack, which includes:
-  * A `Prometheus` instance
-  * A `Grafana` instance
-  * A `ServiceMonitor` instance for scraping the Pelorus exporters.
-  * A `GrafanaDatasource` pointing to Prometheus.
-  * A set of `GrafanaDashboards`. See the [dashboards documentation](/page/Dashboards/) for more details.
+    * A `Prometheus` instance
+    * A `Grafana` instance
+    * A `ServiceMonitor` instance for scraping the Pelorus exporters.
+    * A `GrafanaDatasource` pointing to Prometheus.
+    * A set of `GrafanaDashboards`. See the [dashboards documentation](/page/Dashboards/) for more details.
 * The following exporters:
-  * Deploy Time
+    * Deploy Time
 
 From here, some additional configuration is required in order to deploy other exporters, and make the Pelorus
 

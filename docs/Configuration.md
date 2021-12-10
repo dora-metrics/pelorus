@@ -23,7 +23,7 @@ An _exporter_ is a data collection application that pulls data from various tool
 
 Exporters can be deployed and configured via a list of `exporters.instances` inside the `values.yaml` file. Some exporters also require secrets to be created when integrating with external tools and platforms. A sample exporter configuration may look like this:
 
-```
+```yaml
 exporters:
   instances:
     # Values file for exporter helm chart
@@ -38,7 +38,7 @@ exporters:
 
 Additionally, you may want to deploy a single exporter multiple times to gather data from different sources. For example, if you wanted to pull commit data from both GitHub and a private GitHub Enterprise instance, you would deploy two instances of the Commit Time Exporter like so:
 
-```
+```yaml
 exporters:
   instances:
   - app_name: committime-github
@@ -75,15 +75,19 @@ Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issu
 
 Create a secret containing your Git username and token.
 
-    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
+```shell
+oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
+```
 
 Create a secret containing your Git username, token, and API.  An API example is `github.mycompany.com/api/v3`
 
-    oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
+```shell
+oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
+```
 
 #### Sample Values
 
-```
+```yaml
 exporters:
   instances:
   - app_name: committime-exporter
@@ -139,21 +143,25 @@ The job of the deploy time exporter is to capture the timestamp at which a failu
 
 Create a secret containing your Jira information.
 
-    oc create secret generic jira-secret \
-    --from-literal=SERVER=<Jira Server> \
-    --from-literal=USER=<username> \
-    --from-literal=TOKEN=<personal access token> \
-    -n pelorus
+```shell
+oc create secret generic jira-secret \
+--from-literal=SERVER=<Jira Server> \
+--from-literal=USER=<username> \
+--from-literal=TOKEN=<personal access token> \
+-n pelorus
+```
 
 For ServiceNow create a secret containing your ServiceNow information.
 
-    oc create secret generic snow-secret \
-    --from-literal=SERVER=<ServiceNow Server> \
-    --from-literal=USER=<username> \
-    --from-literal=TOKEN=<personal access token> \
-    --from-literal=TRACKER_PROVICER=servicenow \
-    --from-literal=APP_FIELD=<Custom app label field> \
-    -n pelorus
+```shell
+oc create secret generic snow-secret \
+--from-literal=SERVER=<ServiceNow Server> \
+--from-literal=USER=<username> \
+--from-literal=TOKEN=<personal access token> \
+--from-literal=TRACKER_PROVICER=servicenow \
+--from-literal=APP_FIELD=<Custom app label field> \
+-n pelorus
+```
 
 #### Environment Variables
 
