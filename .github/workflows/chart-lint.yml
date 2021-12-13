@@ -21,8 +21,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
     
-      - name: Lint Helm charts
-        uses: helm/chart-testing-action@v1.0.0-rc.2
+      - name: Install chart-testing tool `ct`
+        uses: helm/chart-testing-action@v2.1.0
         with:
-          command: lint
-          config: ct.yaml
+          version: "v3.4.0"
+      
+      - name: Lint charts
+        run: ct lint --config ct.yaml
