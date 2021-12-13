@@ -299,31 +299,32 @@ We are in the process of refactoring our helm charts such that they can be teste
 
 The following is a walkthrough of the process we follow to create and manage versioned releases of Pelorus.
 
-1. Create a lightweight _release candidate_ tag from the `master` branch. The tag name should be the next sequential [Semantic Version](https://semver.org) with the suffix `-rc`. Then push the new tag to the main repository.
+1. Update the default exporter tag version to the new tag you're about to make.  
+    In `charts/pelorus/charts/exporters/templates/_buildconfig.yaml`, update the following line accordingly:
+    
+        ref: {{ .source_ref | default "<version>-rc" }}
+
+    You'll also need to bump the `pelorus` chart version in `charts/pelorus/charts/exporters/Chart.yaml`
+2. Create a lightweight _release candidate_ tag from the `master` branch. The tag name should be the next sequential [Semantic Version](https://semver.org) with the suffix `-rc`. Then push the new tag to the main repository.
 
         git tag <version>-rc
         git push -u upstream <version>-rc
 
-2. Generate git release notes from the `git log`.
+3. Generate git release notes from the `git log`.
 
         git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
 
-3. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
+4. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
     * Select the tag that was pushed in the first step
     * The release _title_ should be `Release candidate for <version>`. 
     * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
     * Check the box that says **This is a pre-release**.
     * Click **Publish Release**.
-4. Test. Test. Test.
+5. Test. Test. Test.
     * Ensure that all github actions in the repo are passing.
     * Ensure that you can install Pelorus from the tagged version of the code, including all exporters and optional configurations. (Ensure you update the values.yaml file you are using to refer to the tagged version of the code in all builds)
     * Follow the above guidance for testing Pull requests.
-5. If any bugs are found, open PRs to fix them, then delete the release and tag that was created, and start again from step 1.
-6. Update the default exporter tag version to the new tag you're about to make.  
-    In `charts/pelorus/charts/exporters/templates/_buildconfig.yaml`, update the following line accordingly:
-    
-        ref: {{ .source_ref | default "TAG_HERE" }}
-
+6. If any bugs are found, open PRs to fix them, then create the next -rc tag (e.g. `<version>-rc2`), and start again from step 1.
 7. Create an annotated tag for the final release with the `-rc` suffix removed.
 
         git checkout <version>-rc
