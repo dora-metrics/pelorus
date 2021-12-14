@@ -146,4 +146,7 @@ policy/
 
 # BATS
 _test/test_helper/
-_test/prometheus/rules.yaml
+_test/prometheus/rules.yamlcharts/pelorus/Chart.lock
+
+# Helm
+charts/pelorus/Chart.lock
