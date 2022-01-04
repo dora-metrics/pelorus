@@ -4,19 +4,30 @@ import json
 import logging
 import re
 from abc import abstractmethod
-from typing import Iterable
+from collections.abc import Mapping
+from typing import Any, Iterable, Optional, Tuple
 
+import openshift.dynamic
+import openshift.dynamic.exceptions
 from committime import CommitMetric
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
+from pelorus.utils import get_nested, name_value_attrs_to_dict
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
     Base class for a CommitCollector.
     This class should be extended for the system which contains the commit information.
+    """
+
+    _kube_client: openshift.dynamic.DynamicClient
+    _git_uri_annotation: str
+    _commit_dict: dict[str, float]
+    """The name of the annotation to check if no repo_url comes from jenkins and
+    the build spec doesn't have git information.
     """
 
     def __init__(
@@ -30,6 +41,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         timedate_format,
         git_api=None,
         tls_verify=None,
+        git_uri_annotation: str = "gitUri",
     ):
         """Constructor"""
         self._kube_client = kube_client
@@ -42,6 +54,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self._commit_dict = {}
         self._timedate_format = timedate_format
         self._collector_name = collector_name
+        self._git_uri_annotation = git_uri_annotation
         logging.info("=====Using %s Collector=====" % (self._collector_name))
 
     def collect(self):
@@ -59,7 +72,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     my_metric.name,
                     my_metric.commit_hash,
                     my_metric.image_hash,
-                    str(float(my_metric.commit_timestamp)),
+                    str(float(my_metric.commit_timestamp)),  # type: ignore
                 )
             )
             commit_metric.add_metric(
@@ -90,13 +103,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # Initialize metrics list
         metrics = []
         for namespace in self._namespaces:
-            # Initialized variables
-            builds = []
-            pipeline_runs = []
-            apps = []
-            pipelines = []
-            builds_by_app = {}
-            runs_by_app = {}
             app_label = pelorus.get_app_label()
             logging.debug(
                 "Searching for builds with label: %s in namespace: %s"
@@ -106,59 +112,61 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             v1_builds = self._kube_client.resources.get(
                 api_version="build.openshift.io/v1", kind="Build"
             )
-            v1_tekton = self._kube_client.resources.get(
-                api_version="tekton.dev/v1beta1", kind="PipelineRun"
-            )
-            # only use builds that have the app label
+            # only use builds that have an app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
-            # only use PipelineRun that have the app label
-            pipeline_runs = v1_tekton.get(namespace=namespace, label_selector=app_label)
-            # use a jsonpath expression to find all values for the app label
-            jsonpath_str = (
-                "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
-            )
+
+            try:
+                v1_tekton = self._kube_client.resources.get(
+                    api_version="tekton.dev/v1beta1", kind="PipelineRun"
+                )
+                # only use PipelineRun that have an app label
+                pipeline_runs = v1_tekton.get(
+                    namespace=namespace, label_selector=app_label
+                )
+            except openshift.dynamic.exceptions.ResourceNotFoundError:
+                pipeline_runs = pelorus.NoOpResourceInstance()
+
+            # use a jsonpath expression to find all possible values for the app label
+            jsonpath_str = f"$['items'][*]['metadata']['labels']['{app_label}']"
             jsonpath_expr = parse(jsonpath_str)
 
-            found = jsonpath_expr.find(builds)
-            runs_found = jsonpath_expr.find(pipeline_runs)
+            apps: set[str] = {match.value for match in jsonpath_expr.find(builds)}
+            pipelines: set[str] = {
+                match.value for match in jsonpath_expr.find(pipeline_runs)
+            }
 
-            apps = [match.value for match in found]
-            pipelines = [match.value for match in runs_found]
+            builds_by_app: dict[str, list] = {
+                app: [
+                    build
+                    for build in builds.items
+                    if build.metadata.labels[app_label] == app
+                ]
+                for app in apps
+            }
 
-            if not apps and not pipelines:
-                continue
-            elif apps:
-                # remove duplicates
-                apps = list(dict.fromkeys(apps))
-                builds_by_app = {}
+            metrics += self.get_metrics_from_apps(builds_by_app, namespace)
 
-                for app in apps:
-                    builds_by_app[app] = list(
-                        filter(lambda b: b.metadata.labels[app_label] == app, builds.items)
-                    )
-                
-                metrics += self.get_metrics_from_apps(builds_by_app, namespace)
-            elif pipelines:
-                # remove duplicates
-                pipelines = list(dict.fromkeys(pipelines))
-                runs_by_app = {}
+            runs_by_app: dict[str, list] = {
+                pipeline: [
+                    run
+                    for run in pipeline_runs.items
+                    if run.metadata.labels[app_label] == pipeline
+                ]
+                for pipeline in pipelines
+            }
 
-                for pipeline in pipelines:
-                    runs_by_app[pipeline] = list(
-                        filter(lambda b: b.metadata.labels[app_label] == pipeline, pipeline_runs.items)
-                    )
-                
-                metrics += self.get_metric_from_pipelineruns(runs_by_app, namespace)
+            metrics += self.get_metrics_from_pipelineruns(runs_by_app, namespace)
 
         return metrics
 
     @abstractmethod
-    def get_commit_time(self, metric):
+    def get_commit_time(self, metric: CommitMetric) -> CommitMetric:
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 
-    def get_metrics_from_apps(self, apps, namespace):
-        """Expects a sorted array of build data sorted by app label"""
+    def get_metrics_from_apps(
+        self, apps: Mapping[str, Any], namespace: str
+    ) -> list[CommitMetric]:
         metrics = []
         for app in apps:
 
@@ -181,45 +189,58 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             for build in code_builds:
                 try:
                     metric = self.get_metric_from_build(build, app, namespace, repo_url)
+
+                    if not metric:
+                        continue
+
+                    logging.debug("Adding metric for app %s" % app)
+                    metrics.append(metric)
                 except Exception:
                     logging.error(
                         "Cannot collect metrics from build: %s" % (build.metadata.name)
                     )
-
-                if metric:
-                    logging.debug("Adding metric for app %s" % app)
-                    metrics.append(metric)
         return metrics
 
-    def get_metric_from_build(self, build, app, namespace, repo_url):
+    def get_metric_from_build(
+        self, build, app: str, namespace: str, repo_url: Optional[str]
+    ) -> Optional[CommitMetric]:
         try:
-
             metric = CommitMetric(app)
 
+            metadata = build.metadata
+            labels = metadata.labels
+            spec = build.spec
+
             if not repo_url:
-                if build.spec.source.git:
-                    repo_url = build.spec.source.git.uri
-                elif build.metadata.labels.pelorusgithost:
-                    git_host = build.metadata.labels.pelorusgithost
-                    git_project = build.metadata.labels.pelorusgitproject
-                    git_app = build.metadata.labels.pelorusgitapp
-                    git_protocol = build.metadata.labels.pelorusgitprotocol
-                    repo_url = git_protocol + "://" + git_host + "/" + git_project + "/" + git_app
+                if spec.source.git:
+                    repo_url = spec.source.git.uri
+                elif repo_url := get_nested(
+                    metadata, ["annotations", self._git_uri_annotation], default=None
+                ):
+                    pass
                 else:
                     repo_url = self._get_repo_from_build_config(build)
 
             metric.repo_url = repo_url
-            commit_sha = build.metadata.labels.peloruscommitsha
-            metric.build_name = build.metadata.name
-            metric.build_config_name = build.metadata.labels.buildconfig
-            metric.namespace = build.metadata.namespace
-            labels = build.metadata.labels
+
+            if spec.revision:
+                commit_sha = spec.revision.git.commit
+                metric.committer = spec.revision.git.author.name
+            else:
+                # TODO: check for existence, allow user customization? Annotation instead?
+                commit_sha = labels.peloruscommitsha
+                metric.committer = "UNKNOWN_AUTHOR"
+
+            metric.build_name = metadata.name
+            metric.build_config_name = labels.buildconfig
+            metric.namespace = metadata.namespace
+            # TODO: replace this with something like labels.__dict__,
+            # because at that level an openshift.dynamic.ResourceField's
+            # dict should just be dict[str, str].
+            # But this requires testing.
             metric.labels = json.loads(str(labels).replace("'", '"'))
 
             metric.commit_hash = commit_sha
-            metric.name = app
-            #metric.committer = build.spec.revision.git.author.name
-            metric.committer = "default"
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
             # Check the cache for the commit_time, if not call the API
@@ -234,8 +255,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 if metric.commit_time is None:
                     return None
                 # Add the timestamp to the cache
-                self._commit_dict[metric.commit_hash] = metric.commit_timestamp
+                self._commit_dict[metric.commit_hash] = metric.commit_timestamp  # type: ignore
             else:
+                # TODO: do we not actually update commit_time, just commit_timestamp?
+                # Is this intentional?
                 metric.commit_timestamp = self._commit_dict[commit_sha]
                 logging.debug(
                     "Returning sha: %s, commit_timestamp: %s, from cache."
@@ -252,7 +275,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             logging.debug(e, exc_info=True)
             return None
 
-    def get_repo_from_jenkins(self, jenkins_builds):
+    def get_repo_from_jenkins(self, jenkins_builds) -> Optional[str]:
+
         if jenkins_builds:
             # First, check for cases where the source url is in pipeline params
             git_repo_regex = re.compile(
@@ -279,85 +303,68 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 )
         # If no repo is found, we will return None, which will be handled later on
 
-    def get_metric_from_pipelineruns(self, pipelines, namespace):
-        """Expects a sorted array of build data sorted by app label"""
+    def get_metrics_from_pipelineruns(
+        self, pipelines: Mapping[str, list[Any]], namespace: str
+    ) -> list[CommitMetric]:
         metrics = []
-        for pipeline in pipelines:
-            runs = pipelines[pipeline]
+        for pipeline, run in (
+            (pipeline, run) for pipeline, runs in pipelines.items() for run in runs
+        ):
+            try:
+                metric = CommitMetric(pipeline)
 
-            for run in runs:
-                repo_url = 'http://default'
-                commit_sha = 'default'
-                image_hash = 'default'
-                image_location = 'http://default'
-                try:
-                    # metric = self.get_metric_from_build(build, app, namespace, repo_url)
-                    metric = CommitMetric(pipeline)
-                    # By convention need to get image location from PARAMS
-                    params = run.status.pipelineSpec.params
-                    if params:
-                        for param in params:
-                            if param.name == "IMAGE_NAME":
-                                image_location = param.default
-                    # save each taskRun inside the pipeline
-                    task_runs = run.status.taskRuns
-                    if task_runs:
-                        for taskrun in task_runs:
-                            if taskrun:
-                                # taskResults come in list inside array format for some reason
-                                props = taskrun[1].status.taskResults
-                                if props:
-                                    for prop in props:
-                                        if prop.name == "url":
-                                            repo_url = prop.value
-                                        if prop.name == "commit":
-                                            commit_sha = prop.value
-                                        if prop.name == "IMAGE_DIGEST":
-                                            image_hash = prop.value
-                                        
+                # TODO: gracefully degrade
+                if (url_and_sha := self._get_url_and_sha(pipeline, run)) is not None:
+                    repo_url, commit_sha = url_and_sha
+                else:
+                    repo_url, commit_sha = None, None
 
-                    metric.repo_url = repo_url
-                    metric.commit_hash = commit_sha
-                    metric.build_name = run.metadata.name
-                    metric.build_config_name = run.metadata.labels["tekton.dev/pipeline"]
-                    metric.namespace = run.metadata.namespace
-                    labels = run.metadata.labels
-                    metric.labels = json.loads(str(labels).replace("'", '"'))
+                image_hash = _find_first_image_digest_value(run)
+                image_location = self._find_first_image_param(run)
 
-                    metric.name = pipeline
-                    metric.committer = "default"
-                    metric.image_location = image_location
-                    metric.image_hash = image_hash
-                    # Check the cache for the commit_time, if not call the API
-                    metric_ts = self._commit_dict.get(commit_sha)
-                    if metric_ts is None:
-                        logging.debug(
-                            "sha: %s, commit_timestamp not found in cache, executing API call."
-                            % (commit_sha)
-                        )
-                        metric = self.get_commit_time(metric)
-                        # If commit time is None, then we could not get the value from the API
-                        if metric.commit_time is None:
-                            return None
-                        # Add the timestamp to the cache
-                        self._commit_dict[metric.commit_hash] = metric.commit_timestamp
-                    else:
-                        metric.commit_timestamp = self._commit_dict[commit_sha]
-                        logging.debug(
-                            "Returning sha: %s, commit_timestamp: %s, from cache."
-                            % (commit_sha, metric.commit_timestamp)
-                        )
-                    
-                except Exception:
-                    logging.error(
-                        "Cannot collect metrics from run: %s" % (run.metadata.name)
+                metric.repo_url = repo_url
+                metric.commit_hash = commit_sha
+                metric.build_name = run.metadata.name
+                metric.build_config_name = run.metadata.labels["tekton.dev/pipeline"]
+                metric.namespace = run.metadata.namespace
+                labels = run.metadata.labels
+                metric.labels = json.loads(str(labels).replace("'", '"'))
+
+                metric.name = pipeline
+                metric.committer = "default"
+                metric.image_location = image_location
+                metric.image_hash = image_hash
+
+                # Check the cache for the commit_time, if not call the API
+                if commit_sha not in self._commit_dict:
+                    logging.debug(
+                        "sha: %s, commit_timestamp not found in cache, executing API call."
+                        % (commit_sha)
+                    )
+                    metric = self.get_commit_time(metric)
+                    # If commit time is None, then we could not get the value from the API
+                    if metric.commit_time is None:
+                        continue
+                    # Add the timestamp to the cache
+                    self._commit_dict[metric.commit_hash] = metric.commit_timestamp  # type: ignore
+                else:
+                    metric.commit_timestamp = self._commit_dict[commit_sha]  # type: ignore
+                    logging.debug(
+                        "Returning sha: %s, commit_timestamp: %s, from cache."
+                        % (commit_sha, metric.commit_timestamp)
                     )
 
                 if metric:
                     logging.debug("Adding metric for pipeline %s" % pipeline)
                     metrics.append(metric)
+
+            except Exception:
+                logging.error(
+                    "Cannot collect metrics from run: %s" % (run.metadata.name)
+                )
+
         return metrics
-    
+
     def _get_repo_from_build_config(self, build):
         """
         Determines the repository url from the parent BuildConfig that created the Build resource in case
@@ -380,3 +387,90 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     return git_uri + ".git"
 
         return None
+
+    def _find_git_clone_task_name(
+        self, pipeline_name: str, namespace: str
+    ) -> Optional[str]:
+        """
+        Get the Pipeline associated with a given PipelineRun,
+        and find the task name for the git-clone ClusterTask, if one exists.
+        Used to find the TaskRun that did the git checkout.
+        """
+        pipeline_resource = self._kube_client.resources.get(
+            api_version="tekton.dev/v1beta1", kind="Pipeline"
+        )
+
+        pipeline = pipeline_resource.get(namespace=namespace, name=pipeline_name)
+
+        for task in pipeline.spec.tasks:
+            if (
+                (task_ref := task.taskRef)
+                and task_ref.name == "git-clone"
+                and task_ref.kind == "ClusterTask"
+            ):
+                return task.name
+
+    def _get_url_and_sha(
+        self, pipeline_name: str, pipeline_run
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Get the URL and commit SHA from the git-clone task in this PipelineRun.
+        """
+        namespace = pipeline_run.metadata.namespace
+        git_clone_task_name = self._find_git_clone_task_name(pipeline_name, namespace)
+        if git_clone_task_name is None:
+            return None
+
+        git_clone_task_run = _find_task_run_by_task_name(
+            pipeline_run, git_clone_task_name
+        )
+        if git_clone_task_run is None:
+            return None
+
+        clone_task_results = name_value_attrs_to_dict(
+            git_clone_task_run.status.taskResults
+        )
+        return (clone_task_results["url"], clone_task_results["commit"])
+
+    def _find_first_image_param(self, pipeline_run) -> Optional[str]:
+        """
+        Find the first image value from the params of any TaskRun in this PipelineRun.
+        """
+        for task_run in self._get_task_runs_from_pipeline_run(pipeline_run):
+            params = name_value_attrs_to_dict(task_run.spec.params)
+            if "IMAGE" in params:
+                return params["IMAGE"]
+            if "IMAGE_NAME" in params:
+                return params["IMAGE_NAME"]
+
+    def _get_task_runs_from_pipeline_run(self, pipeline_run) -> Iterable:
+        """
+        Iterate over the full TaskRuns referenced by the given PipelineRun.
+        """
+        task_run_resource = self._kube_client.resources.get(
+            api_version="tekton.dev/v1beta1", kind="TaskRun"
+        )
+
+        namespace = pipeline_run.metadata.namespace
+
+        for task_run_name in pipeline_run.status.taskRuns.keys():
+            yield task_run_resource.get(namespace=namespace, name=task_run_name)
+
+
+def _find_task_run_by_task_name(pipeline_run, task_name: str) -> Optional[Any]:
+    """
+    Find the TaskRun reference with the specified `pipelineTaskName` within the PipelineRun.
+    """
+    for task_run in pipeline_run.status.taskRuns.values():
+        if task_run.pipelineTaskName == task_name:
+            return task_run
+
+
+def _find_first_image_digest_value(pipeline_run) -> Optional[str]:
+    """
+    Find the first `IMAGE_DIGEST` value within any `taskResult` from the TaskRuns in this PipelineRun.
+    """
+    for task_run in pipeline_run.status.taskRuns.values():
+        for name, value in name_value_attrs_to_dict(task_run.taskResults).items():
+            if name == "IMAGE_DIGEST":
+                return value

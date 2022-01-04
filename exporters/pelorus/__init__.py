@@ -2,7 +2,7 @@ import logging
 import os
 from abc import ABC
 from datetime import datetime, timezone
-from typing import Optional, Sequence
+from typing import NamedTuple, Optional, Sequence
 
 from kubernetes import config
 
@@ -44,7 +44,9 @@ def load_kube_config():
         config.load_kube_config()
 
 
-def convert_date_time_to_timestamp(date_time, format_string="%Y-%m-%dT%H:%M:%SZ"):
+def convert_date_time_to_timestamp(
+    date_time, format_string="%Y-%m-%dT%H:%M:%SZ"
+) -> float:
     timestamp = None
     try:
         if isinstance(date_time, datetime):
@@ -102,6 +104,18 @@ def url_joiner(url, path, trailing=None):
     if trailing:
         url_link += "/"
     return url_link
+
+
+class NoOpResourceInstance(NamedTuple):
+    """
+    Like an empty openshift.dynamic.ResourceInstance.
+
+    Useful when a resource type does not exist.
+    """
+
+    # TODO: may need to be fleshed out more depending upon the use case.
+    # Right now it just supports when committime can't find tekton resources.
+    items: Sequence = tuple()
 
 
 class AbstractPelorusExporter(ABC):
