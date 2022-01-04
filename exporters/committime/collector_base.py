@@ -92,20 +92,27 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         for namespace in self._namespaces:
             # Initialized variables
             builds = []
+            pipeline_runs = []
             apps = []
+            pipelines = []
             builds_by_app = {}
+            runs_by_app = {}
             app_label = pelorus.get_app_label()
             logging.debug(
                 "Searching for builds with label: %s in namespace: %s"
                 % (app_label, namespace)
             )
-
+            # This get all Builds in our cluster
             v1_builds = self._kube_client.resources.get(
                 api_version="build.openshift.io/v1", kind="Build"
             )
+            v1_tekton = self._kube_client.resources.get(
+                api_version="tekton.dev/v1beta1", kind="PipelineRun"
+            )
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
-
+            # only use PipelineRun that have the app label
+            pipeline_runs = v1_tekton.get(namespace=namespace, label_selector=app_label)
             # use a jsonpath expression to find all values for the app label
             jsonpath_str = (
                 "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
@@ -113,21 +120,35 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             jsonpath_expr = parse(jsonpath_str)
 
             found = jsonpath_expr.find(builds)
+            runs_found = jsonpath_expr.find(pipeline_runs)
 
             apps = [match.value for match in found]
+            pipelines = [match.value for match in runs_found]
 
-            if not apps:
+            if not apps and not pipelines:
                 continue
-            # remove duplicates
-            apps = list(dict.fromkeys(apps))
-            builds_by_app = {}
+            elif apps:
+                # remove duplicates
+                apps = list(dict.fromkeys(apps))
+                builds_by_app = {}
 
-            for app in apps:
-                builds_by_app[app] = list(
-                    filter(lambda b: b.metadata.labels[app_label] == app, builds.items)
-                )
+                for app in apps:
+                    builds_by_app[app] = list(
+                        filter(lambda b: b.metadata.labels[app_label] == app, builds.items)
+                    )
+                
+                metrics += self.get_metrics_from_apps(builds_by_app, namespace)
+            elif pipelines:
+                # remove duplicates
+                pipelines = list(dict.fromkeys(pipelines))
+                runs_by_app = {}
 
-            metrics += self.get_metrics_from_apps(builds_by_app, namespace)
+                for pipeline in pipelines:
+                    runs_by_app[pipeline] = list(
+                        filter(lambda b: b.metadata.labels[app_label] == pipeline, pipeline_runs.items)
+                    )
+                
+                metrics += self.get_metric_from_pipelineruns(runs_by_app, namespace)
 
         return metrics
 
@@ -178,11 +199,17 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             if not repo_url:
                 if build.spec.source.git:
                     repo_url = build.spec.source.git.uri
+                elif build.metadata.labels.pelorusgithost:
+                    git_host = build.metadata.labels.pelorusgithost
+                    git_project = build.metadata.labels.pelorusgitproject
+                    git_app = build.metadata.labels.pelorusgitapp
+                    git_protocol = build.metadata.labels.pelorusgitprotocol
+                    repo_url = git_protocol + "://" + git_host + "/" + git_project + "/" + git_app
                 else:
                     repo_url = self._get_repo_from_build_config(build)
 
             metric.repo_url = repo_url
-            commit_sha = build.spec.revision.git.commit
+            commit_sha = build.metadata.labels.peloruscommitsha
             metric.build_name = build.metadata.name
             metric.build_config_name = build.metadata.labels.buildconfig
             metric.namespace = build.metadata.namespace
@@ -191,7 +218,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             metric.commit_hash = commit_sha
             metric.name = app
-            metric.committer = build.spec.revision.git.author.name
+            #metric.committer = build.spec.revision.git.author.name
+            metric.committer = "default"
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
             # Check the cache for the commit_time, if not call the API
@@ -251,6 +279,85 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 )
         # If no repo is found, we will return None, which will be handled later on
 
+    def get_metric_from_pipelineruns(self, pipelines, namespace):
+        """Expects a sorted array of build data sorted by app label"""
+        metrics = []
+        for pipeline in pipelines:
+            runs = pipelines[pipeline]
+
+            for run in runs:
+                repo_url = 'http://default'
+                commit_sha = 'default'
+                image_hash = 'default'
+                image_location = 'http://default'
+                try:
+                    # metric = self.get_metric_from_build(build, app, namespace, repo_url)
+                    metric = CommitMetric(pipeline)
+                    # By convention need to get image location from PARAMS
+                    params = run.status.pipelineSpec.params
+                    if params:
+                        for param in params:
+                            if param.name == "IMAGE_NAME":
+                                image_location = param.default
+                    # save each taskRun inside the pipeline
+                    task_runs = run.status.taskRuns
+                    if task_runs:
+                        for taskrun in task_runs:
+                            if taskrun:
+                                # taskResults come in list inside array format for some reason
+                                props = taskrun[1].status.taskResults
+                                if props:
+                                    for prop in props:
+                                        if prop.name == "url":
+                                            repo_url = prop.value
+                                        if prop.name == "commit":
+                                            commit_sha = prop.value
+                                        if prop.name == "IMAGE_DIGEST":
+                                            image_hash = prop.value
+                                        
+
+                    metric.repo_url = repo_url
+                    metric.commit_hash = commit_sha
+                    metric.build_name = run.metadata.name
+                    metric.build_config_name = run.metadata.labels["tekton.dev/pipeline"]
+                    metric.namespace = run.metadata.namespace
+                    labels = run.metadata.labels
+                    metric.labels = json.loads(str(labels).replace("'", '"'))
+
+                    metric.name = pipeline
+                    metric.committer = "default"
+                    metric.image_location = image_location
+                    metric.image_hash = image_hash
+                    # Check the cache for the commit_time, if not call the API
+                    metric_ts = self._commit_dict.get(commit_sha)
+                    if metric_ts is None:
+                        logging.debug(
+                            "sha: %s, commit_timestamp not found in cache, executing API call."
+                            % (commit_sha)
+                        )
+                        metric = self.get_commit_time(metric)
+                        # If commit time is None, then we could not get the value from the API
+                        if metric.commit_time is None:
+                            return None
+                        # Add the timestamp to the cache
+                        self._commit_dict[metric.commit_hash] = metric.commit_timestamp
+                    else:
+                        metric.commit_timestamp = self._commit_dict[commit_sha]
+                        logging.debug(
+                            "Returning sha: %s, commit_timestamp: %s, from cache."
+                            % (commit_sha, metric.commit_timestamp)
+                        )
+                    
+                except Exception:
+                    logging.error(
+                        "Cannot collect metrics from run: %s" % (run.metadata.name)
+                    )
+
+                if metric:
+                    logging.debug("Adding metric for pipeline %s" % pipeline)
+                    metrics.append(metric)
+        return metrics
+    
     def _get_repo_from_build_config(self, build):
         """
         Determines the repository url from the parent BuildConfig that created the Build resource in case
