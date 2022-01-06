@@ -243,6 +243,7 @@ The following are notes and general steps for testing Pull Requests for specific
         git remote add themoosman git@github.com:themoosman/pelorus.git
         git fetch themoosman
         git checkout themoosman/feature-branch
+
 2. [Install Pelorus](/page/Install.md) from checked out fork/branch.
 
     **NOTE:**
