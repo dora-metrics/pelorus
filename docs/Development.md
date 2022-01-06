@@ -305,6 +305,7 @@ The following is a walkthrough of the process we follow to create and manage ver
         ref: {{ .source_ref | default "<version>-rc" }}
 
     You'll also need to bump the `pelorus` chart version in `charts/pelorus/charts/exporters/Chart.yaml`
+
 2. Create a lightweight _release candidate_ tag from the `master` branch. The tag name should be the next sequential [Semantic Version](https://semver.org) with the suffix `-rc`. Then push the new tag to the main repository.
 
         git tag <version>-rc
