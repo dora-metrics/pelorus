@@ -2,7 +2,7 @@
 
 The mission of Pelorus is to provide visualized, easy to consume data to IT organizations to help improve their ability to strategize and make decisions across major functions of IT.
 
-Read more on [Our Philosophy](/page/Philosophy.md) page.
+Read more on [Our Philosophy](Philosophy.md) page.
 
 
 ## Terminology
@@ -17,7 +17,7 @@ Read more on [Our Philosophy](/page/Philosophy.md) page.
 
 ## Dashboards Index
 
-* [Software Delivery Performance](/page/Dashboard_SDP.md)
+* [Software Delivery Performance](Dashboard_SDP.md)
 * Value Flow (Coming Soon)
 * Supported Technology Adoption (Coming Soon)
 * Availability (Coming Soon)

@@ -78,13 +78,13 @@ These are some organizational outcomes that satisfy the good metric criteria and
 
 | Outcome 	| Definition 	| Measures(KPIs) 	| Why it matters |
 |----------	| -----------	| ---------------	| -------------- |
-| [**Software Delivery Performance**](page/Dashboard_SDP.md) | The ability of the organization to effectively deliver software | Lead Time for Change <br/>Deployment Frequency <br/> Mean Time to Restore <br/> Change Failure Rate | Per the research in Accelerate, the ability of an organization to effectively deliver software to customers is a key leading indicator of organizational performance. |
+| [**Software Delivery Performance**](Dashboard_SDP.md) | The ability of the organization to effectively deliver software | Lead Time for Change <br/>Deployment Frequency <br/> Mean Time to Restore <br/> Change Failure Rate | Per the research in Accelerate, the ability of an organization to effectively deliver software to customers is a key leading indicator of organizational performance. |
 | **Supported Technology Adoption** (Dashboard page coming soon) | A measure of an organization’s ability to become more efficient through reuse of common patterns and platforms. | Adoption Lead Time <br/>Adoption Rate <br/>Operational Efficiency <br/>Developer NPS | As organizations adopt more lean IT practices and build autonomy in development teams, the role of "centralized IT" evolves from actively provisioning and supporting infrastructure and middleware to providing self-service platforms, tools, and sample patterns that take common needs across development teams and make shared solutions convenient and consumable. This outcome measures the success of that mode of working, called _Open Platforming_.
 
 
 ## How Pelorus can help?
 
-Pelorus aims to provide a tooling framework that helps to automate the collection of KPIs related to these Bridge Outcomes and present them as a set of easily consumable [dashboards](/page/Dashboards) to visualize trends.
+Pelorus aims to provide a tooling framework that helps to automate the collection of KPIs related to these Bridge Outcomes and present them as a set of easily consumable [dashboards](Dashboards.md) to visualize trends.
 
 ### Creating Conversations around Pelorus
 

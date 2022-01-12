@@ -15,7 +15,7 @@ This track is focused around the development of custom [Prometheus exporters](ht
 
 We use [Helm](https://helm.sh) to provide an automated deployment and configuration experience for Pelorus. We are always doing work to cover more and more complex use cases with our helm charts. In order to be able to effectively contribute to these charts, you'll need a cluster that satisfies all of the installation prerequisites for Pelorus.
 
-See the [Install guide](/page/Install.md) for more details on that.
+See the [Install guide](Install.md) for more details on that.
 
 Currently we have two charts:
 
@@ -46,7 +46,7 @@ This script will use Helm's built-in linter to check whether a version bump is n
 
 ## Dashboard Development
 
-We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](/page/Dashboards.md) user guide for that information.
+We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](Dashboards.md) user guide for that information.
 
 To effectively do dashboard development, you'll likely need at least two browser windows open, one with Grafana, and another with Prometheus for testing queries. Since our dashboards are imported to Grafana via the Grafana Operator, they get imported in read-only mode. Because of this, you'll need to make a copy of it for development purposes.
 
@@ -141,7 +141,7 @@ Running an exporter on your local machine should follow this process:
 
         pip install exporters/
 
-1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](/page/Configuration.md#configuring-exporters) to see supported variables).
+1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](Configuration.md#configuring-exporters) to see supported variables).
 
         export GIT_TOKEN=xxxx
         export GIT_USER=xxxx
@@ -244,7 +244,7 @@ The following are notes and general steps for testing Pull Requests for specific
         git fetch themoosman
         git checkout themoosman/feature-branch
 
-2. [Install Pelorus](/page/Install.md) from checked out fork/branch.
+2. [Install Pelorus](Install.md) from checked out fork/branch.
 
     **NOTE:**
 
@@ -281,7 +281,7 @@ Most exporter changes can be tested locally.
             coverage run -m pytest
             coverage report
 
-1. Gather necessary [configuration information](/page/Configuration.md#configuring-exporters).
+1. Gather necessary [configuration information](Configuration.md#configuring-exporters).
 1. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
 1. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
     1. You get a valid response with metrics.
@@ -289,7 +289,7 @@ Most exporter changes can be tested locally.
 
 ### Helm Install changes
 
-For testing changes to the helm chart, you should just follow the [standard install process](/page/Install.md), then verify that:
+For testing changes to the helm chart, you should just follow the [standard install process](Install.md), then verify that:
 
 * All expected pods are running and healthy
 * Any expected behavior changes mentioned in the PR can be observed.

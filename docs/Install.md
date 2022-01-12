@@ -41,19 +41,19 @@ In a few seconds, you will see a number of resourced get created. The above comm
     * A `Grafana` instance
     * A `ServiceMonitor` instance for scraping the Pelorus exporters.
     * A `GrafanaDatasource` pointing to Prometheus.
-    * A set of `GrafanaDashboards`. See the [dashboards documentation](/page/Dashboards/) for more details.
+    * A set of `GrafanaDashboards`. See the [dashboards documentation](Dashboards.md) for more details.
 * The following exporters:
     * Deploy Time
 
 From here, some additional configuration is required in order to deploy other exporters, and make the Pelorus
 
-See the [Configuration Guide](/page/Configuration) for more information on exporters.
+See the [Configuration Guide](Configuration.md) for more information on exporters.
 
 You may additionally want to enabled other features for the core stack. Read on to understand those options.
 
 ## Customizing Pelorus
 
-See [Configuring the Pelorus Stack](/page/Configuration) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
+See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
 
 ### Configure Long Term Storage (Recommended)
 
@@ -80,11 +80,11 @@ Then pass this to runhelm.sh like this:
 helm upgrade pelorus charts/deploy --namespace pelorus --values values.yaml
 ```
 
-If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](/page/MinIO) to host an instance on OpenShift and configure Pelorus to use it.
+If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](MinIO.md) to host an instance on OpenShift and configure Pelorus to use it.
 
 ### Deploying Across Multiple Clusters
 
-By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](/page/Architecture.md) for details. You define exporters for the desired meterics in each of the clusters which metrics will be evaluated.  The main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
+By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](Architecture.md) for details. You define exporters for the desired meterics in each of the clusters which metrics will be evaluated.  The main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
 
 #### Configure Development Cluster.     
 
