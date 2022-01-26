@@ -17,7 +17,7 @@ Read more on [Our Philosophy](Philosophy.md) page.
 
 ## Dashboards Index
 
-* [Software Delivery Performance](Dashboard_SDP.md)
+* [Software Delivery Performance](dashboards/SoftwareDeliveryPerformance.md)
 * Value Flow (Coming Soon)
 * Supported Technology Adoption (Coming Soon)
 * Availability (Coming Soon)
