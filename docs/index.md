@@ -16,13 +16,14 @@ For more background on the project you can read @trevorquinn's blog post on [Met
 
 ## Software Delivery Performance as an outcome
 
-Currently, Pelorus functionality can capture proven metrics that measure Software Delivery Performance -- a significant outcome that IT organizations aim to deliver.
+Currently, Pelorus can capture proven metrics that measure Software Delivery Performance -- a significant outcome that IT organizations aim to deliver.
 
 Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides an organizational-level view of the [four critical measures of software delivery performance](https://blog.openshift.com/exploring-a-metrics-driven-approach-to-transformation/).
 
 ![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
 
-A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg).
+A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg),
+and you can learn more about each individual dashboard in the [dashboards documentation](Dashboards.md).
 
 ## Prior Knowledge
 

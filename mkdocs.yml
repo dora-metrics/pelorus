@@ -1,5 +1,8 @@
 site_name: Pelorus Documentation
+site_url: https://pelorus.readthedocs.io/en/latest/
 theme: readthedocs
+markdown_extensions:
+  - def_list
 nav:
   - Introduction:
     - Welcome to Pelorus: index.md
