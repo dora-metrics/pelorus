@@ -1,11 +1,20 @@
 site_name: Pelorus Documentation
+site_url: https://pelorus.readthedocs.io/en/latest/
 theme: readthedocs
+markdown_extensions:
+  - def_list
 nav:
-  - Main: index.md
-  - Architecture: Architecture.md
-  - Installation: Install.md
-  - Quickstart: Demo.md
-  - Configuration: Configuration.md
-  - Using Pelorus: Dashboards.md
-  - Dev Guide: Development.md
-  
+  - Introduction:
+    - Welcome to Pelorus: index.md
+    - Our Philosphy: Philosophy.md
+  - Using Pelorus:
+    - Architecture: Architecture.md
+    - Installation: Install.md
+    - Demo: Demo.md
+    - Configuration: Configuration.md
+    - MinIO for Long Term Storage: MinIO.md
+  - Dashboards:
+    - Dashboard Summary: Dashboards.md
+    - Software Delivery Performance: dashboards/SoftwareDeliveryPerformance.md
+  - Pelorus Development:
+    - Dev Guide: Development.md
