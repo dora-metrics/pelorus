@@ -327,17 +327,20 @@ The following is a walkthrough of the process we follow to create and manage ver
     * Ensure that you can install Pelorus from the tagged version of the code, including all exporters and optional configurations. (Ensure you update the values.yaml file you are using to refer to the tagged version of the code in all builds)
     * Follow the above guidance for testing Pull requests.
 6. If any bugs are found, open PRs to fix them, then create the next -rc tag (e.g. `<version>-rc2`), and start again from step 1.
-7. Create an annotated tag for the final release with the `-rc` suffix removed.
+7. Update the install version in `docs/Install.md`:
 
-        git checkout <version>-rc
+        git clone --depth 1 --branch NEW_VERSION_HERE https://github.com/konveyor/pelorus
+
+8. Create an annotated tag for the final release with the `-rc` suffix removed.
+
         git tag -a <version>
         git push -u upstream <version>
 
-8. Generate git release notes from the `git log`.
+9. Generate git release notes from the `git log`.
 
         git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
 
-9.  On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
+10.  On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
     * Select the tag that was pushed in the previous step.
     * The release _title_ should be `Release <version>`. 
     * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
