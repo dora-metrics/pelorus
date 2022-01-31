@@ -82,12 +82,30 @@ def generate_metrics(
 
     logging.info("generate_metrics: start")
 
-    v1_pods = dyn_client.resources.get(api_version="v1", kind="Pod")
+    # if not given any specific namespaces to watch,
+    # then filter all namespaces based on PROD_LABEL if given
+    # else watch all namespaces
+    if (not namespaces) and pelorus.get_prod_label():
+        logging.info(
+            "No namespaces specified, watching all namespaces with given PROD_LABEL"
+            f" ({pelorus.get_prod_label()})"
+        )
+        all_namespaces = dyn_client.resources.get(api_version="v1", kind="Namespace")
+        namespaces = [
+            namespace.metadata.name
+            for namespace in all_namespaces.get(
+                label_selector=pelorus.get_prod_label()
+            ).items
+        ]
     log_namespaces(namespaces)
 
+    # checking for None here and not "not namespaces" because if a PROD_LABEL is given
+    # that causes an empty list of namespaces then watch no namespaces vs all namespaces
     def in_namespace(namespace: str) -> bool:
-        return (not namespaces) or namespace in namespaces
+        return (namespaces is None) or namespace in namespaces
 
+    # get all running Pods with the app label
+    v1_pods = dyn_client.resources.get(api_version="v1", kind="Pod")
     pods = v1_pods.get(
         label_selector=pelorus.get_app_label(), field_selector="status.phase=Running"
     ).items
