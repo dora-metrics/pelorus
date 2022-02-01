@@ -61,7 +61,7 @@ class DeployTimeCollector:
         They will be either:
         1. The namespaces explicitly specified
         2. The namespaces matched by PROD_LABEL
-        3. If the PROD_LABEL is given, that implicitly matches all namespaces.
+        3. If neither namespaces nor the PROD_LABEL is given, then implicitly matches all namespaces.
         """
         if self._namespaces:
             logging.info("Watching namespaces %s", self._namespaces)
