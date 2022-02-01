@@ -67,10 +67,16 @@ class DeployTimeCollector:
             logging.info("Watching namespaces %s", self._namespaces)
             return self._namespaces
 
-        logging.info(
-            "No namespaces specified, watching all namespaces with given PROD_LABEL (%s)",
-            self.prod_label,
-        )
+        if self.prod_label:
+            logging.info(
+                "No namespaces specified, watching all namespaces with given PROD_LABEL (%s)",
+                self.prod_label,
+            )
+        else:
+            logging.info(
+                "No namespaces specified and no PROD_LABEL given, watching all namespaces."
+            )
+
         all_namespaces = dyn_client.resources.get(api_version="v1", kind="Namespace")
         namespaces = {
             namespace.metadata.name
