@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import time
-from typing import Iterable, Optional, Sequence
+from typing import Iterable, Optional
 
 import attr
 from kubernetes import client
@@ -12,19 +12,19 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY, GaugeMetricFamily
 
 import pelorus
-from pelorus.log import log_namespaces
 
 supported_replica_objects = {"ReplicaSet", "ReplicationController"}
 
-# A NamespaceSpec lists namespaces to restrict the search to.
-# Use None or an empty list to include all namespaces.
-NamespaceSpec = Optional[Sequence[str]]
-
 
 class DeployTimeCollector:
-    def __init__(self, namespaces: NamespaceSpec, client: DynamicClient):
-        self._namespaces = namespaces
+    _namespaces: set[str]
+
+    def __init__(
+        self, namespaces: Iterable[str], client: DynamicClient, prod_label: str
+    ):
+        self._namespaces = set(namespaces)
         self.client = client
+        self.prod_label = prod_label
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
         logging.info("collect: start")
@@ -33,7 +33,12 @@ class DeployTimeCollector:
             "Deployment timestamp",
             labels=["namespace", "app", "image_sha"],
         )
-        metrics = generate_metrics(self._namespaces, self.client)
+
+        namespaces = self.get_and_log_namespaces()
+        if not namespaces:
+            return []
+
+        metrics = generate_metrics(namespaces, self.client)
         for m in metrics:
             logging.info(
                 "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s"
@@ -49,6 +54,42 @@ class DeployTimeCollector:
                 pelorus.convert_date_time_to_timestamp(m.deploy_time),
             )
             yield (metric)
+
+    def get_and_log_namespaces(self) -> set[str]:
+        """
+        Get the set of namespaces to watch, and log what they are.
+        They will be either:
+        1. The namespaces explicitly specified
+        2. The namespaces matched by PROD_LABEL
+        3. If neither namespaces nor the PROD_LABEL is given, then implicitly matches all namespaces.
+        """
+        if self._namespaces:
+            logging.info("Watching namespaces %s", self._namespaces)
+            return self._namespaces
+
+        if self.prod_label:
+            logging.info(
+                "No namespaces specified, watching all namespaces with given PROD_LABEL (%s)",
+                self.prod_label,
+            )
+            query_args = dict(label_selector=prod_label)
+        else:
+            logging.info(
+                "No namespaces specified and no PROD_LABEL given, watching all namespaces."
+            )
+            query_args = dict()
+
+        all_namespaces = dyn_client.resources.get(api_version="v1", kind="Namespace")
+        namespaces = {
+            namespace.metadata.name
+            for namespace in all_namespaces.get(**query_args).items
+        }
+        logging.info("Watching namespaces %s", namespaces)
+        if not namespaces:
+            logging.warning(
+                "No NAMESPACES given and PROD_LABEL did not return any matching namespaces."
+            )
+        return namespaces
 
 
 @attr.define(kw_only=True)
@@ -70,7 +111,8 @@ def image_sha(img_url: str) -> Optional[str]:
 
 
 def generate_metrics(
-    namespaces: NamespaceSpec, dyn_client: DynamicClient
+    namespaces: set[str],
+    dyn_client: DynamicClient,
 ) -> Iterable[DeployTimeMetric]:
     visited_replicas = set()
 
@@ -82,12 +124,8 @@ def generate_metrics(
 
     logging.info("generate_metrics: start")
 
+    # get all running Pods with the app label
     v1_pods = dyn_client.resources.get(api_version="v1", kind="Pod")
-    log_namespaces(namespaces)
-
-    def in_namespace(namespace: str) -> bool:
-        return (not namespaces) or namespace in namespaces
-
     pods = v1_pods.get(
         label_selector=pelorus.get_app_label(), field_selector="status.phase=Running"
     ).items
@@ -101,7 +139,7 @@ def generate_metrics(
     for pod in pods:
         namespace = pod.metadata.namespace
         owner_refs = pod.metadata.ownerReferences
-        if not in_namespace(namespace) or not owner_refs:
+        if namespace not in namespaces or not owner_refs:
             continue
 
         logging.debug(
@@ -168,12 +206,17 @@ if __name__ == "__main__":
     k8s_config = client.Configuration()
     k8s_client = client.api_client.ApiClient(configuration=k8s_config)
     dyn_client = DynamicClient(k8s_client)
-    namespaces = [
+    namespaces = {
         stripped
         for proj in os.environ.get("NAMESPACES", "").split(",")
         if (stripped := proj.strip())
-    ]
+    }
+    prod_label = pelorus.get_prod_label()
+    if namespaces and prod_label:
+        logging.warning("If NAMESPACES are given, PROD_LABEL is ignored.")
+    elif not (namespaces or prod_label):
+        logging.info("No NAMESPACES or PROD_LABEL given, will watch all namespaces")
     start_http_server(8080)
-    REGISTRY.register(DeployTimeCollector(namespaces, dyn_client))
+    REGISTRY.register(DeployTimeCollector(namespaces, dyn_client, prod_label))
     while True:
         time.sleep(1)
