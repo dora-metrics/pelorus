@@ -1,0 +1,6 @@
+apiVersion: project.openshift.io/v1
+kind: ProjectRequest
+displayName: Basic Python Tekton App
+metadata:
+  name: basic-python-tekton
+  creationTimestam: null
