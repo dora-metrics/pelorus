@@ -6,7 +6,6 @@ metadata:
   labels:
     app: grafana
 spec:
-  name: devops.json
   json: >-
     {
     "annotations": {

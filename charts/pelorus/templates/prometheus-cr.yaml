@@ -52,7 +52,7 @@ spec:
     - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
 {{- end}}
     - -skip-auth-regex=^/metrics
-    image: quay.io/openshift/origin-oauth-proxy:4.8
+    image: quay.io/openshift/origin-oauth-proxy:4.9
     name: prometheus-proxy
     ports:
     - containerPort: 9091
