@@ -155,7 +155,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 for pipeline in pipelines
             }
 
-            metrics += self.get_metrics_from_pipelineruns(runs_by_app, namespace)
+            try:
+                metrics += self.get_metrics_from_pipelineruns(runs_by_app, namespace)
+            except Exception as e:
+                logging.error(f"Error while getting metrics from Tekton: {e}")
 
         return metrics
 
