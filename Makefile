@@ -52,7 +52,7 @@ format: $(PELORUS_VENV)
 	./scripts/format;
 
 .PHONY: format-check
-format-check: virtualenv
+format-check: $(PELORUS_VENV)
 	source ${PELORUS_VENV}/bin/activate && \
 	./scripts/format --check;
 
