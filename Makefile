@@ -1,6 +1,7 @@
 # Minimal python version supported by exporters
 PYTHON_BINARY=python3
 PYTHON_VER_MIN=3.9
+PYTHON_VER_MAX=3.10.2
 
 ifndef PELORUS_VENV
   PELORUS_VENV=.venv
@@ -15,11 +16,13 @@ SYS_PYTHON_VER=$(shell $(PYTHON_BINARY) -c 'from sys import version_info; \
   print(packaging.version.parse("%d.%d.%d" % version_info[0:3]))')
 $(info Found system python version: $(SYS_PYTHON_VER));
 PYTHON_VER=$(shell $(PYTHON_BINARY) -c 'from pkg_resources import packaging; \
-  print("%s" % (packaging.version.parse("$(SYS_PYTHON_VER)") >= \
+  print("%s" % (packaging.version.parse("$(PYTHON_VER_MAX)") >= \
+  packaging.version.parse("$(SYS_PYTHON_VER)") >= \
   packaging.version.parse("$(PYTHON_VER_MIN)")))')
 
 ifeq ($(PYTHON_VER), False)
-  $(error $(PYTHON_BINARY) needs to be at >= $(PYTHON_VER_MIN))
+  $(error $(PYTHON_BINARY) needs to be at >= $(PYTHON_VER_MIN)\
+                           and <= $(PYTHON_VER_MAX))
 endif
 
 .PHONY: default
