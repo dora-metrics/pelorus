@@ -34,6 +34,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# We don't publish pip generated files
+exporters/AUTHORS
+exporters/ChangeLog
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

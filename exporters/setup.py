@@ -1,3 +1,10 @@
-from setuptools import find_packages, setup
+#!/usr/bin/env python3
 
-setup(name="pelorus", packages=find_packages(where="."), python_requires=">=3.9")
+import setuptools
+
+setuptools.setup(
+    packages=setuptools.find_packages(where="."),
+    setup_requires=["pbr>=2.0.0"],
+    python_requires=">=3.9",
+    pbr=True,
+)

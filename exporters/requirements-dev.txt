@@ -1,7 +1,9 @@
-pytest
-coverage
-semver
-mkdocs
 black
+coverage
 isort
+mkdocs
 pylava
+pytest
+semver
+setuptools
+wheel
