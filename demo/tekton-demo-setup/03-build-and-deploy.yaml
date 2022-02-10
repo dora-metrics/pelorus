@@ -1,0 +1,169 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: basic-python-tekton-template
+parameters:
+  - description: The name for the application.
+    name: APPLICATION_NAME
+    value: basic-python-tekton
+  - name: NAMESPACE
+    description: The namespace the imagestream and pipeline will be deployed in.
+    value: basic-python-tekton
+objects:
+  # Build
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+        app.kubernetes.io/instance: ${APPLICATION_NAME}-build
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: ${APPLICATION_NAME}
+  - kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: ${APPLICATION_NAME}-build-pvc
+      namespace: ${NAMESPACE}
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+        app.kubernetes.io/instance: ${APPLICATION_NAME}-build
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: ${APPLICATION_NAME}
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 500Mi
+  - apiVersion: tekton.dev/v1beta1
+    kind: Pipeline
+    metadata:
+      name: ${APPLICATION_NAME}-pipeline
+      namespace: ${NAMESPACE}
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+        app.kubernetes.io/instance: ${APPLICATION_NAME}-build
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: ${APPLICATION_NAME}
+    spec:
+      workspaces:
+        - name: repo
+      params:
+        - name: git-url
+          type: string
+          default: https://github.com/konveyor/pelorus
+        - name: git-revision
+          type: string
+          default: master
+      tasks:
+        - name: checkout
+          taskRef:
+            name: git-clone
+            kind: ClusterTask
+          params:
+            - name: url
+              value: $(params.git-url)
+            - name: revision
+              value: $(params.git-revision)
+          workspaces:
+            - name: output
+              workspace: repo
+        - name: s2i-python-build
+          taskRef:
+            name: s2i-python
+            kind: ClusterTask
+          params:
+            - name: PATH_CONTEXT
+              value: demo/python-example
+            - name: IMAGE
+              value: image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/${APPLICATION_NAME}:latest
+          workspaces:
+            - name: source
+              workspace: repo
+          runAfter: [checkout]
+  # Deploy
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      annotations:
+        description: The web server's http port.
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+        app.kubernetes.io/instance: ${APPLICATION_NAME}-deployment
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: ${APPLICATION_NAME}
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+    spec:
+      ports:
+        - port: 8080
+          targetPort: 8080
+      selector:
+        deploymentConfig: ${APPLICATION_NAME}
+  - kind: Route
+    apiVersion: route.openshift.io/v1
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      annotations:
+        description: Route for application's http service.
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+        app.kubernetes.io/instance: ${APPLICATION_NAME}-deployment
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: ${APPLICATION_NAME}
+    spec:
+      to:
+        name: ${APPLICATION_NAME}
+  - kind: DeploymentConfig
+    apiVersion: apps.openshift.io/v1
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+        app.kubernetes.io/instance: ${APPLICATION_NAME}-deployment
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: ${APPLICATION_NAME}
+    spec:
+      replicas: 1
+      selector:
+        deploymentConfig: ${APPLICATION_NAME}
+      strategy:
+        type: Rolling
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: ${APPLICATION_NAME}
+            app.kubernetes.io/instance: ${APPLICATION_NAME}-deployment
+            app.kubernetes.io/component: api
+            app.kubernetes.io/part-of: ${APPLICATION_NAME}
+            deploymentConfig: ${APPLICATION_NAME}
+          name: ${APPLICATION_NAME}
+        spec:
+          containers:
+            - name: ${APPLICATION_NAME}
+              image: ${APPLICATION_NAME}
+              env:
+                - name: APP_FILE
+                  value: example.py
+              imagePullPolicy: Always
+              ports:
+                - containerPort: 8080
+                  name: http
+                  protocol: TCP
+              readinessProbe:
+                exec:
+                  command: [/bin/bash, -c, curl -s 'http://localhost:8080']
+          terminationGracePeriodSeconds: 60
+      triggers:
+        - imageChangeParams:
+            automatic: true
+            containerNames:
+              - ${APPLICATION_NAME}
+            from:
+              kind: ImageStreamTag
+              name: ${APPLICATION_NAME}:latest
+          type: ImageChange
+        - type: ConfigChange
