@@ -24,7 +24,7 @@ if not isinstance(numeric_level, int):
 logging.basicConfig(
     format=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT, level=numeric_level
 )
-print("Initializing Logger wit LogLevel: %s" % loglevel.upper())
+print("Initializing Logger with LogLevel: %s" % loglevel.upper())
 
 # A NamespaceSpec lists namespaces to restrict the search to.
 # Use None or an empty list to include all namespaces.

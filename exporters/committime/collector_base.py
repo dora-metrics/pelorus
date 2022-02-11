@@ -180,9 +180,18 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     repo_url = build.spec.source.git.uri
                 else:
                     repo_url = self._get_repo_from_build_config(build)
+            
+            if repo_url is None:
+                if build.metadata.labels.buildSpecSourceGitUri:
+                    repo_url = build.metadata.labels.buildSpecSourceGitUri
 
             metric.repo_url = repo_url
-            commit_sha = build.spec.revision.git.commit
+
+            if build.spec.revision.git.commit is None:
+                if build.metadata.labels.buildSpecRevisionGitCommit:
+                    commit_sha = build.metadata.labels.buildSpecRevisionGitCommit
+            else:
+                commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
             metric.build_config_name = build.metadata.labels.buildconfig
             metric.namespace = build.metadata.namespace
@@ -191,7 +200,13 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             metric.commit_hash = commit_sha
             metric.name = app
-            metric.committer = build.spec.revision.git.author.name
+
+            if build.spec.revision.git.author.name is None:
+                if build.metadata.labels.buildSpecRevisionGitAuthorName:
+                    metric.committer = build.spec.revision.git.author.name
+            else:
+                metric.committer = build.spec.revision.git.author.name
+
             metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
             # Check the cache for the commit_time, if not call the API
