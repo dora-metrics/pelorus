@@ -190,6 +190,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             if build.spec.revision is None:
                 if build.metadata.labels.buildSpecRevisionGitCommit:
                     commit_sha = build.metadata.labels.buildSpecRevisionGitCommit
+                else:
+                    commit_sha = None
             else:
                 commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
