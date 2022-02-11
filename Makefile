@@ -6,7 +6,7 @@ ifndef PELORUS_VENV
   PELORUS_VENV=.venv
 endif
 
-ifeq (, $(shell command -v $(PYTHON_BINARY) ))
+ifeq (, $(shell which $(PYTHON_BINARY) ))
   $(error "PYTHON=$(PYTHON_BINARY) binary not found in $(PATH)")
 endif
 
@@ -31,7 +31,7 @@ all: default
 
 $(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt
 	test -d ${PELORUS_VENV} || ${PYTHON_BINARY} -m venv ${PELORUS_VENV}
-	source ${PELORUS_VENV}/bin/activate && \
+	. ${PELORUS_VENV}/bin/activate && \
 	       pip install -U pip && \
 	       pip install -r exporters/requirements.txt \
 	                   -r exporters/requirements-dev.txt
@@ -39,7 +39,7 @@ $(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt
 
 .PHONY: exporters
 exporters: $(PELORUS_VENV)
-	source ${PELORUS_VENV}/bin/activate && \
+	. ${PELORUS_VENV}/bin/activate && \
 	       pip install -e exporters/
 
 dev-env: $(PELORUS_VENV) exporters
@@ -48,17 +48,17 @@ dev-env: $(PELORUS_VENV) exporters
 
 .PHONY: format
 format: $(PELORUS_VENV)
-	source ${PELORUS_VENV}/bin/activate && \
+	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/format;
 
 .PHONY: format-check
 format-check: $(PELORUS_VENV)
-	source ${PELORUS_VENV}/bin/activate && \
+	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/format --check;
 
 .PHONY: pylava
 pylava: $(PELORUS_VENV)
-	source ${PELORUS_VENV}/bin/activate && \
+	. ${PELORUS_VENV}/bin/activate && \
 	pylava;
 
 clean-dev-env:
