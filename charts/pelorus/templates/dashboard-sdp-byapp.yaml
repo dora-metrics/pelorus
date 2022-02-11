@@ -5,6 +5,7 @@ metadata:
   name: dashboard-sdp-byapp
   labels:
     app: grafana
+    monitoring-key: grafana
 spec:
   json: >-
     {
