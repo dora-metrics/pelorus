@@ -180,18 +180,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     repo_url = build.spec.source.git.uri
                 else:
                     repo_url = self._get_repo_from_build_config(build)
-            
-            if repo_url is None:
-                if build.metadata.labels.buildSpecSourceGitUri:
-                    repo_url = build.metadata.labels.buildSpecSourceGitUri
 
             metric.repo_url = repo_url
 
             if build.spec.revision is None:
-                if build.metadata.labels.buildSpecRevisionGitCommit:
-                    commit_sha = build.metadata.labels.buildSpecRevisionGitCommit
-                else:
-                    commit_sha = None
+                commit_sha = self._get_revision_from_build_config(build)
             else:
                 commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
@@ -204,8 +197,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.name = app
 
             if build.spec.revision is None:
-                if build.metadata.labels.buildSpecRevisionGitAuthorName:
-                    metric.committer = build.spec.revision.git.author.name
+                 metric.committer = self._get_author_from_build_config(build)
             else:
                 metric.committer = build.spec.revision.git.author.name
 
@@ -282,11 +274,50 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             namespace=build.status.config.namespace, name=build.status.config.name
         )
         if build_config:
+            if build_config.annotations.buildSpecSourceGitUri:
+                return build_config.annotations.buildSpecSourceGitUri
+
             if build_config.spec.source.git:
                 git_uri = str(build_config.spec.source.git.uri)
                 if git_uri.endswith(".git"):
                     return git_uri
                 else:
                     return git_uri + ".git"
+
+        return None
+
+    def _get_revision_from_build_config(self, build):
+        """
+        Determines the git revision from the parent BuildConfig
+        :param build: the Build resource
+        :return: revisions as a str or None if not found
+        """
+        v1_build_configs = self._kube_client.resources.get(
+            api_version="build.openshift.io/v1", kind="BuildConfig"
+        )
+        build_config = v1_build_configs.get(
+            namespace=build.status.config.namespace, name=build.status.config.name
+        )
+        if build_config:
+            if build_config.annotations.buildSpecSourceGitUri:
+                return build_config.annotations.buildSpecRevisionGitCommit
+
+        return None
+
+    def _get_author_from_build_config(self, build):
+        """
+        Determines the git author from the parent BuildConfig
+        :param build: the Build resource
+        :return: author as a str or None if not found
+        """
+        v1_build_configs = self._kube_client.resources.get(
+            api_version="build.openshift.io/v1", kind="BuildConfig"
+        )
+        build_config = v1_build_configs.get(
+            namespace=build.status.config.namespace, name=build.status.config.name
+        )
+        if build_config:
+            if build_config.annotations.buildSpecRevisionGitAuthorName:
+                return build_config.annotations.buildSpecRevisionGitAuthorName
 
         return None
