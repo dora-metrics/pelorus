@@ -131,6 +131,7 @@ Running an exporter on your local machine should follow this process:
 
         python -m venv .venv
         source .venv/bin/activate
+        pip install --upgrade pip
 
 1. Install dependencies
 
