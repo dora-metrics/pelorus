@@ -274,8 +274,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             namespace=build.status.config.namespace, name=build.status.config.name
         )
         if build_config:
-            if build_config.annotations.buildSpecSourceGitUri:
-                return build_config.annotations.buildSpecSourceGitUri
+            if build_config.metadata.annotations.buildSpecSourceGitUri:
+                return build_config.metadata.annotations.buildSpecSourceGitUri
 
             if build_config.spec.source.git:
                 git_uri = str(build_config.spec.source.git.uri)
@@ -299,8 +299,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             namespace=build.status.config.namespace, name=build.status.config.name
         )
         if build_config:
-            if build_config.annotations.buildSpecSourceGitUri:
-                return build_config.annotations.buildSpecRevisionGitCommit
+            if build_config.metadata.annotations.buildSpecSourceGitUri:
+                return build_config.metadata.annotations.buildSpecRevisionGitCommit
 
         return None
 
@@ -317,7 +317,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             namespace=build.status.config.namespace, name=build.status.config.name
         )
         if build_config:
-            if build_config.annotations.buildSpecRevisionGitAuthorName:
-                return build_config.annotations.buildSpecRevisionGitAuthorName
+            if build_config.metadata.annotations.buildSpecRevisionGitAuthorName:
+                return build_config.metadata.annotations.buildSpecRevisionGitAuthorName
 
         return None
