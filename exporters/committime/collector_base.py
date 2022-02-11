@@ -187,7 +187,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             metric.repo_url = repo_url
 
-            if build.spec.revision.git.commit is None:
+            if build.spec.revision is None:
                 if build.metadata.labels.buildSpecRevisionGitCommit:
                     commit_sha = build.metadata.labels.buildSpecRevisionGitCommit
             else:
@@ -201,7 +201,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.commit_hash = commit_sha
             metric.name = app
 
-            if build.spec.revision.git.author.name is None:
+            if build.spec.revision is None:
                 if build.metadata.labels.buildSpecRevisionGitAuthorName:
                     metric.committer = build.spec.revision.git.author.name
             else:
