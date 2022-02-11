@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+import argparse
+import sys
+
+from lib.charts import run_chart_lint
+
+parser = argparse.ArgumentParser(description="Lint helm charts")
+
+if __name__ == "__main__":
+    parser.parse_args()
+    exit, _ = run_chart_lint()
+    sys.exit(exit)

@@ -1,3 +1,5 @@
+# Variable setup and preflight checks
+
 # Minimal python version supported by exporters
 PYTHON_BINARY=python3
 PYTHON_VER_MIN=3.9
@@ -25,12 +27,16 @@ ifeq ($(PYTHON_VER), False)
                            and <= $(PYTHON_VER_MAX))
 endif
 
+
 .PHONY: default
 default: \
   dev-env
   
 .PHONY: all
 all: default
+
+
+# Environment setup
 
 $(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt
 	test -d ${PELORUS_VENV} || ${PYTHON_BINARY} -m venv ${PELORUS_VENV}
@@ -45,24 +51,62 @@ exporters: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	       pip install -e exporters/
 
-dev-env: $(PELORUS_VENV) exporters
+.PHONY: git-blame
+git-blame:
+	@echo "⎇ Configuring git to ignore certain revs for annotations"
+	$(eval IGNORE_REVS_FILE = $(shell git config blame.ignoreRevsFile))
+	if [ "$(IGNORE_REVS_FILE)" != ".git-blame-ignore-revs" ]; then \
+		git config blame.ignoreRevsFile .git-blame-ignore-revs; \
+	fi
+
+.git/hooks/pre-commit: scripts/pre-commit
+	./scripts/setup-pre-commit-hook
+
+dev-env: $(PELORUS_VENV) exporters git-blame .git/hooks/pre-commit
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
 
-.PHONY: format
-format: $(PELORUS_VENV)
-	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/format;
 
-.PHONY: format-check
-format-check: $(PELORUS_VENV)
-	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/format --check;
+# Formatting
 
-.PHONY: pylava
+.PHONY: format black isort format-check black-check isort-check
+format: $(PELORUS_VENV) black isort 
+
+format-check: $(PELORUS_VENV) black-check isort-check 
+
+black: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	black exporters scripts
+
+black-check: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	black --check exporters scripts
+
+isort: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	isort exporters scripts
+
+isort-check: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	isort --check exporters scripts
+
+
+# Linting
+
+.PHONY: lint pylava chart-lint
+lint: pylava # TODO: not using chart-lint until we can automate installing it or at least conditionally run it
+
 pylava: $(PELORUS_VENV)
+	@echo 🐍 🌋 Linting with pylava
 	. ${PELORUS_VENV}/bin/activate && \
-	pylava;
+	pylava
+
+chart-lint: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/chart-lint
+
+
+# Cleanup
 
 clean-dev-env:
 	rm -rf ${PELORUS_VENV}
