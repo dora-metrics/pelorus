@@ -184,7 +184,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.repo_url = repo_url
 
             if build.spec.revision is None:
-                commit_sha = self._get_revision_from_build_config(build)
+                commit_sha = self._get_revision_from_build(build)
             else:
                 commit_sha = build.spec.revision.git.commit
             metric.build_name = build.metadata.name
@@ -197,7 +197,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.name = app
 
             if build.spec.revision is None:
-                 metric.committer = self._get_author_from_build_config(build)
+                 metric.committer = self._get_author_from_build(build)
             else:
                 metric.committer = build.spec.revision.git.author.name
 
@@ -286,24 +286,24 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
         return None
 
-    def _get_revision_from_build_config(self, build):
+    def _get_revision_from_build(self, build):
         """
         Determines the git revision from the parent BuildConfig
         :param build: the Build resource
         :return: revisions as a str or None if not found
         """
         if build.metadata.annotations.buildSpecSourceGitUri:
-            return build_config.metadata.annotations.buildSpecRevisionGitCommit
+            return build.metadata.annotations.buildSpecRevisionGitCommit
 
         return None
 
-    def _get_author_from_build_config(self, build):
+    def _get_author_from_build(self, build):
         """
         Determines the git author from the parent BuildConfig
         :param build: the Build resource
         :return: author as a str or None if not found
         """
         if build_config.metadata.annotations.buildSpecRevisionGitAuthorName:
-            return build_config.metadata.annotations.buildSpecRevisionGitAuthorName
+            return build.metadata.annotations.buildSpecRevisionGitAuthorName
 
         return None
