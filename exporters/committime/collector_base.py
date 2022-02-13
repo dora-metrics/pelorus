@@ -303,7 +303,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         :param build: the Build resource
         :return: author as a str or None if not found
         """
-        if build_config.metadata.annotations.buildSpecRevisionGitAuthorName:
+        if build.metadata.annotations.buildSpecRevisionGitAuthorName:
             return build.metadata.annotations.buildSpecRevisionGitAuthorName
 
         return None
