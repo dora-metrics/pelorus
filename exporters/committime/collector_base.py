@@ -273,10 +273,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         build_config = v1_build_configs.get(
             namespace=build.status.config.namespace, name=build.status.config.name
         )
-        if build_config:
-            if build_config.metadata.annotations.buildSpecSourceGitUri:
-                return build_config.metadata.annotations.buildSpecSourceGitUri
+        if build.metadata.annotations.buildSpecSourceGitUri:
+          return build.metadata.annotations.buildSpecSourceGitUri
 
+        if build_config:
             if build_config.spec.source.git:
                 git_uri = str(build_config.spec.source.git.uri)
                 if git_uri.endswith(".git"):
@@ -292,15 +292,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         :param build: the Build resource
         :return: revisions as a str or None if not found
         """
-        v1_build_configs = self._kube_client.resources.get(
-            api_version="build.openshift.io/v1", kind="BuildConfig"
-        )
-        build_config = v1_build_configs.get(
-            namespace=build.status.config.namespace, name=build.status.config.name
-        )
-        if build_config:
-            if build_config.metadata.annotations.buildSpecSourceGitUri:
-                return build_config.metadata.annotations.buildSpecRevisionGitCommit
+        if build.metadata.annotations.buildSpecSourceGitUri:
+            return build_config.metadata.annotations.buildSpecRevisionGitCommit
 
         return None
 
@@ -310,14 +303,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         :param build: the Build resource
         :return: author as a str or None if not found
         """
-        v1_build_configs = self._kube_client.resources.get(
-            api_version="build.openshift.io/v1", kind="BuildConfig"
-        )
-        build_config = v1_build_configs.get(
-            namespace=build.status.config.namespace, name=build.status.config.name
-        )
-        if build_config:
-            if build_config.metadata.annotations.buildSpecRevisionGitAuthorName:
-                return build_config.metadata.annotations.buildSpecRevisionGitAuthorName
+        if build_config.metadata.annotations.buildSpecRevisionGitAuthorName:
+            return build_config.metadata.annotations.buildSpecRevisionGitAuthorName
 
         return None
