@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 
 import requests
+from committime import CommitMetric
 
 import pelorus
 
@@ -41,7 +42,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
             self._git_api = self._defaultapi
         self._prefix = self._prefix_pattern % self._git_api
 
-    def get_commit_time(self, metric):
+    def get_commit_time(self, metric: CommitMetric):
         """Method called to collect data and send to Prometheus"""
         git_server = metric.git_fqdn
         # check for gitlab or bitbucket
@@ -60,16 +61,24 @@ class GitHubCommitCollector(AbstractCommitCollector):
         auth = (self._username, self._token) if self._username and self._token else None
         response = requests.get(url, auth=auth, verify=self._tls_verify)
         if response.status_code != 200:
-            # This will occur when trying to make an API call to non-Github
-            logging.warning(
-                "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s"
-                % (
+            try:
+                message = response.json()["message"]
+                logging.warning(
+                    "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s, message %s",
                     metric.build_name,
                     metric.commit_hash,
-                    metric.repo_fqdn,
-                    str(response.status_code),
+                    metric.git_fqdn,
+                    response.status_code,
+                    message,
                 )
-            )
+            except KeyError:
+                logging.warning(
+                    "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s",
+                    metric.build_name,
+                    metric.commit_hash,
+                    metric.git_fqdn,
+                    response.status_code,
+                )
         else:
             commit = response.json()
             try:

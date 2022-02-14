@@ -102,7 +102,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                     % (
                         metric.build_name,
                         metric.commit_hash,
-                        metric.repo_fqdn,
+                        metric.git_fqdn,
                         str(api_response.status_code),
                     )
                 )
