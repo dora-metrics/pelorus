@@ -14,7 +14,7 @@ from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
-from pelorus.utils import get_nested, name_value_attrs_to_dict
+from pelorus.utils import TypedString, get_nested, name_value_attrs_to_dict
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -103,17 +103,17 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # Initialize metrics list
         metrics = []
         for namespace in self._namespaces:
-            app_label = pelorus.get_app_label()
+            app_label_key = pelorus.get_app_label()
             logging.debug(
                 "Searching for builds with label: %s in namespace: %s"
-                % (app_label, namespace)
+                % (app_label_key, namespace)
             )
             # This get all Builds in our cluster
             v1_builds = self._kube_client.resources.get(
                 api_version="build.openshift.io/v1", kind="Build"
             )
             # only use builds that have an app label
-            builds = v1_builds.get(namespace=namespace, label_selector=app_label)
+            builds = v1_builds.get(namespace=namespace, label_selector=app_label_key)
 
             try:
                 v1_tekton = self._kube_client.resources.get(
@@ -121,17 +121,17 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 )
                 # only use PipelineRun that have an app label
                 pipeline_runs = v1_tekton.get(
-                    namespace=namespace, label_selector=app_label
+                    namespace=namespace, label_selector=app_label_key
                 )
             except openshift.dynamic.exceptions.ResourceNotFoundError:
                 pipeline_runs = pelorus.NoOpResourceInstance()
 
             # use a jsonpath expression to find all possible values for the app label
-            jsonpath_str = f"$['items'][*]['metadata']['labels']['{app_label}']"
+            jsonpath_str = f"$['items'][*]['metadata']['labels']['{app_label_key}']"
             jsonpath_expr = parse(jsonpath_str)
 
             apps: set[str] = {match.value for match in jsonpath_expr.find(builds)}
-            pipelines: set[str] = {
+            pipeline_run_app_labels: set[str] = {
                 match.value for match in jsonpath_expr.find(pipeline_runs)
             }
 
@@ -139,20 +139,20 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 app: [
                     build
                     for build in builds.items
-                    if build.metadata.labels[app_label] == app
+                    if build.metadata.labels[app_label_key] == app
                 ]
                 for app in apps
             }
 
             metrics += self.get_metrics_from_apps(builds_by_app, namespace)
 
-            runs_by_app: dict[str, list] = {
-                pipeline: [
+            runs_by_app: dict[AppLabelValue, list] = {
+                AppLabelValue(app_label_value): [
                     run
                     for run in pipeline_runs.items
-                    if run.metadata.labels[app_label] == pipeline
+                    if run.metadata.labels[app_label_key] == app_label_value
                 ]
-                for pipeline in pipelines
+                for app_label_value in pipeline_run_app_labels
             }
 
             try:
@@ -307,33 +307,42 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # If no repo is found, we will return None, which will be handled later on
 
     def get_metrics_from_pipelineruns(
-        self, pipelines: Mapping[str, list[Any]], namespace: str
+        self, pipeline_runs_by_app: Mapping[AppLabelValue, list[Any]], namespace: str
     ) -> list[CommitMetric]:
         metrics = []
-        for pipeline, run in (
-            (pipeline, run) for pipeline, runs in pipelines.items() for run in runs
+        for app_name, pipeline_run in (
+            (app_name, pipeline_run)
+            for app_name, pipeline_runs in pipeline_runs_by_app.items()
+            for pipeline_run in pipeline_runs
         ):
             try:
-                metric = CommitMetric(pipeline)
+                if not _check_pipeline_run_for_success(pipeline_run):
+                    logging.debug(
+                        f"PipelineRun {pipeline_run.metadata.name} was unsuccessful, skipping"
+                    )
+                    continue
+
+                metric = CommitMetric(app_name.data)
 
                 # TODO: gracefully degrade
-                if (url_and_sha := self._get_url_and_sha(pipeline, run)) is not None:
+                if (url_and_sha := self._get_url_and_sha(pipeline_run)) is not None:
                     repo_url, commit_sha = url_and_sha
                 else:
                     repo_url, commit_sha = None, None
 
-                image_hash = _find_first_image_digest_value(run)
-                image_location = self._find_first_image_param(run)
+                image_hash = _find_first_image_digest_value(pipeline_run)
+                image_location = self._find_first_image_param(pipeline_run)
 
                 metric.repo_url = repo_url
                 metric.commit_hash = commit_sha
-                metric.build_name = run.metadata.name
-                metric.build_config_name = run.metadata.labels["tekton.dev/pipeline"]
-                metric.namespace = run.metadata.namespace
-                labels = run.metadata.labels
+                metric.build_name = pipeline_run.metadata.name
+                metric.build_config_name = pipeline_run.metadata.labels[
+                    "tekton.dev/pipeline"
+                ]
+                metric.namespace = pipeline_run.metadata.namespace
+                labels = pipeline_run.metadata.labels
                 metric.labels = json.loads(str(labels).replace("'", '"'))
 
-                metric.name = pipeline
                 metric.committer = "default"
                 metric.image_location = image_location
                 metric.image_hash = image_hash
@@ -358,13 +367,14 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     )
 
                 if metric:
-                    logging.debug("Adding metric for pipeline %s" % pipeline)
+                    logging.debug("Adding metric for pipeline %s" % app_name)
                     metrics.append(metric)
 
-            except Exception:
+            except Exception as e:
                 logging.error(
-                    "Cannot collect metrics from run: %s" % (run.metadata.name)
+                    "Cannot collect metrics from run: %s" % (pipeline_run.metadata.name)
                 )
+                logging.error(e)
 
         return metrics
 
@@ -392,7 +402,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return None
 
     def _find_git_clone_task_name(
-        self, pipeline_name: str, namespace: str
+        self, pipeline_name: PipelineName, namespace: str
     ) -> Optional[str]:
         """
         Get the Pipeline associated with a given PipelineRun,
@@ -413,13 +423,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             ):
                 return task.name
 
-    def _get_url_and_sha(
-        self, pipeline_name: str, pipeline_run
-    ) -> Optional[Tuple[str, str]]:
+    def _get_url_and_sha(self, pipeline_run) -> Optional[Tuple[str, str]]:
         """
         Get the URL and commit SHA from the git-clone task in this PipelineRun.
         """
         namespace = pipeline_run.metadata.namespace
+        pipeline_name = PipelineName(pipeline_run.spec.pipelineRef.name)
         git_clone_task_name = self._find_git_clone_task_name(pipeline_name, namespace)
         if git_clone_task_name is None:
             return None
@@ -464,7 +473,10 @@ def _find_task_run_by_task_name(pipeline_run, task_name: str) -> Optional[Any]:
     """
     Find the TaskRun reference with the specified `pipelineTaskName` within the PipelineRun.
     """
-    for task_run in pipeline_run.status.taskRuns.values():
+    task_runs = pipeline_run.status.taskRuns
+    if not task_runs:
+        return None
+    for task_run in task_runs.values():
         if task_run.pipelineTaskName == task_name:
             return task_run
 
@@ -474,6 +486,24 @@ def _find_first_image_digest_value(pipeline_run) -> Optional[str]:
     Find the first `IMAGE_DIGEST` value within any `taskResult` from the TaskRuns in this PipelineRun.
     """
     for task_run in pipeline_run.status.taskRuns.values():
-        for name, value in name_value_attrs_to_dict(task_run.taskResults).items():
-            if name == "IMAGE_DIGEST":
-                return value
+        for item in task_run.status.taskResults:
+            if item.name == "IMAGE_DIGEST":
+                return item.value
+
+
+def _check_pipeline_run_for_success(pipeline_run) -> bool:
+    # Unsure if this is correct, but I have to see a status field that had more than one condition.
+    # Unfortunately, PipelineRun isn't documented in their API spec.
+    condition = get_nested(pipeline_run, ["status", "conditions", 0], name="conditions")
+    # See https://tekton.dev/docs/pipelines/pipelineruns/#monitoring-execution-status
+    # for the logic behind determining failure / success.
+    # Since we just care about any type of success, we just check the status field.
+    return condition.status == "True"
+
+
+class PipelineName(TypedString):
+    pass
+
+
+class AppLabelValue(TypedString):
+    pass
