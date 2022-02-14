@@ -27,6 +27,11 @@ ifeq ($(PYTHON_VER), False)
                            and <= $(PYTHON_VER_MAX))
 endif
 
+CHART_TEST=$(shell which ct)
+
+SHELLCHECK=$(shell which shellcheck)
+SHELL_SCRIPTS=./scripts/pre-commit ./scripts/setup-pre-commit-hook
+
 
 .PHONY: default
 default: \
@@ -93,17 +98,41 @@ isort-check: $(PELORUS_VENV)
 
 # Linting
 
-.PHONY: lint pylava chart-lint
-lint: pylava # TODO: not using chart-lint until we can automate installing it or at least conditionally run it
+.PHONY: lint pylava chart-lint chart-lint-optional shellcheck shellcheck-optional
+lint: pylava shellcheck chart-lint-optional shellcheck-optional
 
 pylava: $(PELORUS_VENV)
 	@echo 🐍 🌋 Linting with pylava
 	. ${PELORUS_VENV}/bin/activate && \
 	pylava
 
+# chart-lint allows us to fail properly when run from CI,
+# while chart-lint-optional allows graceful degrading when
+# devs don't have it installed.
+
+# shellcheck follows a similar pattern, but is not currently set up for CI.
+
 chart-lint: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/chart-lint
+
+ifneq (, $(CHART_TEST))
+chart-lint-optional: chart-lint
+else
+chart-lint-optional:
+	@echo "chart test (ct) not installed, skipping"
+endif
+
+shellcheck:
+	@echo "🐚 📋 Linting shell scripts with shellcheck"
+	$(SHELLCHECK) $(SHELL_SCRIPTS)
+
+ifneq (, $(SHELLCHECK))
+shellcheck-optional: shellcheck
+else
+shellcheck-optional:
+	@echo "🐚 ⏭ Shellcheck not found, skipping"
+endif
 
 
 # Cleanup
