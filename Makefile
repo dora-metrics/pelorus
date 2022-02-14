@@ -120,7 +120,7 @@ ifneq (, $(CHART_TEST))
 chart-lint-optional: chart-lint
 else
 chart-lint-optional:
-	@echo "chart test (ct) not installed, skipping"
+	$(warning chart test (ct) not installed, skipping)
 endif
 
 shellcheck:
@@ -131,7 +131,7 @@ ifneq (, $(SHELLCHECK))
 shellcheck-optional: shellcheck
 else
 shellcheck-optional:
-	@echo "🐚 ⏭ Shellcheck not found, skipping"
+	$(warning 🐚 ⏭ Shellcheck not found, skipping)
 endif
 
 
