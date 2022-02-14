@@ -12,8 +12,8 @@ done
 if ! [[ $all_cmds_found ]]; then exit 1; fi
 
 
-tekton_setup_dir="$(dirname $BASH_SOURCE)/tekton-demo-setup"
-python_example_txt="$(dirname $BASH_SOURCE)/python-example/response.txt"
+tekton_setup_dir="$(dirname "${BASH_SOURCE[0]}")/tekton-demo-setup"
+python_example_txt="$(dirname "${BASH_SOURCE[0]}")/python-example/response.txt"
 
 echo "Setting up resources:"
 
@@ -21,7 +21,7 @@ echo "1. Installing tekton operator"
 oc apply -f "$tekton_setup_dir/01-tekton-operator.yaml"
 
 echo "2. Setting up python tekton project"
-if ! project_setup_output="$(oc apply -f $tekton_setup_dir/02-project.yaml 2>&1)"; then
+if ! project_setup_output="$(oc apply -f "$tekton_setup_dir/02-project.yaml" 2>&1)"; then
    if echo "$project_setup_output" | grep -q "AlreadyExists"; then
       echo "Project already exists"
    else
@@ -61,7 +61,7 @@ while true; do
    echo "The pipeline and first run of the demo app has started. When it has finished, you may rerun (with commits) or quit now."
    echo "1. Rerun with Commit"
    echo "2. Quit"
-   read -p "Type 1 or 2: " -n 1 a
+   read -r -p "Type 1 or 2: " -n 1 a
    echo ""
    case $a in
       1* )
