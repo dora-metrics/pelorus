@@ -8,7 +8,7 @@ desired_link_path=../../scripts/pre-commit
 if [[ -h $target_hook_path ]]; then
     link_path="$(readlink $target_hook_path)"
 
-    if [[ $link_path = $desired_link_path ]]; then
+    if [[ $link_path = "$desired_link_path" ]]; then
         echo "pre-commit hook already set up"
     else
         echo "warning: pre-commit hook pointing to unknown location $link_path, should be $desired_link_path" >&2
