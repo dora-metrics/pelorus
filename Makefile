@@ -99,7 +99,7 @@ isort-check: $(PELORUS_VENV)
 # Linting
 
 .PHONY: lint pylava chart-lint chart-lint-optional shellcheck shellcheck-optional
-lint: pylava shellcheck chart-lint-optional shellcheck-optional
+lint: pylava chart-lint-optional shellcheck-optional
 
 pylava: $(PELORUS_VENV)
 	@echo 🐍 🌋 Linting with pylava
