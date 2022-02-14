@@ -4,6 +4,7 @@ They are mainly to help with type information and to deal with data structures
 in kubernetes that are not so idiomatic to deal with.
 """
 import dataclasses
+from collections import UserString
 from collections.abc import Iterable
 from typing import Any, Optional, Protocol, TypeVar, Union, overload
 
@@ -150,3 +151,31 @@ class BadAttributePathError(Exception):
             f"{'.'.join(self.path[self.path_slice])} was {self.value}, "
             "so we could not continue."
         )
+
+
+class TypedString(UserString):
+    """
+    A "wrapped" string that can only test for equality between TypedStrings
+    of the same type, or a regular string.
+
+    This helps when strings representing different things are easily confused--
+    such as PipelineRun names versus Pipeline names.
+    """
+
+    def __eq__(self, other):
+        if isinstance(other, TypedString):
+            if type(self) is type(other):
+                return self.data == other.data
+            else:
+                return False
+        elif type(other) is str:
+            return self.data == other
+        else:
+            return NotImplemented
+
+    def __repr__(self):
+        type_name = type(self).__name__
+        return f'{type_name}("{super().__str__()}")'
+
+    def __hash__(self) -> int:
+        return super().__hash__()
