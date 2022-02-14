@@ -66,8 +66,8 @@ while true; do
    case $a in
       1* )
          echo "We've modified this file, time to build and deploy a new version. Times modified: $counter" | tee -a "$python_example_txt"
-         git commit -m "modifying python example, number $counter" -- "$python_example_txt"
-         git push origin "$current_branch"
+         git commit --no-verify -m "modifying python example, number $counter" -- "$python_example_txt"
+         git push "$url" "$current_branch"
 
          run_pipeline
 
