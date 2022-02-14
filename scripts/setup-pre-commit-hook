@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+echo "⎇ setting up pre-commit hook"
+target_hook_path=.git/hooks/pre-commit
+desired_link_path=../../scripts/pre-commit 
+if [[ -h $target_hook_path ]]; then
+    link_path="$(readlink $target_hook_path)"
+
+    if [[ $link_path = $desired_link_path ]]; then
+        echo "pre-commit hook already set up"
+    else
+        echo "warning: pre-commit hook pointing to unknown location $link_path, should be $desired_link_path" >&2
+        exit 1
+    fi
+elif [[ -e $target_hook_path ]]; then
+    echo "warning: pre-commit hook exists, should be symlink to $target_hook_path" >&2
+    exit 1
+else
+    ln -sf "$desired_link_path" "$target_hook_path"
+fi
