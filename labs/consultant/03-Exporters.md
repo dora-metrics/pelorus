@@ -42,10 +42,10 @@ In the next few sections, we'll deploy some exporters that collect data in a sim
       instances:
         # Values file for exporter helm chart
       - app_name: deploytime-exporter
-        source_context_dir: exporters/
+        source_context_dir: exporters/deploytime
         extraEnv:
         - name: APP_FILE
-          value: deploytime/app.py
+          value: app.py
         source_url: https://github.com/redhat-cop/pelorus.git
 
 We get the information we need about deploy time from OpenShift, so this exporter works out-of-the-box!
@@ -69,10 +69,10 @@ Update the `values.yaml` and then upgrade our helm installation of Pelorus to ad
       - app_name: committime-github
         env_from_secrets:
         - github-secret
-        source_context_dir: exporters/
+        source_context_dir: exporters/committime
         extraEnv:
         - name: APP_FILE
-          value: committime/app.py
+          value: app.py
         source_url: https://github.com/redhat-cop/pelorus.git
 
       helm upgrade pelorus charts/pelorus --namespace pelorus
@@ -108,10 +108,10 @@ Once again, we will update our values.yaml and upgrade our Pelorus deployment.
       - app_name: failure-exporter
         env_from_secrets:
         - jira-secret
-        source_context_dir: exporters/
+        source_context_dir: exporters/failure
         extraEnv:
         - name: APP_FILE
-          value: failure/app.py
+          value: app.py
         source_url: https://github.com/redhat-cop/pelorus.git
 
       helm upgrade pelorus charts/pelorus --namespace pelorus

@@ -1,0 +1,3 @@
+attrs                  # module @attr.define
+openshift < 0.12       # module openshift
+prometheus_client      # module prometheus_client

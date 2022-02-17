@@ -1,0 +1,8 @@
+attrs                  # module @attr.define
+azure-devops           # module azure
+git-url-parse          # module giturlparse
+jsonpath_ng            # module jsonpath_ng
+openshift < 0.12       # module openshift
+prometheus_client      # module prometheus_client
+python-gitlab >= 2.4.0 # module gitlab
+requests               # module requests

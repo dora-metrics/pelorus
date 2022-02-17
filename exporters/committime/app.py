@@ -1,20 +1,20 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import logging
 import os
 import time
 from distutils.util import strtobool
 
-from committime.collector_azure_devops import AzureDevOpsCommitCollector
-from committime.collector_bitbucket import BitbucketCommitCollector
-from committime.collector_gitea import GiteaCommitCollector
-from committime.collector_github import GitHubCommitCollector
-from committime.collector_gitlab import GitLabCommitCollector
 from kubernetes import client
 from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
+from committime.collector_azure_devops import AzureDevOpsCommitCollector
+from committime.collector_bitbucket import BitbucketCommitCollector
+from committime.collector_gitea import GiteaCommitCollector
+from committime.collector_github import GitHubCommitCollector
+from committime.collector_gitlab import GitLabCommitCollector
 
 
 class GitFactory:

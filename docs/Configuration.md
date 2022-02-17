@@ -28,10 +28,10 @@ exporters:
   instances:
     # Values file for exporter helm chart
   - app_name: deploytime-exporter
-    source_context_dir: exporters/
+    source_context_dir: exporters/deploytime
     extraEnv:
     - name: APP_FILE
-      value: deploytime/app.py
+      value: app.py
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
 
@@ -43,18 +43,18 @@ exporters:
   - app_name: committime-github
     env_from_secrets: 
     - github-credentials
-    source_context_dir: exporters/
+    source_context_dir: exporters/committime
     extraEnv:
     - name: APP_FILE
-      value: committime/app.py
+      value: app.py
     source_url: https://github.com/redhat-cop/pelorus.git
   - app_name: committime-gh-enterprise
     env_from_secrets: 
     - github-enterprise-credentials
-    source_context_dir: exporters/
+    source_context_dir: exporters/committime
     extraEnv:
     - name: APP_FILE
-      value: committime/app.py
+      value: app.py
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
 
@@ -67,10 +67,10 @@ exporters:
   instances:
     # Values file for exporter helm chart
   - app_name: deploytime-exporter
-    source_context_dir: exporters/
+    source_context_dir: exporters/deploytime
     extraEnv:
     - name: APP_FILE
-      value: deploytime/app.py
+      value: app.py
     source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
@@ -107,10 +107,10 @@ exporters:
   - app_name: committime-exporter
     env_from_secrets: 
     - github-secret
-    source_context_dir: exporters/
+    source_context_dir: exporters/committime
     extraEnv:
     - name: APP_FILE
-    value: committime/app.py
+    value: app.py
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
 

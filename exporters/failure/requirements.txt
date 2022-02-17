@@ -1,0 +1,5 @@
+jira                   # module jira
+openshift < 0.12       # module openshift
+prometheus_client      # module prometheus_client
+pytz                   # module pytz
+requests               # module requests

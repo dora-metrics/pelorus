@@ -28,15 +28,22 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r exporters/requirements.txt
-          pip install -r exporters/requirements-dev.txt
+          pip install -r exporters/committime/requirements.txt \
+                      -r exporters/deploytime/requirements.txt \
+                      -r exporters/failure/requirements.txt \
+                      -r exporters/requirements-dev.txt
       - name: Start Mockoon in background
         run: docker run --name=mockoon -d --mount type=bind,source=$PWD/mocks/commitexporter_github.json,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000
       - name: try until mockoon is ready
         run: |
           pip install httpie
           until curl -k https://localhost:3000/version; do echo "trying again in 1 second"; sleep 1; done
+      - name: Install exporters
+        run: |
+          pip install -e exporters/pelorus_common \
+                      -e exporters/committime \
+                      -e exporters/deploytime \
+                      -e exporters/failure
       - name: run commit exporter
         run: |
-          pip install ./exporters
           pytest -m integration

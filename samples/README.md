@@ -14,10 +14,10 @@ oc create secret generic github-secret --from-literal=GIT_USER=<username> --from
 exporters:
   instances:
   - app_name: deploytime-exporter
-    source_context_dir: exporters/
+    source_context_dir: exporters/deploytime
     extraEnv:
     - name: APP_FILE
-      value: deploytime/app.py
+      value: app.py
     - name: LOG_LEVEL
       value: DEBUG
     - name: NAMESPACES
@@ -28,10 +28,10 @@ exporters:
     env_from_secrets:
     - github-secret
     - mongodb-build-webhook
-    source_context_dir: exporters/
+    source_context_dir: exporters/genericexporter
     extraEnv:
     - name: APP_FILE
-      value: genericexporter/app.py
+      value: app.py
     - name: LOG_LEVEL
       value: DEBUG
     source_ref: master
@@ -40,10 +40,10 @@ exporters:
 webhooks:
   instances:
   - app_name: build-webhook
-    source_context_dir: webhooks/
+    source_context_dir: webhooks/build-webhook
     extraEnv:
     - name: APP_FILE
-      value: build-webhook/app.py
+      value: app.py
     - name: LOG_LEVEL
       value: DEBUG
     source_ref: master

@@ -43,18 +43,26 @@ all: default
 
 # Environment setup
 
-$(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt
+$(PELORUS_VENV): exporters/committime/requirements.txt \
+				 exporters/deploytime/requirements.txt \
+				 exporters/failure/requirements.txt \
+				 exporters/requirements-dev.txt
 	test -d ${PELORUS_VENV} || ${PYTHON_BINARY} -m venv ${PELORUS_VENV}
 	. ${PELORUS_VENV}/bin/activate && \
 	       pip install -U pip && \
-	       pip install -r exporters/requirements.txt \
+	       pip install -r exporters/committime/requirements.txt \
+					   -r exporters/deploytime/requirements.txt \
+					   -r exporters/failure/requirements.txt \
 	                   -r exporters/requirements-dev.txt
 	touch ${PELORUS_VENV}
 
 .PHONY: exporters
 exporters: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	       pip install -e exporters/
+	       pip install -e exporters/pelorus_common && \
+	       pip install -e exporters/committime && \
+		   pip install -e exporters/deploytime && \
+		   pip install -e exporters/failure
 
 .PHONY: git-blame
 git-blame:

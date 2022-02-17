@@ -109,19 +109,19 @@ exporters:
   - app_name: committime-exporter
     env_from_secrets: 
     - github-secret
-    source_context_dir: exporters/
+    source_context_dir: exporters/committime
     extraEnv:
     - name: APP_FILE
-      value: committime/app.py
+      value: app.py
     source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
   - app_name: failuretime-exporter
     env_from_secrets:
     - sn-secret
-    source_context_dir: exporters/
+    source_context_dir: exporters/failure
     extraEnv:
     - name: APP_FILE
-      value: failure/app.py
+      value: app.py
     source_ref: service-now-exporter
     source_url: https://github.com/redhat-cop/pelorus.git
 ```
@@ -149,8 +149,8 @@ exporters:
     - name: APP_LABEL
       value: app.kubernetes.io/name
     - name: APP_FILE
-      value: deploytime/app.py
-    source_context_dir: exporters/
+      value: app.py
+    source_context_dir: exporters/deploytime
     source_ref: master
     source_url: https://github.com/redhat-cop/pelorus.git
 

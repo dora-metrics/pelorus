@@ -117,7 +117,7 @@ A Pelorus exporter is simply a [Prometheus exporter](https://prometheus.io/docs/
 The following is a minimal directory structure for a Pelorus exporter.
 
 ```
-exporters/exporter/
+exporters/exporter/exporter_name
 ├── app.py
 ├── README.md
 └── values.yaml

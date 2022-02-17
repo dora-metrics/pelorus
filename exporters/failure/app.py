@@ -1,15 +1,15 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import logging
 import os
 import sys
 import time
 
-from collector_jira import JiraFailureCollector
-from collector_servicenow import ServiceNowFailureCollector
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
+from failure.collector_jira import JiraFailureCollector
+from failure.collector_servicenow import ServiceNowFailureCollector
 
 REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
 

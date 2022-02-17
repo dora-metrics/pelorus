@@ -27,8 +27,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r exporters/requirements.txt
-          pip install -r exporters/requirements-dev.txt
+          pip install -r exporters/committime/requirements.txt \
+                      -r exporters/deploytime/requirements.txt \
+                      -r exporters/failure/requirements.txt \
+                      -r exporters/requirements-dev.txt
+
+      - name: Install exporters
+        run: |
+          pip install -e exporters/pelorus_common \
+                      -e exporters/committime \
+                      -e exporters/deploytime \
+                      -e exporters/failure
+
       - name: Test with pytest
         run: coverage run -m pytest -rap -m "not integration"
       - name: Generate coverage report
