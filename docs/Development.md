@@ -33,16 +33,16 @@ We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ens
 
 ### Updating the chart versions
 
-When any of our Helm charts are updated, we need to bump the version number. This allows for a seemless upgrade experience. In order to maintain versioning with our repository, our version numbers are derived from our tagged releases. Git provides a command which will give us that version, via `git describe`. However, the [git generated version number is not fully semver compatible](https://github.com/semver/semver/issues/200). To bridge that gap we use a tool called [Version Tester (vert)](https://github.com/Masterminds/vert). We have also written a pre-commit hook script that will automatically detect when a version bump is needed and will make the required change. Here are the steps to get the hook set up.
+When any of our Helm charts are updated, we need to bump the version number.
+This allows for a seemless upgrade experience.
+We have provided scripts that can test when a version bump is needed and do the bumping for you.
 
 1. Install Helm's [chart-testing](https://github.com/helm/chart-testing) tool.
-1. Install the latest release of [vert](https://github.com/Masterminds/vert/releases/)
-    1. Run `vert -g ^1 $(git describe)` to test that it is working.
-1. Copy the pre-commit hook into your git hooks directory.
+2. Ensure the development environment is set up with `make dev-env`.
+3. Run `make chart-lint` to lint the charts, including checking the version number.
 
-        cp _test/pre-commit .git/hooks/pre-commit
-
-This script will use Helm's built-in linter to check whether a version bump is necessary, and if it is, it will take the current `version` from Chart.yaml and increment it one patch version. It will also keep `appVersion` fo the Pelorus chart up to date with the repo version using `git describe`.
+You can check all chart versions and bump them if needed with `./scripts/chart-check-and-bump`,
+or bump specific charts with `./scripts/bump-version CHART_PATH [ CHART_PATH ...]`.
 
 ## Dashboard Development
 
@@ -123,51 +123,24 @@ exporters/exporter/
 └── values.yaml
 ```
 
-### Running locally
+### Dev Environment Setup
 
-Running an exporter on your local machine should follow this process:
+#### Python & Repo Setup
 
-1. Create a python virtual environment (Optional, but recommended)
+After cloning the repo, you'll need a python version that's >= 3.9 but <= 3.10.2.
 
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip
+Running `make dev-env` should be enough to get you started.
 
-1. Install dependencies
+This will:
 
-        pip install -r exporters/requirements.txt
-        pip install -r exporters/requirements-dev.txt
+- check for the right version of python
+- set up a virtual environment
+- install dependencies
+- install the exporters package
+- set up git hooks for formatting and linting checks
+- configure `git blame` to ignore large revisions that just changed formatting
 
-1. Install the pelorus library
-
-        pip install exporters/
-
-1. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](Configuration.md#configuring-exporters) to see supported variables).
-
-        export GIT_TOKEN=xxxx
-        export GIT_USER=xxxx
-
-1. Log in to your OpenShift cluster
-
-        oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443 
-
-1. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
-
-    1.  Download your cluster ca.crt file
-    1.  Add cert to system trust bundle
-    1.  Pass cert bundle with your login command
-
-            oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443  --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
-
-1. Start the exporter
-        
-        python exporters/committime/app.py
-
-At this point, your exporter should be available at http://localhost:8080
-
-    curl http://localhost:8080
-
-### IDE Setup (VSCode)
+#### IDE Setup (VSCode)
 
 Most of us use Visual Studio Code to do our python development. The following extensions for VSCode are useful. Each can be installed by hitting `Ctrl+P` and pasting the commands below.
 
@@ -178,7 +151,8 @@ Most of us use Visual Studio Code to do our python development. The following ex
 * [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
 
         ext install ms-python.python
-   
+
+The python extension can activate your virtualenv automatically.
 
 Code also comes with a nice debugger feature. Here is a starter configuration to use with our exporters. Just create a file called `.vscode/launch.json` in your `pelorus/` project directory with the following content.
 
@@ -233,6 +207,44 @@ Code also comes with a nice debugger feature. Here is a starter configuration to
 
 For more information, see the [Debugging](https://code.visualstudio.com/docs/editor/debugging) doc in VS Code.
 
+### Running locally
+
+Running an exporter on your local machine should follow this process:
+
+1. Set up your local dev environment:
+
+        make dev-env
+
+2. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](Configuration.md#configuring-exporters) to see supported variables).
+
+        export GIT_TOKEN=xxxx
+        export GIT_USER=xxxx
+
+3. Log in to your OpenShift cluster
+
+        oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443 
+
+4. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
+
+    1.  Download your cluster ca.crt file
+    2.  Add cert to system trust bundle
+    3.  Pass cert bundle with your login command
+
+            oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443  --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
+
+5. Activate your virtual environment
+
+        . .venv/bin/activate
+
+6. Start the exporter
+        
+        python exporters/committime/app.py
+
+At this point, your exporter should be available at http://localhost:8080
+
+    curl http://localhost:8080
+
+
 ## Testing Pull Requests
 
 The following are notes and general steps for testing Pull Requests for specific types of changes.
@@ -271,20 +283,19 @@ Most exporter changes can be tested locally.
         git fetch themoosman
         git checkout themoosman/feature-branch
 
-1. Install both the runtime and development dependencies.
+2. Set up the dev environment
 
-        pip install -r exporters/requirements.txt
-        pip install -r exporters/requirements-dev.txt
+        make dev-env
 
-1. Run unit tests using `python -m pytest`.
+3. Run unit tests using `python -m pytest`.
     1. You can also run coverage reports with the following:
 
             coverage run -m pytest
             coverage report
 
-1. Gather necessary [configuration information](Configuration.md#configuring-exporters).
-1. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
-1. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
+4. Gather necessary [configuration information](Configuration.md#configuring-exporters).
+5. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
+6. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
     1. You get a valid response with metrics.
     1. Confirm the format of expected metrics.
 
@@ -294,6 +305,8 @@ For testing changes to the helm chart, you should just follow the [standard inst
 
 * All expected pods are running and healthy
 * Any expected behavior changes mentioned in the PR can be observed.
+
+You can do some rudimentary linting with `make chart-lint`.
 
 We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.
 

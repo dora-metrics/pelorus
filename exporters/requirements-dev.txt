@@ -5,3 +5,5 @@ mkdocs
 black
 isort
 pylava
+yamale
+yamllint
