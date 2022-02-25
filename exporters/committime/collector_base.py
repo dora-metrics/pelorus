@@ -144,7 +144,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 for app in apps
             }
 
-            metrics += self.get_metrics_from_apps(builds_by_app, namespace)
+            metrics += self._get_metrics_from_apps(builds_by_app, namespace)
 
             runs_by_app: dict[AppLabelValue, list] = {
                 AppLabelValue(app_label_value): [
@@ -156,7 +156,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             }
 
             try:
-                metrics += self.get_metrics_from_pipelineruns(runs_by_app, namespace)
+                metrics += self.get_metrics_from_pipelineruns(runs_by_app)
             except Exception as e:
                 logging.error(f"Error while getting metrics from Tekton: {e}")
 
@@ -167,9 +167,14 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 
-    def get_metrics_from_apps(
-        self, apps: Mapping[str, Any], namespace: str
+    def _get_metrics_from_apps(
+        self, apps: Mapping[str, list], namespace: str
     ) -> list[CommitMetric]:
+        """
+        Given a mapping of "app" (identified by the app.kubernetes.io/name label by default)
+        to a list of openshift builds, obtain commit information from jenkins and/or
+        the git forge targed by the subclass of AbstractCommitCollector.
+        """
         metrics = []
         for app in apps:
 
@@ -207,6 +212,13 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     def get_metric_from_build(
         self, build, app: str, namespace: str, repo_url: Optional[str]
     ) -> Optional[CommitMetric]:
+        """
+        Extract repo url information from a Source, Binary, or Docker build.
+
+        Will obtain it from the spec.source.git.uri if present,
+        otherwise look for the information in an annotation,
+        and then fall back to looking for it in the buildconfig.
+        """
         try:
             metric = CommitMetric(app)
 
@@ -228,11 +240,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             if spec.revision:
                 commit_sha = spec.revision.git.commit
-                metric.committer = spec.revision.git.author.name
             else:
                 # TODO: check for existence, allow user customization? Annotation instead?
                 commit_sha = labels.peloruscommitsha
-                metric.committer = "UNKNOWN_AUTHOR"
 
             metric.build_name = metadata.name
             metric.build_config_name = labels.buildconfig
@@ -244,7 +254,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.labels = json.loads(str(labels).replace("'", '"'))
 
             metric.commit_hash = commit_sha
-            metric.image_location = build.status.outputDockerImageReference
             metric.image_hash = build.status.output.to.imageDigest
             # Check the cache for the commit_time, if not call the API
             metric_ts = self._commit_dict.get(commit_sha)
@@ -260,8 +269,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 # Add the timestamp to the cache
                 self._commit_dict[metric.commit_hash] = metric.commit_timestamp  # type: ignore
             else:
-                # TODO: do we not actually update commit_time, just commit_timestamp?
-                # Is this intentional?
+                # NOTE: only commit_timestamp is updated because that's
+                # all the metric needs for prometheus.
+                # If this is changed later to do further work with the metric,
+                # Be sure to account for this.
                 metric.commit_timestamp = self._commit_dict[commit_sha]
                 logging.debug(
                     "Returning sha: %s, commit_timestamp: %s, from cache."
@@ -307,8 +318,16 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # If no repo is found, we will return None, which will be handled later on
 
     def get_metrics_from_pipelineruns(
-        self, pipeline_runs_by_app: Mapping[AppLabelValue, list[Any]], namespace: str
+        self, pipeline_runs_by_app: Mapping[AppLabelValue, list]
     ) -> list[CommitMetric]:
+        """
+        Given a mapping from app name to a list of pipeline runs for that app,
+        generate metrics for those commits.
+
+        This finds the repo_url and commit_sha by looking through relevant taskruns,
+        and looks up time information from the git forge targeted by the subclass
+        of AbstractCommitCollector.
+        """
         metrics = []
         for app_name, pipeline_run in (
             (app_name, pipeline_run)
@@ -330,9 +349,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 else:
                     repo_url, commit_sha = None, None
 
-                image_hash = _find_first_image_digest_value(pipeline_run)
-                image_location = self._find_first_image_param(pipeline_run)
-
+                metric.image_hash = _find_first_image_digest_value(pipeline_run)
                 metric.repo_url = repo_url
                 metric.commit_hash = commit_sha
                 metric.build_name = pipeline_run.metadata.name
@@ -341,11 +358,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 ]
                 metric.namespace = pipeline_run.metadata.namespace
                 labels = pipeline_run.metadata.labels
+                # TODO: replace this with something like labels.__dict__,
+                # because at that level an openshift.dynamic.ResourceField's
+                # dict should just be dict[str, str].
+                # But this requires testing.
                 metric.labels = json.loads(str(labels).replace("'", '"'))
-
-                metric.committer = "default"
-                metric.image_location = image_location
-                metric.image_hash = image_hash
 
                 # Check the cache for the commit_time, if not call the API
                 if commit_sha not in self._commit_dict:
@@ -444,30 +461,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         )
         return (clone_task_results["url"], clone_task_results["commit"])
 
-    def _find_first_image_param(self, pipeline_run) -> Optional[str]:
-        """
-        Find the first image value from the params of any TaskRun in this PipelineRun.
-        """
-        for task_run in self._get_task_runs_from_pipeline_run(pipeline_run):
-            params = name_value_attrs_to_dict(task_run.spec.params)
-            if "IMAGE" in params:
-                return params["IMAGE"]
-            if "IMAGE_NAME" in params:
-                return params["IMAGE_NAME"]
-
-    def _get_task_runs_from_pipeline_run(self, pipeline_run) -> Iterable:
-        """
-        Iterate over the full TaskRuns referenced by the given PipelineRun.
-        """
-        task_run_resource = self._kube_client.resources.get(
-            api_version="tekton.dev/v1beta1", kind="TaskRun"
-        )
-
-        namespace = pipeline_run.metadata.namespace
-
-        for task_run_name in pipeline_run.status.taskRuns.keys():
-            yield task_run_resource.get(namespace=namespace, name=task_run_name)
-
 
 def _find_task_run_by_task_name(pipeline_run, task_name: str) -> Optional[Any]:
     """
@@ -492,6 +485,9 @@ def _find_first_image_digest_value(pipeline_run) -> Optional[str]:
 
 
 def _check_pipeline_run_for_success(pipeline_run) -> bool:
+    """
+    Was the given pipelinerun successful?
+    """
     # Unsure if this is correct, but I have to see a status field that had more than one condition.
     # Unfortunately, PipelineRun isn't documented in their API spec.
     condition = get_nested(pipeline_run, ["status", "conditions", 0], name="conditions")
