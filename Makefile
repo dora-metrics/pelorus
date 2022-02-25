@@ -67,7 +67,12 @@ git-blame:
 .git/hooks/pre-commit: scripts/pre-commit
 	./scripts/setup-pre-commit-hook
 
-dev-env: $(PELORUS_VENV) exporters git-blame .git/hooks/pre-commit
+.PHONY: cli_dev_tools
+cli_dev_tools:
+	./scripts/install_dev_tools -v $(PELORUS_VENV)
+
+dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
+         .git/hooks/pre-commit
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
 

@@ -37,9 +37,8 @@ When any of our Helm charts are updated, we need to bump the version number.
 This allows for a seemless upgrade experience.
 We have provided scripts that can test when a version bump is needed and do the bumping for you.
 
-1. Install Helm's [chart-testing](https://github.com/helm/chart-testing) tool.
-2. Ensure the development environment is set up with `make dev-env`.
-3. Run `make chart-lint` to lint the charts, including checking the version number.
+1. Ensure the development environment is set up with `make dev-env`.
+2. Run `make chart-lint` to lint the charts, including checking the version number.
 
 You can check all chart versions and bump them if needed with `./scripts/chart-check-and-bump`,
 or bump specific charts with `./scripts/bump-version CHART_PATH [ CHART_PATH ...]`.
@@ -135,6 +134,7 @@ This will:
 
 - check for the right version of python
 - set up a virtual environment
+- install required CLI tools such as helm, oc, tkn and ct (inside .venv/bin)
 - install dependencies
 - install the exporters package
 - set up git hooks for formatting and linting checks
@@ -215,26 +215,26 @@ Running an exporter on your local machine should follow this process:
 
         make dev-env
 
-2. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](Configuration.md#configuring-exporters) to see supported variables).
+2. Activate your virtual environment
+
+        . .venv/bin/activate
+
+3. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](Configuration.md#configuring-exporters) to see supported variables).
 
         export GIT_TOKEN=xxxx
         export GIT_USER=xxxx
 
-3. Log in to your OpenShift cluster
+4. Log in to your OpenShift cluster
 
         oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443 
 
-4. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
+5. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
 
     1.  Download your cluster ca.crt file
     2.  Add cert to system trust bundle
     3.  Pass cert bundle with your login command
 
             oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443  --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
-
-5. Activate your virtual environment
-
-        . .venv/bin/activate
 
 6. Start the exporter
         
@@ -287,15 +287,19 @@ Most exporter changes can be tested locally.
 
         make dev-env
 
-3. Run unit tests using `python -m pytest`.
+3. Activate your virtual environment
+
+        . .venv/bin/activate
+
+4. Run unit tests using `python -m pytest`.
     1. You can also run coverage reports with the following:
 
             coverage run -m pytest
             coverage report
 
-4. Gather necessary [configuration information](Configuration.md#configuring-exporters).
-5. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
-6. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
+5. Gather necessary [configuration information](Configuration.md#configuring-exporters).
+6. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
+7. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
     1. You get a valid response with metrics.
     1. Confirm the format of expected metrics.
 
