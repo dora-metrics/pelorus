@@ -6,6 +6,10 @@ Various scripts for development reside here.
 
 Sets up a python3.9 virtual environment, installs dependencies, and sets up the pre-commit hook.
 
+## install_dev_tools
+
+Installs required packages for deploying and testing Pelorus inside virtual environment.
+
 ## pre-commit
 
 A pre-commit hook for git. Will lint helm charts, and check if formatting is correct.
