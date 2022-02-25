@@ -9,6 +9,12 @@ SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 
 @attr.define
 class CommitMetric:
+    """
+    CommitMetric holds information about a certain commit.
+    Only the commit_timestamp, namespace, name, commit_hash,
+    and image_hash fields are exposed to prometheus.
+    """
+
     name: str = attr.field()
     labels: Any = attr.field(default=None, kw_only=True)
     namespace: Optional[str] = attr.field(default=None, kw_only=True)
