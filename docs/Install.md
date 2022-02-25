@@ -86,7 +86,7 @@ If you don't have an object storage provider, we recommend [MinIO](https://min.i
 
 By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](Architecture.md) for details. You define exporters for the desired meterics in each of the clusters which metrics will be evaluated.  The main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
 
-#### Configure Development Cluster.     
+#### Configure Development Cluster.
 
 The development configuration uses same AWS S3 bucket and tracks commits and failure resolution to development:
 
@@ -107,14 +107,14 @@ deployment:
 exporters:
   instances:
   - app_name: committime-exporter
-    env_from_secrets: 
+    env_from_secrets:
     - github-secret
     source_context_dir: exporters/
     extraEnv:
     - name: APP_FILE
       value: committime/app.py
     source_ref: master
-    source_url: https://github.com/redhat-cop/pelorus.git
+    source_url: https://github.com/konveyor/pelorus.git
   - app_name: failuretime-exporter
     env_from_secrets:
     - sn-secret
@@ -123,7 +123,7 @@ exporters:
     - name: APP_FILE
       value: failure/app.py
     source_ref: service-now-exporter
-    source_url: https://github.com/redhat-cop/pelorus.git
+    source_url: https://github.com/konveyor/pelorus.git
 ```
 
 #### Configure Production Cluster.
@@ -145,14 +145,14 @@ deployment:
 exporters:
   instances:
   - app_name: deploytime-exporter
-    extraEnv: 
+    extraEnv:
     - name: APP_LABEL
       value: app.kubernetes.io/name
     - name: APP_FILE
       value: deploytime/app.py
     source_context_dir: exporters/
     source_ref: master
-    source_url: https://github.com/redhat-cop/pelorus.git
+    source_url: https://github.com/konveyor/pelorus.git
 
 ```
 

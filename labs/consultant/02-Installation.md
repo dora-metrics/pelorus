@@ -32,7 +32,7 @@ Install Ansible (Used for the demo app)
 
 ## Step 2: Clone the Pelorus repository
 
-    git clone https://github.com/redhat-cop/pelorus.git
+    git clone https://github.com/konveyor/pelorus.git
 
 
 ## Step 3: Create cluster Admin account to install Pelorus
