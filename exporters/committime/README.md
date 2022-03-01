@@ -27,3 +27,24 @@ Then we get commit data from the following systems through their respective APIs
 * GitHub Enterprise (including private endpoints)
 * Bitbucket _(coming soon)_
 * Gitlab _(coming soon)_
+
+## Binary Build Support
+
+OpenShift binary builds are a popular mechanism for building container images on OenShift but do not contain source code information.
+
+To support these types of build, you may annotate the build phase with the following annotations for pelorus to use:
+
+| Annotation                      | Example                               | Description                   |
+|---------------------------------|:----------------------------------|------------------------------:|
+| buildSpecRevisionGitCommit      | cae392a                           | Short or Long Git Commit Hash |
+| buildSpecSourceGitUri           | https://github.com/org/myapp.git  | URL of the Source Repository  |
+| buildSpecRevisionGitAuthorName  | joe.bloggs                        | Name of the committer         |
+
+Example command to put in your build pipeline:
+
+```bash
+oc annotate bc/${BUILD_CONFIG_NAME} --overwrite \
+  buildSpecSourceGitUri=${GIT_URL} \
+  buildSpecRevisionGitCommit=${GIT_COMMIT} \
+  buildSpecRevisionGitAuthorName="${GIT_AUTHOR}"
+```
