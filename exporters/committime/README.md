@@ -34,13 +34,13 @@ OpenShift binary builds are a popular mechanism for building container images on
 
 To support these types of build, you may annotate the build phase with the following annotations for pelorus to use:
 
-| Annotation                      | Example                               | Description                   |
+| Annotation                      | Example                           | Description                   |
 |---------------------------------|:----------------------------------|------------------------------:|
 | buildSpecRevisionGitCommit      | cae392a                           | Short or Long Git Commit Hash |
 | buildSpecSourceGitUri           | https://github.com/org/myapp.git  | URL of the Source Repository  |
 | buildSpecRevisionGitAuthorName  | joe.bloggs                        | Name of the committer         |
 
-Example command to put in your build pipeline:
+Example command to put in your build pipeline each time you start an OpenShift `Build`:
 
 ```bash
 oc annotate bc/${BUILD_CONFIG_NAME} --overwrite \
