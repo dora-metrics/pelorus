@@ -197,7 +197,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             metric.name = app
 
             if build.spec.revision is None:
-                 metric.committer = self._get_author_from_build(build)
+                metric.committer = self._get_author_from_build(build)
             else:
                 metric.committer = build.spec.revision.git.author.name
 
@@ -274,7 +274,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             namespace=build.status.config.namespace, name=build.status.config.name
         )
         if build.metadata.annotations.buildSpecSourceGitUri:
-          return build.metadata.annotations.buildSpecSourceGitUri
+            return build.metadata.annotations.buildSpecSourceGitUri
 
         if build_config:
             if build_config.spec.source.git:
