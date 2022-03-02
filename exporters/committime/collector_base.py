@@ -14,7 +14,14 @@ from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
+from pelorus import ApiGroup
 from pelorus.utils import TypedString, get_nested, name_value_attrs_to_dict
+
+BUILD_API_GROUP = ApiGroup(api_version="build.openshift.io/v1", kind="Build")
+TEKTON_PIPELINE_RUN_API_GROUP = ApiGroup(
+    api_version="tekton.dev/v1beta1", kind="PipelineRun"
+)
+TEKTON_PIPELINE_API_GROUP = ApiGroup(api_version="tekton.dev/v1beta1", kind="Pipeline")
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -109,15 +116,13 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 % (app_label_key, namespace)
             )
             # This get all Builds in our cluster
-            v1_builds = self._kube_client.resources.get(
-                api_version="build.openshift.io/v1", kind="Build"
-            )
+            v1_builds = self._kube_client.resources.get(**BUILD_API_GROUP._asdict())
             # only use builds that have an app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label_key)
 
             try:
                 v1_tekton = self._kube_client.resources.get(
-                    api_version="tekton.dev/v1beta1", kind="PipelineRun"
+                    **TEKTON_PIPELINE_RUN_API_GROUP._asdict()
                 )
                 # only use PipelineRun that have an app label
                 pipeline_runs = v1_tekton.get(
@@ -427,7 +432,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         Used to find the TaskRun that did the git checkout.
         """
         pipeline_resource = self._kube_client.resources.get(
-            api_version="tekton.dev/v1beta1", kind="Pipeline"
+            **TEKTON_PIPELINE_API_GROUP._asdict()
         )
 
         pipeline = pipeline_resource.get(namespace=namespace, name=pipeline_name)

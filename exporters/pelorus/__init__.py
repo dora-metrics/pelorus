@@ -125,3 +125,18 @@ class AbstractPelorusExporter(ABC):
 
     def __init_():
         pass
+
+
+class ApiGroup(NamedTuple):
+    """
+    A Kubernetes [API Group](https://kubernetes.io/docs/reference/using-api/#api-groups)
+    that can be used by the openshift.dynamic client.
+    A `build.openshift.io/v1/Build` would have `build.openshift.io` as the group, `v1` as the api_version,
+    and `Build` as the Kind.
+    As a convenience, the group and api_version can be combined in the api_version field,
+    separated with a slash.
+    """
+
+    api_version: str
+    kind: str
+    group: Optional[str] = None
