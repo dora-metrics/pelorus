@@ -131,13 +131,15 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             except openshift.dynamic.exceptions.ResourceNotFoundError:
                 pipeline_runs = pelorus.NoOpResourceInstance()
 
-            # use a jsonpath expression to find all possible values for the app label
-            jsonpath_str = f"$['items'][*]['metadata']['labels']['{app_label_key}']"
-            jsonpath_expr = parse(jsonpath_str)
+            jsonpath_labels_expr = parse("$['items'][*]['metadata']['labels']")
 
-            apps: set[str] = {match.value for match in jsonpath_expr.find(builds)}
+            apps: set[str] = {
+                match.value[app_label_key]
+                for match in jsonpath_labels_expr.find(builds)
+            }
             pipeline_run_app_labels: set[str] = {
-                match.value for match in jsonpath_expr.find(pipeline_runs)
+                match.value[app_label_key]
+                for match in jsonpath_labels_expr.find(pipeline_runs)
             }
 
             builds_by_app: dict[str, list] = {
