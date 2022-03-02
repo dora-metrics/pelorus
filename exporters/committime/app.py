@@ -1,6 +1,6 @@
 #!/usr/bin/python3
+import logging
 import os
-import sys
 import time
 from distutils.util import strtobool
 
@@ -15,8 +15,6 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
-
-REQUIRED_CONFIG = ["GIT_USER", "GIT_TOKEN"]
 
 
 class GitFactory:
@@ -46,17 +44,18 @@ class GitFactory:
 
 if __name__ == "__main__":
     pelorus.upgrade_legacy_vars()
-    if pelorus.missing_configs(REQUIRED_CONFIG):
-        print("This program will exit.")
-        sys.exit(1)
 
     pelorus.load_kube_config()
     k8s_config = client.Configuration()
     k8s_client = client.api_client.ApiClient(configuration=k8s_config)
     dyn_client = DynamicClient(k8s_client)
 
-    username = os.environ.get("GIT_USER")
-    token = os.environ.get("GIT_TOKEN")
+    username = os.environ.get("GIT_USER", "")
+    token = os.environ.get("GIT_TOKEN", "")
+    if not username and not token:
+        logging.info(
+            "No GIT_USER and no GIT_TOKEN given. This is okay for public repositories only."
+        )
     git_api = os.environ.get("GIT_API")
     git_provider = os.environ.get("GIT_PROVIDER", pelorus.DEFAULT_GIT)
     tls_verify = bool(

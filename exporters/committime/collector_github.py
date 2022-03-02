@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import requests
 
@@ -16,8 +17,8 @@ class GitHubCommitCollector(AbstractCommitCollector):
     def __init__(
         self,
         kube_client,
-        username,
-        token,
+        username: Optional[str],
+        token: Optional[str],
         namespaces,
         apps,
         git_api=None,
@@ -56,9 +57,8 @@ class GitHubCommitCollector(AbstractCommitCollector):
             + self._suffix
             + metric.commit_hash
         )
-        response = requests.get(
-            url, auth=(self._username, self._token), verify=self._tls_verify
-        )
+        auth = (self._username, self._token) if self._username and self._token else None
+        response = requests.get(url, auth=auth, verify=self._tls_verify)
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github
             logging.warning(
