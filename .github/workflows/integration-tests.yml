@@ -31,11 +31,11 @@ jobs:
           pip install -r exporters/requirements.txt
           pip install -r exporters/requirements-dev.txt
       - name: Start Mockoon in background
-        run: docker run --name=mockoon -d --mount type=bind,source=$PWD/mocks/commitexporter_github.json,target=/data,readonly -p 3000:3000 mockoon/cli:latest -d /data --name openshift -p 3000
+        run: docker run --name=mockoon -d --mount type=bind,source=$PWD/mocks/commitexporter_github.json,target=/data,readonly -p 3000:3000 mockoon/cli:1.5.1 -d /data --name openshift -p 3000
       - name: try until mockoon is ready
         run: |
           pip install httpie
-          until curl -k https://localhost:3000/version; do echo "trying again in 1 second"; sleep 1; done
+          for i in {1..120}; do curl -k https://localhost:3000/version && break || (echo "trying again in 1 second" && sleep 1); done
       - name: run commit exporter
         run: |
           pip install ./exporters
