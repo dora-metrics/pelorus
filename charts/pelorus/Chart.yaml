@@ -18,4 +18,4 @@ version: 1.4.6
 
 dependencies:
   - name: exporters
-    version: "v1.3.0"
+    version: "v1.3.1"
