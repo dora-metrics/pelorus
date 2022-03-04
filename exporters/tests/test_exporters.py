@@ -1,7 +1,7 @@
 import pytest
-from committime.collector_base import CommitMetric
 
 import pelorus
+from committime.collector_base import CommitMetric
 
 
 @pytest.mark.parametrize(

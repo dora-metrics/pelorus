@@ -6,11 +6,11 @@ import re
 from abc import abstractmethod
 from typing import Iterable
 
-from committime import CommitMetric
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
+from committime import CommitMetric
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):

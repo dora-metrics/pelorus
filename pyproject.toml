@@ -1,5 +1,7 @@
 [tool.isort]
 profile = "black"
+src_paths = ["exporters" ,"scripts"]
+known_first_party = ["pelorus"]
 
 [tool.pytest.ini_options]
 testpaths = ["exporters/tests"]
