@@ -4,10 +4,11 @@ from typing import Optional
 
 import attr
 import pytest
-from committime import CommitMetric
-from committime.collector_github import GitHubCommitCollector
 from kubernetes.client import ApiClient, Configuration
 from openshift.dynamic import DynamicClient
+
+from committime import CommitMetric
+from committime.collector_github import GitHubCommitCollector
 
 
 def setup_collector():

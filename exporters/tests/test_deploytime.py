@@ -5,12 +5,12 @@ from typing import Sequence
 from unittest.mock import NonCallableMock
 
 import pytest
-from deploytime.app import DeployTimeMetric, generate_metrics, image_sha  # type: ignore
 from openshift.dynamic import DynamicClient  # type: ignore
 from openshift.dynamic.discovery import Discoverer  # type: ignore
-from tests.openshift_mocks import *
 
 import pelorus
+from deploytime.app import DeployTimeMetric, generate_metrics, image_sha
+from tests.openshift_mocks import *
 
 # pylava:ignore=W0401
 
