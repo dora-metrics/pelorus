@@ -4,7 +4,7 @@ We appreciate your interest in contributing to Pelorus! Use this guide to help y
 
 There are three main tracks of Pelorus development to consider.
 
-1. [Deployment Automation](#contributing-to-deployment-development)  
+1. [Deployment Automation](#contributing-to-deployment-automation)  
 This track mostly involves testing, fixing, and updating our Helm chart(s) to streamline the installation and configuration experience. Knowledge of Helm, OpenShift, Operators and Prometheus configuration is assumed for this work.
 2. [Dashboard Development](#dashboard-development)  
 This is where we take the raw data we've collected and turn it into actionable visual representations that will help IT organizations make important decisions. Knowledge of Grafana and PromQL is required for contribution here.
@@ -19,15 +19,15 @@ See the [Install guide](Install.md) for more details on that.
 
 Currently we have two charts:
 
-1. The [operators](https://github.com/redhat-cop/pelorus/blob/master/charts/operators/) chart installs the community operators on which Pelorus depends.
+1. The [operators](https://github.com/konveyor/pelorus/blob/master/charts/operators/) chart installs the community operators on which Pelorus depends.
     * [Prometheus Operator](https://operatorhub.io/operator/prometheus)
     * [Grafana Operator](https://operatorhub.io/operator/grafana-operator)
-2. The [pelorus](https://github.com/redhat-cop/pelorus/blob/master/charts/pelorus/) chart manages the Pelorus stack, which includes:
+2. The [pelorus](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/) chart manages the Pelorus stack, which includes:
     * Prometheus
     * Thanos
     * Grafana
     * A set of Grafana Dashboards and Datasources
-    * The Pelorus exporters, managed in an [exporter](https://github.com/redhat-cop/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
+    * The Pelorus exporters, managed in an [exporter](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
 
 We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `ct lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
 
@@ -55,7 +55,7 @@ The following outlines a workflow for working on a dashboard:
 1. Once signed in, sign as an administrator
     1. Click the signin button in the bottom right corner:  
     ![Signin button](img/signin.png)
-    1. The admin credentials can be pulled from the following commands:  
+    1. The admin credentials can be pulled from the following commands:
 
             oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_USER}' | base64 -d
             oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
@@ -74,12 +74,12 @@ The following outlines a workflow for working on a dashboard:
     1. Select the **Export** tab.
     1. Click **View JSON**.
     1. Click **Copy to Clipboard**.
-    1. Open the appropriate `GrafanaDashboard` CR file, and paste the new dashboard JSON over the existing.  
-        
-        **NOTE:**  
-        
+    1. Open the appropriate `GrafanaDashboard` CR file, and paste the new dashboard JSON over the existing.
+
+        **NOTE:**
+
         > Be sure to match the indentation of the previous dashboard JSON. Your git diffs should still show only the lines changed like the example below.
-             
+
              $ git diff charts/deploy/templates/metrics-dashboard.yaml
              diff --git a/charts/deploy/templates/metrics-dashboard.yaml b/charts/deploy/templates/metrics-dashboard.yaml
              index 73151ad..c470afc 100644
@@ -170,7 +170,7 @@ Code also comes with a nice debugger feature. Here is a starter configuration to
             "program": "${workspaceFolder}/exporters/committime/app.py",
             "console": "integratedTerminal",
             "env": {
-                "GITHUB_USER": "<github username here>", 
+                "GITHUB_USER": "<github username here>",
                 "GITHUB_TOKEN": "<personal access token here>",
                 "LOG_LEVEL": "INFO",
                 "APP_LABEL": "app.kubernetes.io/name"
@@ -226,7 +226,7 @@ Running an exporter on your local machine should follow this process:
 
 4. Log in to your OpenShift cluster
 
-        oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443 
+        oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443
 
 5. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
 
@@ -237,7 +237,7 @@ Running an exporter on your local machine should follow this process:
             oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443  --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
 
 6. Start the exporter
-        
+
         python exporters/committime/app.py
 
 At this point, your exporter should be available at http://localhost:8080
@@ -269,7 +269,7 @@ The following are notes and general steps for testing Pull Requests for specific
 
 4. Click on the dashboard containing changes, and visually validate the behavior change described in the PR.
 
-    **NOTE:**  
+    **NOTE:**
 
     > Eventually we'd like to have some Selenium tests in place to validate dashboards. If you have skills in this area let us know!
 
@@ -320,7 +320,7 @@ The following is a walkthrough of the process we follow to create and manage ver
 
 1. Update the default exporter tag version to the new tag you're about to make.  
     In `charts/pelorus/charts/exporters/templates/_buildconfig.yaml`, update the following line accordingly:
-    
+
         ref: {{ .source_ref | default "<version>-rc" }}
 
     You'll also need to bump the `pelorus` chart version in `charts/pelorus/charts/exporters/Chart.yaml`
@@ -334,9 +334,9 @@ The following is a walkthrough of the process we follow to create and manage ver
 
         git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
 
-4. On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
+4. On the [Pelorus releases](https://github.com/konveyor/pelorus/releases) page, click **Draft a new release**.
     * Select the tag that was pushed in the first step
-    * The release _title_ should be `Release candidate for <version>`. 
+    * The release _title_ should be `Release candidate for <version>`.
     * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
     * Check the box that says **This is a pre-release**.
     * Click **Publish Release**.
@@ -358,9 +358,9 @@ The following is a walkthrough of the process we follow to create and manage ver
 
         git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
 
-10.  On the [Pelorus releases](https://github.com/redhat-cop/pelorus/releases) page, click **Draft a new release**. 
+10.  On the [Pelorus releases](https://github.com/konveyor/pelorus/releases) page, click **Draft a new release**.
     * Select the tag that was pushed in the previous step.
-    * The release _title_ should be `Release <version>`. 
+    * The release _title_ should be `Release <version>`.
     * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
     * Click **Publish Release**.
 

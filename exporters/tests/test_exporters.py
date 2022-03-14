@@ -46,7 +46,7 @@ def test_commitmetric_initial(appname):
         ("http://dogs.git.foo/dogs/repo.git", "http", "dogs.git.foo", "repo"),
         ("http://noabank.git.foo/chase/git.git", "http", "noabank.git.foo", "git"),
         ("ssh://git.moos.foo/maverick/tootsie.git", "ssh", "git.moos.foo", "tootsie"),
-        ("git@github.com:redhat-cop/pelorus.git", "ssh", "github.com", "pelorus"),
+        ("git@github.com:konveyor/pelorus.git", "ssh", "github.com", "pelorus"),
         (
             "https://gitlab.com/firstgroup/secondgroup/myrepo.git",
             "https",

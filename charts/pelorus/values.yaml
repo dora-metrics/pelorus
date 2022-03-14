@@ -24,6 +24,6 @@ exporters:
     extraEnv:
     - name: APP_FILE
       value: deploytime/app.py
-    source_url: https://github.com/redhat-cop/pelorus.git
+    source_url: https://github.com/konveyor/pelorus.git
 
 snapshot_schedule: "@monthly"

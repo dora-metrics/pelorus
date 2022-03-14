@@ -34,8 +34,8 @@ Here is a link to the General Contribution Guidelines for the Red Hat Communitie
 [Contribution Guidelines](https://redhat-cop.github.io/contrib/)
 
 If you’d like to contribute, start by searching through the GitHub
-[issues](https://github.com/redhat-cop/pelorus/issues) and
-[pull requests](https://github.com/redhat-cop/pelorus/pulls) to see
+[issues](https://github.com/konveyor/pelorus/issues) and
+[pull requests](https://github.com/konveyor/pelorus/pulls) to see
 whether someone else has raised a similar idea or question.
 
 If you don’t see your idea listed, and you think it fits into the goals
