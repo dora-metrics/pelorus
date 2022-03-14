@@ -1,0 +1,18 @@
+name: Pelorus Release Drafter
+
+on:
+  push:
+    branches:
+      - master
+
+  # pull_request required to auto label PRs
+  pull_request:
+    types: [opened, reopened, synchronize]
+    
+jobs:
+  release_drafter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
