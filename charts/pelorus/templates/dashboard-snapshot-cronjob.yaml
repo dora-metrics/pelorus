@@ -38,7 +38,14 @@ subjects:
   namespace: {{ .Release.Namespace }}
 
 ---
+{{- /*
+Issue #386 - we need to use different APIs
+*/}}
+{{- if .Capabilities.APIVersions.Has "batch/v1/CronJob" -}}
 apiVersion: batch/v1
+{{- else if .Capabilities.APIVersions.Has "batch/v1beta1/CronJob" }}
+apiVersion: batch/v1beta1
+{{- end }}
 kind: CronJob
 metadata:
   name: dashboard-snapshots
