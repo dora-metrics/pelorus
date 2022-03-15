@@ -12,6 +12,8 @@ from prometheus_client.core import GaugeMetricFamily
 import pelorus
 from committime import CommitMetric
 
+# DO NOT MERGE, test ci
+
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
