@@ -13,6 +13,7 @@ import pelorus
 from committime import CommitMetric
 
 # DO NOT MERGE, test ci
+# DNM, kick again
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
