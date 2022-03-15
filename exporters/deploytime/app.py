@@ -101,12 +101,20 @@ class DeployTimeMetric:
     image_sha: str
 
 
-def image_sha(img_url: str) -> Optional[str]:
+def image_sha(image_url_or_id: str) -> Optional[str]:
+    """
+    Gets the hash of the image, extracted from the image URL or image ID.
+
+    Specifically, everything after the first `sha256:` seen.
+    """
     sha_regex = re.compile(r"sha256:.*")
-    try:
-        return sha_regex.search(img_url).group()
-    except AttributeError:
-        logging.debug("Skipping unresolved image reference: %s" % img_url)
+    if match := sha_regex.search(image_url_or_id):
+        return match.group()
+    else:
+        # This may be noisy if there are a lot of pods where the container
+        # spec doesn't have a SHA but the status does.
+        # But since it's only in debug logs, it doesn't matter.
+        logging.debug("Skipping unresolved image reference: %s", image_url_or_id)
         return None
 
 
@@ -167,7 +175,17 @@ def generate_metrics(
                 continue
 
             mark_as_seen(full_path)
-            images = (sha for c in pod.spec.containers if (sha := image_sha(c.image)))
+            container_shas = (
+                image_sha(container.image) for container in pod.spec.containers
+            )
+            # TODO: does this include sidecars, say from MutatingAdmissionControllers?
+            # We'll want some way of excluding those.
+            container_status_shas = (
+                image_sha(status.imageID) for status in pod.status.containerStatuses
+            )
+            images = {sha for sha in container_shas if sha} | {
+                sha for sha in container_status_shas if sha
+            }
 
             # Since a commit will be built into a particular image and there could be multiple
             # containers (images) per pod, we will push one metric per image/container in the
