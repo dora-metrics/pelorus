@@ -144,4 +144,4 @@ endif
 
 clean-dev-env:
 	rm -rf ${PELORUS_VENV}
-	find -delete . -iname "*.pyc"
+	find . -iname "*.pyc" -delete
