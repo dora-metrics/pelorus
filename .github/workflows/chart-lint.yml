@@ -20,11 +20,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v1
-
-      - name: Install chart-testing tool `ct`
-        uses: helm/chart-testing-action@v2.1.0
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
         with:
-          version: "v3.4.0"
-
+          python-version: 3.9
       - name: Lint charts
-        run: ct lint --config ct.yaml
+        run: make chart-lint

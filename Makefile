@@ -118,8 +118,9 @@ pylava: $(PELORUS_VENV)
 # shellcheck follows a similar pattern, but is not currently set up for CI.
 
 chart-lint: $(PELORUS_VENV)
+	./scripts/install_dev_tools -v $(PELORUS_VENV) -c ct && \
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/chart-lint
+	ct lint --config ct.yaml
 
 ifneq (, $(CHART_TEST))
 chart-lint-optional: chart-lint

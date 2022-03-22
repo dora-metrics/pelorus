@@ -95,7 +95,7 @@ function get_download_url_from_github_api() {
     url_cmd="curl -s ${api_url} | \
           grep -o -E 'https://(.*).tar.gz' | \
           grep -i '${kernel_name}' | \
-          grep ${arch}"
+          grep ${arch} | head -n 1"
     download_url=$(eval "${url_cmd}")
 
     if [ -z "${download_url}" ]; then
@@ -126,6 +126,24 @@ function install_helm() {
     HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false "${helm_install_script}"
 }
 
+# Function to check if particular cli binary should be installed
+# it checks cli name from arg against array from the passed to this
+# script via optarg list of cli's to be installed
+function should_cli_be_installed(){
+    local cli_check=$1
+    local cli_array=("${@:2}")
+    # No cli_array is set, accept all CLIs
+    if [ -z "${cli_array[*]}" ]; then
+        return 0
+    fi
+    for cli in "${cli_array[@]}"; do
+        if [ "$cli" == "$cli_check" ]; then
+            return 0
+        fi
+    done
+    return 2
+}
+
 # Function to safely remove temporary files and temporary download dir
 # Argument is optional exit value to propagate it after cleanup
 function cleanup_and_exit() {
@@ -153,6 +171,7 @@ function print_help() {
     printf "\tStartup:\n"
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
+    printf "\t  -c\tcomma separated list of CLI tools e.g. ct,oc\n"
     printf "\t  -v\tpath to virtualenv DIR\n"
 
     exit 0
@@ -160,9 +179,10 @@ function print_help() {
 
 ### Options
 OPTIND=1
-while getopts "h?v:" option; do
+while getopts "c:h?v:" option; do
     case "$option" in
     h|\?) print_help;;
+    c)    cli_tools=$OPTARG;;
     v)    venv_dir=$OPTARG;;
     esac
 done
@@ -173,42 +193,53 @@ else
     VENV="${venv_dir}"
 fi
 
+# Get the list of CLI tools to be installed from comma separated output
+# Remove any whitespace which user may have added before or after ","
+cli_tools_arr=("${cli_tools//' '/}")
+
+# shellcheck disable=SC2206
+cli_tools_arr=(${cli_tools_arr//','/ })
+
 # Create download directory inside virtual env dir
 DWN_DIR=$(TMPDIR="${VENV}" mktemp -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
 
 trap 'cleanup_and_exit' INT TERM EXIT
 
 # Helm install
-if ! [ -x "$(command -v "${VENV}/bin/helm")" ]; then
-    echo "Installing helm CLI to: ${VENV}/bin/helm"
-    download_file_from_url "${HELM_INSTALL_SCRIPT}" "${DWN_DIR}"
-    HELM_SCRIPT="${DWN_DIR}"/$(basename "${HELM_INSTALL_SCRIPT}")
-    install_helm "${HELM_SCRIPT}" "${VENV}/bin"
+if should_cli_be_installed "helm" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/helm")" ]; then
+      echo "Installing helm CLI to: ${VENV}/bin/helm"
+      download_file_from_url "${HELM_INSTALL_SCRIPT}" "${DWN_DIR}"
+      HELM_SCRIPT="${DWN_DIR}"/$(basename "${HELM_INSTALL_SCRIPT}")
+      install_helm "${HELM_SCRIPT}" "${VENV}/bin"
 fi
 
 # Tekton install
-if ! [ -x "$(command -v "${VENV}/bin/tkn")" ]; then
-    echo "Installing tkn CLI to: ${VENV}/bin/tkn"
-    TKN_CLIENT_URL=$(get_download_url_from_github_api "${TKN_CLIENT_API_URL}")
-    download_file_from_url "${TKN_CLIENT_URL}" "${DWN_DIR}"
-    TKN_CLIENT_PATH="${DWN_DIR}"/$(basename "${TKN_CLIENT_URL}")
-    extract_file_to_dir "${TKN_CLIENT_PATH}" "${VENV}/bin/" "tkn"
+if should_cli_be_installed "tkn" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/tkn")" ]; then
+      echo "Installing tkn CLI to: ${VENV}/bin/tkn"
+      TKN_CLIENT_URL=$(get_download_url_from_github_api "${TKN_CLIENT_API_URL}")
+      download_file_from_url "${TKN_CLIENT_URL}" "${DWN_DIR}"
+      TKN_CLIENT_PATH="${DWN_DIR}"/$(basename "${TKN_CLIENT_URL}")
+      extract_file_to_dir "${TKN_CLIENT_PATH}" "${VENV}/bin/" "tkn"
 fi
 
 # OC install
-if ! [ -x "$(command -v "${VENV}/bin/oc")" ]; then
-    echo "Installing oc CLI to: ${VENV}/bin/oc"
-    download_file_from_url "${OCP_CLIENT_URL}" "${DWN_DIR}"
-    OCP_CLIENT_PATH="${DWN_DIR}"/$(basename "${OCP_CLIENT_URL}")
-    # We are interested only in oc/kubectl binaries
-    extract_file_to_dir "${OCP_CLIENT_PATH}" "${VENV}/bin/" "oc kubectl"
+if should_cli_be_installed "oc" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/oc")" ]; then
+      echo "Installing oc CLI to: ${VENV}/bin/oc"
+      download_file_from_url "${OCP_CLIENT_URL}" "${DWN_DIR}"
+      OCP_CLIENT_PATH="${DWN_DIR}"/$(basename "${OCP_CLIENT_URL}")
+      # We are interested only in oc/kubectl binaries
+      extract_file_to_dir "${OCP_CLIENT_PATH}" "${VENV}/bin/" "oc kubectl"
 fi
 
 # CT install
-if ! [ -x "$(command -v "${VENV}/bin/ct")" ]; then
-    CT_CLIENT_URL=$(get_download_url_from_github_api "${CT_CLIENT_API_URL}") \
-                  || (echo "$CT_CLIENT_URL"; cleanup_and_exit 2)
-    download_file_from_url "${CT_CLIENT_URL}" "${DWN_DIR}"
-    CT_CLIENT_PATH="${DWN_DIR}"/$(basename "${CT_CLIENT_URL}")
-    extract_file_to_dir "${CT_CLIENT_PATH}" "${VENV}/bin/" "ct"
+if should_cli_be_installed "ct" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/ct")" ]; then
+      CT_CLIENT_URL=$(get_download_url_from_github_api "${CT_CLIENT_API_URL}") \
+                    || (echo "$CT_CLIENT_URL"; cleanup_and_exit 2)
+      download_file_from_url "${CT_CLIENT_URL}" "${DWN_DIR}"
+      CT_CLIENT_PATH="${DWN_DIR}"/$(basename "${CT_CLIENT_URL}")
+      extract_file_to_dir "${CT_CLIENT_PATH}" "${VENV}/bin/" "ct"
 fi
