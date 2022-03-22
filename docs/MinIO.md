@@ -1,6 +1,6 @@
 # MinIO and Pelorus Quickstart
 
-The following is a walkthrough for deploying MinIO on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](/docs/Install.md#configure-long-term-storage) solution.
+The following is a walkthrough for deploying MinIO on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](Install.md#configure-long-term-storage-recommended) solution.
 
 ## Configure Namespace and Storage Security
 
@@ -24,11 +24,11 @@ helm install --namespace minio --set "buckets[0].name=thanos" \
 ```
 
 * Recreate mode is used. RollingDeployments won't allow re-deployment while a pvc is in use
-* Configuration and certificate path changed to [work with openshift]([https://github.com/minio/mc/issues/2640](https://github.com/minio/mc/issues/2640))
+* Configuration and certificate path changed to [work with openshift](https://github.com/minio/mc/issues/2640)
 
 ### Secure Minio Object Storage
 
-Secure minio using a [service serving certificate](https://docs.openshift.com/container-platform/4.1/authentication/certificates/service-serving-certificate.html)
+Secure minio using a [service serving certificate](https://docs.openshift.com/container-platform/4.8/security/certificates/service-serving-certificate.html)
 
 ```
 helm upgrade --namespace minio --set "certsPath=/tmp/minio/certs" \
@@ -38,7 +38,6 @@ helm upgrade --namespace minio --set "certsPath=/tmp/minio/certs" \
 --set "service.annotations.service\.beta\.openshift\.io/serving-cert-secret-name=pelorus-minio-tls" \
 --set "DeploymentUpdate.type=\"Recreate\"" pelorus-minio stable/minio
 ```
-Other storage configuration can be found [here](/docs/Storage.md).
 
 ### Update Pelorus Configuration
 
