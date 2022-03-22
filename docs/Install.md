@@ -7,7 +7,7 @@ The following will walk through the deployment of Pelorus.
 
 Before deploying the tooling, you must have the following prepared
 
-* An OpenShift 3.11 or higher Environment
+* An OpenShift 4.7 or higher Environment
 * A machine from which to run the install (usually your laptop)
   * The OpenShift Command Line Tool (oc)
   * [Helm3](https://github.com/helm/helm/releases)
@@ -25,7 +25,7 @@ Pelorus gets installed via helm charts. The first deploys the operators on which
 
 ```shell
 # clone the repo (you can use a different release or clone from master if you wish)
-git clone --depth 1 --branch v1.4.1 https://github.com/konveyor/pelorus
+git clone --depth 1 --branch v1.5.0 https://github.com/konveyor/pelorus
 cd pelorus
 oc create namespace pelorus
 helm install operators charts/operators --namespace pelorus
