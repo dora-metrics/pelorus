@@ -25,7 +25,7 @@ Pelorus gets installed via helm charts. The first deploys the operators on which
 
 ```shell
 # clone the repo (you can use a different release or clone from master if you wish)
-git clone --depth 1 --branch v1.4.1 https://github.com/konveyor/pelorus
+git clone --depth 1 --branch v1.5.0 https://github.com/konveyor/pelorus
 cd pelorus
 oc create namespace pelorus
 helm install operators charts/operators --namespace pelorus
