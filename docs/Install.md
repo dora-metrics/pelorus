@@ -7,7 +7,7 @@ The following will walk through the deployment of Pelorus.
 
 Before deploying the tooling, you must have the following prepared
 
-* An OpenShift 3.11 or higher Environment
+* An OpenShift 4.7 or higher Environment
 * A machine from which to run the install (usually your laptop)
   * The OpenShift Command Line Tool (oc)
   * [Helm3](https://github.com/helm/helm/releases)
