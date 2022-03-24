@@ -317,51 +317,25 @@ We are in the process of refactoring our helm charts such that they can be teste
 ## Release Management Process
 
 The following is a walkthrough of the process we follow to create and manage versioned releases of Pelorus.
+Pelorus release versions follow SemVer versioning conventions. Change of the version is managed via Makefile.
 
-1. Update the default exporter tag version to the new tag you're about to make.  
-    In `charts/pelorus/charts/exporters/templates/_buildconfig.yaml`, update the following line accordingly:
+1. Create Pelorus Pull Request with the release you're about to make.  
 
-        ref: {{ .source_ref | default "<version>-rc" }}
+    For PATCH version bump use:
 
-    You'll also need to bump the `pelorus` chart version in `charts/pelorus/charts/exporters/Chart.yaml`
+        make release
 
-2. Create a lightweight _release candidate_ tag from the `master` branch. The tag name should be the next sequential [Semantic Version](https://semver.org) with the suffix `-rc`. Then push the new tag to the main repository.
+    For minor-release version:
 
-        git tag <version>-rc
-        git push -u upstream <version>-rc
+        make minor-release
 
-3. Generate git release notes from the `git log`.
+    For major-release version:
 
-        git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
+        make major-release
 
-4. On the [Pelorus releases](https://github.com/konveyor/pelorus/releases) page, click **Draft a new release**.
-    * Select the tag that was pushed in the first step
-    * The release _title_ should be `Release candidate for <version>`.
-    * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
-    * Check the box that says **This is a pre-release**.
-    * Click **Publish Release**.
-5. Test. Test. Test.
-    * Ensure that all github actions in the repo are passing.
-    * Ensure that you can install Pelorus from the tagged version of the code, including all exporters and optional configurations. (Ensure you update the values.yaml file you are using to refer to the tagged version of the code in all builds)
-    * Follow the above guidance for testing Pull requests.
-6. If any bugs are found, open PRs to fix them, then create the next -rc tag (e.g. `<version>-rc2`), and start again from step 1.
-7. Update the install version in `docs/Install.md`:
+2. Propose Pull Request to the project github repository. Ensure that the PR is labeled with "minor" or "major" if one was created.
 
-        git clone --depth 1 --branch NEW_VERSION_HERE https://github.com/konveyor/pelorus
-
-8. Create an annotated tag for the final release with the `-rc` suffix removed.
-
-        git tag -a <version>
-        git push -u upstream <version>
-
-9. Generate git release notes from the `git log`.
-
-        git log <previous tag>..<new tag> --pretty=format:"- %h %s by %an" --no-merges
-
-10.  On the [Pelorus releases](https://github.com/konveyor/pelorus/releases) page, click **Draft a new release**.
-    * Select the tag that was pushed in the previous step.
-    * The release _title_ should be `Release <version>`.
-    * In the main text area, create a `# Release Notes` heading, and then paste in the git log output.
+3. After PR is merged on the [Pelorus releases](https://github.com/konveyor/pelorus/releases) page, click edit on the latest **Draft**.
     * Click **Publish Release**.
 
 ## Testing the Docs
