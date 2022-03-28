@@ -76,6 +76,18 @@ dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
 
+# Release
+
+.PHONY: release minor-release major-release
+
+release:
+	./scripts/create_release_pr
+
+minor-release:
+	./scripts/create_release_pr -i
+
+major-release:
+	./scripts/create_release_pr -m
 
 # Formatting
 

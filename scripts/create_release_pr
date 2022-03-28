@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
+# Script to update versions of the Pelorus operator helm charts and the
+# pelorus charts, which follows the SemVer convention.
+
+# Helm charts enforces chart version bump every time those are changed.
+# This may lead to the situation that multiple chart version
+# bumps are required per one Pelorus release bump.
+# Because of that the PATCH part of the version, "Z" in X.Y.Z format
+# is reset to 0 whenever Major "X" or Minor "Z" version bump happens.
+# Each time this script is executed the "Z" must be changed for the pelorus
+# Helm charts, because we are changing the underlying _buildconfig.yaml that
+# belongs to the pelorus Helm chart.
+
+# The next release is calculated based on the one found in the github
+# repository.
+
+# Required to get the latest released tag
+PELORUS_API_URL="https://api.github.com/repos/konveyor/pelorus/releases/latest"
+BUILDCONFIG_PATH="charts/pelorus/charts/exporters/templates/_buildconfig.yaml"
+PELORUS_CHART="charts/pelorus/Chart.yaml"
+OPERATOR_CHART="charts/operators/Chart.yaml"
+
+TRUE=1
+FALSE=0
+
+function print_help() {
+    printf "\nUsage: %s [OPTION]...\n\n" "$0"
+    printf "\tStartup:\n"
+    printf "\t  -h\tprint this help\n"
+    printf "\n\tOptions:\n"
+    printf "\t  -m\tbump major version (minor and patch will start at 0)\n"
+    printf "\t  -i\tbump minor version (patch will start at 0)\n"
+    printf "\nExample: %s -v 1.6.14\n\n" "$0"
+
+    exit 0
+}
+
+### Options
+OPTIND=1
+while getopts "h?mi" option; do
+    case "$option" in
+    h|\?) print_help;;
+    m) major="$TRUE";;
+    i) minor="$TRUE";;
+    esac
+done
+
+if [[ $minor && $major ]]; then
+    echo "-m and -i flags can not be used together"
+    exit 2
+fi
+
+UPDATE_CHART_VERSIONS="$FALSE"
+LAST_RELEASED_TAG=$(curl -s "$PELORUS_API_URL" | jq -r '.tag_name')
+
+# shellcheck disable=SC2207
+V_RELEASED=( $(echo "$LAST_RELEASED_TAG" | sed 's/v//g'  | tr ' . '  '  ') )
+V_MAJOR=${V_RELEASED[0]}
+V_MINOR=${V_RELEASED[1]}
+V_PATCH=${V_RELEASED[2]}
+
+echo "Current version: $LAST_RELEASED_TAG"
+if [[ $major ]]; then
+  V_MAJOR=$(( V_MAJOR +  1 ))
+  V_MINOR="0"
+  V_PATCH="0"
+  UPDATE_CHART_VERSIONS="$TRUE"
+elif [[ $minor ]]; then
+  V_MINOR=$(( V_MINOR +  1 ))
+  V_PATCH="0"
+  UPDATE_CHART_VERSIONS="$TRUE"
+else
+  V_PATCH=$(( V_PATCH +  1 ))
+fi
+
+NEW_VER="v$V_MAJOR.$V_MINOR.$V_PATCH"
+echo "Version to be released: v$V_MAJOR.$V_MINOR.$V_PATCH"
+
+# Sed to inject version between the quotes in the line containing:
+# .source_ref | default=""
+sed -i "/.source_ref | default/s/\"[^\"][^\"]*\"/\"$NEW_VER\"/" "$BUILDCONFIG_PATH"
+
+if [[ $UPDATE_CHART_VERSIONS == "$TRUE" ]]; then
+  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$PELORUS_CHART"
+  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$OPERATOR_CHART"
+else
+  # Bump the "Z" in the pelorus Chart.yaml
+  CHART_VER=$( grep ^version: "$PELORUS_CHART"|awk -F' ' '{ print $2 }' )
+  NEXT_CHART_VER=$( echo "${CHART_VER}" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+  sed -i "s/^version:.*/version: $NEXT_CHART_VER/g" "$PELORUS_CHART"
+fi
+
+if [[ $major ]]; then
+  printf "\nIMPORTANT:\n\t Do include \"major release\" text in the first line of your commit message, or label your PR with: \"major\"\n\n"
+elif [[ $minor ]]; then
+  printf "\nIMPORTANT:\n\t Do include \"minor release\" text in the first line of your commit message, or label your PR with: \"minor\"\n\n"
+fi
