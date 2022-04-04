@@ -29,9 +29,20 @@ class PodSpec:
 
 
 @attr.define
+class ContainerStatus:
+    imageID: str
+
+
+@attr.define
+class PodStatus:
+    containerStatuses: list[ContainerStatus]
+
+
+@attr.define
 class Pod:
     metadata: Metadata
     spec: PodSpec
+    status: PodStatus
 
 
 @attr.define
