@@ -178,8 +178,6 @@ def generate_metrics(
             container_shas = (
                 image_sha(container.image) for container in pod.spec.containers
             )
-            # TODO: does this include sidecars, say from MutatingAdmissionControllers?
-            # We'll want some way of excluding those.
             container_status_shas = (
                 image_sha(status.imageID) for status in pod.status.containerStatuses
             )
