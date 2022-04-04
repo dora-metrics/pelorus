@@ -14,8 +14,9 @@ on:
 jobs:
   unit-test:
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: ['3.9', '3.10']
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
