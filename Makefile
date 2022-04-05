@@ -1,9 +1,7 @@
 # Variable setup and preflight checks
 
-# Minimal python version supported by exporters
-PYTHON_BINARY=python3
-PYTHON_VER_MIN=3.9
-PYTHON_VER_MAX=3.10.2
+# may override with environment variable
+PYTHON_BINARY?=python3
 
 ifndef PELORUS_VENV
   PELORUS_VENV=.venv
@@ -14,17 +12,12 @@ ifeq (, $(shell which $(PYTHON_BINARY) ))
 endif
 
 SYS_PYTHON_VER=$(shell $(PYTHON_BINARY) -c 'from sys import version_info; \
-  from pkg_resources import packaging; \
-  print(packaging.version.parse("%d.%d.%d" % version_info[0:3]))')
+  print("%d.%d" % version_info[0:2])')
 $(info Found system python version: $(SYS_PYTHON_VER));
-PYTHON_VER=$(shell $(PYTHON_BINARY) -c 'from pkg_resources import packaging; \
-  print("%s" % (packaging.version.parse("$(PYTHON_VER_MAX)") >= \
-  packaging.version.parse("$(SYS_PYTHON_VER)") >= \
-  packaging.version.parse("$(PYTHON_VER_MIN)")))')
+PYTHON_VER_CHECK=$(shell $(PYTHON_BINARY) scripts/python-version-check.py)
 
-ifeq ($(PYTHON_VER), False)
-  $(error $(PYTHON_BINARY) needs to be at >= $(PYTHON_VER_MIN)\
-                           and <= $(PYTHON_VER_MAX))
+ifneq ($(strip $(PYTHON_VER_CHECK)),)
+  $(error $(PYTHON_VER_CHECK). You may set the PYTHON_BINARY env var to specify a compatible version)
 endif
 
 CHART_TEST=$(shell which ct)
