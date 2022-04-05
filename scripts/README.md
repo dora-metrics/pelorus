@@ -26,6 +26,12 @@ Lints helm charts.
 
 Lints helm charts, attempting to bump their versions if required.
 
+## python-version-check.py
+
+Used by the makefile to check if the python version is valid.
+
+Not meant to be used directly.
+
 ## lib
 
 Contains common code used by python scripts.
