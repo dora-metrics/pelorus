@@ -6,12 +6,14 @@ on:
       - 'charts/**'
       - 'lintconf.yaml'
       - '.github/workflows/chart-lint.yml'
+      - 'exporters/requirements-dev.txt' # yamllint and yamale
   pull_request:
     branches: [ master ]
     paths: 
       - 'charts/**'
       - 'lintconf.yaml'
       - '.github/workflows/chart-lint.yml'
+      - 'exporters/requirements-dev.txt' # yamllint and yamale
 
 jobs:
   lint:
