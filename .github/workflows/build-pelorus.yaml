@@ -4,126 +4,101 @@ on:
   push:
     branches:
       - master
-    paths-ignore:
-      - README.md
-      - samples/
-      - charts/
-      - demo/
-      - docs/
-      - labs/
-      - tests/
-      - storage/
-      - chart_schema.yaml
-      - CONTRIBUTING.md
+    paths:
+      - exporters/
+      - charts/pelorus/charts/exporters/templates/_buildconfig.yaml
+      - .github/workflows/build-pelorus.yaml
+
+env:
+  builder_image: 'registry.access.redhat.com/ubi8/python-39'
+  imageregistry: 'quay.io'
+  # default 'pelorus'
+  imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+  latesttag: latest
+  s2i_log_level: 2
 
 jobs:
   build-committime:
-    runs-on: ubuntu-18.04 # recommended https://github.com/marketplace/actions/push-to-registry#note-about-github-runners-and-podman
-    # temporarily using ubuntu-18.04 until push-to-registry#42 is fixed:
-    # https://github.com/redhat-actions/push-to-registry/issues/42
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       # Setup S2i and Build container image
       - name: Setup and Build
-        uses: redhat-actions/s2i-build@v1
-        with:
-          path_context: 'exporters'
-          builder_image: 'registry.access.redhat.com/ubi8/python-39'
-          image_name: 'committime-exporter'
-          image_tag: ${{ github.sha }}
-
-      # Push Image to Quay registry
-      - name: Push To Quay Action
-        uses: redhat-actions/push-to-registry@v2
+        id: build-exporter
+        uses: redhat-actions/s2i-build@v2
         with:
           image: 'committime-exporter'
-          tags: ${{ github.sha }}
-          registry: quay.io/pelorus
+          path_context: 'exporters'
+          builder_image: ${{ env.builder_image }}
+          tags: ${{ env.latesttag }} ${{ github.sha }}
+          log_level: ${{ env.s2i_log_level }}
+
+      # Push Image to Quay registry
+      - name: Push To Quay Action
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-exporter.outputs.image }}
+          tags: ${{ steps.build-exporter.outputs.tags }}
+          registry: ${{ env.imageregistry }}/${{ env.imagenamespace }}
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Tag latest
-        uses: tinact/docker.image-retag@1.0.2
-        with:
-          image_name: committime-exporter
-          image_old_tag: ${{ github.sha }}
-          image_new_tag: latest
-          registry: quay.io/pelorus
-          registry_username: ${{ secrets.QUAY_USERNAME }}
-          registry_password: ${{ secrets.QUAY_PASSWORD }}
 
   build-deploytime:
-    runs-on: ubuntu-18.04 # recommended https://github.com/marketplace/actions/push-to-registry#note-about-github-runners-and-podman
-    # temporarily using ubuntu-18.04 until push-to-registry#42 is fixed:
-    # https://github.com/redhat-actions/push-to-registry/issues/42
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       # Setup S2i and Build container image
       - name: Setup and Build
-        uses: redhat-actions/s2i-build@v1
-        with:
-          path_context: 'exporters'
-          builder_image: 'registry.access.redhat.com/ubi8/python-39'
-          image_name: 'deploytime-exporter'
-          image_tag: ${{ github.sha }}
-
-      # Push Image to Quay registry
-      - name: Push To Quay Action
-        uses: redhat-actions/push-to-registry@v2
+        id: build-exporter
+        uses: redhat-actions/s2i-build@v2
         with:
           image: 'deploytime-exporter'
-          tags: ${{ github.sha }}
-          registry: quay.io/pelorus
+          path_context: 'exporters'
+          builder_image: ${{ env.builder_image }}
+          tags: ${{ env.latesttag }} ${{ github.sha }}
+          log_level: ${{ env.s2i_log_level }}
+
+
+      # Push Image to Quay registry
+      - name: Push To Quay Action
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-exporter.outputs.image }}
+          tags: ${{ steps.build-exporter.outputs.tags }}
+          registry: ${{ env.imageregistry }}/${{ env.imagenamespace }}
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Tag latest
-        uses: tinact/docker.image-retag@1.0.2
-        with:
-          image_name: deploytime-exporter
-          image_old_tag: ${{ github.sha }}
-          image_new_tag: latest
-          registry: quay.io/pelorus
-          registry_username: ${{ secrets.QUAY_USERNAME }}
-          registry_password: ${{ secrets.QUAY_PASSWORD }}
 
   build-failure:
-    runs-on: ubuntu-18.04 # recommended https://github.com/marketplace/actions/push-to-registry#note-about-github-runners-and-podman
-    # temporarily using ubuntu-18.04 until push-to-registry#42 is fixed:
-    # https://github.com/redhat-actions/push-to-registry/issues/42
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       # Setup S2i and Build container image
       - name: Setup and Build
-        uses: redhat-actions/s2i-build@v1
+        id: failure-exporter
+        uses: redhat-actions/s2i-build@v2
         with:
+          image: 'committime-exporter'
           path_context: 'exporters'
-          builder_image: 'registry.access.redhat.com/ubi8/python-39'
-          image_name: 'failure-exporter'
-          image_tag: ${{ github.sha }}
+          builder_image: ${{ env.builder_image }}
+          tags: ${{ env.latesttag }} ${{ github.sha }}
+          log_level: ${{ env.s2i_log_level }}
+
 
       # Push Image to Quay registry
       - name: Push To Quay Action
         uses: redhat-actions/push-to-registry@v2
         with:
-          image: 'failure-exporter'
-          tags: ${{ github.sha }}
-          registry: quay.io/pelorus
+          image: ${{ steps.build-exporter.outputs.image }}
+          tags: ${{ steps.build-exporter.outputs.tags }}
+          registry: ${{ env.imageregistry }}/${{ env.imagenamespace }}
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
-
-      - name: Tag latest
-        uses: tinact/docker.image-retag@1.0.2
-        with:
-          image_name: failure-exporter
-          image_old_tag: ${{ github.sha }}
-          image_new_tag: latest
-          registry: quay.io/pelorus
-          registry_username: ${{ secrets.QUAY_USERNAME }}
-          registry_password: ${{ secrets.QUAY_PASSWORD }}
