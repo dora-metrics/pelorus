@@ -7,6 +7,7 @@ on:
       - 'lintconf.yaml'
       - '.github/workflows/chart-lint.yml'
       - 'exporters/requirements-dev.txt' # yamllint and yamale
+      - Makefile
   pull_request:
     branches: [ master ]
     paths: 
@@ -14,6 +15,7 @@ on:
       - 'lintconf.yaml'
       - '.github/workflows/chart-lint.yml'
       - 'exporters/requirements-dev.txt' # yamllint and yamale
+      - Makefile
 
 jobs:
   lint:
