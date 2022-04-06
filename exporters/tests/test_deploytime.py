@@ -20,9 +20,11 @@ APP_LABEL = pelorus.get_app_label()
 FOO_NS = "foo_ns"
 BAR_NS = "bar_ns"
 BAZ_NS = "baz_ns"
+QUUX_NS = "quux_ns"
 
 FOO_APP = "foo_app"
 BAR_APP = "bar_app"
+QUUX_APP = "quux_app"
 
 FOO_LABEL = "foo_label"
 FOO_LABEL_VALUE = "test"
@@ -37,6 +39,7 @@ BAR_REP = "bar_rs"
 BAR_REP_KIND = REPLICA_SET
 BAZ_REP = "baz_unknown"
 BAZ_REP_KIND = UNKNOWN_OWNER_KIND
+QUUX_REP = "quux_rs"
 QUUX_REP_KIND = REPLICA_SET
 
 FOO_POD_SHAS = [
@@ -45,6 +48,9 @@ FOO_POD_SHAS = [
 BAR_POD_SHAS = [
     "sha256:90663c4a9ac6cd3eb1889e1674dea13cdd4490adb70440a789acf70d4c0c2c75",
     "I am not a valid sha!",
+]
+STATUS_CONTAINER_SHAS = [
+    "sha256:138516bdf532c621ab859e94531e77cb3eff23cf040ad0b4e32ea64c1a7b4419"
 ]
 BAZ_POD_SHAS = ["I'm not valid either but it'll never matter"]
 QUUX_POD_SHAS = [
@@ -70,7 +76,7 @@ class DynClientMockData:
 
         for rep in self.replicators:
             mock = self.replicators_by_kind[rep.kind]
-            if not isinstance(mock.get.return_value, list):
+            if not isinstance(mock.get.return_value, ResourceGetResponse):
                 mock.get.return_value = ResourceGetResponse([])
             mock.get.return_value.items.append(rep)
 
@@ -114,10 +120,21 @@ def random_time() -> datetime:
     return datetime.now() - timedelta(hours=12) + timedelta(hours=randrange(0, 12))
 
 
-def pod(namespace: str, owner_refs: list[OwnerRef], container_shas: list[str]):
+def pod(
+    namespace: str,
+    owner_refs: list[OwnerRef],
+    container_image_shas: list[str],
+    status_image_shas: Optional[list[str]] = None,
+):
+    if status_image_shas is None:
+        status_image_shas = container_image_shas
+
     return Pod(
         metadata=Metadata(namespace=namespace, ownerReferences=owner_refs),
-        spec=PodSpec(containers=[Container(x) for x in container_shas]),
+        spec=PodSpec(containers=[Container(x) for x in container_image_shas]),
+        status=PodStatus(
+            containerStatuses=[ContainerStatus(x) for x in status_image_shas]
+        ),
     )
 
 
@@ -134,10 +151,18 @@ def test_generate_normal_case() -> None:
         {FOO_LABEL: FOO_LABEL_VALUE},
     )
     bar_rep = rc(BAR_REP_KIND, BAR_REP, BAR_NS, BAR_APP, random_time())
+    quux_rep = rc(QUUX_REP_KIND, QUUX_REP, QUUX_NS, QUUX_APP, random_time())
 
     pods = [
         pod(FOO_NS, [foo_rep.ref()], FOO_POD_SHAS),
         pod(BAR_NS, [bar_rep.ref()], BAR_POD_SHAS),
+        # case: pod with image sha only in status
+        pod(
+            QUUX_NS,
+            [quux_rep.ref()],
+            container_image_shas=["invalid format"],
+            status_image_shas=STATUS_CONTAINER_SHAS,
+        ),
         # case: pod with unsupported rep kind
         pod(FOO_NS, [OwnerRef(BAZ_REP_KIND, BAZ_REP)], FOO_POD_SHAS),
         # case: pod references rep we don't have an entry for
@@ -146,9 +171,9 @@ def test_generate_normal_case() -> None:
         pod(BAZ_NS, [OwnerRef(BAZ_REP_KIND, BAZ_REP)], BAZ_POD_SHAS),
     ]
 
-    data = DynClientMockData(pods=pods, replicators=[foo_rep, bar_rep])
+    data = DynClientMockData(pods=pods, replicators=[foo_rep, bar_rep, quux_rep])
 
-    expected: list[DeployTimeMetric] = [
+    expected = {
         DeployTimeMetric(
             name=FOO_APP,
             namespace=FOO_NS,
@@ -163,10 +188,19 @@ def test_generate_normal_case() -> None:
             deploy_time=bar_rep.metadata.creationTimestamp,
             image_sha=BAR_POD_SHAS[0],
         ),
-    ]
+        DeployTimeMetric(
+            name=QUUX_APP,
+            namespace=QUUX_NS,
+            labels={APP_LABEL: QUUX_APP},
+            deploy_time=quux_rep.metadata.creationTimestamp,
+            image_sha=STATUS_CONTAINER_SHAS[0],
+        ),
+    }
 
-    actual = list(
-        generate_metrics(namespaces=[FOO_NS, BAR_NS], dyn_client=data.mock_client)
+    actual = set(
+        generate_metrics(
+            namespaces={FOO_NS, BAR_NS, QUUX_NS}, dyn_client=data.mock_client
+        )
     )
 
     assert actual == expected
