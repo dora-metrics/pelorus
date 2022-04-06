@@ -1,10 +1,19 @@
-requests
-prometheus_client
-openshift < 0.12
-jsonpath_ng
-jira
-pytz
-python-gitlab >= 2.4.0
-git-url-parse
-azure-devops
-attrs
+# Used by all exporters
+openshift < 0.12       # module openshift
+prometheus_client      # module prometheus_client
+
+# Committime exporter
+attrs                  # module @attr.define
+azure-devops           # module azure
+git-url-parse          # module giturlparse
+jsonpath_ng            # module jsonpath_ng
+python-gitlab >= 2.4.0 # module gitlab
+requests               # module requests
+
+# Deploytime exporter
+attrs                  # module @attr.define
+
+# Failure exporter
+jira                   # module jira
+pytz                   # module pytz
+requests               # module requests

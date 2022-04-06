@@ -1,9 +1,21 @@
+# Needed by exporters/tests
 pytest
+
+# Mentioned in the docs/Development.md
+# Also used by the github unittests.yml workflow
 coverage
+
+# Used by ./scripts/lib/charts.py
 semver
+
+# Used manually, mentioned in the docs/Development.md
 mkdocs
+
+# Makefile uses those in static code analysis - linting and formatting
 black
 isort
 pylava
+
+# Required by `ct lint` command
 yamale
 yamllint
