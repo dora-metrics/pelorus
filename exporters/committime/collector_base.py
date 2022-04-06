@@ -10,7 +10,6 @@ from typing import Any, Iterable, Optional, Tuple
 import openshift.dynamic
 import openshift.dynamic.exceptions
 from committime import CommitMetric
-from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
@@ -131,16 +130,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             except openshift.dynamic.exceptions.ResourceNotFoundError:
                 pipeline_runs = pelorus.NoOpResourceInstance()
 
-            jsonpath_labels_expr = parse("$['items'][*]['metadata']['labels']")
-
-            apps: set[str] = {
-                match.value[app_label_key]
-                for match in jsonpath_labels_expr.find(builds)
-            }
-            pipeline_run_app_labels: set[str] = {
-                match.value[app_label_key]
-                for match in jsonpath_labels_expr.find(pipeline_runs)
-            }
+            apps = _labels_for_resource(builds, app_label_key)
+            pipeline_run_app_labels = _labels_for_resource(pipeline_runs, app_label_key)
 
             builds_by_app: dict[str, list] = {
                 app: [
@@ -502,6 +493,11 @@ def _check_pipeline_run_for_success(pipeline_run) -> bool:
     # for the logic behind determining failure / success.
     # Since we just care about any type of success, we just check the status field.
     return condition.status == "True"
+
+
+def _labels_for_resource(resource, app_label_key: str) -> set[str]:
+    """Collects all app labels for the given resource."""
+    return set(item.metadata.labels[app_label_key] for item in resource.items)
 
 
 class PipelineName(TypedString):
