@@ -146,6 +146,15 @@ shellcheck-optional:
 endif
 
 
+# Testing
+.PHONY: test
+
+# -r: show extra test summaRy: (a)ll except passed, (p)assed
+# because using (A)ll includes stdout
+# -m filters out integration tests
+test: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && pytest -r ap -m "not integration"
+
 # Cleanup
 
 clean-dev-env:
