@@ -4,9 +4,13 @@ from typing import Any, Optional
 import attr
 import giturlparse
 
+from pelorus.utils import collect_bad_attribute_path_error, get_nested
+
 SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 
 
+# TODO: the majority of these fields are unused.
+# Let's figure out why they're there.
 @attr.define
 class CommitMetric:
     name: str = attr.field()
@@ -91,3 +95,31 @@ class CommitMetric:
         self.__repo_group = parsed.owner
         self.__repo_name = parsed.name
         self.__repo_project = parsed.name
+
+
+def commit_metric_from_build(app: str, build, errors: list) -> CommitMetric:
+    """
+    Create a CommitMetric from build information.
+    Will collect errors for missing data instead of failing early.
+    """
+    # set attributes based on a mapping from attribute name to
+    # lookup path.
+    # Collect all errors to be reported at once instead of failing fast.
+    metric = CommitMetric(app)
+    for attr_name, path in _COMMIT_METRIC_MAPPING.items():
+        with collect_bad_attribute_path_error(errors):
+            value = get_nested(build, path, name="build")
+            setattr(metric, attr_name, value)
+
+    return metric
+
+
+_COMMIT_METRIC_MAPPING = dict(
+    build_name="metadata.name",
+    build_config_name="metadata.labels.buildconfig",
+    namespace="metadata.namespace",
+    commit_hash="spec.revision.git.commit",
+    committer="spec.revision.git.author.name",
+    image_location="status.outputDockerImageReference",
+    image_hash="status.output.to.imageDigest",
+)

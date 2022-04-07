@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import re
 from abc import abstractmethod
@@ -10,7 +9,8 @@ from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
-from committime import CommitMetric
+from committime import CommitMetric, commit_metric_from_build
+from pelorus.utils import get_nested
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -132,7 +132,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return metrics
 
     @abstractmethod
-    def get_commit_time(self, metric):
+    def get_commit_time(self, metric) -> CommitMetric:
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 
@@ -171,55 +171,56 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return metrics
 
     def get_metric_from_build(self, build, app, namespace, repo_url):
+        errors = []
         try:
+            metric = commit_metric_from_build(app, build, errors)
+            if repo_url:
+                metric.repo_url = repo_url
+            elif get_nested(build, "spec.source.git", default=None):
+                metric.repo_url = get_nested(build, "spec.source.git.uri", name="build")
+            else:
+                metric.repo_url = self._get_repo_from_build_config(build)
 
-            metric = CommitMetric(app)
+            metric.labels = vars(build.metadata.labels)
 
-            if not repo_url:
-                if build.spec.source.git:
-                    repo_url = build.spec.source.git.uri
-                else:
-                    repo_url = self._get_repo_from_build_config(build)
-
-            metric.repo_url = repo_url
-            commit_sha = build.spec.revision.git.commit
-            metric.build_name = build.metadata.name
-            metric.build_config_name = build.metadata.labels.buildconfig
-            metric.namespace = build.metadata.namespace
-            labels = build.metadata.labels
-            metric.labels = json.loads(str(labels).replace("'", '"'))
-
-            metric.commit_hash = commit_sha
-            metric.name = app
-            metric.committer = build.spec.revision.git.author.name
-            metric.image_location = build.status.outputDockerImageReference
-            metric.image_hash = build.status.output.to.imageDigest
             # Check the cache for the commit_time, if not call the API
-            metric_ts = self._commit_dict.get(commit_sha)
-            if metric_ts is None:
+            if metric.commit_hash not in self._commit_dict:
                 logging.debug(
-                    "sha: %s, commit_timestamp not found in cache, executing API call."
-                    % (commit_sha)
+                    "sha: %s, commit_timestamp not found in cache, executing API call.",
+                    metric.commit_hash,
                 )
                 metric = self.get_commit_time(metric)
                 # If commit time is None, then we could not get the value from the API
                 if metric.commit_time is None:
-                    return None
-                # Add the timestamp to the cache
-                self._commit_dict[metric.commit_hash] = metric.commit_timestamp
+                    errors.append("Couldn't get commit time")
+                else:
+                    # Add the timestamp to the cache
+                    self._commit_dict[metric.commit_hash] = metric.commit_timestamp
             else:
-                metric.commit_timestamp = self._commit_dict[commit_sha]
+                metric.commit_timestamp = self._commit_dict[metric.commit_hash]
                 logging.debug(
-                    "Returning sha: %s, commit_timestamp: %s, from cache."
-                    % (commit_sha, metric.commit_timestamp)
+                    "Returning sha: %s, commit_timestamp: %s, from cache.",
+                    metric.commit_hash,
+                    metric.commit_timestamp,
                 )
+
+            if errors:
+                msg = (
+                    f"Missing data for CommitTime metric from Build "
+                    f"{namespace}/{build.metadata.name} in app {app}: "
+                    f"{'.'.join(str(e) for e in errors)}"
+                )
+                logging.warning(msg)
+                return None
 
             return metric
 
         except Exception as e:
             logging.warning(
-                "Build %s/%s in app %s is missing required attributes to collect data. Skipping."
-                % (namespace, build.metadata.name, app)
+                "Build %s/%s in app %s is missing required attributes to collect data. Skipping.",
+                namespace,
+                build.metadata.name,
+                app,
             )
             logging.debug(e, exc_info=True)
             return None
