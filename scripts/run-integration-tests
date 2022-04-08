@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
+# Script to run integration tests using mockoon container
+# It starts mockoon pod on the local system and then it runs the
+# tests using pytest, which points to the local mockoon instance
+#
+# A number of pre-checks is added to fail fast if the mockoon may not
+# be available or won't start.
+#
+# After this script runs created instance of mockoon container is
+# removed from the system. 
+
+CONTAINER_ENGINE="podman"
+MOCKOON_CONTAINER="mockoon/cli:1.5.1"
+MOCKOON_PORT="3000"
+MOCKOON_TIMEOUT=30
+
+TEST_CONTAINER_NAME="mockoon_pelorus_tests"
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+MOCK_JSON="${SCRIPT_DIR}/../mocks/commitexporter_github.json"
+
+if ! command -v "pytest" &> /dev/null
+then
+      echo "No pytest found in the PATH"
+      exit 2
+fi
+
+if ! command -v "${CONTAINER_ENGINE}" &> /dev/null
+then
+    CONTAINER_ENGINE="docker"
+    if ! command -v "${CONTAINER_ENGINE}" &> /dev/null
+    then
+      echo "No podman or docker found in the PATH"
+      exit 2
+    fi
+fi
+
+function cleanup_mockoon_pod() {
+    RUNNING_ID="$(${CONTAINER_ENGINE} ps -a -q -f name=${TEST_CONTAINER_NAME})"
+    if [ "${RUNNING_ID}" != "" ]; then
+        echo "Removing test container: ${TEST_CONTAINER_NAME} with ID: ${RUNNING_ID}"
+        ${CONTAINER_ENGINE} rm --force "${RUNNING_ID}"
+    fi
+}
+
+function cleanup_and_exit() {
+    local exit_val=$1
+    echo "Exiting..."
+    cleanup_mockoon_pod
+    # Propagate exit value if was provided
+    [ -n "${exit_val}" ] && exit "$exit_val"    
+    exit 0
+}
+
+trap 'cleanup_and_exit' INT TERM EXIT
+
+# Check if test container already exists, if yes remove it
+
+cleanup_mockoon_pod
+
+# We need to check if port 3000 is used by other process
+
+if lsof -Pi :"${MOCKOON_PORT}" -sTCP:LISTEN -t >/dev/null ; then
+    echo "Can not run integration tests as other process uses port ${MOCKOON_PORT}"
+    exit 2
+fi
+
+# Run Mockoon container
+echo "Running mockoon container"
+RUNNING_ID=$("${CONTAINER_ENGINE}" run --name="${TEST_CONTAINER_NAME}" -d -v "${MOCK_JSON}":/data:Z -p "${MOCKOON_PORT}":"${MOCKOON_PORT}" "${MOCKOON_CONTAINER}" -d /data)
+
+if [ "${RUNNING_ID}" == "" ]; then
+    echo "Mockoon is not working as expected."
+    echo "Logs from failing container:"
+    ${CONTAINER_ENGINE} logs "${RUNNING_ID}"
+fi
+
+counter=1
+until curl -k https://localhost:3000/version
+do
+    if [ $counter -gt $MOCKOON_TIMEOUT ]; then
+        echo "Timed out waiting for the mockoon service"
+        cleanup_and_exit
+    fi
+    echo "Trying to reach mockoon: $counter out of $MOCKOON_TIMEOUT"
+    sleep 1
+    counter=$((counter+1))
+done
+
+# Remove exit trap, so we can propagate exit value from pytest
+trap - EXIT
+
+# Run integration tests
+pytest -m integration
+pytest_exit=$?
+cleanup_and_exit $pytest_exit

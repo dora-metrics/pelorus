@@ -5,6 +5,7 @@ on:
       - '_test/**'
       - 'charts/pelorus/**'
       - '.github/workflows/prometheus-rules.yml'
+
   pull_request:
     paths:
       - '_test/**'
@@ -14,13 +15,23 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9']
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
-      with:
-        go-version: '^1.13.1' # The Go version to download (if necessary) and use.
-    - run: |
-        go version
-        GO111MODULE=on go get github.com/prometheus/prometheus/cmd/promtool@release-2.25
-        promtool --version
-        _test/test_prometheusrules
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          make dev-env
+
+      - name: Check for formatting
+        run: |
+          make test-prometheusrules

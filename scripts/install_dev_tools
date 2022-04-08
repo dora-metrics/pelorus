@@ -28,6 +28,8 @@ TMP_DIR_PREFIX="pelorus_tmp_"
 
 TKN_CLIENT_API_URL="https://api.github.com/repos/tektoncd/cli/releases/latest"
 CT_CLIENT_API_URL="https://api.github.com/repos/helm/chart-testing/releases/latest"
+# Required to get the promtool
+PROMETHEUS_API_URL="https://api.github.com/repos/prometheus/prometheus/releases/latest"
 
 HELM_INSTALL_SCRIPT="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
 
@@ -242,4 +244,20 @@ if should_cli_be_installed "ct" "${cli_tools_arr[@]}" && \
       download_file_from_url "${CT_CLIENT_URL}" "${DWN_DIR}"
       CT_CLIENT_PATH="${DWN_DIR}"/$(basename "${CT_CLIENT_URL}")
       extract_file_to_dir "${CT_CLIENT_PATH}" "${VENV}/bin/" "ct"
+fi
+
+# Promtool install
+if should_cli_be_installed "promtool" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/promtool")" ]; then
+      PROMTOOL_CLIENT_URL=$(get_download_url_from_github_api "${PROMETHEUS_API_URL}") \
+                    || (echo "$PROMTOOL_CLIENT_URL"; cleanup_and_exit 2)
+      download_file_from_url "${PROMTOOL_CLIENT_URL}" "${DWN_DIR}"
+      CT_CLIENT_PATH="${DWN_DIR}"/$(basename "${PROMTOOL_CLIENT_URL}")
+      # promtool is in the dir with same name as tar, we need to
+      # extract this to pass to the tar command as wildcards are not
+      # supported on every system (e.g. in github actions)
+      DIR_NAME=$(basename "${CT_CLIENT_PATH}" | sed 's/\.tar\.gz//g')
+      extract_file_to_dir "${CT_CLIENT_PATH}" "${VENV}/bin/" "${DIR_NAME}/promtool"
+      mv "${VENV}/bin/${DIR_NAME}/promtool" "${VENV}/bin/"
+      rmdir "${VENV}/bin/${DIR_NAME}"
 fi
