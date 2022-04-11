@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 import attr
 import giturlparse
@@ -14,7 +14,7 @@ SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 @attr.define
 class CommitMetric:
     name: str = attr.field()
-    labels: Any = attr.field(default=None, kw_only=True)
+    labels: dict = attr.field(default=None, kw_only=True)
     namespace: Optional[str] = attr.field(default=None, kw_only=True)
 
     __repo_url = attr.field(default=None, init=False)
@@ -96,6 +96,23 @@ class CommitMetric:
         self.__repo_name = parsed.name
         self.__repo_project = parsed.name
 
+    # maps attributes to their location in a `Build`.
+    #
+    # missing fields are handled specially:
+    # name: set when the object is constructed
+    # labels: must be converted from an `openshift.dynamic.ResourceField`
+    # repo_url: if it's not present in the Build, fallback logic needs to be handled elsewhere
+    # commit_timestamp: very special handling, the main purpose of each committime collector
+    _BUILD_MAPPING = dict(
+        build_name="metadata.name",
+        build_config_name="metadata.labels.buildconfig",
+        namespace="metadata.namespace",
+        commit_hash="spec.revision.git.commit",
+        committer="spec.revision.git.author.name",
+        image_location="status.outputDockerImageReference",
+        image_hash="status.output.to.imageDigest",
+    )
+
 
 def commit_metric_from_build(app: str, build, errors: list) -> CommitMetric:
     """
@@ -106,20 +123,9 @@ def commit_metric_from_build(app: str, build, errors: list) -> CommitMetric:
     # lookup path.
     # Collect all errors to be reported at once instead of failing fast.
     metric = CommitMetric(app)
-    for attr_name, path in _COMMIT_METRIC_MAPPING.items():
+    for attr_name, path in CommitMetric._BUILD_MAPPING.items():
         with collect_bad_attribute_path_error(errors):
             value = get_nested(build, path, name="build")
             setattr(metric, attr_name, value)
 
     return metric
-
-
-_COMMIT_METRIC_MAPPING = dict(
-    build_name="metadata.name",
-    build_config_name="metadata.labels.buildconfig",
-    namespace="metadata.namespace",
-    commit_hash="spec.revision.git.commit",
-    committer="spec.revision.git.author.name",
-    image_location="status.outputDockerImageReference",
-    image_hash="status.output.to.imageDigest",
-)
