@@ -33,7 +33,7 @@ MOCKOON_TIMEOUT=30
 TEST_CONTAINER_NAME="mockoon_pelorus_tests"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-MOCK_JSON="${SCRIPT_DIR}/../mocks/commitexporter_github.json"
+MOCK_JSON="${MOCK_JSON-"${SCRIPT_DIR}/../mocks/commitexporter_github.json"}"
 
 if ! command -v "pytest" &> /dev/null
 then
@@ -83,7 +83,7 @@ fi
 
 # Run Mockoon container
 echo "Running mockoon container"
-RUNNING_ID=$("${CONTAINER_ENGINE}" run --name="${TEST_CONTAINER_NAME}" -d -v "${MOCK_JSON}":/data:Z -p "${MOCKOON_PORT}":"${MOCKOON_PORT}" "${MOCKOON_CONTAINER}" -d /data)
+RUNNING_ID=$("${CONTAINER_ENGINE}" run --name="${TEST_CONTAINER_NAME}" -d -v "${MOCK_JSON}":/data -p "${MOCKOON_PORT}":"${MOCKOON_PORT}" "${MOCKOON_CONTAINER}" -d /data)
 
 if [ "${RUNNING_ID}" == "" ]; then
     echo "Mockoon is not working as expected."
