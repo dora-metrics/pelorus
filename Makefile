@@ -23,7 +23,7 @@ endif
 CHART_TEST=$(shell which ct)
 
 SHELLCHECK=$(shell which shellcheck)
-SHELL_SCRIPTS=./scripts/pre-commit ./scripts/setup-pre-commit-hook ./demo/demo-tekton
+SHELL_SCRIPTS=./scripts/pre-commit ./scripts/setup-pre-commit-hook ./demo/demo-tekton ./scripts/run-integration-tests
 
 
 .PHONY: default
