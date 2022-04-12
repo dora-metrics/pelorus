@@ -17,6 +17,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
     Base class for a CommitCollector.
     This class should be extended for the system which contains the commit information.
+    DNM, TEST5
     """
 
     def __init__(
