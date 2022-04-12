@@ -23,7 +23,7 @@ endif
 CHART_TEST=$(shell which ct)
 
 SHELLCHECK=$(shell which shellcheck)
-SHELL_SCRIPTS=./scripts/pre-commit ./scripts/setup-pre-commit-hook ./demo/demo-tekton
+SHELL_SCRIPTS=./scripts/pre-commit ./scripts/setup-pre-commit-hook ./demo/demo-tekton ./scripts/run-integration-tests
 
 
 .PHONY: default
@@ -81,6 +81,29 @@ minor-release:
 
 major-release:
 	./scripts/create_release_pr -m
+
+# Integration tests
+
+.PHONY: integration-tests
+integration-tests: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/run-integration-tests
+
+# Unit tests
+.PHONY: unit-tests
+unit-tests: $(PELORUS_VENV)
+  # -r: show extra test summaRy: (a)ll except passed, (p)assed
+  # because using (A)ll includes stdout
+  # -m filters out integration tests
+	. ${PELORUS_VENV}/bin/activate && \
+	coverage run -m pytest -rap -m "not integration" && \
+	coverage report
+
+# Prometheus ruels
+.PHONY: test-prometheusrules
+test-prometheusrules: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./_test/test_prometheusrules
 
 # Formatting
 

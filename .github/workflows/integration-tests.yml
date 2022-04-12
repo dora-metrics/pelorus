@@ -7,6 +7,8 @@ on:
       - '!mocks/README.md'
       - 'pyproject.toml'
       - '.github/workflows/integration-tests.yml'
+      - 'Makefile'
+
   pull_request:
     paths:
       - 'exporters/**'
@@ -14,6 +16,7 @@ on:
       - '!mocks/README.md'
       - 'pyproject.toml'
       - '.github/workflows/integration-tests.yml'
+      - 'Makefile'
 
 jobs:
   integration-test:
@@ -25,22 +28,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r exporters/requirements.txt
-          pip install -r exporters/requirements-dev.txt
-      - name: Start Mockoon in background
-        run: docker run --name=mockoon -d --mount type=bind,source=$PWD/mocks/commitexporter_github.json,target=/data,readonly -p 3000:3000 mockoon/cli:1.5.1 -d /data --name openshift -p 3000
-      - name: try until mockoon is ready
+          make dev-env
+
+      - name: Run integration-test
         run: |
-          pip install httpie
-          for i in {1..120}; do curl -k https://localhost:3000/version && break || (echo "trying again in 1 second" && sleep 1); done
-      - name: run commit exporter
-        run: |
-          pip install ./exporters
-          pytest -m integration
+          make integration-tests

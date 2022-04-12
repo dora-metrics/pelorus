@@ -6,6 +6,7 @@ on:
       - 'pyproject.toml'
       - 'scripts/format'
       - '.github/workflows/python-formatting.yml'
+      - 'Makefile'
 
 jobs:
   format-check:
@@ -17,9 +18,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Check for formatting
         run: make format-check

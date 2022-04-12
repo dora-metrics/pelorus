@@ -6,6 +6,7 @@ on:
       - '_test/**'
       - 'charts/**'
       - '.github/workflows/conftest.yaml'
+
   pull_request:
     paths:
       - '_test/**'
