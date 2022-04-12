@@ -5,6 +5,7 @@ in kubernetes that are not so idiomatic to deal with.
 """
 import contextlib
 import dataclasses
+import logging
 from typing import Any, Optional, Union, overload
 
 # sentinel value for the default kwarg to get_nested
@@ -122,3 +123,22 @@ def collect_bad_attribute_path_error(error_list: list):
         yield
     except BadAttributePathError as e:
         error_list.append(e)
+
+
+class SpecializeDebugFormatter(logging.Formatter):
+    """
+    Uses a different format for DEBUG messages that has more information.
+    """
+
+    DEBUG_FORMAT = "%(asctime)-15s %(levelname)-8s %(pathname)s:%(lineno)d %(funcName)s() %(message)s"
+
+    def format(self, record):
+        prior_format = self._style._fmt
+
+        try:
+            if record.levelno == logging.DEBUG:
+                self._style._fmt = self.DEBUG_FORMAT
+
+            return logging.Formatter.format(self, record)
+        finally:
+            self._style._fmt = prior_format
