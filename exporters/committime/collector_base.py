@@ -12,7 +12,7 @@ import pelorus
 from committime import CommitMetric, commit_metric_from_build
 from pelorus.utils import get_nested
 
-
+# test4
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
     Base class for a CommitCollector.
