@@ -28,10 +28,14 @@ TMP_DIR_PREFIX="pelorus_tmp_"
 
 TKN_CLIENT_API_URL="https://api.github.com/repos/tektoncd/cli/releases/latest"
 CT_CLIENT_API_URL="https://api.github.com/repos/helm/chart-testing/releases/latest"
+CONFTEST_CLIENT_API_URL="https://api.github.com/repos/open-policy-agent/conftest/releases/latest"
 # Required to get the promtool
 PROMETHEUS_API_URL="https://api.github.com/repos/prometheus/prometheus/releases/latest"
 
 HELM_INSTALL_SCRIPT="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+
+# Bats are required for conftest
+BATS_REPO_URL="https://github.com/bats-core/bats-core"
 
 # Currently we are interested in development on Linux and Mac OS platforms
 # Because OCP_CLIENT URL links do not follow standard binary name format
@@ -203,7 +207,7 @@ cli_tools_arr=("${cli_tools//' '/}")
 cli_tools_arr=(${cli_tools_arr//','/ })
 
 # Create download directory inside virtual env dir
-DWN_DIR=$(TMPDIR="${VENV}" mktemp -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
+DWN_DIR=$(mktemp --tmpdir="${VENV}" -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
 
 trap 'cleanup_and_exit' INT TERM EXIT
 
@@ -260,4 +264,34 @@ if should_cli_be_installed "promtool" "${cli_tools_arr[@]}" && \
       extract_file_to_dir "${CT_CLIENT_PATH}" "${VENV}/bin/" "${DIR_NAME}/promtool"
       mv "${VENV}/bin/${DIR_NAME}/promtool" "${VENV}/bin/"
       rmdir "${VENV}/bin/${DIR_NAME}"
+fi
+
+# Conftest CLI
+if should_cli_be_installed "conftest" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/conftest")" ]; then
+      CONFTEST_CLIENT_URL=$(get_download_url_from_github_api "${CONFTEST_CLIENT_API_URL}") \
+                    || (echo "$CONFTEST_CLIENT_URL"; cleanup_and_exit 2)
+      download_file_from_url "${CONFTEST_CLIENT_URL}" "${DWN_DIR}"
+      CONFTEST_CLIENT_PATH="${DWN_DIR}"/$(basename "${CONFTEST_CLIENT_URL}")
+      extract_file_to_dir "${CONFTEST_CLIENT_PATH}" "${VENV}/bin/" "conftest"
+fi
+
+# Install bats via repository
+if should_cli_be_installed "bats" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/bats")" ]; then
+    if ! [ -x "$(command -v git)" ]; then
+        echo "git command not found"
+        exit 2
+    fi
+    # Get the absolute path of VENV. This should be platform independent
+    pushd "${VENV}" || exit
+      ABS_VENV_PATH=$(pwd)
+    popd
+    pushd "${DWN_DIR}" || exit
+      git clone "${BATS_REPO_URL}" bats-core-upstream
+      pushd bats-core-upstream || exit
+        ./install.sh "${ABS_VENV_PATH}"
+      popd
+      rm -rf bats-core-upstream
+    popd
 fi

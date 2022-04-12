@@ -6,21 +6,35 @@ on:
       - '_test/**'
       - 'charts/**'
       - '.github/workflows/conftest.yaml'
+      - 'Makefile'
 
   pull_request:
     paths:
       - '_test/**'
       - 'charts/**'
       - '.github/workflows/conftest.yaml'
+      - 'Makefile'
 
 jobs:
   conftest:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Conftest
-        uses: redhat-cop/github-actions/confbatstest@master
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
         with:
-          tests: _test/conftest.sh
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          make dev-env
+
+      - name: Run conf-tests
+        run: |
+          make conf-tests
