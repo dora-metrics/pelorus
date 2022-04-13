@@ -1,5 +1,4 @@
 import logging
-import logging.config
 import os
 from abc import ABC
 from datetime import datetime, timezone
@@ -20,43 +19,24 @@ DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = "unknown"
 DEFAULT_TRACKER_APP_FIELD = "u_application"
 
-# region: logging setup
-loglevel = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
-numeric_level = getattr(logging, loglevel, None)
-if not isinstance(numeric_level, int):
-    raise ValueError("Invalid log level: %s", loglevel)
-# logging.basicConfig(
-#     format=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT, level=numeric_level
-# )
-# logging.config.dictConfig(
-#     dict(
-#         version=1,
-#         formatters={
-#             "specialize_debug": {
-#                 "format": DEFAULT_LOG_FORMAT,
-#                 "datefmt": DEFAULT_LOG_DATE_FORMAT,
-#                 "class": "pelorus.utils.SpecializeDebugFormatter",
-#             }
-#         },
-#         handlers={
-#             "stderr": {
-#                 "class": "logging.StreamHandler",
-#                 "formatter": "specialize_debug",
-#             }
-#         },
-#         root={"level": logging.DEBUG, "handlers": ["stderr"]},
-#     )
-# )
-root_logger = logging.getLogger()
-formatter = utils.SpecializeDebugFormatter(
-    fmt=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT
-)
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-root_logger.addHandler(handler)
-root_logger.setLevel(numeric_level)
-print(f"Initializing Logger with LogLevel: {loglevel}")
 
+def _setup_logging():
+    loglevel = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
+    numeric_level = getattr(logging, loglevel, None)
+    if not isinstance(numeric_level, int):
+        raise ValueError("Invalid log level: %s", loglevel)
+    root_logger = logging.getLogger()
+    formatter = utils.SpecializeDebugFormatter(
+        fmt=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT
+    )
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    root_logger.addHandler(handler)
+    root_logger.setLevel(numeric_level)
+    print(f"Initializing Logger with LogLevel: {loglevel}")
+
+
+_setup_logging()
 # endregion
 
 # A NamespaceSpec lists namespaces to restrict the search to.
