@@ -174,6 +174,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         errors = []
         try:
             metric = commit_metric_from_build(app, build, errors)
+
+            if not self._is_metric_ready(namespace, metric, build):
+                return None
+
             if repo_url:
                 metric.repo_url = repo_url
             elif get_nested(build, "spec.source.git", default=None):
@@ -183,26 +187,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             metric.labels = vars(build.metadata.labels)
 
-            # Check the cache for the commit_time, if not call the API
-            if metric.commit_hash not in self._commit_dict:
-                logging.debug(
-                    "sha: %s, commit_timestamp not found in cache, executing API call.",
-                    metric.commit_hash,
-                )
-                metric = self.get_commit_time(metric)
-                # If commit time is None, then we could not get the value from the API
-                if metric.commit_time is None:
-                    errors.append("Couldn't get commit time")
-                else:
-                    # Add the timestamp to the cache
-                    self._commit_dict[metric.commit_hash] = metric.commit_timestamp
-            else:
-                metric.commit_timestamp = self._commit_dict[metric.commit_hash]
-                logging.debug(
-                    "Returning sha: %s, commit_timestamp: %s, from cache.",
-                    metric.commit_hash,
-                    metric.commit_timestamp,
-                )
+            metric = self._get_commit_hash(metric, errors)
 
             if errors:
                 msg = (
@@ -214,8 +199,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 return None
 
             return metric
-
-        except Exception as e:
+        except AttributeError as e:
+            # TODO: have we removed all the spots where we could get an AttributeError?
             logging.warning(
                 "Build %s/%s in app %s is missing required attributes to collect data. Skipping.",
                 namespace,
@@ -224,6 +209,72 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             )
             logging.debug(e, exc_info=True)
             return None
+        except Exception as e:
+            logging.error("Error encountered while getting CommitMetric info:")
+            logging.error(e, exc_info=True)
+            return None
+
+    def _is_metric_ready(self, namespace: str, metric: CommitMetric, build) -> bool:
+        """
+        Determine if a build is ready to be examined.
+
+        There's a few reasons we would stop early:
+          - the build is new/pending/running and doesn't have an image yet.
+          - the build failed/error'd/cancelled.
+        These are valid conditions and we shouldn't clog the logs warning about it.
+        However, if it's new/pending/running and _does_ have an image, we might as well continue.
+        """
+        build_status = get_nested(build, "status.phase", default=None)
+        if build_status in {"Failed", "Error", "Cancelled"}:
+            logging.debug(
+                "Build %s/%s had status %s, skipping",
+                namespace,
+                build.metadata.name,
+                build_status,
+            )
+            return False
+        elif build_status in {"New, Pending", "Running"}:
+            if metric.image_hash is None:
+                logging.debug(
+                    "Build %s/%s has status %s and doesn't have an image_hash yet, skipping",
+                    namespace,
+                    build.metadata.name,
+                    build_status,
+                )
+                return False
+            else:
+                return True
+        else:
+            return True
+
+    # TODO: be specific about the API modifying in place or returning a new metric.
+    # Right now, it appears to do both.
+    def _get_commit_hash(self, metric: CommitMetric, errors: list) -> CommitMetric:
+        """
+        Check the cache for the commit_time.
+        If absent, call the API implemented by the subclass.
+        """
+        if metric.commit_hash not in self._commit_dict:
+            logging.debug(
+                "sha: %s, commit_timestamp not found in cache, executing API call.",
+                metric.commit_hash,
+            )
+            metric = self.get_commit_time(metric)
+            # If commit time is None, then we could not get the value from the API
+            if metric.commit_time is None:
+                errors.append("Couldn't get commit time")
+            else:
+                # Add the timestamp to the cache
+                self._commit_dict[metric.commit_hash] = metric.commit_timestamp
+        else:
+            metric.commit_timestamp = self._commit_dict[metric.commit_hash]
+            logging.debug(
+                "Returning sha: %s, commit_timestamp: %s, from cache.",
+                metric.commit_hash,
+                metric.commit_timestamp,
+            )
+
+        return metric
 
     def get_repo_from_jenkins(self, jenkins_builds):
         if jenkins_builds:
