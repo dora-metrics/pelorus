@@ -64,6 +64,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         query_string = "type=bug and priority=highest"
         if self.projects is not None:
             query_string = query_string + " and project in (" + self.projects + ")"
+        jira_issues = jira.search_issues(query_string)
 
         critical_issues = []
 
