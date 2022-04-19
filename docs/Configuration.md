@@ -159,7 +159,7 @@ Create a secret containing your Jira information.
 ```shell
 oc create secret generic jira-secret \
 --from-literal=SERVER=<Jira Server> \
---from-literal=USER=<username> \
+--from-literal=USER=<username/e-mail> \
 --from-literal=TOKEN=<personal access token> \
 -n pelorus
 ```

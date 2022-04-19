@@ -1,9 +1,27 @@
+#!/usr/bin/env python3
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
 import logging
 from datetime import datetime
 
 import pytz
 from collector_base import AbstractFailureCollector, TrackerIssue
 from jira import JIRA
+from jira.exceptions import JIRAError
 
 import pelorus
 
@@ -17,15 +35,36 @@ class JiraFailureCollector(AbstractFailureCollector):
         super().__init__(server, user, apikey)
         self.projects = projects
 
-    def search_issues(self):
-        options = {"server": self.server}
+    def _connect_to_jira(self) -> JIRA:
+        """Method to connect to JIRA instance which may be cloud based
+        or self-hosted.
+        """
+        jira_client = None
+        server = self.server
+        email = self.user
+        api_key = self.apikey
+
         # Connect to Jira
-        jira = JIRA(options, basic_auth=(self.user, self.apikey))
+        jira_client = JIRA(options={"server": server}, basic_auth=(email, api_key))
+
+        # Ensure connection was performed
+        try:
+            jira_client.session()
+        except JIRAError as error:
+            logging.error(
+                "Status: %s, Error Response: %s", error.status_code, error.text
+            )
+            raise error
+
+        return jira_client
+
+    def search_issues(self):
+        jira = self._connect_to_jira()
         # TODO FIXME This may need to be modified to suit needs and have a time period.
         query_string = "type=bug and priority=highest"
         if self.projects is not None:
             query_string = query_string + " and project in (" + self.projects + ")"
-        jira = JIRA(options, basic_auth=(self.user, self.apikey))
+
         jira_issues = jira.search_issues(query_string)
         critical_issues = []
         for issue in jira_issues:
