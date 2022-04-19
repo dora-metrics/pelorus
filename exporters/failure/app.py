@@ -69,6 +69,7 @@ if __name__ == "__main__":
     collector = TrackerFactory.getCollector(
         username, token, tracker_api, projects, tracker_provider
     )
+
     REGISTRY.register(collector)
 
     while True:

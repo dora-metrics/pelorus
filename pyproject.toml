@@ -4,13 +4,8 @@ src_paths = ["exporters" ,"scripts"]
 known_first_party = ["pelorus"]
 
 [tool.pytest.ini_options]
-pythonpath = [
-    "exporters/comitttime",
-    "exporters/deploytime",
-    "exporters/failure",
-    "exporters/pelorus"
-]
 testpaths = ["exporters/tests"]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')"
 ]
+log_cli = true
