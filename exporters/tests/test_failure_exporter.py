@@ -16,9 +16,11 @@
 #
 
 from typing import cast
+
 import pytest
 from jira.exceptions import JIRAError
 from prometheus_client.core import REGISTRY
+
 from failure.app import TrackerFactory
 from failure.collector_jira import JiraFailureCollector
 
@@ -80,6 +82,7 @@ def test_jira_prometheus_register(
 ):
     def mock_search_issues(self):
         return []
+
     monkeypatch.setattr(JiraFailureCollector, "search_issues", mock_search_issues)
     collector = JiraFailureCollector(
         user=username, apikey=apikey, server=server, projects=None
@@ -100,7 +103,7 @@ def test_jira_prometheus_register(
 )
 def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatch):
     class FakeJira(object):
-        def search_issues(self, issues):
+        def search_issues(self, issues, startAt=0, maxResults=50, fields=None):
             raise JIRAError(status_code=400, text="Fake search error")
 
     def mock_jira_connect(self):
