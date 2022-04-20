@@ -6,6 +6,8 @@ from typing import Optional, Sequence
 
 from kubernetes import config
 
+from . import utils
+
 DEFAULT_APP_LABEL = "app.kubernetes.io/name"
 DEFAULT_PROD_LABEL = ""
 DEFAULT_LOG_LEVEL = "INFO"
@@ -17,14 +19,25 @@ DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = "unknown"
 DEFAULT_TRACKER_APP_FIELD = "u_application"
 
-loglevel = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL)
-numeric_level = getattr(logging, loglevel.upper(), None)
-if not isinstance(numeric_level, int):
-    raise ValueError("Invalid log level: %s" % loglevel)
-logging.basicConfig(
-    format=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT, level=numeric_level
-)
-print("Initializing Logger wit LogLevel: %s" % loglevel.upper())
+
+def _setup_logging():
+    loglevel = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
+    numeric_level = getattr(logging, loglevel, None)
+    if not isinstance(numeric_level, int):
+        raise ValueError("Invalid log level: %s", loglevel)
+    root_logger = logging.getLogger()
+    formatter = utils.SpecializeDebugFormatter(
+        fmt=DEFAULT_LOG_FORMAT, datefmt=DEFAULT_LOG_DATE_FORMAT
+    )
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    root_logger.addHandler(handler)
+    root_logger.setLevel(numeric_level)
+    print(f"Initializing Logger with LogLevel: {loglevel}")
+
+
+_setup_logging()
+# endregion
 
 # A NamespaceSpec lists namespaces to restrict the search to.
 # Use None or an empty list to include all namespaces.

@@ -17,9 +17,9 @@ class CommitMetric:
     labels: dict = attr.field(default=None, kw_only=True)
     namespace: Optional[str] = attr.field(default=None, kw_only=True)
 
-    __repo_url = attr.field(default=None, init=False)
+    __repo_url: str = attr.field(default=None, init=False)
     __repo_protocol = attr.field(default=None, init=False)
-    __repo_fqdn = attr.field(default=None, init=False)
+    __repo_fqdn: str = attr.field(default=None, init=False)
     __repo_group = attr.field(default=None, init=False)
     __repo_name = attr.field(default=None, init=False)
     __repo_project = attr.field(default=None, init=False)
@@ -76,12 +76,12 @@ class CommitMetric:
         return str(self.__repo_protocol + "://" + self.__repo_fqdn)
 
     def __parse_repourl(self):
-        logging.debug(self.__repo_url)
         """Parse the repo_url into individual pieces"""
+        logging.debug("repo url = %s", self.__repo_url)
         if self.__repo_url is None:
             return
         parsed = giturlparse.parse(self.__repo_url)
-        logging.debug(self.__repo_url)
+        logging.debug("Parsed: %s", parsed)
         if len(parsed.protocols) > 0 and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
             raise ValueError("Unsupported protocol %s", parsed.protocols[0])
         self.__repo_protocol = parsed.protocol
