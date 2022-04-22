@@ -19,9 +19,8 @@ import logging
 import os
 import sys
 import time
+from typing import Union
 
-from failure.collector_jira import JiraFailureCollector
-from failure.collector_servicenow import ServiceNowFailureCollector
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
@@ -34,13 +33,17 @@ REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
 
 class TrackerFactory:
     @staticmethod
-    def getCollector(username, token, tracker_api, projects, tracker_provider):
+    def getCollector(
+        username, token, tracker_api, projects, tracker_provider
+    ) -> Union[JiraFailureCollector, ServiceNowFailureCollector]:
         if tracker_provider == "jira":
             return JiraFailureCollector(
                 server=tracker_api, user=username, apikey=token, projects=projects
             )
-        if tracker_provider == "servicenow":
+        elif tracker_provider == "servicenow":
             return ServiceNowFailureCollector(username, token, tracker_api)
+        else:
+            raise ValueError(f"Unknown provider {tracker_provider}")
 
 
 if __name__ == "__main__":

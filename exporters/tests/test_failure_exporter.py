@@ -15,9 +15,9 @@
 #    under the License.
 #
 
+from typing import cast
+
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
-from jira import JIRA
 from jira.exceptions import JIRAError
 from prometheus_client.core import REGISTRY
 
@@ -25,7 +25,7 @@ from failure.app import TrackerFactory
 from failure.collector_jira import JiraFailureCollector
 
 
-def setup_jira_collector(server, username, apikey) -> JIRA:
+def setup_jira_collector(server, username, apikey) -> JiraFailureCollector:
     tracker_provider = "jira"
 
     projects = None
@@ -34,7 +34,7 @@ def setup_jira_collector(server, username, apikey) -> JIRA:
         username, apikey, server, projects, tracker_provider
     )
 
-    return jira_collector
+    return cast(JiraFailureCollector, jira_collector)
 
 
 @pytest.mark.parametrize(
@@ -98,4 +98,4 @@ def test_jira_prometheus_register(server, username, apikey):
         user=username, apikey=apikey, server=server, projects=None
     )
 
-    REGISTRY.register(collector)
+    REGISTRY.register(collector)  # type: ignore
