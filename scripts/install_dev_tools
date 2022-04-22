@@ -207,7 +207,7 @@ cli_tools_arr=("${cli_tools//' '/}")
 cli_tools_arr=(${cli_tools_arr//','/ })
 
 # Create download directory inside virtual env dir
-DWN_DIR=$(mktemp --tmpdir="${VENV}" -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
+DWN_DIR=$(TMPDIR="${VENV}" mktemp -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
 
 trap 'cleanup_and_exit' INT TERM EXIT
 
