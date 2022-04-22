@@ -19,11 +19,11 @@ import logging
 from datetime import datetime
 
 import pytz
-from collector_base import AbstractFailureCollector, TrackerIssue
 from jira import JIRA
 from jira.exceptions import JIRAError
 
 import pelorus
+from failure.collector_base import AbstractFailureCollector, TrackerIssue
 
 
 class JiraFailureCollector(AbstractFailureCollector):
