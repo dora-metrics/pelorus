@@ -54,7 +54,7 @@ class JiraFailureCollector(AbstractFailureCollector):
             logging.error(
                 "Status: %s, Error Response: %s", error.status_code, error.text
             )
-            raise error
+            raise
 
         return jira_client
 
