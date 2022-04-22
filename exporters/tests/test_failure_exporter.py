@@ -86,11 +86,11 @@ def test_jira_pass_connection(server, username, apikey):
         )
     ],
 )
-def test_jira_prometheus_register(server, username, apikey):
+def test_jira_prometheus_register(
+    server, username, apikey, monkeypatch: pytest.MonkeyPatch
+):
     def mock_search_issues(self):
         return []
-
-    monkeypatch = MonkeyPatch()
 
     monkeypatch.setattr(JiraFailureCollector, "search_issues", mock_search_issues)
 
