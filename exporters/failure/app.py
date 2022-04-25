@@ -1,26 +1,49 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
 import logging
 import os
 import sys
 import time
+from typing import Union
 
-from collector_jira import JiraFailureCollector
-from collector_servicenow import ServiceNowFailureCollector
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
+from failure.collector_jira import JiraFailureCollector
+from failure.collector_servicenow import ServiceNowFailureCollector
 
 REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
 
 
 class TrackerFactory:
     @staticmethod
-    def getCollector(username, token, tracker_api, projects, tracker_provider):
+    def getCollector(
+        username, token, tracker_api, projects, tracker_provider
+    ) -> Union[JiraFailureCollector, ServiceNowFailureCollector]:
         if tracker_provider == "jira":
-            return JiraFailureCollector(username, token, tracker_api, projects)
-        if tracker_provider == "servicenow":
+            return JiraFailureCollector(
+                server=tracker_api, user=username, apikey=token, projects=projects
+            )
+        elif tracker_provider == "servicenow":
             return ServiceNowFailureCollector(username, token, tracker_api)
+        else:
+            raise ValueError(f"Unknown provider {tracker_provider}")
 
 
 if __name__ == "__main__":
