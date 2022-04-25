@@ -3,8 +3,8 @@ The OCP resources should be tested via [conftest](https://github.com/open-policy
 The tests use [BATS](https://github.com/bats-core/bats-core) as a test framework.
 
 ## Executing Locally
-```bash
-bats _test/conftest.sh
+```
+make conf-tests
 ```
 
 ## Policies which already exist

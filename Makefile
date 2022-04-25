@@ -105,6 +105,12 @@ test-prometheusrules: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	./_test/test_prometheusrules
 
+# Conf tests
+.PHONY: conf-tests
+conf-tests: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./_test/conftest.sh
+
 # Formatting
 
 .PHONY: format black isort format-check black-check isort-check

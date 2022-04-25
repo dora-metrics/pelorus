@@ -5,6 +5,9 @@ pytest
 # Also used by the github unittests.yml workflow
 coverage
 
+# Used by bats in the conftests
+yq
+
 # Used by ./scripts/lib/charts.py
 semver
 
