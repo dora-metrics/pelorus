@@ -65,31 +65,41 @@ class JiraFailureCollector(AbstractFailureCollector):
         if self.projects is not None:
             query_string = query_string + " and project in (" + self.projects + ")"
 
-        jira_issues = jira.search_issues(query_string)
         critical_issues = []
-        for issue in jira_issues:
-            logging.debug(issue)
-            logging.debug(
-                "Found issue opened: {}, {}: {}".format(
-                    str(issue.fields.created), issue.key, issue.fields.summary
-                )
-            )
-            # Create the JiraFailureMetric
-            created_ts = self.convert_timestamp(issue.fields.created)
-            resolution_ts = None
-            if issue.fields.resolutiondate:
+
+        try:
+            jira_issues = jira.search_issues(query_string)
+            for issue in jira_issues:
+                logging.debug(issue)
                 logging.debug(
-                    "Found issue close: {}, {}: {}".format(
-                        str(issue.fields.resolutiondate),
-                        issue.key,
-                        issue.fields.summary,
+                    "Found issue opened: {}, {}: {}".format(
+                        str(issue.fields.created), issue.key, issue.fields.summary
                     )
                 )
-                resolution_ts = self.convert_timestamp(issue.fields.resolutiondate)
-            tracker_issue = TrackerIssue(
-                issue.key, created_ts, resolution_ts, self.get_app_name(issue)
-            )
-            critical_issues.append(tracker_issue)
+                # Create the JiraFailureMetric
+                created_ts = self.convert_timestamp(issue.fields.created)
+                resolution_ts = None
+                if issue.fields.resolutiondate:
+                    logging.debug(
+                        "Found issue close: {}, {}: {}".format(
+                            str(issue.fields.resolutiondate),
+                            issue.key,
+                            issue.fields.summary,
+                        )
+                    )
+                    resolution_ts = self.convert_timestamp(issue.fields.resolutiondate)
+                tracker_issue = TrackerIssue(
+                    issue.key, created_ts, resolution_ts, self.get_app_name(issue)
+                )
+                critical_issues.append(tracker_issue)
+        except JIRAError as error:
+            if error.status_code == 400:
+                logging.error(
+                    "Status: %s, Error Response: %s", error.status_code, error.text
+                )
+                logging.info("JIRA query: %s", query_string)
+            else:
+                raise
 
         return critical_issues
 

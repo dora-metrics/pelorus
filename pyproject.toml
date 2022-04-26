@@ -8,3 +8,4 @@ testpaths = ["exporters/tests"]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')"
 ]
+log_cli = true

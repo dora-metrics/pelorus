@@ -99,3 +99,29 @@ def test_jira_prometheus_register(
     )
 
     REGISTRY.register(collector)  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "server, username, apikey",
+    [
+        (
+            "https://pelorustest.atlassian.net",
+            "fake@user.com",
+            "WIEds4uZHiCGnrtmgQPn9E7D",
+        )
+    ],
+)
+def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatch):
+    class FakeJira(object):
+        def search_issues(self, issues):
+            raise JIRAError(status_code=400, text="Fake search error")
+
+    def mock_jira_connect(self):
+        return FakeJira()
+
+    monkeypatch.setattr(JiraFailureCollector, "_connect_to_jira", mock_jira_connect)
+
+    collector = JiraFailureCollector(
+        user=username, apikey=apikey, server=server, projects=None
+    )
+    collector.search_issues()
