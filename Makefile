@@ -23,8 +23,12 @@ endif
 CHART_TEST=$(shell which ct)
 
 SHELLCHECK=$(shell which shellcheck)
-SHELL_SCRIPTS=./scripts/pre-commit ./scripts/setup-pre-commit-hook ./demo/demo-tekton ./scripts/run-integration-tests
-
+SHELL_SCRIPTS=./demo/demo-tekton \
+       scripts/create_release_pr \
+       scripts/install_dev_tools \
+       scripts/pre-commit \
+       scripts/run-mockoon-tests \
+       scripts/setup-pre-commit-hook
 
 .PHONY: default
 default: \
@@ -82,12 +86,18 @@ minor-release:
 major-release:
 	./scripts/create_release_pr -m
 
+.PHONY: mockoon-tests
+mockoon-tests: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/run-mockoon-tests
+
 # Integration tests
 
 .PHONY: integration-tests
 integration-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-integration-tests
+	coverage run -m pytest -rap -m "integration" && \
+	coverage report
 
 # Unit tests
 .PHONY: unit-tests
@@ -96,7 +106,7 @@ unit-tests: $(PELORUS_VENV)
   # because using (A)ll includes stdout
   # -m filters out integration tests
 	. ${PELORUS_VENV}/bin/activate && \
-	coverage run -m pytest -rap -m "not integration" && \
+	coverage run -m pytest -rap -m "not integration and not mockoon" && \
 	coverage report
 
 # Prometheus ruels

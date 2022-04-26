@@ -286,12 +286,12 @@ if should_cli_be_installed "bats" "${cli_tools_arr[@]}" && \
     # Get the absolute path of VENV. This should be platform independent
     pushd "${VENV}" || exit
       ABS_VENV_PATH=$(pwd)
-    popd
+    popd || exit
     pushd "${DWN_DIR}" || exit
       git clone "${BATS_REPO_URL}" bats-core-upstream
       pushd bats-core-upstream || exit
         ./install.sh "${ABS_VENV_PATH}"
-      popd
+      popd || exit
       rm -rf bats-core-upstream
-    popd
+    popd || exit
 fi

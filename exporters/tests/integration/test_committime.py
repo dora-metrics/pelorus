@@ -80,7 +80,7 @@ class CommitMetricEssentials:
         return CommitMetricEssentials(**args)
 
 
-@pytest.mark.integration
+@pytest.mark.mockoon
 def test_github_provider():
     collector = setup_collector()
 
