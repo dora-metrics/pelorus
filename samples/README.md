@@ -8,8 +8,12 @@
 ```
 oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --namespace pelorus
 ```
-4. Run `helm install operators charts/operators --namespace pelorus`
-5. Update the values.yaml file with the following:
+4. Create a build webhook secret: 
+```
+oc create secret generic mongodb-build-webhook --from-literal=WebHookSecretKey=<secret>
+```
+5. Run `helm install operators charts/operators --namespace pelorus`
+6. Update the values.yaml file with the following:
 ```
 exporters:
   instances:
@@ -31,7 +35,7 @@ exporters:
     source_context_dir: exporters/
     extraEnv:
     - name: APP_FILE
-      value: genericexporter/app.py
+      value: committime/app.py
     - name: LOG_LEVEL
       value: DEBUG
     source_ref: master
