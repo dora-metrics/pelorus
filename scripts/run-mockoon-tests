@@ -83,7 +83,7 @@ fi
 
 # Run Mockoon container
 echo "Running mockoon container"
-RUNNING_ID=$("${CONTAINER_ENGINE}" run --name="${TEST_CONTAINER_NAME}" -d -v "${MOCK_JSON}":/data -p "${MOCKOON_PORT}":"${MOCKOON_PORT}" "${MOCKOON_CONTAINER}" -d /data)
+RUNNING_ID=$("${CONTAINER_ENGINE}" run --name="${TEST_CONTAINER_NAME}" -d -v "${MOCK_JSON}":/data:Z -p "${MOCKOON_PORT}":"${MOCKOON_PORT}" "${MOCKOON_CONTAINER}" -d /data)
 
 if [ "${RUNNING_ID}" == "" ]; then
     echo "Mockoon is not working as expected."
