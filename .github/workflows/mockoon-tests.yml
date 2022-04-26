@@ -1,17 +1,19 @@
-name: Integration Tests
+name: Mockoon Tests
 on:
   push:
     paths:
       - 'exporters/**'
-      - 'pyproject.toml'
-      - '.github/workflows/integration-tests.yml'
+      - 'mocks/**'
+      - '!mocks/README.md'
+      - '.github/workflows/mockoon-tests.yml'
       - 'Makefile'
 
   pull_request:
     paths:
       - 'exporters/**'
-      - 'pyproject.toml'
-      - '.github/workflows/integration-tests.yml'
+      - 'mocks/**'
+      - '!mocks/README.md'
+      - '.github/workflows/mockoon-tests.yml'
       - 'Makefile'
 
 jobs:
@@ -34,6 +36,6 @@ jobs:
         run: |
           make dev-env
 
-      - name: Run integration-test
+      - name: Run mockoon-test
         run: |
-          make integration-tests
+          make mockoon-tests

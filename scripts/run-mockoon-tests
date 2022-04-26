@@ -106,7 +106,7 @@ done
 # Remove exit trap, so we can propagate exit value from pytest
 trap - EXIT
 
-# Run integration tests
-pytest -m integration
+# Run mockoon tests
+pytest -rap -m mockoon
 pytest_exit=$?
 cleanup_and_exit $pytest_exit
