@@ -27,13 +27,10 @@ from failure.collector_jira import JiraFailureCollector
 
 def setup_jira_collector(server, username, apikey) -> JiraFailureCollector:
     tracker_provider = "jira"
-
     projects = None
-
     jira_collector = TrackerFactory.getCollector(
         username, apikey, server, projects, tracker_provider
     )
-
     return cast(JiraFailureCollector, jira_collector)
 
 
@@ -49,12 +46,9 @@ def setup_jira_collector(server, username, apikey) -> JiraFailureCollector:
 )
 @pytest.mark.integration
 def test_jira_connection(server, username, apikey):
-
     collector = setup_jira_collector(server, username, apikey)
-
     with pytest.raises(JIRAError) as context_ex:
         collector._connect_to_jira()
-
     assert (
         "You are not authenticated. Authentication required to perform this operation."
         in str(context_ex.value)
@@ -67,12 +61,9 @@ def test_jira_connection(server, username, apikey):
 )
 @pytest.mark.integration
 def test_jira_pass_connection(server, username, apikey):
-
     collector = setup_jira_collector(server, username, apikey)
-
     with pytest.raises(JIRAError) as context_ex:
         collector._connect_to_jira()
-
     assert "Basic authentication with passwords is deprecated" in str(context_ex.value)
 
 
@@ -93,7 +84,6 @@ def test_jira_prometheus_register(
         return []
 
     monkeypatch.setattr(JiraFailureCollector, "search_issues", mock_search_issues)
-
     collector = JiraFailureCollector(
         user=username, apikey=apikey, server=server, projects=None
     )
@@ -113,7 +103,7 @@ def test_jira_prometheus_register(
 )
 def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatch):
     class FakeJira(object):
-        def search_issues(self, issues):
+        def search_issues(self, issues, startAt=0, maxResults=50, fields=None):
             raise JIRAError(status_code=400, text="Fake search error")
 
     def mock_jira_connect(self):

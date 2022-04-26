@@ -25,6 +25,10 @@ from jira.exceptions import JIRAError
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
 
+# One query limit, exporter will query multiple times.
+# Do not exceed 100 as JIRA won't return more.
+JIRA_SEARCH_RESULTS = 50
+
 
 class JiraFailureCollector(AbstractFailureCollector):
     """
@@ -60,15 +64,32 @@ class JiraFailureCollector(AbstractFailureCollector):
 
     def search_issues(self):
         jira = self._connect_to_jira()
-        # TODO FIXME This may need to be modified to suit needs and have a time period.
-        query_string = "type=bug and priority=highest"
-        if self.projects is not None:
-            query_string = query_string + " and project in (" + self.projects + ")"
 
         critical_issues = []
 
         try:
-            jira_issues = jira.search_issues(query_string)
+            # TODO FIXME This may need to be modified to suit needs and have a time period.
+            query_string = "type=bug and priority=highest"
+            query_result_fields = "summary,labels,created,resolutiondate"
+
+            if self.projects is not None:
+                query_string = query_string + " AND project in (" + self.projects + ")"
+
+            jira_issues = []
+            start_at = 0
+            while True:
+                jira_search_results = jira.search_issues(
+                    query_string,
+                    startAt=start_at,
+                    maxResults=JIRA_SEARCH_RESULTS,
+                    fields=query_result_fields,
+                )
+                jira_issues += jira_search_results.iterable
+                start_at += JIRA_SEARCH_RESULTS
+                logging.info("Getting jira results: %s" % start_at)
+                if start_at >= jira_search_results.total:
+                    break
+
             for issue in jira_issues:
                 logging.debug(issue)
                 logging.debug(
