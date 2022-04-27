@@ -20,6 +20,7 @@ DEFAULT_TRACKER_APP_LABEL = "unknown"
 DEFAULT_TRACKER_APP_FIELD = "u_application"
 
 
+# region: logging setup
 def _setup_logging():
     loglevel = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
     numeric_level = getattr(logging, loglevel, None)
@@ -37,6 +38,25 @@ def _setup_logging():
 
 
 _setup_logging()
+
+
+def print_version(collector_type: str):
+    """
+    Print the version of the currently running collector.
+    Gets this information from environment variables set by an S2I build.
+    """
+    repo, ref, commit = (
+        os.environ.get(f"OPENSHIFT_BUILD_{var.upper()}")
+        for var in "source reference commit".split()
+    )
+    if repo and ref and commit:
+        print(
+            f"Running {collector_type} exporter from {repo}, ref {ref} (commit {commit})"
+        )
+    else:
+        print(f"Running {collector_type} exporter. No version information found.")
+
+
 # endregion
 
 # A NamespaceSpec lists namespaces to restrict the search to.

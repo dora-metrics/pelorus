@@ -43,6 +43,7 @@ class GitFactory:
 
 
 if __name__ == "__main__":
+    pelorus.print_version("commit time")
     pelorus.upgrade_legacy_vars()
 
     pelorus.load_kube_config()
