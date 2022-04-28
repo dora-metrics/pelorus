@@ -28,6 +28,7 @@ class DeployTimeCollector:
         self.prod_label = prod_label
         self._warned_missing_replicas = set()
         self.app_label = pelorus.get_app_label()
+        self._warned_missing_pods = set()
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
         logging.info("collect: start")
@@ -37,7 +38,7 @@ class DeployTimeCollector:
             labels=["namespace", "app", "image_sha"],
         )
 
-        namespaces = self.get_and_log_namespaces()
+        namespaces = self._get_and_log_namespaces()
         if not namespaces:
             return []
 
@@ -58,7 +59,7 @@ class DeployTimeCollector:
             )
             yield (metric)
 
-    def get_and_log_namespaces(self) -> set[str]:
+    def _get_and_log_namespaces(self) -> set[str]:
         """
         Get the set of namespaces to watch, and log what they are.
         They will be either:
@@ -105,11 +106,38 @@ class DeployTimeCollector:
         full_path = f"{rc.metadata.namespace}/{rc.metadata.name}"
         if full_path not in self._warned_missing_replicas:
             logging.warn(
-                f"{rc.kind} {full_path} is missing app label {self.app_label}, skipping."
+                "%s %s is missing app label %s, skipping.",
+                rc.kind,
+                full_path,
+                self.app_label,
             )
             self._warned_missing_replicas.add(full_path)
 
         return None
+
+    def _warn_for_pods_missing_labels(self, pod_resource, namespaces: set[str]):
+        """
+        Log a single warning for pods that are missing the required app label.
+        """
+        pods = pod_resource.get(
+            label_selector=f"!{self.app_label}",
+            field_selector="status.phase=Running",
+        ).items
+        for pod in pods:
+            namespace = pod.metadata.namespace
+
+            if namespace not in namespaces:
+                continue
+
+            full_path = f"{namespace}/{pod.metadata.name}"
+
+            if full_path not in self._warned_missing_pods:
+                logging.warn(
+                    "Pod %s is missing app label %s, skipping.",
+                    full_path,
+                    self.app_label,
+                )
+                self._warned_missing_pods.add(full_path)
 
     def generate_metrics(
         self,
@@ -127,6 +155,9 @@ class DeployTimeCollector:
 
         # get all running Pods with the app label
         v1_pods = self.client.resources.get(api_version="v1", kind="Pod")
+
+        self._warn_for_pods_missing_labels(v1_pods, namespaces)
+
         pods = v1_pods.get(
             label_selector=self.app_label,
             field_selector="status.phase=Running",
