@@ -47,7 +47,6 @@ class TrackerFactory:
 
 
 if __name__ == "__main__":
-    pelorus.print_version("failure")
     logging.info("===== Starting Failure Collector =====")
     if pelorus.missing_configs(REQUIRED_CONFIG):
         print("This program will exit.")

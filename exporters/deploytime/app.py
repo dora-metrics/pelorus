@@ -230,7 +230,6 @@ def get_replicas(
 
 
 if __name__ == "__main__":
-    pelorus.print_version("deploy time")
     pelorus.load_kube_config()
     k8s_config = client.Configuration()
     k8s_client = client.api_client.ApiClient(configuration=k8s_config)
