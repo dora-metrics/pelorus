@@ -33,9 +33,18 @@ SHELL_SCRIPTS=./demo/demo-tekton \
 .PHONY: default
 default: \
   dev-env
-  
+
 .PHONY: all
 all: default
+
+# note the following is required for the makefile help
+## TARGET: DESCRIPTION
+## ------: -----------
+## help: print each make target with a description
+.PHONY: help
+help:
+	@echo ""
+	@(printf ""; sed -n 's/^## //p' Makefile) | column -t -s :
 
 
 # Environment setup
@@ -64,10 +73,12 @@ git-blame:
 .git/hooks/pre-commit: scripts/pre-commit
 	./scripts/setup-pre-commit-hook
 
+## cli_dev_tools: install all necessary CLI dev tools
 .PHONY: cli_dev_tools
 cli_dev_tools:
 	./scripts/install_dev_tools -v $(PELORUS_VENV)
 
+## dev-env: set up everything needed for development (install tools, set up virtual environment, git configuration)
 dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
          .git/hooks/pre-commit
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
@@ -92,7 +103,7 @@ mockoon-tests: $(PELORUS_VENV)
 	./scripts/run-mockoon-tests
 
 # Integration tests
-
+## integration-tests: pytest -rap -m integration
 .PHONY: integration-tests
 integration-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
@@ -100,6 +111,7 @@ integration-tests: $(PELORUS_VENV)
 	coverage report
 
 # Unit tests
+## unit-tests: pytest everything minus integration and mockoon
 .PHONY: unit-tests
 unit-tests: $(PELORUS_VENV)
   # -r: show extra test summaRy: (a)ll except passed, (p)assed
@@ -110,12 +122,14 @@ unit-tests: $(PELORUS_VENV)
 	coverage report
 
 # Prometheus ruels
+## test-prometheusrules: test prometheus with data in _test/test_promethusrules
 .PHONY: test-prometheusrules
 test-prometheusrules: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	./_test/test_prometheusrules
 
 # Conf tests
+## conf-tests: execute _test/conftest.sh
 .PHONY: conf-tests
 conf-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
@@ -124,9 +138,10 @@ conf-tests: $(PELORUS_VENV)
 # Formatting
 
 .PHONY: format black isort format-check black-check isort-check
-format: $(PELORUS_VENV) black isort 
+format: $(PELORUS_VENV) black isort
 
-format-check: $(PELORUS_VENV) black-check isort-check 
+## format-check: check that all python code is properly formatted
+format-check: $(PELORUS_VENV) black-check isort-check
 
 black: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
@@ -148,6 +163,7 @@ isort-check: $(PELORUS_VENV)
 # Linting
 
 .PHONY: lint pylava chart-lint chart-lint-optional shellcheck shellcheck-optional
+## lint: lint python code, shell scripts, and helm charts
 lint: pylava chart-lint-optional shellcheck-optional
 
 pylava: $(PELORUS_VENV)
@@ -196,6 +212,7 @@ test: $(PELORUS_VENV)
 
 # Cleanup
 
+## clean-dev-env: remove the virtual environment and clean up all .pyc files
 clean-dev-env:
 	rm -rf ${PELORUS_VENV}
 	find . -iname "*.pyc" -delete
