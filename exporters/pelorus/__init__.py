@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 from abc import ABC
 from datetime import datetime, timezone
 from typing import Optional, Sequence
@@ -20,7 +21,32 @@ DEFAULT_TRACKER_APP_LABEL = "unknown"
 DEFAULT_TRACKER_APP_FIELD = "u_application"
 
 
+def _print_version():
+    """
+    Print the version of the currently running collector.
+    Gets the collector name from inspecting `__main__`.
+    Gets version information from environment variables set by an S2I build.
+    """
+    import __main__
+
+    # name of dir above app.py
+    exporter_name = pathlib.PurePath(__main__.__file__).parent.name
+
+    repo, ref, commit = (
+        os.environ.get(f"OPENSHIFT_BUILD_{var.upper()}")
+        for var in "source reference commit".split()
+    )
+    if repo and ref and commit:
+        print(
+            f"Running {exporter_name} exporter from {repo}, ref {ref} (commit {commit})"
+        )
+    else:
+        print(f"Running {exporter_name} exporter. No version information found.")
+
+
+# region: logging setup
 def _setup_logging():
+    _print_version()
     loglevel = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
     numeric_level = getattr(logging, loglevel, None)
     if not isinstance(numeric_level, int):
@@ -37,6 +63,8 @@ def _setup_logging():
 
 
 _setup_logging()
+
+
 # endregion
 
 # A NamespaceSpec lists namespaces to restrict the search to.
