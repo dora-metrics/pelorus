@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import logging
-import os
 import time
 from distutils.util import strtobool
 
@@ -50,20 +49,22 @@ if __name__ == "__main__":
     k8s_client = client.api_client.ApiClient(configuration=k8s_config)
     dyn_client = DynamicClient(k8s_client)
 
-    username = os.environ.get("GIT_USER", "")
-    token = os.environ.get("GIT_TOKEN", "")
+    username = pelorus.utils.get_env_var("GIT_USER", "")
+    token = pelorus.utils.get_env_var("GIT_TOKEN", "")
     if not username and not token:
         logging.info(
             "No GIT_USER and no GIT_TOKEN given. This is okay for public repositories only."
         )
-    git_api = os.environ.get("GIT_API")
-    git_provider = os.environ.get("GIT_PROVIDER", pelorus.DEFAULT_GIT)
+    git_api = pelorus.utils.get_env_var("GIT_API", pelorus.DEFAULT_GIT_API)
+    git_provider = pelorus.utils.get_env_var("GIT_PROVIDER", pelorus.DEFAULT_GIT)
     tls_verify = bool(
-        strtobool(os.environ.get("TLS_VERIFY", pelorus.DEFAULT_TLS_VERIFY))
+        strtobool(pelorus.utils.get_env_var("TLS_VERIFY", pelorus.DEFAULT_TLS_VERIFY))
     )
     namespaces = None
-    if os.environ.get("NAMESPACES") is not None:
-        namespaces = [proj.strip() for proj in os.environ.get("NAMESPACES").split(",")]
+    if pelorus.utils.get_env_var("NAMESPACES") is not None:
+        namespaces = [
+            proj.strip() for proj in pelorus.utils.get_env_var("NAMESPACES").split(",")
+        ]
     apps = None
     start_http_server(8080)
 

@@ -1,0 +1,12 @@
+# For details refer to the documentation:
+#       https://pelorus.readthedocs.io/en/latest/Configuration/#configuring-exporters
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pelorus-config
+  namespace: pelorus
+data:
+  PELORUS_DEFAULT_KEYWORD: "default"   # default  |  Other ConfigMap values "default" keyword
+  APP_LABEL: "default"                 # app.kubernetes.io/name  |  Deploy and Commit time exporters - label key used to identify applications
+  LOG_LEVEL: "default"                 # INFO  |  Log level, DEBUG, INFO, WARNING or ERROR

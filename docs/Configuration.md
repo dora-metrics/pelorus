@@ -2,9 +2,10 @@
 
 ## Configuring The Pelorus Stack
 
-The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [provided in this repo](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml), and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `values.yaml` and applying the changes like so:
+The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [values.yaml](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) file and [charts/pelorus/configmaps/](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/configmaps) directory, and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `charts/pelorus/configmaps` files with `values.yaml` and applying the changes like so:
 
 ```
+oc apply -f `myclusterconfigs/pelorus/configmaps
 helm upgrade pelorus charts/pelorus --namespace pelorus --values myclusterconfigs/pelorus/values.yaml
 ```
 
@@ -21,61 +22,70 @@ The following configurations may be made through the `values.yaml` file:
 
 An _exporter_ is a data collection application that pulls data from various tools and platforms and exposes it such that it can be consumed by Pelorus dashboards. Each exporter gets deployed individually alongside the core Pelorus stack.
 
-Exporters can be deployed and configured via a list of `exporters.instances` inside the `values.yaml` file. Some exporters also require secrets to be created when integrating with external tools and platforms. A sample exporter configuration may look like this:
+There are currently three _exporter_ types which needs to be specified via `exporters.instances.exporter_type` value, those are `deploytime`, `failure` or `comittime`.
+
+
+Exporters can be deployed via a list of `exporters.instances` inside the `values.yaml` file that corresponds to the OpenShift ConfigMap configurations from the `charts/pelorus/configmaps/` directory. Some exporters also require secrets to be created when integrating with external tools and platforms. A sample exporter configuration may look like this:
 
 ```yaml
 exporters:
   instances:
-    # Values file for exporter helm chart
   - app_name: deploytime-exporter
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-      value: deploytime/app.py
-    source_url: https://github.com/konveyor/pelorus.git
+    exporter_type: deploytime
+    env_from_configmaps:
+    - pelorus-config
+    - deploytime-config
 ```
 
-Additionally, you may want to deploy a single exporter multiple times to gather data from different sources. For example, if you wanted to pull commit data from both GitHub and a private GitHub Enterprise instance, you would deploy two instances of the Commit Time Exporter like so:
+Additionally, you may want to deploy a single exporter multiple times to gather data from different sources. For example, if you wanted to pull commit data from both GitHub and a private GitHub Enterprise instance, you would deploy two instances of the Commit Time Exporter.
+
+Each exporter additionally takes a unique set of environment variables to further configure its integrations and behavior. These can be set by using example ConfigMap object configurations similarly to the kubernetes secrets and listing them under `env_from_configmaps` or under `env_from_secrets` accordingly. As shown below.
 
 ```yaml
 exporters:
   instances:
   - app_name: committime-github
+    exporter_type: comittime
     env_from_secrets:
     - github-credentials
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-      value: committime/app.py
-    source_url: https://github.com/konveyor/pelorus.git
+    env_from_configmaps:
+    - pelorus-config
+    - committime-config
+
   - app_name: committime-gh-enterprise
+    exporter_type: comittime
     env_from_secrets:
     - github-enterprise-credentials
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-      value: committime/app.py
-    source_url: https://github.com/konveyor/pelorus.git
+    env_from_configmaps:
+    - pelorus-config
+    - comittime-enterprise-config
 ```
 
-Each exporter additionally takes a unique set of environment variables to further configure its integrations and behavior. These can be set with literal keys names and values under `extraEnv` or by creating a kubernetes secret and listing the secret name under `env_from_secrets`. As detailed below.
+### ConfigMap configuration values
 
-Any individual exporter can use a specific version of itself by specifying a git reference under `source_ref`. For example:
+Configuration for each exporter is done via ConfigMap objects. Best practice is to store the folder outside of local Pelorus Git repository and modify accordingly.
+Each ConfigMap must be in a separate file and must be applied to the cluster before deploying pelorus helm chart.
 
-```yaml
-exporters:
-  instances:
-    # Values file for exporter helm chart
-  - app_name: deploytime-exporter
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-      value: deploytime/app.py
-    source_ref: master
-    source_url: https://github.com/konveyor/pelorus.git
+ConfigMap can be applied individually or all together:
+```shell
+# Only deploytime ConfigMap
+oc apply -f charts/pelorus/configmaps/deploytime.yaml
+
+# All at once
+oc apply -f charts/pelorus/configmaps/
 ```
 
-If not specified, it will use the latest stable release tag.
+Example ConfigMap for the `deploytime-exporter` with the unique name `deploytime-config`:
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deploytime-config
+  namespace: pelorus
+data:
+  PROD_LABEL: "default"    # "" / PROD_LABEL is ignored if NAMESPACES are provided
+  NAMESPACES: "default"    # ""
+```
 
 ### Commit Time Exporter
 
@@ -99,24 +109,23 @@ Create a secret containing your Git username, token, and API.  An API example is
 oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
 ```
 
-#### Sample Values
+#### Instance Config
 
 ```yaml
 exporters:
   instances:
   - app_name: committime-exporter
+    exporter_type: committime
     env_from_secrets:
     - github-secret
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-    value: committime/app.py
-    source_url: https://github.com/konveyor/pelorus.git
+    env_from_configmaps:
+    - pelorus-config
+    - committime-config
 ```
 
-#### Environment Variables
+#### ConfigMap Data Values
 
-This exporter provides several configuration options, passed via environment variables.
+This exporter provides several configuration options, passed via `pelorus-config` and `committime-config` variables. User may define own ConfigMaps and pass to the committime exporter in a similar way.
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
@@ -127,9 +136,7 @@ This exporter provides several configuration options, passed via environment var
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-| DEPRECATED `GITHUB_USER` | no | User's github username | unset |
-| DEPRECATED `GITHUB_TOKEN` | no | User's Github API Token | unset |
-| DEPRECATED `GITHUB_API` | no | Github API FQDN.  This allows the override for Github Enterprise users. | `api.github.com` |
+| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
 
 ### Deploy Time Exporter
 
@@ -137,9 +144,21 @@ The job of the deploy time exporter is to capture the timestamp at which a deplo
 
 In order for proper collection, we require that all deployments associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label.
 
-#### Environment Variables
+#### Instance Config
 
-This exporter provides several configuration options, passed via environment variables
+```yaml
+exporters:
+  instances:
+  - app_name: deploytime-exporter
+    exporter_type: deploytime
+    env_from_configmaps:
+    - pelorus-config
+    - deploytime-config
+```
+
+#### ConfigMap Data Values
+
+This exporter provides several configuration options, passed via `pelorus-config` and `deploytime-config` variables. User may define own ConfigMaps and pass to the committime exporter in a similar way.
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
@@ -147,6 +166,7 @@ This exporter provides several configuration options, passed via environment var
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `PROD_LABEL` | no | Changes the label key used to identify namespaces that are considered production environments. | unset; matches all namespaces |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
+| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
 
 ### Failure Time Exporter
 
@@ -176,9 +196,22 @@ oc create secret generic snow-secret \
 -n pelorus
 ```
 
-#### Environment Variables
+#### Instance Config
 
-This exporter provides several configuration options, passed via environment variables
+```yaml
+exporters:
+  instances:
+  - app_name: failuretime-exporter
+    exporter_type: failure
+    env_from_secrets:
+    - jira-secret
+    env_from_configmaps:
+    - pelorus-config
+    - failuretime-config
+```
+
+#### ConfigMap Data Values
+This exporter provides several configuration options, passed via `pelorus-config` and `failuretime-config` variables. User may define own ConfigMaps and pass to the committime exporter in a similar way.
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
@@ -189,6 +222,8 @@ This exporter provides several configuration options, passed via environment var
 | `TOKEN` | yes | User's API Token | unset |
 | `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
 | `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2` | unset |
+| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
+
 
 ### ServiceNow exporter details
 

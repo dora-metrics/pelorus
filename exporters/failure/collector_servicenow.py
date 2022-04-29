@@ -1,5 +1,4 @@
 import logging
-import os
 from datetime import datetime
 
 import pytz
@@ -21,14 +20,14 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
     """
 
     def __init__(self, user, apikey, server):
-        if not os.environ.get("APP_FIELD"):
+        if not pelorus.utils.get_env_var("APP_FIELD"):
             logging.warn(
                 "Missing Application Name Field Parameter defaulting to '%s'",
                 pelorus.DEFAULT_TRACKER_APP_FIELD,
             )
             self.app_name_field = pelorus.DEFAULT_TRACKER_APP_FIELD
         else:
-            self.app_name_field = os.environ.get("APP_FIELD")
+            self.app_name_field = pelorus.utils.get_env_var("APP_FIELD")
         self.page_size = 100
         super().__init__(server, user, apikey)
 

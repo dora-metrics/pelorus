@@ -1,0 +1,15 @@
+# For details refer to the documentation:
+#       https://pelorus.readthedocs.io/en/latest/Configuration/#commit-time-exporter
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: committime-config
+  namespace: pelorus
+data:
+  GIT_USER: "default"        # ""  |  User's github username, can be overriden by env_from_secrets
+  GIT_TOKEN: "default"       # ""  |  User's Github API Token, can be overriden by env_from_secrets
+  GIT_API: "default"         # api.github.com  |  Github Enterprise API FQDN, can be overriden by env_from_secrets
+  GIT_PROVIDER: "default"    # github  |  github, gitlab, or bitbucket
+  TLS_VERIFY: "default"      # True
+  NAMESPACES:                #     | Restricts the set of namespaces,  comma separated value "myapp-ns-dev,otherapp-ci"

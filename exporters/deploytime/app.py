@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 import time
 from typing import Iterable, Optional
@@ -236,7 +235,7 @@ if __name__ == "__main__":
     dyn_client = DynamicClient(k8s_client)
     namespaces = {
         stripped
-        for proj in os.environ.get("NAMESPACES", "").split(",")
+        for proj in pelorus.utils.get_env_var("NAMESPACES", "").split(",")
         if (stripped := proj.strip())
     }
     prod_label = pelorus.get_prod_label()

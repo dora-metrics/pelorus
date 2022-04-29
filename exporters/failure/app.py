@@ -16,7 +16,6 @@
 #
 
 import logging
-import os
 import sys
 import time
 from typing import Union
@@ -52,16 +51,16 @@ if __name__ == "__main__":
         print("This program will exit.")
         sys.exit(1)
     projects = None
-    if os.environ.get("PROJECTS") is not None:
+    if pelorus.utils.get_env_var("PROJECTS") is not None:
         logging.info(
             "Querying issues from '%s' projects.",
-            os.environ.get("PROJECTS"),
+            pelorus.utils.get_env_var("PROJECTS"),
         )
-        projects = os.environ.get("PROJECTS")
-    username = os.environ.get("USER")
-    token = os.environ.get("TOKEN")
-    tracker_api = os.environ.get("SERVER")
-    tracker_provider = os.environ.get("PROVIDER", pelorus.DEFAULT_TRACKER)
+        projects = pelorus.utils.get_env_var("PROJECTS")
+    username = pelorus.utils.get_env_var("USER")
+    token = pelorus.utils.get_env_var("TOKEN")
+    tracker_api = pelorus.utils.get_env_var("SERVER")
+    tracker_provider = pelorus.utils.get_env_var("PROVIDER", pelorus.DEFAULT_TRACKER)
     logging.info("Server: " + tracker_api)
     logging.info("User: " + username)
     start_http_server(8080)

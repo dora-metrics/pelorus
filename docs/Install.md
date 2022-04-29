@@ -30,6 +30,8 @@ cd pelorus
 oc create namespace pelorus
 helm install operators charts/operators --namespace pelorus
 # Verify the operators are completely installed before installing the pelorus helm chart
+oc apply -f charts/pelorus/configmaps/pelorus.yaml
+oc apply -f charts/pelorus/configmaps/deploytime.yaml
 helm install pelorus charts/pelorus --namespace pelorus
 ```
 
@@ -90,6 +92,22 @@ By default, this tool will pull in data from the cluster in which it is running.
 
 The development configuration uses same AWS S3 bucket and tracks commits and failure resolution to development:
 
+
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: failuretime-config
+  namespace: pelorus
+data:
+  PROVIDER: "servicenow"    # jira
+  SERVER:
+  USER:
+  TOKEN:
+  PROJECTS:              # Only for jira provider, comma separated list
+  APP_FIELD: "default"   # u_application / only for ServiceNow provider
+```
+
 ```
 # Define shared S3 storage
 #
@@ -107,23 +125,19 @@ deployment:
 exporters:
   instances:
   - app_name: committime-exporter
+    exporter_type: committime
     env_from_secrets:
     - github-secret
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-      value: committime/app.py
-    source_ref: master
-    source_url: https://github.com/konveyor/pelorus.git
+    env_from_configmaps:
+    - pelorus-config
+    - committime-config
   - app_name: failuretime-exporter
+    exporter_type: failure
     env_from_secrets:
     - sn-secret
-    source_context_dir: exporters/
-    extraEnv:
-    - name: APP_FILE
-      value: failure/app.py
-    source_ref: service-now-exporter
-    source_url: https://github.com/konveyor/pelorus.git
+    env_from_configmaps:
+    - pelorus-config
+    - failuretime-config
 ```
 
 #### Configure Production Cluster.
@@ -145,15 +159,10 @@ deployment:
 exporters:
   instances:
   - app_name: deploytime-exporter
-    extraEnv:
-    - name: APP_LABEL
-      value: app.kubernetes.io/name
-    - name: APP_FILE
-      value: deploytime/app.py
-    source_context_dir: exporters/
-    source_ref: master
-    source_url: https://github.com/konveyor/pelorus.git
-
+    exporter_type: deploytime
+    env_from_configmaps:
+    - pelorus-config
+    - deploytime-config
 ```
 
 
