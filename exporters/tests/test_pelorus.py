@@ -90,9 +90,9 @@ def unset_envs():
     ]
 
     for var in vars:
-        if os.getenv(var):
+        if pelorus.utils.get_env_var(var):
             del os.environ[var]
-        print("%s: %s" % (var, os.getenv(var)))
+        print("%s: %s" % (var, pelorus.utils.get_env_var(var)))
 
 
 @pytest.mark.parametrize(
