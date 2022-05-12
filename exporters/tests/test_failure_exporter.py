@@ -85,7 +85,11 @@ def test_jira_prometheus_register(
 
     monkeypatch.setattr(JiraFailureCollector, "search_issues", mock_search_issues)
     collector = JiraFailureCollector(
-        user=username, apikey=apikey, server=server, projects=None
+        user=username,
+        apikey=apikey,
+        server=server,
+        projects=None,
+        jql_query_string=None,
     )
 
     REGISTRY.register(collector)  # type: ignore
@@ -112,6 +116,10 @@ def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(JiraFailureCollector, "_connect_to_jira", mock_jira_connect)
 
     collector = JiraFailureCollector(
-        user=username, apikey=apikey, server=server, projects=None
+        user=username,
+        apikey=apikey,
+        server=server,
+        projects=None,
+        jql_query_string=None,
     )
     collector.search_issues()
