@@ -176,6 +176,19 @@ def get_env_var(var_name: str, default_value: Optional[str] = None) -> Optional[
 
     This is required for the config map to define fallback vars in a consistent way.
     """
+
+    # decision table
+    # substitute PELORUS_DEFAULT_KEYWORD with whatever it is configured to be
+    # | env var value           | default_value | result        |
+    # | ----------------------- | ------------- | ------------- |
+    # | unset                   | None          | None          |
+    # | unset                   | any str       | default_value |
+    # | ""                      | None          | ""            |
+    # | ""                      | any str       | ""            |
+    # | PELORUS_DEFAULT_KEYWORD | None          | ValueError    |
+    # | PELORUS_DEFAULT_KEYWORD | any str       | default_value |
+    # | any other str           | None          | env var value |
+    # | any other str           | any str       | env var value |
     default_keyword = os.getenv("PELORUS_DEFAULT_KEYWORD") or DEFAULT_VAR_KEYWORD
 
     env_var = os.getenv(var_name, default_value)
