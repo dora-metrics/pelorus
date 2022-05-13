@@ -147,6 +147,16 @@ class SpecializeDebugFormatter(logging.Formatter):
             self._style._fmt = prior_format
 
 
+@overload
+def get_env_var(var_name: str, default_value: str) -> str:
+    ...
+
+
+@overload
+def get_env_var(var_name: str) -> Optional[str]:
+    ...
+
+
 def get_env_var(var_name: str, default_value: Optional[str] = None) -> Optional[str]:
     """
     `get_env_var` modifies standard os.getenv behavior to allow using default python variable values
