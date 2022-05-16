@@ -33,7 +33,7 @@ def _print_version():
     exporter_name = pathlib.PurePath(__main__.__file__).parent.name
 
     repo, ref, commit = (
-        os.environ.get(f"OPENSHIFT_BUILD_{var.upper()}")
+        utils.get_env_var(f"OPENSHIFT_BUILD_{var.upper()}")
         for var in "source reference commit".split()
     )
     if repo and ref and commit:
@@ -47,7 +47,7 @@ def _print_version():
 # region: logging setup
 def _setup_logging():
     _print_version()
-    loglevel = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
+    loglevel = utils.get_env_var("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
     numeric_level = getattr(logging, loglevel, None)
     if not isinstance(numeric_level, int):
         raise ValueError("Invalid log level: %s", loglevel)
@@ -73,7 +73,7 @@ NamespaceSpec = Optional[Sequence[str]]
 
 
 def load_kube_config():
-    if "OPENSHIFT_BUILD_NAME" in os.environ:
+    if utils.get_env_var("OPENSHIFT_BUILD_NAME") is not None:
         config.load_incluster_config()
         file_namespace = open(
             "/run/secrets/kubernetes.io/serviceaccount/namespace", "r"
@@ -108,17 +108,17 @@ def convert_timestamp_to_date_time_str(timestamp, format_string="%Y-%m-%dT%H:%M:
 
 
 def get_app_label():
-    return os.getenv("APP_LABEL", DEFAULT_APP_LABEL)
+    return utils.get_env_var("APP_LABEL", DEFAULT_APP_LABEL)
 
 
 def get_prod_label():
-    return os.getenv("PROD_LABEL", DEFAULT_PROD_LABEL)
+    return utils.get_env_var("PROD_LABEL", DEFAULT_PROD_LABEL)
 
 
 def missing_configs(vars):
     missing_configs = False
     for var in vars:
-        if var not in os.environ:
+        if utils.get_env_var(var) is None:
             logging.error("Missing required environment variable '%s'." % var)
             missing_configs = True
 
@@ -126,14 +126,14 @@ def missing_configs(vars):
 
 
 def upgrade_legacy_vars():
-    username = os.environ.get("GITHUB_USER")
-    token = os.environ.get("GITHUB_TOKEN")
-    api = os.environ.get("GITHUB_API")
-    if username and not os.getenv("GIT_USER"):
+    username = utils.get_env_var("GITHUB_USER")
+    token = utils.get_env_var("GITHUB_TOKEN")
+    api = utils.get_env_var("GITHUB_API")
+    if username and not utils.get_env_var("GIT_USER"):
         os.environ["GIT_USER"] = username
-    if token and not os.getenv("GIT_TOKEN"):
+    if token and not utils.get_env_var("GIT_TOKEN"):
         os.environ["GIT_TOKEN"] = token
-    if api and not os.getenv("GIT_API"):
+    if api and not utils.get_env_var("GIT_API"):
         os.environ["GIT_API"] = api
 
 

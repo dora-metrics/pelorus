@@ -6,10 +6,13 @@ in kubernetes that are not so idiomatic to deal with.
 import contextlib
 import dataclasses
 import logging
+import os
 from typing import Any, Optional, Union, overload
 
 # sentinel value for the default kwarg to get_nested
 __GET_NESTED_NO_DEFAULT = object()
+
+DEFAULT_VAR_KEYWORD = "default"
 
 
 @overload
@@ -142,3 +145,56 @@ class SpecializeDebugFormatter(logging.Formatter):
             return logging.Formatter.format(self, record)
         finally:
             self._style._fmt = prior_format
+
+
+@overload
+def get_env_var(var_name: str, default_value: str) -> str:
+    ...
+
+
+@overload
+def get_env_var(var_name: str) -> Optional[str]:
+    ...
+
+
+def get_env_var(var_name: str, default_value: Optional[str] = None) -> Optional[str]:
+    """
+    `get_env_var` modifies standard os.getenv behavior to allow using default python variable values
+    when:
+        1. PELORUS_DEFAULT_KEYWORD is set in SHELL env and the value from PELORUS_DEFAULT_KEYWORD
+           is used for other SHELL env value, e.g.
+           export PELORUS_DEFAULT_KEYWORD="custom_default"
+           export LOG_LEVEL="custom_default"
+
+           In which case LOG_LEVEL is set to DEFAULT_LOG_LEVEL
+
+        2. DEFAULT_VAR_KEYWORD keyword is present as the SHELL env variable value, e.g.
+           unset PELORUS_DEFAULT_KEYWORD
+           export LOG_LEVEL="default"
+
+           In which case LOG_LEVEL is set to DEFAULT_LOG_LEVEL
+
+    This is required for the config map to define fallback vars in a consistent way.
+    """
+
+    # decision table
+    # substitute PELORUS_DEFAULT_KEYWORD with whatever it is configured to be
+    # | env var value           | default_value | result        |
+    # | ----------------------- | ------------- | ------------- |
+    # | unset                   | None          | None          |
+    # | unset                   | any str       | default_value |
+    # | ""                      | None          | ""            |
+    # | ""                      | any str       | ""            |
+    # | PELORUS_DEFAULT_KEYWORD | None          | ValueError    |
+    # | PELORUS_DEFAULT_KEYWORD | any str       | default_value |
+    # | any other str           | None          | env var value |
+    # | any other str           | any str       | env var value |
+    default_keyword = os.getenv("PELORUS_DEFAULT_KEYWORD") or DEFAULT_VAR_KEYWORD
+
+    env_var = os.getenv(var_name, default_value)
+    if env_var == default_keyword:
+        if default_value is None:
+            raise ValueError(f"default value not present for SHELL env var: {var_name}")
+        return default_value
+
+    return env_var
