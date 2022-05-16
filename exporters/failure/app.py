@@ -17,7 +17,6 @@
 
 import logging
 import os
-import sys
 import time
 from typing import Union
 
@@ -28,7 +27,7 @@ import pelorus
 from failure.collector_jira import JiraFailureCollector
 from failure.collector_servicenow import ServiceNowFailureCollector
 
-REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
+REQUIRED_CONFIG = ["CONFIG_REQUIRED_FOR_ALL"]
 
 
 class TrackerFactory:
@@ -37,10 +36,14 @@ class TrackerFactory:
         username, token, tracker_api, projects, tracker_provider
     ) -> Union[JiraFailureCollector, ServiceNowFailureCollector]:
         if tracker_provider == "jira":
+            pelorus.utils.check_required_config(JiraFailureCollector.REQUIRED_CONFIG)
             return JiraFailureCollector(
                 server=tracker_api, user=username, apikey=token, projects=projects
             )
         elif tracker_provider == "servicenow":
+            pelorus.utils.check_required_config(
+                ServiceNowFailureCollector.REQUIRED_CONFIG
+            )
             return ServiceNowFailureCollector(username, token, tracker_api)
         else:
             raise ValueError(f"Unknown provider {tracker_provider}")
@@ -48,9 +51,7 @@ class TrackerFactory:
 
 if __name__ == "__main__":
     logging.info("===== Starting Failure Collector =====")
-    if pelorus.missing_configs(REQUIRED_CONFIG):
-        print("This program will exit.")
-        sys.exit(1)
+    pelorus.utils.check_required_config(REQUIRED_CONFIG)
     projects = None
     if os.environ.get("PROJECTS") is not None:
         logging.info(

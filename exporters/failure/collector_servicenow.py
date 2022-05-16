@@ -20,6 +20,8 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
     Service Now implementation of a FailureCollector
     """
 
+    REQUIRED_CONFIG = ["SERVICENOWSPECIFIC"]
+
     def __init__(self, user, apikey, server):
         if not os.environ.get("APP_FIELD"):
             logging.warn(

@@ -31,11 +31,14 @@ JIRA_SEARCH_RESULTS = 50
 
 
 class JiraFailureCollector(AbstractFailureCollector):
+    REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER", "OTHERCONFIG"]
+
     """
     Jira implementation of a FailureCollector
     """
 
     def __init__(self, user, apikey, server, projects):
+
         super().__init__(server, user, apikey)
         self.projects = projects
 

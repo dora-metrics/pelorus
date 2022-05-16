@@ -7,6 +7,7 @@ import contextlib
 import dataclasses
 import logging
 import os
+import sys
 from typing import Any, Optional, Union, overload
 
 # sentinel value for the default kwarg to get_nested
@@ -198,3 +199,12 @@ def get_env_var(var_name: str, default_value: Optional[str] = None) -> Optional[
         return default_value
 
     return env_var
+
+
+# Remove function missing_config from pelorus
+def check_required_config(vars: list[str]):
+    for var in vars:
+        if get_env_var(var) is None:
+            logging.error("Missing required environment variable '%s'." % var)
+            print("This program will exit.")
+            sys.exit(1)
