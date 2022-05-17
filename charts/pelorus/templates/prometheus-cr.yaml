@@ -7,8 +7,8 @@ metadata:
 spec:
   {{- if .Values.bucket_access_point }}
   thanos:
-    baseImage: quay.io/thanos/thanos
-    version: v0.8.1
+    baseImage: {{ (split ":" .Values.images.thanos)._0 }}
+    version: "v{{ (split ':' .Values.images.thanos)._1 }}"
     objectStorageConfig:
       key: thanos.yaml
       name: thanos-objstore-config
@@ -52,7 +52,7 @@ spec:
     - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
 {{- end}}
     - -skip-auth-regex=^/metrics
-    image: image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4
+    image: {{ .Values.images.oauth_proxy }}
     name: prometheus-proxy
     ports:
     - containerPort: 9091

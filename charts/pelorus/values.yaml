@@ -27,3 +27,12 @@ exporters:
     source_url: https://github.com/konveyor/pelorus.git
 
 snapshot_schedule: "@monthly"
+
+
+# Specify images and their versions
+# override for airgap possiblities.
+images:
+  oauth_proxy: image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4
+  thanos: quay.io/thanos/thanos:v0.8.1
+  thanos_proxy: registry.redhat.io/openshift3/oauth-proxy:v3.11
+  web_terminal_tooling: quay.io/wto/web-terminal-tooling:1.2

@@ -73,7 +73,7 @@ spec:
   template:
     spec:
       containers:
-        - image: quay.io/wto/web-terminal-tooling:1.2
+        - image: {{ .Values.images.web_terminal_tooling }}
           command:
             - /bin/bash
             - -c

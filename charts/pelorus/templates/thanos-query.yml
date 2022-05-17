@@ -35,7 +35,7 @@ spec:
   {{- end }}
       containers:
       - name: thanos-query
-        image: quay.io/thanos/thanos:v0.8.1
+        image: {{ .Values.images.thanos }}
         args:
         - "query"
         - "--log.level=info"
@@ -70,7 +70,7 @@ spec:
         - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
   {{- end}}
         - -skip-auth-regex=^/metrics
-        image: registry.redhat.io/openshift3/oauth-proxy:v3.11
+        image: {{ .Values.images.thanos_proxy }}
         name: thanos-proxy
         ports:
         - containerPort: 9092
