@@ -5,7 +5,6 @@ import time
 from typing import Iterable, Optional
 
 import attr
-from kubernetes import client
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from prometheus_client import start_http_server
@@ -230,10 +229,8 @@ def get_replicas(
 
 
 if __name__ == "__main__":
-    pelorus.load_kube_config()
-    k8s_config = client.Configuration()
-    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-    dyn_client = DynamicClient(k8s_client)
+    dyn_client = pelorus.utils.get_k8s_client()
+
     namespaces = {
         stripped
         for proj in os.environ.get("NAMESPACES", "").split(",")
