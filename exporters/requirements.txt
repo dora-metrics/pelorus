@@ -1,5 +1,5 @@
 # Used by all exporters
-openshift < 0.12       # module openshift
+openshift == 0.13.1    # module openshift
 prometheus_client      # module prometheus_client
 
 # Committime exporter

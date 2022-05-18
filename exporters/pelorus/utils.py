@@ -9,6 +9,9 @@ import logging
 import os
 from typing import Any, Optional, Union, overload
 
+from kubernetes import client, config
+from openshift.dynamic import DynamicClient
+
 # sentinel value for the default kwarg to get_nested
 __GET_NESTED_NO_DEFAULT = object()
 
@@ -198,3 +201,22 @@ def get_env_var(var_name: str, default_value: Optional[str] = None) -> Optional[
         return default_value
 
     return env_var
+
+
+def get_k8s_client():
+    """
+    `get_k8s_client` provides interface to get dynamic Kubernetes client to access cluster
+    information by the exporters.
+    """
+    k8s_client = None
+    try:
+        k8sconfig = config.new_client_from_config()
+        k8s_client = DynamicClient(k8sconfig)
+    except config.config_exception.ConfigException:
+        # Try load config from cluster
+        config.load_incluster_config()
+        k8sconfig = client.Configuration().get_default_copy()
+        client.Configuration.set_default(k8sconfig)
+        k8s_client = DynamicClient(client.ApiClient(k8sconfig))
+
+    return k8s_client

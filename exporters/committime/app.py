@@ -4,8 +4,6 @@ import os
 import time
 from distutils.util import strtobool
 
-from kubernetes import client
-from openshift.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
@@ -45,10 +43,7 @@ class GitFactory:
 if __name__ == "__main__":
     pelorus.upgrade_legacy_vars()
 
-    pelorus.load_kube_config()
-    k8s_config = client.Configuration()
-    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-    dyn_client = DynamicClient(k8s_client)
+    dyn_client = pelorus.utils.get_k8s_client()
 
     username = os.environ.get("GIT_USER", "")
     token = os.environ.get("GIT_TOKEN", "")

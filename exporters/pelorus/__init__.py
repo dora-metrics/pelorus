@@ -5,8 +5,6 @@ from abc import ABC
 from datetime import datetime, timezone
 from typing import Optional, Sequence
 
-from kubernetes import config
-
 from . import utils
 
 DEFAULT_APP_LABEL = "app.kubernetes.io/name"
@@ -70,19 +68,6 @@ _setup_logging()
 # A NamespaceSpec lists namespaces to restrict the search to.
 # Use None or an empty list to include all namespaces.
 NamespaceSpec = Optional[Sequence[str]]
-
-
-def load_kube_config():
-    if utils.get_env_var("OPENSHIFT_BUILD_NAME") is not None:
-        config.load_incluster_config()
-        file_namespace = open(
-            "/run/secrets/kubernetes.io/serviceaccount/namespace", "r"
-        )
-        if file_namespace.mode == "r":
-            namespace = file_namespace.read()
-            print("namespace: %s\n" % (namespace))
-    else:
-        config.load_kube_config()
 
 
 def convert_date_time_to_timestamp(date_time, format_string="%Y-%m-%dT%H:%M:%SZ"):
