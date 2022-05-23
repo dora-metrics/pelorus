@@ -86,7 +86,7 @@ def test_github_provider():
 
     actual = [
         CommitMetricEssentials.from_commit_metric(cm)
-        for cm in collector.generate_metrics()
+        for cm in collector.generate_metrics(collector._namespaces)
     ]
 
     actual.sort(key=lambda commit: commit.commit_timestamp)

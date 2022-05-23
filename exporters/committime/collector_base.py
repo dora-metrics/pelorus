@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 from abc import abstractmethod
-from typing import Iterable
+from typing import Iterable, Optional
 
 from jsonpath_ng import parse
 from prometheus_client.core import GaugeMetricFamily
@@ -50,7 +50,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             "Commit timestamp",
             labels=["namespace", "app", "commit", "image_sha"],
         )
-        commit_metrics = self.generate_metrics()
+        commit_metrics = self.generate_metrics(self._namespaces)
         for my_metric in commit_metrics:
             logging.info(
                 "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s"
@@ -73,23 +73,25 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             )
             yield commit_metric
 
-    def generate_metrics(self) -> Iterable[CommitMetric]:
+    def generate_metrics(
+        self, watched_namespaces: Optional[str] = None
+    ) -> Iterable[CommitMetric]:
         """Method called by the collect to create a list of metrics to publish"""
         # This will loop and look at OCP builds (calls get_git_commit_time)
-        if not self._namespaces:
+
+        if not watched_namespaces:
             logging.info("No namespaces specified, watching all namespaces")
             v1_namespaces = self._kube_client.resources.get(
                 api_version="v1", kind="Namespace"
             )
-            self._namespaces = [
+            watched_namespaces = [
                 namespace.metadata.name for namespace in v1_namespaces.get().items
             ]
-        else:
-            logging.info("Watching namespaces: %s" % (self._namespaces))
+        logging.info("Watching namespaces: %s" % (watched_namespaces))
 
         # Initialize metrics list
         metrics = []
-        for namespace in self._namespaces:
+        for namespace in watched_namespaces:
             # Initialized variables
             builds = []
             apps = []
