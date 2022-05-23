@@ -97,7 +97,7 @@ oc get all -n mongo-persistent
 
 1. In your OpenShift Pelorus project page, open the link to granafa or get the link via the cli:
 ```
-oc get route -n pelorus | grep grafana
+oc get route grafana-route -o=go-template='https://{{.spec.host | printf "%s\n" }}'
 ```
 2. Navigate to *"pelorus / Software Delivery Performance - By App"*
 3. Select the todolist application
