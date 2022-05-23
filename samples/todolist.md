@@ -7,11 +7,11 @@
 
 ## Todolist application
 * We'll need a sample application to measure the commits and deployments
-  *  Fork [this repo](https://github.com/konveyor/mig-demo-apps) to https://github.com/your_org/mig-demo-apps
+  *  Fork [the konveyor mig-demo-apps repo](https://github.com/konveyor/mig-demo-apps) to https://github.com/your_org/mig-demo-apps
   * Note: We'll be using the todolist-mongo-go application
 
 ## Additional Reference
-* The definitive Pelorus install guide can be found [here](https://pelorus.readthedocs.io/en/stable/Install/)
+* [The definitive Pelorus install guide can be found on our readthedocs page.](https://pelorus.readthedocs.io/en/latest/Install/)
 
 ## Pelorus install steps
 1. Create the pelorus namespace
@@ -33,7 +33,7 @@ oc get all -n pelorus
 ***Note*** pause to allow the install to fully complete.
 
 ## Pelorus configuration
-1. Make a copy of the values.yaml file [provided in this repo](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) and save it to /var/tmp/values.yaml
+1. Make a copy of [the values.yaml file in the pelorus repo](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) ([raw link for curl-ing](https://raw.githubusercontent.com/konveyor/pelorus/master/charts/pelorus/values.yaml)) and save it to /var/tmp/values.yaml
 ```
 cp charts/pelorus/values.yaml /var/tmp/
 ```
@@ -62,7 +62,7 @@ exporters:
     source_ref: master
     source_url: https://github.com/konveyor/pelorus.git
 ```
-3. Documentation regarding values.yaml can be found [here](https://github.com/konveyor/pelorus/blob/master/docs/Configuration.md).
+3. [Documentation regarding values.yaml can be found on our readthedocs page.](https://pelorus.readthedocs.io/en/latest/Configuration/)
   Apply the updated values for Pelorus by executing:
 ```
 helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
@@ -143,7 +143,7 @@ curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.h
 
 1. Fork the Pelorus git repo
 To develop a Pelorus exporter please fork the Pelorus git source and branch
-  * Fork [this repo](https://github.com/konveyor/pelorus) to https://github.com/your_org/pelorus
+  * Fork [the pelorus repo](https://github.com/konveyor/pelorus) to https://github.com/your_org/pelorus
 
 2. If you have forked Pelorus to a private git repository
 Create a GitHub Personal Access Token and store it as a secret in Openshift:
