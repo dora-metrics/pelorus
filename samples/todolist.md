@@ -81,7 +81,7 @@ git clone https://github.com/your_org/mig-demo-apps.git
 ```
 cd mig-demo-apps/apps/todolist-mongo-go
 export GITHUB_ORG=<YOUR_REAL_GITHUB_FORK_ORG>
-sed -i 's/your_org/${GITHUB_ORG}/g' mongo-persistent.yaml
+sed -i.original 's/your_org/${GITHUB_ORG}/g' mongo-persistent.yaml
 oc create -f mongo-persistent.yaml
 ```
 
