@@ -38,7 +38,7 @@ oc get all -n pelorus
 cp charts/pelorus/values.yaml /var/tmp/
 ```
 2. Update the /var/tmp/values.yaml file with the following example:
-```
+```yaml
 exporters:
   instances:
   - app_name: deploytime-exporter
