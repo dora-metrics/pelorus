@@ -17,6 +17,7 @@
 
 import logging
 from datetime import datetime
+from typing import Any, Optional
 
 import pytz
 from jira import JIRA
@@ -28,7 +29,13 @@ from failure.collector_base import AbstractFailureCollector, TrackerIssue
 # One query limit, exporter will query multiple times.
 # Do not exceed 100 as JIRA won't return more.
 JIRA_SEARCH_RESULTS = 50
-QUERY_RESULT_FIELDS = "summary,labels,created,resolutiondate"
+QUERY_RESULT_FIELDS = (
+    "summary,labels,created,resolutiondate,status,statuscategorychangedate"
+)
+DEFAULT_JQL_SEARCH_QUERY = 'type in ("Bug") AND priority in ("Highest")'
+JQL_SEARCH_QUERY_ENV = "JIRA_JQL_SEARCH_QUERY"
+# User specified JIRA comma separated statuses for resolved issue
+RESOLVED_STATUS_ENV = "JIRA_RESOLVED_STATUS"
 
 
 class JiraFailureCollector(AbstractFailureCollector):
@@ -38,10 +45,26 @@ class JiraFailureCollector(AbstractFailureCollector):
 
     REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
 
-    def __init__(self, user, apikey, server, projects, jql_query_string):
+    def __init__(self, user, apikey, server, projects):
         super().__init__(server, user, apikey)
-        self.projects = projects
-        self.jql_query_string = jql_query_string
+        self.jql_query_string = pelorus.utils.get_env_var(
+            JQL_SEARCH_QUERY_ENV, DEFAULT_JQL_SEARCH_QUERY
+        )
+        self.jira_resolved_statuses = pelorus.utils.get_env_var(RESOLVED_STATUS_ENV)
+
+        self.query_result_fields_string = QUERY_RESULT_FIELDS
+
+        # Do not mix projects with custom JQL query
+        # Gather all fields and projects
+        if self.jql_query_string != DEFAULT_JQL_SEARCH_QUERY:
+            self.query_result_fields_string = ""
+        else:
+            if projects is not None and len(projects) > 0:
+                projects_str = '","'.join(projects.split(","))
+                self.jql_query_string = (
+                    self.jql_query_string
+                    + ' AND project in ("{}")'.format(projects_str)
+                )
 
     def _connect_to_jira(self) -> JIRA:
         """Method to connect to JIRA instance which may be cloud based
@@ -72,28 +95,15 @@ class JiraFailureCollector(AbstractFailureCollector):
         critical_issues = []
 
         try:
-            jql_query_string = None
-
-            if self.jql_query_string:
-                jql_query_string = self.jql_query_string
-            else:
-                # TODO FIXME This may need to be modified to suit needs and have a time period.
-                jql_query_string = 'type in ("Bug") AND priority in ("Highest")'
-
-                if self.projects is not None and len(self.projects) > 0:
-                    projects_str = '","'.join(self.projects.split(","))
-                    jql_query_string = (
-                        jql_query_string + ' AND project in ("{}")'.format(projects_str)
-                    )
-
+            logging.debug("JIRA JQL query: %s" % self.jql_query_string)
             jira_issues = []
             start_at = 0
             while True:
                 jira_search_results = jira.search_issues(
-                    jql_query_string,
+                    self.jql_query_string,
                     startAt=start_at,
                     maxResults=JIRA_SEARCH_RESULTS,
-                    fields=QUERY_RESULT_FIELDS,
+                    fields=self.query_result_fields_string,
                 )
                 jira_issues += jira_search_results.iterable
                 start_at += JIRA_SEARCH_RESULTS
@@ -110,16 +120,9 @@ class JiraFailureCollector(AbstractFailureCollector):
                 )
                 # Create the JiraFailureMetric
                 created_ts = self.convert_timestamp(issue.fields.created)
-                resolution_ts = None
-                if issue.fields.resolutiondate:
-                    logging.debug(
-                        "Found issue close: {}, {}: {}".format(
-                            str(issue.fields.resolutiondate),
-                            issue.key,
-                            issue.fields.summary,
-                        )
-                    )
-                    resolution_ts = self.convert_timestamp(issue.fields.resolutiondate)
+                resolution_ts = self._get_resolved_timestamp(
+                    issue, self.jira_resolved_statuses
+                )
                 tracker_issue = TrackerIssue(
                     issue.key, created_ts, resolution_ts, self.get_app_name(issue)
                 )
@@ -129,11 +132,48 @@ class JiraFailureCollector(AbstractFailureCollector):
                 logging.error(
                     "Status: %s, Error Response: %s", error.status_code, error.text
                 )
-                logging.info("JIRA query: %s", jql_query_string)
+                logging.info("JIRA query: %s", self.jql_query_string)
             else:
                 raise
 
         return critical_issues
+
+    def _get_resolved_timestamp(
+        self, issue: Any, resolved_statuses: Optional[str] = None
+    ) -> Optional[float]:
+        """
+        `_get_resolved_timestamp` finds timestamp when the issue was resolved or moved
+        to the status that is within resolved_statuses comma separated list.
+        """
+        resolution_ts = None
+        if resolved_statuses:
+            statuses = [
+                status.strip().lower() for status in resolved_statuses.split(",")
+            ]
+            if issue.fields.status.name.lower() in statuses:
+                logging.debug(
+                    "Found issue {}: {}, {}: {}".format(
+                        issue.fields.status.name,
+                        str(issue.fields.statuscategorychangedate),
+                        issue.key,
+                        issue.fields.summary,
+                    )
+                )
+                resolution_ts = self.convert_timestamp(
+                    issue.fields.statuscategorychangedate
+                )
+        else:
+            if issue.fields.resolutiondate:
+                logging.debug(
+                    "Found issue close: {}, {}: {}".format(
+                        str(issue.fields.resolutiondate),
+                        issue.key,
+                        issue.fields.summary,
+                    )
+                )
+                resolution_ts = self.convert_timestamp(issue.fields.resolutiondate)
+
+        return resolution_ts
 
     def convert_timestamp(self, date_time):
         """Convert a Jira datetime with TZ to UTC"""

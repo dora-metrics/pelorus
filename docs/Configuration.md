@@ -241,8 +241,10 @@ This exporter provides several configuration options, passed via `pelorus-config
 | `USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
 | `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
-| `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2` | unset |
+| `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2`. Value is ignored if `JIRA_JQL_SEARCH_QUERY` is defined. | unset |
 | `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
+| `JIRA_JQL_SEARCH_QUERY` | no | Used for Jira Exporter to define custom JQL query to gather list issues. Ex: `type in ("Bug") AND priority in ("Highest","Medium") AND project in ("Project_1","Project_2")` | unset |
+| `JIRA_RESOLVED_STATUS` | no | Used for Jira Exporter to define list Issue states that indicates whether issue is considered resolved. Comma separated string. ex: `Done,Closed,Resolved,Fixed` | unset |
 
 ### Github failure exporter details
 

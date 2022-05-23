@@ -22,8 +22,10 @@ from unittest import mock  # NOQA
 
 import pytest
 from jira.exceptions import JIRAError
+from jira.resources import Issue
 from prometheus_client.core import REGISTRY
 
+from failure import collector_jira
 from failure.collector_github import GithubAuthenticationError, GithubFailureCollector
 from failure.collector_jira import JiraFailureCollector
 
@@ -34,7 +36,6 @@ def setup_jira_collector(server, username, apikey) -> JiraFailureCollector:
         user=username,
         apikey=apikey,
         projects=None,
-        jql_query_string=None,
     )
 
 
@@ -93,7 +94,6 @@ def test_jira_prometheus_register(
         apikey=apikey,
         server=server,
         projects=None,
-        jql_query_string=None,
     )
 
     REGISTRY.register(collector)  # type: ignore
@@ -124,7 +124,6 @@ def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatc
         apikey=apikey,
         server=server,
         projects=None,
-        jql_query_string=None,
     )
     collector.search_issues()
 
@@ -219,3 +218,169 @@ def test_negative_label_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     collector = setup_github_collector(monkeypatch)
     critical_issues = collector.search_issues()
     assert critical_issues == []
+
+
+@pytest.mark.parametrize(
+    "server, username, apikey",
+    [
+        (
+            "https://pelorustest.atlassian.net",
+            "fake@user.com",
+            "WIEds4uZHiCGnrtmgQPn9E7D",
+        )
+    ],
+)
+def test_default_jql_search_query(server, username, apikey):
+    os.environ[
+        collector_jira.JQL_SEARCH_QUERY_ENV
+    ] = collector_jira.DEFAULT_JQL_SEARCH_QUERY
+
+    collector = JiraFailureCollector(
+        user=username,
+        apikey=apikey,
+        server=server,
+        projects="custom,projects",
+    )
+    assert collector_jira.DEFAULT_JQL_SEARCH_QUERY in collector.jql_query_string
+
+    assert collector.query_result_fields_string == collector_jira.QUERY_RESULT_FIELDS
+
+    assert 'AND project in ("custom","projects")' in collector.jql_query_string
+
+    del os.environ[collector_jira.JQL_SEARCH_QUERY_ENV]
+
+
+@pytest.mark.parametrize(
+    "server, username, apikey",
+    [
+        (
+            "https://pelorustest.atlassian.net",
+            "fake@user.com",
+            "WIEds4uZHiCGnrtmgQPn9E7D",
+        )
+    ],
+)
+def test_custom_jql_search_query(server, username, apikey):
+
+    custom_jql_query = "custom JIRA JQL query"
+
+    os.environ[collector_jira.JQL_SEARCH_QUERY_ENV] = custom_jql_query
+
+    collector = JiraFailureCollector(
+        user=username,
+        apikey=apikey,
+        server=server,
+        projects="custom,projects",
+    )
+    assert collector.jql_query_string == custom_jql_query
+
+    assert collector.query_result_fields_string == ""
+
+    assert "AND project" not in collector.jql_query_string
+
+    del os.environ[collector_jira.JQL_SEARCH_QUERY_ENV]
+
+
+@pytest.mark.parametrize(
+    "server, username, apikey",
+    [
+        (
+            "https://pelorustest.atlassian.net",
+            "fake@user.com",
+            "WIEds4uZHiCGnrtmgQPn9E7D",
+        )
+    ],
+)
+def test_no_resolved_timestamp(server, username, apikey):
+
+    collector = JiraFailureCollector(
+        user=username,
+        apikey=apikey,
+        server=server,
+        projects=None,
+    )
+
+    issue_fields = {
+        "key": "EXAMPLE-1",
+        "fields": {
+            "summary": "Example issue with no resolutiondate and no custom field",
+            "resolutiondate": None,
+        },
+    }
+    test_issue = Issue(None, None, issue_fields)
+    resolution_timestamp = collector._get_resolved_timestamp(test_issue)
+
+    assert resolution_timestamp is None
+
+
+@pytest.mark.parametrize(
+    "server, username, apikey",
+    [
+        (
+            "https://pelorustest.atlassian.net",
+            "fake@user.com",
+            "WIEds4uZHiCGnrtmgQPn9E7D",
+        )
+    ],
+)
+def test_custom_resolved_timestamp(server, username, apikey):
+
+    collector = JiraFailureCollector(
+        user=username,
+        apikey=apikey,
+        server=server,
+        projects=None,
+    )
+
+    issue_fields = {
+        "key": "EXAMPLE-1",
+        "fields": {
+            "summary": "Example issue to present custom field to calculate resolved timestamp with no resolutiondate",
+            "statuscategorychangedate": "2022-05-13T00:50:43.471+0200",
+            "resolutiondate": None,
+            "status": {
+                "name": "Done",
+            },
+        },
+    }
+    test_issue = Issue(None, None, issue_fields)
+
+    resolution_timestamp = collector._get_resolved_timestamp(
+        test_issue, "Done, Resolved, Other"
+    )
+
+    assert resolution_timestamp == 1652395843.0
+
+
+@pytest.mark.parametrize(
+    "server, username, apikey",
+    [
+        (
+            "https://pelorustest.atlassian.net",
+            "fake@user.com",
+            "WIEds4uZHiCGnrtmgQPn9E7D",
+        )
+    ],
+)
+def test_resolutiondate_timestamp(server, username, apikey):
+
+    collector = JiraFailureCollector(
+        user=username,
+        apikey=apikey,
+        server=server,
+        projects=None,
+    )
+
+    issue_fields = {
+        "key": "EXAMPLE-1",
+        "fields": {
+            "summary": "Example issue to use resolutionfield to calculate resolved timestamp",
+            "resolutiondate": "2022-04-13T00:50:43.471+0200",
+            "status": {},
+        },
+    }
+    test_issue = Issue(None, None, issue_fields)
+
+    resolution_timestamp = collector._get_resolved_timestamp(test_issue)
+
+    assert resolution_timestamp == 1649803843.0
