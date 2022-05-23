@@ -104,7 +104,7 @@ oc get route grafana-route -o=go-template='https://{{.spec.host | printf "%s\n" 
 
 You should now see at least one measurement for "Lead time for Change" and "Deployment Frequency"
 
-![gnome-shell-screenshot-3zh4l2](https://user-images.githubusercontent.com/138787/165596818-adc2469e-b3a6-4841-883f-e5018095801f.png)
+![gnome-shell-screenshot-3zh4l2](images/165596818-adc2469e-b3a6-4841-883f-e5018095801f.png)
 
 
 ## Optional Github Webhook
@@ -134,9 +134,15 @@ oc describe buildconfig.build.openshift.io/todolist -n mongo-persistent
 ```
 git log -p -1
 ```
-Compare the output of the two commands here:
+Compare the output with the following command:
 ```
 curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
+```
+
+Also notice the built deployed image sha is visible via the deploytime-exporter
+
+```
+curl $(oc get route -n pelorus deploytime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
 ```
 
 ## Optional Developer steps
