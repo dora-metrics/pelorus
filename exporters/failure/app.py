@@ -38,7 +38,11 @@ class TrackerFactory:
     ) -> Union[JiraFailureCollector, ServiceNowFailureCollector]:
         if tracker_provider == "jira":
             return JiraFailureCollector(
-                server=tracker_api, user=username, apikey=token, projects=projects
+                server=tracker_api,
+                user=username,
+                apikey=token,
+                projects=projects,
+                jql_query_string=None,
             )
         elif tracker_provider == "servicenow":
             return ServiceNowFailureCollector(username, token, tracker_api)

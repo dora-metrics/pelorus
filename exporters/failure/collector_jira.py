@@ -28,6 +28,7 @@ from failure.collector_base import AbstractFailureCollector, TrackerIssue
 # One query limit, exporter will query multiple times.
 # Do not exceed 100 as JIRA won't return more.
 JIRA_SEARCH_RESULTS = 50
+QUERY_RESULT_FIELDS = "summary,labels,created,resolutiondate"
 
 
 class JiraFailureCollector(AbstractFailureCollector):
@@ -35,9 +36,10 @@ class JiraFailureCollector(AbstractFailureCollector):
     Jira implementation of a FailureCollector
     """
 
-    def __init__(self, user, apikey, server, projects):
+    def __init__(self, user, apikey, server, projects, jql_query_string):
         super().__init__(server, user, apikey)
         self.projects = projects
+        self.jql_query_string = jql_query_string
 
     def _connect_to_jira(self) -> JIRA:
         """Method to connect to JIRA instance which may be cloud based
@@ -68,21 +70,28 @@ class JiraFailureCollector(AbstractFailureCollector):
         critical_issues = []
 
         try:
-            # TODO FIXME This may need to be modified to suit needs and have a time period.
-            query_string = "type=bug and priority=highest"
-            query_result_fields = "summary,labels,created,resolutiondate"
+            jql_query_string = None
 
-            if self.projects is not None:
-                query_string = query_string + " AND project in (" + self.projects + ")"
+            if self.jql_query_string:
+                jql_query_string = self.jql_query_string
+            else:
+                # TODO FIXME This may need to be modified to suit needs and have a time period.
+                jql_query_string = 'type in ("Bug") AND priority in ("Highest")'
+
+                if self.projects is not None and len(self.projects) > 0:
+                    projects_str = '","'.join(self.projects.split(","))
+                    jql_query_string = (
+                        jql_query_string + ' AND project in ("{}")'.format(projects_str)
+                    )
 
             jira_issues = []
             start_at = 0
             while True:
                 jira_search_results = jira.search_issues(
-                    query_string,
+                    jql_query_string,
                     startAt=start_at,
                     maxResults=JIRA_SEARCH_RESULTS,
-                    fields=query_result_fields,
+                    fields=QUERY_RESULT_FIELDS,
                 )
                 jira_issues += jira_search_results.iterable
                 start_at += JIRA_SEARCH_RESULTS
@@ -118,7 +127,7 @@ class JiraFailureCollector(AbstractFailureCollector):
                 logging.error(
                     "Status: %s, Error Response: %s", error.status_code, error.text
                 )
-                logging.info("JIRA query: %s", query_string)
+                logging.info("JIRA query: %s", jql_query_string)
             else:
                 raise
 
