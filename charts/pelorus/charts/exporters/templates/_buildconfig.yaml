@@ -15,10 +15,10 @@ spec:
       kind: ImageStreamTag
       name: {{ .app_name }}:latest
   source:
-    contextDir: {{ .source_context_dir }}
+    contextDir: {{ .source_context_dir | default "exporters/" }}
     git:
       ref: {{ .source_ref | default "v1.5.0" }}
-      uri: {{ .source_url }}
+      uri: {{ .source_url | default "https://github.com/konveyor/pelorus.git"}}
     type: Git
   strategy:
     sourceStrategy:

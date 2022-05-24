@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 import time
 from typing import Iterable, Optional
@@ -233,7 +232,7 @@ if __name__ == "__main__":
 
     namespaces = {
         stripped
-        for proj in os.environ.get("NAMESPACES", "").split(",")
+        for proj in pelorus.utils.get_env_var("NAMESPACES", "").split(",")
         if (stripped := proj.strip())
     }
     prod_label = pelorus.get_prod_label()

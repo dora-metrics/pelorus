@@ -27,14 +27,24 @@ spec:
       containers:
       - name: {{ .app_name }}
         imagePullPolicy: Always
-      {{- if .env_from_secrets }}
         envFrom:
-        {{- range .env_from_secrets }}  
+      {{- if .env_from_secrets }}
+        {{- range .env_from_secrets }}
         - secretRef:
             name: {{ . }}
         {{- end}}
       {{- end}}
+      {{- if .env_from_configmaps }}
+        {{- range .env_from_configmaps }}
+        - configMapRef:
+            name: {{ . }}
+        {{- end}}
+      {{- end}}
         env:
+{{- if .exporter_type }}
+        - name: APP_FILE
+          value: {{ .exporter_type }}/app.py
+{{- end }}
 {{- if .extraEnv }}
 {{ toYaml .extraEnv | indent 8 }}
 {{- end }}

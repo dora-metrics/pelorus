@@ -13,6 +13,7 @@ DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_LOG_FORMAT = "%(asctime)-15s %(levelname)-8s %(message)s"
 DEFAULT_LOG_DATE_FORMAT = "%m-%d-%Y %H:%M:%S"
 DEFAULT_GIT = "github"
+DEFAULT_GIT_API = ""
 DEFAULT_TLS_VERIFY = "True"
 DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = "unknown"
@@ -113,7 +114,7 @@ def missing_configs(vars):
 def upgrade_legacy_vars():
     username = utils.get_env_var("GITHUB_USER")
     token = utils.get_env_var("GITHUB_TOKEN")
-    api = utils.get_env_var("GITHUB_API")
+    api = utils.get_env_var("GITHUB_API", DEFAULT_GIT_API)
     if username and not utils.get_env_var("GIT_USER"):
         os.environ["GIT_USER"] = username
     if token and not utils.get_env_var("GIT_TOKEN"):

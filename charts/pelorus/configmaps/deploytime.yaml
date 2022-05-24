@@ -1,0 +1,11 @@
+# For details refer to the documentation:
+#       https://pelorus.readthedocs.io/en/latest/Configuration/#deploy-time-exporter
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deploytime-config
+  namespace: pelorus
+data:
+  PROD_LABEL: "default"    # "" | PROD_LABEL is ignored if NAMESPACES are provided
+  NAMESPACES: "default"    # "" | Restricts the set of namespaces,  comma separated value "myapp-ns-dev,otherapp-ci"

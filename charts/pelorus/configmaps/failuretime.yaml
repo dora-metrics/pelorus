@@ -1,0 +1,15 @@
+# For details refer to the documentation:
+#       https://pelorus.readthedocs.io/en/latest/Configuration/#failure-time-exporter
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: failuretime-config
+  namespace: pelorus
+data:
+  PROVIDER: "default"    # jira  |  jira or servicenow
+  SERVER:                #       |  URL to the Jira or ServiceNowServer, can be overriden by env_from_secrets
+  USER:                  #       |  Tracker Username, can be overriden by env_from_secrets
+  TOKEN:                 #       |  User's API Token, can be overriden by env_from_secrets
+  PROJECTS:              #       |  Only for jira provider, comma separated list, e.g. "PROJECTKEY1,PROJECTKEY2"
+  APP_FIELD: "default"   # u_application  | Required for ServiceNow,  used for the Application label. ex: "u_appName"
