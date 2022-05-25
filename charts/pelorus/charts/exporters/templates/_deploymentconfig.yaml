@@ -22,7 +22,8 @@ spec:
         app.kubernetes.io/name: {{ .app_name }}
         app: {{ .app_name }}
         deploymentconfig: {{ .app_name }}
-        application: {{ .app_name}}
+        application: {{ .app_name }}
+        pelorus.konveyor.io/exporter-type: {{ .exporter_type | default "generic-exporter" }}
     spec:
       containers:
       - name: {{ .app_name }}
@@ -51,6 +52,16 @@ spec:
         ports:
         - containerPort: 8080
           protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
       serviceAccount: pelorus-exporter
   triggers:
   - type: ConfigChange
