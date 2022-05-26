@@ -29,15 +29,15 @@ spec:
       - name: {{ .app_name }}
         imagePullPolicy: Always
         envFrom:
-      {{- if .env_from_secrets }}
-        {{- range .env_from_secrets }}
-        - secretRef:
-            name: {{ . }}
-        {{- end}}
-      {{- end}}
       {{- if .env_from_configmaps }}
         {{- range .env_from_configmaps }}
         - configMapRef:
+            name: {{ . }}
+        {{- end}}
+      {{- end}}
+      {{- if .env_from_secrets }}
+        {{- range .env_from_secrets }}
+        - secretRef:
             name: {{ . }}
         {{- end}}
       {{- end}}
