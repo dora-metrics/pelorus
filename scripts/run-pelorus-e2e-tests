@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+# Match the .venv created by the Makefile
+DEFAULT_VENV="${SCRIPT_DIR}/../.venv"
+TMP_DIR_PREFIX="pelorus_tmp_"
+PELORUS_NAMESPACE="pelorus"
+
+
+# Used to download required files prior to running the job
+# Arguments:
+#    $1 - URL from which download the file
+#    $2 - File name of the output file
+#    $3 - (Optional) - destination directory, defaults to SCRIPT_DIR
+function download_file_from_url() {
+    local url=$1
+    local file_name=$2
+    local dest_folder="${3:-$SCRIPT_DIR}" # Use ./ as default dest_folder
+
+    pushd "${dest_folder}" || exit
+      echo "Downloading file: ${url}"
+      echo "To: ${dest_folder}/${file_name}"
+      curl --fail-with-body -Lo "${file_name}" "${url}" || exit
+    popd || exit
+}
+
+# Function to safely remove temporary files and temporary download dir
+# Argument is optional exit value to propagate it after cleanup
+function cleanup_and_exit() {
+    local exit_val=$1
+    if [ -z "${DWN_DIR}" ]; then
+        echo "cleanup_and_exit(): Temp download dir not provided !" >&2
+    else
+      # Ensure dir exists and starts with prefix
+      if [ -d "${DWN_DIR}" ]; then
+          PELORUS_TMP_DIR=$(basename "${DWN_DIR}")
+          if [[ "${PELORUS_TMP_DIR}" =~ "${TMP_DIR_PREFIX}"* ]]; then
+              echo "Cleaning up temporary files"
+              eval rm -f "${DWN_DIR}/*"
+              rmdir "${DWN_DIR}"
+          fi
+      fi
+    fi
+    # Propagate exit value if was provided
+    [ -n "${exit_val}" ] && exit "$exit_val"
+    exit 0
+}
+
+function retry() {
+    local timeout="$1"; shift
+    local sleep_time="$1"; shift
+    local cmd="$*"
+    # Let's print what is happening in the subshell
+    set -x
+    timeout "$timeout" bash -c "until ${cmd}; do sleep ${sleep_time}; done"    
+    set +x
+}
+
+function print_help() {
+    printf "\nUsage: %s [OPTION]... -d [DIR]\n\n" % "$0"
+    printf "\tStartup:\n"
+    printf "\t  -h\tprint this help\n"
+    printf "\n\tOptions:\n"
+    printf "\t  -b\tbranch of the mig-demo-apps\n"
+    printf "\t  -d\tpath to virtualenv DIR\n"
+
+    exit 0
+}
+
+# We use exported functions instead of aliases, so they are available
+# in subshell. This is required for timeout.
+set -a
+# shellcheck disable=SC2269
+PELORUS_NAMESPACE="${PELORUS_NAMESPACE}"
+function ogn() { printf "oc get --namespace %s $*\n" "${PELORUS_NAMESPACE}"; oc get --namespace "${PELORUS_NAMESPACE}" "$@"; }
+function ogns() { printf "oc get --namespace %s svc $*\n" "${PELORUS_NAMESPACE}"; oc get --namespace "${PELORUS_NAMESPACE}" svc "$@"; }
+function ornds() { printf "oc rollout status --namespace %s deployments $*\n" "${PELORUS_NAMESPACE}"; oc rollout status --namespace ${PELORUS_NAMESPACE} deployments "$@"; }
+function owpr() { printf "oc wait pod --for=condition=Ready -n %s -l pelorus.konveyor.io/exporter-type=$*\n" "${PELORUS_NAMESPACE}"; oc wait pod --for=condition=Ready -n ${PELORUS_NAMESPACE} -l pelorus.konveyor.io/exporter-type="$*"; }
+set +a
+
+### Options
+OPTIND=1
+while getopts "h?b:d:" option; do
+    case "$option" in
+    h|\?) print_help;;
+    b)    demo_branch=$OPTARG;;
+    d)    venv_dir=$OPTARG;;
+    esac
+done
+
+if [ -z "${venv_dir}" ]; then
+    VENV="${DEFAULT_VENV}"
+else
+    VENV="${venv_dir}"
+fi
+
+if [ -z "${demo_branch}" ]; then
+    demo_branch="master"
+fi
+
+
+
+### MAIN
+# Create download directory
+DWN_DIR=$(TMPDIR="${VENV}" mktemp -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
+
+echo "Temporary directory created: ${DWN_DIR}"
+
+# Cleanup download directory on exit
+trap 'cleanup_and_exit' INT TERM EXIT
+
+download_file_from_url "https://raw.githubusercontent.com/konveyor/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/pelorus/values.yaml" "ci_values.yaml" "${DWN_DIR}"
+download_file_from_url "https://raw.githubusercontent.com/konveyor/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/mongo-persistent.yaml" "mongo-persistent.yaml" "${DWN_DIR}"
+
+# Create namespace where pelorus and grafana, prometheus operators will get deployed 
+oc create namespace "${PELORUS_NAMESPACE}"
+
+# Modify downloaded files
+sed -i.bak 's/your_org/konveyor/g' "${DWN_DIR}/mongo-persistent.yaml"
+
+# Show what has been modified:
+diff -uNr "${DWN_DIR}/mongo-persistent.yaml" "${DWN_DIR}/mongo-persistent.yaml.bak"
+
+# We do check for the exit status, as we are not really interested in the
+# current state, e.g. Active of that namespace before deleting resources.
+if oc get namespace mongo-persistent 2>/dev/null; then
+    oc delete -f "${DWN_DIR}/mongo-persistent.yaml"
+fi
+
+# From now on, exit if something goes wrong
+set -e
+
+# Ensure we are in the top-level directory of pelorus project
+pushd "${SCRIPT_DIR}/../"
+
+# Apply config maps for the exporters
+oc apply -f "charts/pelorus/configmaps"
+
+helm install operators charts/operators --namespace pelorus --debug --wait --wait-for-jobs
+
+# Wait for grafana and prometheus deployments to be rolled out
+retry 5m 1s ornds prometheus-operator
+retry 5m 1s ornds grafana-operator-controller-manager
+
+helm install pelorus charts/pelorus --namespace pelorus --debug --wait --wait-for-jobs
+
+# check final deployment
+retry 5m 5s ogns grafana-service
+retry 5m 5s ogns prometheus-operated
+retry 5m 5s ogns prometheus-pelorus
+
+# update exporter values and helm upgrade
+helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml"
+
+retry 10m 5s owpr deploytime
+retry 10m 5s owpr committime
+
+oc create -f "${DWN_DIR}/mongo-persistent.yaml"
+
+retry 2m 5s oc wait pod --for=condition=Ready -n mongo-persistent -l app=mongo
+retry 10m 10s oc wait pod --for=condition=Ready -n mongo-persistent -l app=todolist
+
+# Test
+committime_route=$(oc get route -n ${PELORUS_NAMESPACE} committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
+deploytime_route=$(oc get route -n ${PELORUS_NAMESPACE} deploytime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
+
+curl "$committime_route" 2>&1 | grep todolist
+curl "$deploytime_route" 2>&1 | grep todolist
