@@ -30,7 +30,6 @@ def test_convert_date_time_to_timestamp(start_time, end_time, format):
 
 
 def test_get_app_label():
-    assert pelorus.get_app_label() == pelorus.DEFAULT_APP_LABEL
     os.environ["APP_LABEL"] = "changed"
     assert pelorus.get_app_label() == "changed"
     os.unsetenv("APP_LABEL")

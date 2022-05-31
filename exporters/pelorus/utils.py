@@ -7,10 +7,15 @@ import contextlib
 import dataclasses
 import logging
 import os
+import sys
 from typing import Any, Optional, Union, overload
 
+import requests
+import requests.auth
 from kubernetes import client, config
 from openshift.dynamic import DynamicClient
+
+import pelorus
 
 # sentinel value for the default kwarg to get_nested
 __GET_NESTED_NO_DEFAULT = object()
@@ -220,3 +225,22 @@ def get_k8s_client():
         k8s_client = DynamicClient(client.ApiClient(k8sconfig))
 
     return k8s_client
+
+
+def check_required_config(config):
+    if pelorus.missing_configs(config):
+        print("This program will exit.")
+        sys.exit(1)
+
+
+class TokenAuth(requests.auth.AuthBase):
+    """
+    Add token authentication to a requests Request or Session.
+    """
+
+    def __init__(self, token: str):
+        self.auth_str = f"token {token}"
+
+    def __call__(self, r: requests.PreparedRequest):
+        r.headers["Authorization"] = self.auth_str
+        return r

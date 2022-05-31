@@ -19,6 +19,8 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
     Service Now implementation of a FailureCollector
     """
 
+    REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
+
     def __init__(self, user, apikey, server):
         if not pelorus.utils.get_env_var("APP_FIELD"):
             logging.warn(

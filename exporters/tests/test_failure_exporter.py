@@ -15,23 +15,27 @@
 #    under the License.
 #
 
-from typing import cast
+import json
+import os
+from typing import Optional
+from unittest import mock  # NOQA
 
 import pytest
 from jira.exceptions import JIRAError
 from prometheus_client.core import REGISTRY
 
-from failure.app import TrackerFactory
+from failure.collector_github import GithubAuthenticationError, GithubFailureCollector
 from failure.collector_jira import JiraFailureCollector
 
 
 def setup_jira_collector(server, username, apikey) -> JiraFailureCollector:
-    tracker_provider = "jira"
-    projects = None
-    jira_collector = TrackerFactory.getCollector(
-        username, apikey, server, projects, tracker_provider
+    return JiraFailureCollector(
+        server=server,
+        user=username,
+        apikey=apikey,
+        projects=None,
+        jql_query_string=None,
     )
-    return cast(JiraFailureCollector, jira_collector)
 
 
 @pytest.mark.parametrize(
@@ -123,3 +127,95 @@ def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatc
         jql_query_string=None,
     )
     collector.search_issues()
+
+
+# Github Issue failure exporter tests
+
+
+def setup_github_collector(
+    monkeypatch: Optional[pytest.MonkeyPatch] = None,
+) -> GithubFailureCollector:
+    if monkeypatch:
+
+        def _no_github_user(self):
+            return None
+
+        monkeypatch.setattr(GithubFailureCollector, "_get_github_user", _no_github_user)
+
+    return GithubFailureCollector("WIEds4uZHiCGnrtmgQPn9E7D", None)
+
+
+def get_test_data(file="/exporters/tests/data/github_issue.json"):
+    this_dir = os.path.dirname(os.path.abspath(__name__))
+    test_file = this_dir + file
+    with open(test_file) as json_file:
+        data = json.load(json_file)
+    return data
+
+
+@pytest.mark.integration
+def test_github_connection():
+    with pytest.raises(GithubAuthenticationError) as context_ex:
+        setup_github_collector()
+    assert "Check the TOKEN: not authorized, invalid credentials" in str(
+        context_ex.value
+    )
+
+
+@pytest.mark.parametrize(
+    "date_time",
+    [("2022-05-11T21:50:08Z")],
+)
+def test_github_timestamp(date_time):
+    test_time = GithubFailureCollector.convert_timestamp(date_time)
+    assert float("1652305808.0") == test_time
+
+
+def test_github_prometheus_register(monkeypatch: pytest.MonkeyPatch):
+    def mock_search_issues(self):
+        return []
+
+    monkeypatch.setattr(GithubFailureCollector, "search_issues", mock_search_issues)
+    collector = setup_github_collector(monkeypatch)
+    REGISTRY.register(collector)  # type: ignore
+
+
+# has label bug and pelorus.get_app_label()
+def test_github_search_issues(monkeypatch: pytest.MonkeyPatch):
+    def mock_get_issues(self):
+        data = get_test_data()
+        issue = data["good_example"]
+        return [issue]
+
+    monkeypatch.setattr(GithubFailureCollector, "get_issues", mock_get_issues)
+    collector = setup_github_collector(monkeypatch)
+    critical_issues = collector.search_issues()
+    assert critical_issues[0].app == "todolist"
+    assert critical_issues[0].issue_number == "3"
+    assert critical_issues[0].creationdate == float(1652305808.0)
+
+
+# has label fug ( not bug ) and pelorus.get_app_label()
+def test_negative_github_search_issues(monkeypatch: pytest.MonkeyPatch):
+    def mock_get_issues(self):
+        data = get_test_data()
+        issue = data["no_bug"]
+        return [issue]
+
+    monkeypatch.setattr(GithubFailureCollector, "get_issues", mock_get_issues)
+    collector = setup_github_collector(monkeypatch)
+    critical_issues = collector.search_issues()
+    assert critical_issues == []
+
+
+# has label bug and NOT pelorus.get_app_label()
+def test_negative_label_github_search_issues(monkeypatch: pytest.MonkeyPatch):
+    def mock_get_issues(self):
+        data = get_test_data()
+        issue = data["no_label"]
+        return [issue]
+
+    monkeypatch.setattr(GithubFailureCollector, "get_issues", mock_get_issues)
+    collector = setup_github_collector(monkeypatch)
+    critical_issues = collector.search_issues()
+    assert critical_issues == []

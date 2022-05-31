@@ -1,0 +1,49 @@
+{
+    "good_example": [
+
+        [
+            {
+                "id": 4058328562,
+                "node_id": "LA_kwDOHNyBrM7x5S3y",
+                "url": "https://api.github.com/repos/weshayutin/todolist-mongo-go/labels/bug",
+                "name": "bug",
+                "color": "d73a4a",
+                "default": true,
+                "description": "Something isn't working"
+            },
+            {
+                "id": 4122337975,
+                "node_id": "LA_kwDOHNyBrM71teK3",
+                "url": "https://api.github.com/repos/weshayutin/todolist-mongo-go/labels/app.kubernetes.io/name=todolist",
+                "name": "app.kubernetes.io/name=todolist",
+                "color": "770F99",
+                "default": false,
+                "description": ""
+            }
+        ]
+    ],
+    "no_bug": [
+
+        [
+            {
+                "id": 4058328562,
+                "node_id": "LA_kwDOHNyBrM7x5S3y",
+                "url": "https://api.github.com/repos/weshayutin/todolist-mongo-go/labels/fug",
+                "name": "fug",
+                "color": "d73a4a",
+                "default": true,
+                "description": "Something isn't working"
+            },
+            {
+                "id": 4122337975,
+                "node_id": "LA_kwDOHNyBrM71teK3",
+                "url": "https://api.github.com/repos/weshayutin/todolist-mongo-go/labels/app.kubernetes.io/name=todolist",
+                "name": "app.kubernetes.io/name=todolist",
+                "color": "770F99",
+                "default": false,
+                "description": ""
+            }
+        ]
+    ]
+}
+
