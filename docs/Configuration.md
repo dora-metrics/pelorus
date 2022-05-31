@@ -184,6 +184,14 @@ oc create secret generic jira-secret \
 -n pelorus
 ```
 
+For Github create a secret containing your Github token.
+
+```shell
+oc create secret generic github-issue-secret \
+--from-literal=TOKEN=<personal access token> \
+-n pelorus
+```
+
 For ServiceNow create a secret containing your ServiceNow information.
 
 ```shell
@@ -196,8 +204,7 @@ oc create secret generic snow-secret \
 -n pelorus
 ```
 
-#### Instance Config
-
+#### Instance Config Jira
 ```yaml
 exporters:
   instances:
@@ -208,6 +215,19 @@ exporters:
     env_from_configmaps:
     - pelorus-config
     - failuretime-config
+```
+
+#### Instance Config Github
+```yaml
+exporters:
+  instances:
+  - app_name: failuretime-exporter
+    exporter_type: failure
+    env_from_secrets:
+    - github-issue-secret
+    env_from_configmaps:
+    - pelorus-config
+    - committime-config
 ```
 
 #### ConfigMap Data Values
@@ -224,8 +244,47 @@ This exporter provides several configuration options, passed via `pelorus-config
 | `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2` | unset |
 | `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
 
+### Github failure exporter details
 
-### ServiceNow exporter details
+The recommendation for utilizing the Github failure exporter is to define the Github token and Github projects.
+The `TOKEN` should be defined in an OpenShift secret as described above.
+The `PROJECTS` are best defined in the failure exporter ConfigMap. An example is found below.
+
+```
+kind: ConfigMap
+metadata:
+  name: failuretime-config
+  namespace: pelorus
+data:
+  PROVIDER: "github"     # jira  |  jira, github, servicenow
+  SERVER:                #       |  URL to the Jira or ServiceNowServer, can be overriden by env_from_secrets
+  USER:                  #       |  Tracker Username, can be overriden by env_from_secrets
+  TOKEN:                 #       |  User's API Token, can be overriden by env_from_secrets
+  PROJECTS: "konveyor/todolist-mongo-go,konveyor/todolist-mariadb-go"
+  APP_FIELD: "todolist"  #       |  This is optional for the Github failure exporter
+```
+
+The `PROJECTS` key is comma deliniated and formated at "Github_organization/Github_repository"
+The `APP_FIELD` key may be used to associate the Github repository with a particular application
+
+Any Github issue must be labeled as a "bug".  Any issue optionally can be labeled with a label associated
+with a particular application.  If an application is not found it will default the app to the Github repository name.
+
+An example of the output with the `APP_FIELD` for the [todolist-mongo-go repository](https://github.com/konveyor/todolist-mongo-go)  is found below:
+```
+05-25-2022 13:09:40 INFO     Collected failure_creation_timestamp{ app=todolist, issue_number=3 } 1652305808.0
+05-25-2022 13:09:40 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=4 } 1652462194.0
+05-25-2022 13:09:40 INFO     Collected failure_creation_timestamp{ app=todolist, issue_number=3 } 1652394664.0
+```
+
+An example of not setting the `APP_FIELD` is here:
+```
+05-25-2022 13:16:14 INFO     Collected failure_creation_timestamp{ app=todolist-mongo-go, issue_number=3 } 1652305808.0
+05-25-2022 13:16:14 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=4 } 1652462194.0
+05-25-2022 13:16:14 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=3 } 1652394664.0
+```
+
+### ServiceNow failure exporter details
 
 The integration with ServiceNow is configured to process Incident objects that have been resolved (stage=6).  Since there are not Tags in all versions of ServiceNow there may be a need to configure a custom field on the Incident object to provide an application name to match Openshift Labels.  The exporter uses the opened_at field for created timestamp and the resolved_at field for the resolution timestamp.  The exporter will traverse through all the incidents and when a resolved_at field is populated it will create a resolution record.
 

@@ -16,26 +16,39 @@
 #
 
 import logging
-import sys
 import time
-from typing import Union
 
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
+from failure.collector_base import AbstractFailureCollector
+from failure.collector_github import GithubFailureCollector
 from failure.collector_jira import JiraFailureCollector
 from failure.collector_servicenow import ServiceNowFailureCollector
 
-REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
+PROVIDER_TYPES = ["jira", "github", "servicenow"]
 
 
 class TrackerFactory:
     @staticmethod
-    def getCollector(
-        username, token, tracker_api, projects, tracker_provider
-    ) -> Union[JiraFailureCollector, ServiceNowFailureCollector]:
+    def getCollector() -> AbstractFailureCollector:
+        username = pelorus.utils.get_env_var("USER")
+        token = pelorus.utils.get_env_var("TOKEN")
+        tracker_api = pelorus.utils.get_env_var("SERVER")
+        tracker_provider = pelorus.utils.get_env_var(
+            "PROVIDER", pelorus.DEFAULT_TRACKER
+        )
+
+        projects = pelorus.utils.get_env_var("PROJECTS") or ""
+        if projects:
+            logging.info("Querying issues from '%s' projects.", projects)
+            projects = projects.replace(" ", ",")
+        else:
+            logging.warning("No PROJECTS given")
+
         if tracker_provider == "jira":
+            pelorus.utils.check_required_config(JiraFailureCollector.REQUIRED_CONFIG)
             return JiraFailureCollector(
                 server=tracker_api,
                 user=username,
@@ -44,34 +57,27 @@ class TrackerFactory:
                 jql_query_string=None,
             )
         elif tracker_provider == "servicenow":
+            pelorus.utils.check_required_config(
+                ServiceNowFailureCollector.REQUIRED_CONFIG
+            )
             return ServiceNowFailureCollector(username, token, tracker_api)
-        else:
-            raise ValueError(f"Unknown provider {tracker_provider}")
+        elif tracker_provider == "github":
+            pelorus.utils.check_required_config(GithubFailureCollector.REQUIRED_CONFIG)
+            return GithubFailureCollector(
+                apikey=token, projects=projects, server=tracker_api
+            )
+
+        raise ValueError(f"Unknown provider type {tracker_provider}")
 
 
 if __name__ == "__main__":
     logging.info("===== Starting Failure Collector =====")
-    if pelorus.missing_configs(REQUIRED_CONFIG):
-        print("This program will exit.")
-        sys.exit(1)
-    projects = None
-    if pelorus.utils.get_env_var("PROJECTS") is not None:
-        logging.info(
-            "Querying issues from '%s' projects.",
-            pelorus.utils.get_env_var("PROJECTS"),
-        )
-        projects = pelorus.utils.get_env_var("PROJECTS")
-    username = pelorus.utils.get_env_var("USER")
-    token = pelorus.utils.get_env_var("TOKEN")
-    tracker_api = pelorus.utils.get_env_var("SERVER")
-    tracker_provider = pelorus.utils.get_env_var("PROVIDER", pelorus.DEFAULT_TRACKER)
-    logging.info("Server: " + tracker_api)
-    logging.info("User: " + username)
-    start_http_server(8080)
 
-    collector = TrackerFactory.getCollector(
-        username, token, tracker_api, projects, tracker_provider
-    )
+    collector = TrackerFactory.getCollector()
+
+    logging.info("Server: " + collector.server)
+    logging.info(f"User: {collector.user}")
+    start_http_server(8080)
 
     REGISTRY.register(collector)
 

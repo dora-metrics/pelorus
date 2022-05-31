@@ -36,6 +36,8 @@ class JiraFailureCollector(AbstractFailureCollector):
     Jira implementation of a FailureCollector
     """
 
+    REQUIRED_CONFIG = ["USER", "TOKEN", "SERVER"]
+
     def __init__(self, user, apikey, server, projects, jql_query_string):
         super().__init__(server, user, apikey)
         self.projects = projects

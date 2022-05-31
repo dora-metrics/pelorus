@@ -17,4 +17,5 @@ Configuration options can be found in the [config guide](/docs/Configuration.md)
 This exporter currently pulls build data from the following systems:
 
 * Jira
+* Github
 * ServiceNow _(coming soon)_

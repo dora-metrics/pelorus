@@ -17,3 +17,4 @@ attrs                  # module @attr.define
 jira                   # module jira
 pytz                   # module pytz
 requests               # module requests
+Pygithub               # module github
