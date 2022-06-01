@@ -28,7 +28,8 @@ SHELL_SCRIPTS=./demo/demo-tekton \
        scripts/install_dev_tools \
        scripts/pre-commit \
        scripts/run-mockoon-tests \
-       scripts/setup-pre-commit-hook
+       scripts/setup-pre-commit-hook \
+       scripts/run-pelorus-e2e-tests
 
 .PHONY: default
 default: \
@@ -101,6 +102,13 @@ major-release:
 mockoon-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/run-mockoon-tests
+
+# End to end tests
+## e2e-tests: installs pelorus, mongo-todolist and tests commit and deploy exporters
+.PHONY: e2e-tests
+e2e-tests: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/run-pelorus-e2e-tests
 
 # Integration tests
 ## integration-tests: pytest -rap -m integration

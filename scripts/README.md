@@ -36,6 +36,12 @@ Used by the makefile to check if the python version is valid.
 
 Not meant to be used directly.
 
+## run-pelorus-e2e-tests
+
+Used to create pelorus namespace, deploy pelorus via helm charts and
+
+run some e2e tests using todolist-mongo-go project from konveyor/mig-demo-apps.
+
 ## run-mockoon-tests
 
 Used to create mockoon pod on the localhost and then runs mockoon tests
