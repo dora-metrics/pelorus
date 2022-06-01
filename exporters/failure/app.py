@@ -54,7 +54,6 @@ class TrackerFactory:
                 user=username,
                 apikey=token,
                 projects=projects,
-                jql_query_string=None,
             )
         elif tracker_provider == "servicenow":
             pelorus.utils.check_required_config(
