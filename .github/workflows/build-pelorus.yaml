@@ -83,10 +83,10 @@ jobs:
 
       # Setup S2i and Build container image
       - name: Setup and Build
-        id: failure-exporter
+        id: build-exporter
         uses: redhat-actions/s2i-build@v2
         with:
-          image: 'committime-exporter'
+          image: 'failure-exporter'
           path_context: 'exporters'
           builder_image: ${{ env.builder_image }}
           tags: ${{ env.latesttag }} ${{ github.sha }}

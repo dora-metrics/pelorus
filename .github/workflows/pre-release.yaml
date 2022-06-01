@@ -1,12 +1,12 @@
-name: Pelorus Release
+name: Pelorus Pre-Release
 
 on:
   release:
     types:
       - released
+      - prereleased
 
 env:
-  releasetag: 'stable'
   imageregistry: 'quay.io'
   imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
 
@@ -18,32 +18,32 @@ jobs:
       - name: Checkout opl-content-api
         uses: actions/checkout@v2
 
-      - name: Tag committime with release version
+      - name: Tag committime with (pre)release version
         uses: tinact/docker.image-retag@1.0.2
         with:
           image_name: ${{ env.imagenamespace }}/committime-exporter
           image_old_tag: ${{ github.sha }}
-          image_new_tag: ${{ env.releasetag }}
+          image_new_tag: ${{ github.event.release.tag_name }}
           registry: ${{ env.imageregistry }}
           registry_username: ${{ secrets.QUAY_USERNAME }}
           registry_password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Tag deploytime with released version
+      - name: Tag deploytime with (pre)released version
         uses: tinact/docker.image-retag@1.0.2
         with:
           image_name: ${{ env.imagenamespace }}/deploytime-exporter
           image_old_tag: ${{ github.sha }}
-          image_new_tag: ${{ env.releasetag }}
+          image_new_tag: ${{ github.event.release.tag_name }}
           registry: ${{ env.imageregistry }}
           registry_username: ${{ secrets.QUAY_USERNAME }}
           registry_password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Tag failure with released version
+      - name: Tag failure with (pre)released version
         uses: tinact/docker.image-retag@1.0.2
         with:
           image_name: ${{ env.imagenamespace }}/failure-exporter
           image_old_tag: ${{ github.sha }}
-          image_new_tag: ${{ env.releasetag }}
+          image_new_tag: ${{ github.event.release.tag_name }}
           registry: ${{ env.imageregistry }}
           registry_username: ${{ secrets.QUAY_USERNAME }}
           registry_password: ${{ secrets.QUAY_PASSWORD }}
