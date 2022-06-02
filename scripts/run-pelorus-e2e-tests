@@ -35,7 +35,13 @@ function download_file_from_url() {
     pushd "${dest_folder}" || exit
       echo "Downloading file: ${url}"
       echo "To: ${dest_folder}/${file_name}"
-      curl --fail-with-body -Lo "${file_name}" "${url}" || exit
+      if curl --fail-with-body --help >/dev/null 2>&1; then
+          curl --fail-with-body -Lo "${file_name}" "${url}" || exit
+      elif type curl; then
+          curl -Lo "${file_name}" "${url}" || exit
+      else
+          wget -O "${file_name}" "${url}" || exit
+      fi
     popd || exit
 }
 
