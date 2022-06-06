@@ -73,7 +73,7 @@ Pelorus should now be installed and configured to measure the todolist sample ap
 
 ## Todolist sample application install steps
 
-1. git clone the forked copy of the
+1. git clone the forked copy of konveyor/mig-demo-apps
 ```
 git clone https://github.com/your_org/mig-demo-apps.git
 ```
@@ -107,43 +107,7 @@ You should now see at least one measurement for "Lead time for Change" and "Depl
 ![gnome-shell-screenshot-3zh4l2](images/165596818-adc2469e-b3a6-4841-883f-e5018095801f.png)
 
 
-## Optional Github Webhook
 
-You can more easily see how Pelorus works by automatically building and deploying the todolist app if you have configured your source git repository webhooks.
-
-1. To get the build webhook URL you can navigate to the todolist BuildConfig details or via the cli:
-```
-oc get all -n mongo-persistent
-oc describe buildconfig.build.openshift.io/todolist -n mongo-persistent
-```
-***Note*** the secret is hardcoded in the template to be:
-```
-4Xwu0tyAab90aaoasd88qweAasdaqvjknfrl3qwpo
-```
-* Navigate to https://github.com/your_org/mig-demo-apps/settings/hooks
-* Paste the URL with the real secret replacing the text <secret>
-* Toggle SSL as needed, for testing consider disabling.
-* Content type: application/json
-* Click, "Add webhook"
-
-### Test the webhook
-1. Update the git repo and push the change.
-2. A build should trigger in OpenShift
-3. Check the Pelorus committime output for the commit hash that was pushed
-
-```
-git log -p -1
-```
-Compare the output with the following command:
-```
-curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-```
-
-Also notice the built deployed image sha is visible via the deploytime-exporter
-
-```
-curl $(oc get route -n pelorus deploytime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-```
 
 ## Optional Developer steps
 
