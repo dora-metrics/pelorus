@@ -20,9 +20,9 @@ exporters:
   instances:
   - app_name: deploytime-exporter
     exporter_type: deploytime
-    env_from_configmaps:
-    - pelorus-config
-    - deploytime-config
+    # env_from_configmaps:
+    # - pelorus-config
+    # - deploytime-config
 
 #  - app_name: failuretime-exporter
 #    exporter_type: failure
