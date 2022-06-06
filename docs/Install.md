@@ -30,8 +30,6 @@ cd pelorus
 oc create namespace pelorus
 helm install operators charts/operators --namespace pelorus
 # Verify the operators are completely installed before installing the pelorus helm chart
-oc apply -f charts/pelorus/configmaps/pelorus.yaml
-oc apply -f charts/pelorus/configmaps/deploytime.yaml
 helm install pelorus charts/pelorus --namespace pelorus
 ```
 
