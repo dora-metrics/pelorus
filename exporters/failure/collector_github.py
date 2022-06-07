@@ -78,13 +78,16 @@ class GithubFailureCollector(AbstractFailureCollector):
         # login and get username
         # set the username / server to env for exporter consistency
         url = "https://{}/user".format(self.server)
-        resp = cast(dict[str, Any], self._make_request(None, url))
+        resp = cast(dict[str, Any], self._make_request(None, None, url))
         return resp["login"]
 
     def _make_request(
-        self, headers: Optional[dict[str, str]], url: str
+        self,
+        headers: Optional[dict[str, str]],
+        params: Optional[dict[str, str]],
+        url: str,
     ) -> Union[list, dict[str, Any]]:
-        resp = self.session.get(url, headers=headers)
+        resp = self.session.get(url, headers=headers, params=params)
         try:
             resp.raise_for_status()
             logging.debug("GitHub successfully returned %s", resp.text)
@@ -104,9 +107,9 @@ class GithubFailureCollector(AbstractFailureCollector):
             headers = {
                 "Accept": "application/vnd.github.v3+json",
             }
+            params = {"state": "all"}
 
-            # all issues or open issues??
-            issues = self._make_request(headers, url)
+            issues = self._make_request(headers, params, url)
             all_issues.extend(issues)
         return all_issues
 
@@ -129,21 +132,20 @@ class GithubFailureCollector(AbstractFailureCollector):
                 # Create the GithubFailureMetric
                 created_ts = self.convert_timestamp(issue["created_at"])
                 resolution_ts = None
-                if issue["closed_at"]:
-                    logging.debug(
-                        "Found issue close: {}, {}: {}".format(
-                            issue["closed_at"], issue["number"], issue["title"]
-                        )
-                    )
-
-                    resolution_ts = self.convert_timestamp(issue["closed_at"])
-
                 if is_bug:
                     app_label = pelorus.get_app_label()
                     label = next(
                         (label for label in labels if app_label in label["name"]), None
                     )
                     if label:
+                        if issue["closed_at"]:
+                            logging.debug(
+                                "Found issue close: {}, {}: {}".format(
+                                    issue["closed_at"], issue["number"], issue["title"]
+                                )
+                            )
+
+                            resolution_ts = self.convert_timestamp(issue["closed_at"])
                         tracker_issue = TrackerIssue(
                             str(issue["number"]),
                             created_ts,

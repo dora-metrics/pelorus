@@ -192,6 +192,7 @@ def test_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     assert critical_issues[0].app == "todolist"
     assert critical_issues[0].issue_number == "3"
     assert critical_issues[0].creationdate == float(1652305808.0)
+    assert critical_issues[0].resolutiondate is None
 
 
 # has label fug ( not bug ) and pelorus.get_app_label()
@@ -218,6 +219,22 @@ def test_negative_label_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     collector = setup_github_collector(monkeypatch)
     critical_issues = collector.search_issues()
     assert critical_issues == []
+
+
+# closed bug w/ proper labels
+def test_github_closed_issue_search_issues(monkeypatch: pytest.MonkeyPatch):
+    def mock_get_issues(self):
+        data = get_test_data()
+        issue = data["closed_example"]
+        return [issue]
+
+    monkeypatch.setattr(GithubFailureCollector, "get_issues", mock_get_issues)
+    collector = setup_github_collector(monkeypatch)
+    critical_issues = collector.search_issues()
+    assert critical_issues[0].app == "todolist"
+    assert critical_issues[0].issue_number == "3"
+    assert critical_issues[0].creationdate == float(1652305808.0)
+    assert critical_issues[0].resolutiondate == float(1653672080.0)
 
 
 @pytest.mark.parametrize(
