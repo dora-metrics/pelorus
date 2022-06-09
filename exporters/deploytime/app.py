@@ -50,6 +50,7 @@ class DeployTimeCollector:
             metric.add_metric(
                 [m.namespace, m.name, m.image_sha, m.deploy_time],
                 pelorus.convert_date_time_to_timestamp(m.deploy_time),
+                timestamp=pelorus.convert_date_time_to_timestamp(m.deploy_time),
             )
             yield (metric)
 
