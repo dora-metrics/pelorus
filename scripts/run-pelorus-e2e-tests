@@ -73,7 +73,7 @@ function retry() {
     local cmd="$*"
     # Let's print what is happening in the subshell
     set -x
-    timeout "$timeout" bash -c "until ${cmd}; do sleep ${sleep_time}; done"    
+    timeout "$timeout" bash -c "until ${cmd}; do sleep ${sleep_time}; done"
     set +x
 }
 
@@ -83,6 +83,7 @@ function print_help() {
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
     printf "\t  -b\tbranch of the mig-demo-apps\n"
+    printf "\t  -o\tgithub organization of the mig-demo-apps\n"
     printf "\t  -d\tpath to virtualenv DIR\n"
 
     exit 0
@@ -101,10 +102,11 @@ set +a
 
 ### Options
 OPTIND=1
-while getopts "h?b:d:" option; do
+while getopts "h?b:d:o:" option; do
     case "$option" in
     h|\?) print_help;;
     b)    demo_branch=$OPTARG;;
+    o)    demo_org=$OPTARG;;
     d)    venv_dir=$OPTARG;;
     esac
 done
@@ -119,6 +121,10 @@ if [ -z "${demo_branch}" ]; then
     demo_branch="master"
 fi
 
+if [ -z "${demo_org}" ]; then
+    demo_org="konveyor"
+fi
+
 
 
 ### MAIN
@@ -130,14 +136,14 @@ echo "Temporary directory created: ${DWN_DIR}"
 # Cleanup download directory on exit
 trap 'cleanup_and_exit' INT TERM EXIT
 
-download_file_from_url "https://raw.githubusercontent.com/konveyor/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/pelorus/values.yaml" "ci_values.yaml" "${DWN_DIR}"
-download_file_from_url "https://raw.githubusercontent.com/konveyor/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/mongo-persistent.yaml" "mongo-persistent.yaml" "${DWN_DIR}"
+download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/pelorus/values.yaml" "ci_values.yaml" "${DWN_DIR}"
+download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/mongo-persistent.yaml" "mongo-persistent.yaml" "${DWN_DIR}"
 
-# Create namespace where pelorus and grafana, prometheus operators will get deployed 
+# Create namespace where pelorus and grafana, prometheus operators will get deployed
 oc create namespace "${PELORUS_NAMESPACE}"
 
 # Modify downloaded files
-sed -i.bak 's/your_org/konveyor/g' "${DWN_DIR}/mongo-persistent.yaml"
+sed -i.bak "s/your_org/$demo_org/g" "${DWN_DIR}/mongo-persistent.yaml"
 
 # Show what has been modified:
 diff -uNr "${DWN_DIR}/mongo-persistent.yaml" "${DWN_DIR}/mongo-persistent.yaml.bak"
