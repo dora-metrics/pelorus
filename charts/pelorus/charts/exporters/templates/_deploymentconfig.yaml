@@ -67,6 +67,10 @@ spec:
       - {{ .app_name }}
       from:
         kind: ImageStreamTag
+{{- if or .source_ref .source_url }}
         name: {{ .app_name }}:latest
+{{- else }}
+        name: {{ .app_name }}:{{ .image_tag | default "stable" }}
+{{- end }}
     type: ImageChange
 {{- end }}
