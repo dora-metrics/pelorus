@@ -29,6 +29,7 @@ def get_nested(
     path: Union[list[Any], str],
     *,
     name: Optional[str] = None,
+    key_name: Optional[str] = None,
 ) -> Any:
     ...
 
@@ -40,6 +41,7 @@ def get_nested(
     *,
     default: Any,
     name: Optional[str] = None,
+    key_name: Optional[str] = None,
 ) -> Any:
     ...
 
@@ -50,6 +52,7 @@ def get_nested(
     *,
     default: Any = __GET_NESTED_NO_DEFAULT,
     name: Optional[str] = None,
+    key_name: Optional[str] = None,
 ) -> Any:
     """
     `get_nested` helps you safely traverse a deeply nested object that is indexable.
@@ -92,6 +95,16 @@ def get_nested(
                 root_name=name,
             ) from e
 
+    try:
+        if key_name:
+            item = item[key_name]
+    except KeyError as e:
+        raise BadAttributeKeyError(
+            root=root,
+            path=path,
+            key_value=key_name,
+        ) from e
+
     return item
 
 
@@ -120,6 +133,28 @@ class BadAttributePathError(Exception):
             f" {'.'.join(self.path)} because "
             f"{'.'.join(self.path[self.path_slice])} was {self.value}"
         )
+
+    def __str__(self):
+        return self.message
+
+
+@dataclasses.dataclass
+class BadAttributeKeyError(Exception):
+    """
+    An error representing a nested key_value lookup that went wrong.
+
+    root is the root item the attribute accesses started from.
+    path is the whole path that was meant to be accessed.
+    key_value is the key that was meant to be accessed within path.
+    """
+
+    root: Any
+    path: list[Any]
+    key_value: Any
+
+    @property
+    def message(self):
+        return f"{self.key_value + 'is missing in' }" f" {'.'.join(self.path)}"
 
     def __str__(self):
         return self.message

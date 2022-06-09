@@ -4,6 +4,7 @@ import pytest
 
 import pelorus
 from pelorus.utils import (
+    BadAttributeKeyError,
     BadAttributePathError,
     collect_bad_attribute_path_error,
     get_env_var,
@@ -28,6 +29,47 @@ def test_nested_lookup_exception():
     print(error.message)
     assert error.path[error.path_slice] == SLICED_PATH
     assert error.value == VALUE
+
+
+def test_nested_lookup_annotated():
+    build_dict = {
+        "apiVersion": "build.openshift.io/v1",
+        "kind": "Build",
+        "metadata": {
+            "annotations": {
+                "io.openshift.build.commit.id": "somesha",
+                "io.openshift.build.commit.ref": "main/trunk",
+                "io.openshift.build.source-location": "http://github.com/konveyor/pelorus",
+            }
+        },
+    }
+    assert get_nested(build_dict, "kind") == "Build"
+
+    assert (
+        get_nested(
+            build_dict, "metadata.annotations", key_name="io.openshift.build.commit.id"
+        )
+        == "somesha"
+    )
+
+
+def test_nested_lookup_key_name_exception():
+    build_dict = {
+        "apiVersion": "build.openshift.io/v1",
+        "kind": "Build",
+        "metadata": {
+            "annotations": {
+                "io.openshift.build.commit.id": "somesha",
+                "io.openshift.build.commit.ref": "main/trunk",
+                "io.openshift.build.source-location": "http://github.com/konveyor/pelorus",
+            }
+        },
+    }
+    with pytest.raises(BadAttributeKeyError) as e:
+        get_nested(build_dict, "metadata.annotations", key_name="commit.ids ")
+
+    error = e.value
+    assert error.message == "commit.ids is missing in metadata.annotations"
 
 
 def test_nested_lookup_collect():
