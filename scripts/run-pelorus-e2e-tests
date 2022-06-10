@@ -86,6 +86,7 @@ function print_help() {
     printf "\t  -f\tvalues filename passed to the Pelorus deployment from the todolist-mongo-go project\n"
     printf "\t  -o\tgithub organization of the mig-demo-apps\n"
     printf "\t  -d\tpath to virtualenv DIR\n"
+    printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"
 
     exit 0
 }
@@ -103,13 +104,15 @@ set +a
 
 ### Options
 OPTIND=1
-while getopts "h?b:d:o:f:" option; do
+ENABLE_FAIL_EXP=false
+while getopts "h?b:d:o:f:e:" option; do
     case "$option" in
     h|\?) print_help;;
     b)    demo_branch=$OPTARG;;
     f)    ci_filename=$OPTARG;;
     o)    demo_org=$OPTARG;;
     d)    venv_dir=$OPTARG;;
+    e)    enable_exporters=$OPTARG;;
     esac
 done
 
@@ -117,6 +120,12 @@ if [ -z "${venv_dir}" ]; then
     VENV="${DEFAULT_VENV}"
 else
     VENV="${venv_dir}"
+fi
+
+if [ -n "${enable_exporters}" ]; then
+    if echo ",$enable_exporters," | grep -q ",failure,"; then
+        ENABLE_FAIL_EXP=true
+    fi
 fi
 
 if [ -z "${demo_branch}" ]; then
@@ -152,6 +161,36 @@ sed -i.bak "s/your_org/$demo_org/g" "${DWN_DIR}/mongo-persistent.yaml"
 
 # Show what has been modified:
 diff -uNr "${DWN_DIR}/mongo-persistent.yaml" "${DWN_DIR}/mongo-persistent.yaml.bak"
+
+# enable the pelorus failure exporter for github
+if [ "${ENABLE_FAIL_EXP}" == true ]; then
+    GITHUB_SECRET_CONFIGURED=false
+    # if github-secret is created in ci
+    oc get secret github-secret
+    secret_present=$?
+
+    if [[ $secret_present = 0 ]]; then
+        echo "The github-secret was found"
+        GITHUB_SECRET_CONFIGURED=true
+    # if GIT_USER and GIT_TOKEN are set
+    elif [[ -z ${!GIT_USER} && -z ${!GIT_TOKEN} ]]; then
+        # turn off debug if enabled
+        if [[ $- == *x* ]]; then set +x; export debug_set_off=true; fi
+        oc -n pelorus create secret generic github-secret --from-literal=GITHUB_USER="$GIT_USER" --from-literal=TOKEN="$GIT_TOKEN"
+        # if debug was turned off, turn it back on.
+        if [[ $debug_set_off == true ]]; then set -x; fi
+        GITHUB_SECRET_CONFIGURED=true
+    else
+        echo "The pelorus github failure exporter was enabled, but the TOKEN was not configured properly"
+        exit 1
+    fi
+
+    # uncomment the failure exporter in ci_values.yaml
+    if [ $GITHUB_SECRET_CONFIGURED == true ]; then
+        sed -i.bak "s/#@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus failure exporter has been enabled"
+    fi
+fi
 
 # We do check for the exit status, as we are not really interested in the
 # current state, e.g. Active of that namespace before deleting resources.
