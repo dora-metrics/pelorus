@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
 from __future__ import annotations
 
 import logging
@@ -10,7 +27,12 @@ from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
 from committime import CommitMetric, commit_metric_from_build
-from pelorus.utils import get_nested
+from pelorus.utils import get_env_var, get_nested
+
+# Custom annotations env for the Build
+# Default ones are in the CommitMetric._ANNOTATION_MAPPIG
+COMMIT_HASH_ANNOTATION_ENV = "COMMIT_HASH_ANNOTATION"
+COMMIT_REPO_URL_ANNOTATION_ENV = "COMMIT_REPO_URL_ANNOTATION"
 
 
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
@@ -180,16 +202,16 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             if not self._is_metric_ready(namespace, metric, build):
                 return None
 
-            if repo_url:
-                metric.repo_url = repo_url
-            elif get_nested(build, "spec.source.git", default=None):
-                metric.repo_url = get_nested(build, "spec.source.git.uri", name="build")
-            else:
-                metric.repo_url = self._get_repo_from_build_config(build)
-
+            # Populate annotations and labels required by
+            # subsequent _set_ functions.
+            metric.annotations = vars(build.metadata.annotations)
             metric.labels = vars(build.metadata.labels)
 
-            metric = self._get_commit_hash(metric, errors)
+            metric = self._set_repo_url(metric, repo_url, build, errors)
+
+            metric = self._set_commit_hash(metric, errors)
+
+            metric = self._set_commit_timestamp(metric, errors)
 
             if errors:
                 msg = (
@@ -215,6 +237,65 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             logging.error("Error encountered while getting CommitMetric info:")
             logging.error(e, exc_info=True)
             return None
+
+    def _set_commit_hash(self, metric: CommitMetric, errors: list) -> CommitMetric:
+        if not metric.commit_hash:
+            commit_hash_annotation = get_env_var(
+                COMMIT_HASH_ANNOTATION_ENV,
+                CommitMetric._ANNOTATION_MAPPIG.get("commit_hash"),
+            )
+            commit_hash = metric.annotations.get(commit_hash_annotation)
+            if commit_hash:
+                metric.commit_hash = commit_hash
+                logging.debug(
+                    "Commit hash for build %s provided by '%s' annotation: %s",
+                    metric.build_name,
+                    commit_hash_annotation,
+                    metric.commit_hash,
+                )
+            else:
+                errors.append("Couldn't get commit hash")
+        return metric
+
+    def _set_repo_url(
+        self, metric: CommitMetric, repo_url: str, build, errors: list
+    ) -> CommitMetric:
+        # Logic to get repo_url, first conditon wins
+        # 1. Gather repo_url from the build from spec.source.git.uri
+        # 2. Check if repo_url was passed to the function and use it
+        # 3. Get repo_url from annotations
+        # 4. Get repo_url from parent BuildConfig
+
+        if metric.repo_url:
+            logging.debug(
+                "Repo URL for build %s provided by '%s': %s",
+                metric.build_name,
+                CommitMetric._BUILD_MAPPING.get("repo_url")[0],
+                metric.repo_url,
+            )
+        elif repo_url:
+            metric.repo_url = repo_url
+        else:
+            repo_url_annotation = get_env_var(
+                COMMIT_REPO_URL_ANNOTATION_ENV,
+                CommitMetric._ANNOTATION_MAPPIG.get("repo_url"),
+            )
+            repo_from_annotation = metric.annotations.get(repo_url_annotation)
+            if repo_from_annotation:
+                metric.repo_url = repo_from_annotation
+                logging.debug(
+                    "Repo URL for build %s provided by '%s' annotation: %s",
+                    metric.build_name,
+                    repo_url_annotation,
+                    metric.repo_url,
+                )
+            else:
+                metric.repo_url = self._get_repo_from_build_config(build)
+
+        if not metric.repo_url:
+            errors.append("Couldn't get repo_url")
+
+        return metric
 
     def _is_metric_ready(self, namespace: str, metric: CommitMetric, build) -> bool:
         """
@@ -251,7 +332,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     # TODO: be specific about the API modifying in place or returning a new metric.
     # Right now, it appears to do both.
-    def _get_commit_hash(self, metric: CommitMetric, errors: list) -> CommitMetric:
+    def _set_commit_timestamp(self, metric: CommitMetric, errors: list) -> CommitMetric:
         """
         Check the cache for the commit_time.
         If absent, call the API implemented by the subclass.

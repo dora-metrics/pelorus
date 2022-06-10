@@ -95,6 +95,22 @@ We require that all builds associated with a particular application be labelled 
 
 Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issue or a pull request to add support for additional Git providers!
 
+#### Annotated Binary (local) source build support
+
+Commit Time Exporter may be used in conjunction with Builds where values required to gather commit time from the source repository are missing. In such case each Build is required to be annotated with two values allowing Commit Time Exporter to calculate metric from the Build.
+
+To annotate Build use the following commands:
+
+```shell
+oc annotate build <build-name> -n <namespace> --overwrite io.openshift.build.commit.id=<commit_hash>
+
+oc annotate build <build-name> -n <namespace> --overwrite io.openshift.build.source-location=<repo_uri>
+```
+
+Custom Annotation names may also be configured using ConfigMap Data Values.
+
+Note: The requirement to label the build with `app.kubernetes.io/name=<app_name>` for the annotated Builds applies.
+
 #### Suggested Secrets
 
 Create a secret containing your Git username and token.
@@ -137,6 +153,9 @@ This exporter provides several configuration options, passed via `pelorus-config
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
 | `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
+| `COMMIT_HASH_ANNOTATION` | no | Annotation name associated with the Build from which hash is used to calculate commit time | `io.openshift.build.commit.id` |
+| `COMMIT_REPO_URL_ANNOTATION` | no | Annotation name associated with the Build from which GIT repository URL is used to calculate commit time | `io.openshift.build.source-location` |
+  
 
 ### Deploy Time Exporter
 

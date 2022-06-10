@@ -1,3 +1,21 @@
+#!/usr/bin/env python3
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
+
 """
 Module utils contains helper utilities for common tasks in the codebase.
 They are mainly to help with type information and to deal with data structures
@@ -126,14 +144,16 @@ class BadAttributePathError(Exception):
 
 
 @contextlib.contextmanager
-def collect_bad_attribute_path_error(error_list: list):
+def collect_bad_attribute_path_error(error_list: list, append: bool = True):
     """
-    If a BadAttributePathError is raised, append it to the list and continue.
+    If a BadAttributePathError is raised, append it to the list of errors and continue.
+    If append is set to False then error will not be appended to the list of errors.
     """
     try:
         yield
     except BadAttributePathError as e:
-        error_list.append(e)
+        if append:
+            error_list.append(e)
 
 
 class SpecializeDebugFormatter(logging.Formatter):
