@@ -157,11 +157,18 @@ fi
 # From now on, exit if something goes wrong
 set -e
 
+# Check if PULL_NUMBER exists and it's actual number
+if [ ${PULL_NUMBER+x} ] && [[ $PULL_NUMBER =~ ^[0-9]+$ ]]; then
+    echo "Provided PULL_NUMBER: '$PULL_NUMBER'"
+    sed -i "s/source_ref:.*/source_ref: refs\/pull\/${PULL_NUMBER}\/head/" "${DWN_DIR}/ci_values.yaml"
+fi
+
 # Ensure we are in the top-level directory of pelorus project
 pushd "${SCRIPT_DIR}/../"
 
 # Apply config maps for the exporters
-oc apply -f "charts/pelorus/configmaps"
+# this is not a step in the doc atm, should work w/o it now.
+#oc apply -f "charts/pelorus/configmaps"
 
 helm install operators charts/operators --namespace pelorus --debug --wait --wait-for-jobs
 
