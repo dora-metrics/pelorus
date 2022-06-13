@@ -190,6 +190,11 @@ if [ "${ENABLE_FAIL_EXP}" == true ]; then
         sed -i.bak "s/#@//g" "${DWN_DIR}/ci_values.yaml"
         echo "The pelorus failure exporter has been enabled"
     fi
+
+    # if required update the failure issue github organization
+    if [ $demo_org != "konveyor" ]; then
+        sed -i.bak "s/konveyor\/mig-demo-apps/$demo_org\/mig-demo-apps/g" "${DWN_DIR}/ci_values.yaml"
+    fi
 fi
 
 # We do check for the exit status, as we are not really interested in the
