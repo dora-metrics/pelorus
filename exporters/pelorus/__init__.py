@@ -40,7 +40,11 @@ def _print_version():
             f"Running {exporter_name} exporter from {repo}, ref {ref} (commit {commit})"
         )
     else:
-        print(f"Running {exporter_name} exporter. No version information found.")
+        image_tag = utils.get_env_var("PELORUS_IMAGE_TAG")
+        if image_tag:
+            print(f"Running {exporter_name} exporter from the image: {image_tag}.")
+        else:
+            print(f"Running {exporter_name} exporter. No version information found.")
 
 
 # region: logging setup
