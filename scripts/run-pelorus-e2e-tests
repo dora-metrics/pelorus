@@ -204,3 +204,9 @@ deploytime_route=$(oc get route -n ${PELORUS_NAMESPACE} deploytime-exporter -o=t
 
 curl "$committime_route" 2>&1 | grep todolist
 curl "$deploytime_route" 2>&1 | grep todolist
+
+if oc get pods -n pelorus | grep -q Crash ; then
+    echo "Some pods are not functioning properly"
+    oc get pods -n pelorus
+    exit 1
+fi

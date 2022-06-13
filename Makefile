@@ -105,10 +105,20 @@ mockoon-tests: $(PELORUS_VENV)
 
 # End to end tests
 ## e2e-tests: installs pelorus, mongo-todolist and tests commit and deploy exporters
-.PHONY: e2e-tests
+## e2e-tests-scenario-1: run e2e-tests with latest quay images
+## e2e-tests-scenario-2: run e2e-tests for deploytime exporter using different exporter install methods
+.PHONY: e2e-tests e2e-tests-scenario-1 e2e-tests-scenario-1
 e2e-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/run-pelorus-e2e-tests
+
+e2e-tests-scenario-1: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/run-pelorus-e2e-tests -f "periodic/quay_images_latest.yaml"
+
+e2e-tests-scenario-2: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/run-pelorus-e2e-tests "periodic/different_deployment_methods.yaml"
 
 # Integration tests
 ## integration-tests: pytest -rap -m integration
