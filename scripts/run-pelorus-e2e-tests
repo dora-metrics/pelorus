@@ -83,6 +83,7 @@ function print_help() {
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
     printf "\t  -b\tbranch of the mig-demo-apps\n"
+    printf "\t  -f\tvalues filename passed to the Pelorus deployment from the todolist-mongo-go project\n"
     printf "\t  -o\tgithub organization of the mig-demo-apps\n"
     printf "\t  -d\tpath to virtualenv DIR\n"
 
@@ -102,10 +103,11 @@ set +a
 
 ### Options
 OPTIND=1
-while getopts "h?b:d:o:" option; do
+while getopts "h?b:d:o:f:" option; do
     case "$option" in
     h|\?) print_help;;
     b)    demo_branch=$OPTARG;;
+    f)    ci_filename=$OPTARG;;
     o)    demo_org=$OPTARG;;
     d)    venv_dir=$OPTARG;;
     esac
@@ -125,6 +127,9 @@ if [ -z "${demo_org}" ]; then
     demo_org="konveyor"
 fi
 
+if [ -z "${ci_filename}" ]; then
+    ci_filename="values.yaml"
+fi
 
 
 ### MAIN
@@ -136,7 +141,7 @@ echo "Temporary directory created: ${DWN_DIR}"
 # Cleanup download directory on exit
 trap 'cleanup_and_exit' INT TERM EXIT
 
-download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/pelorus/values.yaml" "ci_values.yaml" "${DWN_DIR}"
+download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/pelorus/$ci_filename" "ci_values.yaml" "${DWN_DIR}"
 download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/mongo-persistent.yaml" "mongo-persistent.yaml" "${DWN_DIR}"
 
 # Create namespace where pelorus and grafana, prometheus operators will get deployed
