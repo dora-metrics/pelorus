@@ -42,6 +42,10 @@ spec:
         - name: APP_FILE
           value: {{ .exporter_type }}/app.py
 {{- end }}
+{{- if and (not .source_ref) (not .source_url) }}
+        - name: PELORUS_IMAGE_TAG
+          value: {{ .app_name }}:{{ .image_tag | default "stable" }}
+{{- end }}
 {{- if .extraEnv }}
 {{ toYaml .extraEnv | indent 8 }}
 {{- end }}
