@@ -63,7 +63,7 @@ function cleanup_and_exit() {
       fi
     fi
     # Propagate exit value if was provided
-    [ -n "${exit_val}" ] && exit "$exit_val"
+    [ -n "${exit_val}" ] && echo "Exit code: ${exit_val}" && exit "$exit_val"
     exit 0
 }
 
@@ -73,7 +73,7 @@ function retry() {
     local cmd="$*"
     # Let's print what is happening in the subshell
     set -x
-    timeout "$timeout" bash -c "until ${cmd}; do sleep ${sleep_time}; done"
+    timeout "$timeout" bash -c "until ${cmd}; do sleep ${sleep_time}; done" || exit 2
     set +x
 }
 
@@ -148,7 +148,7 @@ DWN_DIR=$(TMPDIR="${VENV}" mktemp -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
 echo "Temporary directory created: ${DWN_DIR}"
 
 # Cleanup download directory on exit
-trap 'cleanup_and_exit' INT TERM EXIT
+trap 'cleanup_and_exit $?' INT TERM EXIT
 
 download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/pelorus/$ci_filename" "ci_values.yaml" "${DWN_DIR}"
 download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/mongo-persistent.yaml" "mongo-persistent.yaml" "${DWN_DIR}"
