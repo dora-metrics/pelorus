@@ -13,3 +13,5 @@ data:
   GIT_PROVIDER: "default"    # github  |  github, gitlab, or bitbucket
   TLS_VERIFY: "default"      # True
   NAMESPACES:                #     | Restricts the set of namespaces,  comma separated value "myapp-ns-dev,otherapp-ci"
+  COMMIT_HASH_ANNOTATION: "default"     # io.openshift.build.commit.id | commit hash annotation name associated with the Build
+  COMMIT_REPO_URL_ANNOTATION: "default" # io.openshift.build.source-location | commit repository URL annotation name associated with the Build

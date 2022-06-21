@@ -1,3 +1,22 @@
+#!/usr/bin/env python3
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
+from __future__ import annotations
+
 import logging
 from typing import Optional
 
@@ -14,6 +33,7 @@ SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 @attr.define
 class CommitMetric:
     name: str = attr.field()
+    annotations: dict = attr.field(default=None, kw_only=True)
     labels: dict = attr.field(default=None, kw_only=True)
     namespace: Optional[str] = attr.field(default=None, kw_only=True)
 
@@ -98,19 +118,28 @@ class CommitMetric:
 
     # maps attributes to their location in a `Build`.
     #
-    # missing fields are handled specially:
+    # missing attributes or with False argument are handled specially:
+    #
     # name: set when the object is constructed
     # labels: must be converted from an `openshift.dynamic.ResourceField`
     # repo_url: if it's not present in the Build, fallback logic needs to be handled elsewhere
+    # commit_hash: if it's missing in the Build, fallback logic needs to be handled elsewhere
     # commit_timestamp: very special handling, the main purpose of each committime collector
+    # comitter: not required to calculate committime
     _BUILD_MAPPING = dict(
-        build_name="metadata.name",
-        build_config_name="metadata.labels.buildconfig",
-        namespace="metadata.namespace",
-        commit_hash="spec.revision.git.commit",
-        committer="spec.revision.git.author.name",
-        image_location="status.outputDockerImageReference",
-        image_hash="status.output.to.imageDigest",
+        build_name=["metadata.name", True],
+        build_config_name=["metadata.labels.buildconfig", True],
+        namespace=["metadata.namespace", True],
+        image_location=["status.outputDockerImageReference", True],
+        image_hash=["status.output.to.imageDigest", True],
+        commit_hash=["spec.revision.git.commit", False],
+        repo_url=["spec.source.git.uri", False],
+        committer=["spec.revision.git.author.name", False],
+    )
+
+    _ANNOTATION_MAPPIG = dict(
+        repo_url="io.openshift.build.source-location",
+        commit_hash="io.openshift.build.commit.id",
     )
 
 
@@ -124,8 +153,8 @@ def commit_metric_from_build(app: str, build, errors: list) -> CommitMetric:
     # Collect all errors to be reported at once instead of failing fast.
     metric = CommitMetric(app)
     for attr_name, path in CommitMetric._BUILD_MAPPING.items():
-        with collect_bad_attribute_path_error(errors):
-            value = get_nested(build, path, name="build")
+        with collect_bad_attribute_path_error(errors, path[1]):
+            value = get_nested(build, path[0], name="build")
             setattr(metric, attr_name, value)
 
     return metric
