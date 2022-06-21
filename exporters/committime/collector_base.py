@@ -92,6 +92,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     my_metric.image_hash,
                 ],
                 my_metric.commit_timestamp,
+                timestamp=my_metric.commit_timestamp,
             )
             yield commit_metric
 

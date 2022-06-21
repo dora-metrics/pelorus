@@ -40,13 +40,17 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                         "Collected failure_creation_timestamp{ app=%s, issue_number=%s } %s"
                         % (m.labels[0], m.labels[1], m.time_stamp)
                     )
-                    creation_metric.add_metric(m.labels, m.get_value())
+                    creation_metric.add_metric(
+                        m.labels, m.get_value(), timestamp=m.time_stamp
+                    )
                 else:
                     logging.info(
                         "Collected failure_resolution_timestamp{ app=%s, issue_number=%s } %s"
                         % (m.labels[0], m.labels[1], m.time_stamp)
                     )
-                    failure_metric.add_metric(m.labels, m.get_value())
+                    failure_metric.add_metric(
+                        m.labels, m.get_value(), timestamp=m.time_stamp
+                    )
             yield (creation_metric)
             yield (failure_metric)
 
