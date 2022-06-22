@@ -55,11 +55,13 @@ if __name__ == "__main__":
     tls_verify = bool(
         strtobool(pelorus.utils.get_env_var("TLS_VERIFY", pelorus.DEFAULT_TLS_VERIFY))
     )
-    namespaces = None
-    if pelorus.utils.get_env_var("NAMESPACES") is not None:
-        namespaces = [
-            proj.strip() for proj in pelorus.utils.get_env_var("NAMESPACES").split(",")
-        ]
+
+    namespaces_env = pelorus.utils.get_env_var("NAMESPACES", "")
+    if namespaces_env:
+        namespaces = [proj.strip() for proj in namespaces_env.split(",")]
+    else:
+        namespaces = []
+
     apps = None
     start_http_server(8080)
 
