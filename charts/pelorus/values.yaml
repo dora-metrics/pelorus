@@ -10,12 +10,6 @@ extra_prometheus_hosts:
 # Uncomment this if your cluster serves privately signed certificates
 # custom_ca: true
 
-deployment:
-  labels:
-    app.kubernetes.io/component: prometheus
-    app.kubernetes.io/name: pelorus
-    app.kubernetes.io/version: v0.33.0
-
 exporters:
   instances:
   - app_name: deploytime-exporter
