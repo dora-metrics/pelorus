@@ -216,7 +216,8 @@ fi
 pushd "${SCRIPT_DIR}/../"
 
 # Apply config maps for the exporters
-oc apply -f "charts/pelorus/configmaps"
+# disable for now, as it's divergent from the install instructions.
+# oc apply -f "charts/pelorus/configmaps"
 
 helm install operators charts/operators --namespace pelorus --debug --wait --wait-for-jobs
 
