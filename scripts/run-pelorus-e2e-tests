@@ -166,7 +166,7 @@ diff -uNr "${DWN_DIR}/mongo-persistent.yaml" "${DWN_DIR}/mongo-persistent.yaml.b
 if [ "${ENABLE_FAIL_EXP}" == true ]; then
     GITHUB_SECRET_CONFIGURED=false
     # if github-secret is created in ci
-    oc get secret github-secret
+    oc -n $PELORUS_NAMESPACE get secret github-secret
     secret_present=$?
 
     if [[ $secret_present = 0 ]]; then
@@ -176,7 +176,7 @@ if [ "${ENABLE_FAIL_EXP}" == true ]; then
     elif [[ -z ${!GIT_USER} && -z ${!GIT_TOKEN} ]]; then
         # turn off debug if enabled
         if [[ $- == *x* ]]; then set +x; export debug_set_off=true; fi
-        oc -n pelorus create secret generic github-secret --from-literal=GITHUB_USER="$GIT_USER" --from-literal=TOKEN="$GIT_TOKEN"
+        oc -n $PELORUS_NAMESPACE create secret generic github-secret --from-literal=GITHUB_USER="$GIT_USER" --from-literal=TOKEN="$GIT_TOKEN"
         # if debug was turned off, turn it back on.
         if [[ $debug_set_off == true ]]; then set -x; fi
         GITHUB_SECRET_CONFIGURED=true
@@ -243,12 +243,22 @@ oc create -f "${DWN_DIR}/mongo-persistent.yaml"
 retry 2m 5s oc wait pod --for=condition=Ready -n mongo-persistent -l app=mongo
 retry 10m 10s oc wait pod --for=condition=Ready -n mongo-persistent -l app=todolist
 
-# Test
+# Test Committime and Deploytime
 committime_route=$(oc get route -n ${PELORUS_NAMESPACE} committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
 deploytime_route=$(oc get route -n ${PELORUS_NAMESPACE} deploytime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
 
 curl "$committime_route" 2>&1 | grep todolist
 curl "$deploytime_route" 2>&1 | grep todolist
+
+# Test Failure Exporter
+if [ "${ENABLE_FAIL_EXP}" == true ]; then
+    # GITHUB
+    if [ "${GITHUB_SECRET_CONFIGURED}" == true ]; then
+        failuretime_route=$(oc get route -n ${PELORUS_NAMESPACE} failure-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
+        curl "$failuretime_route" 2>&1 | grep todolist
+    fi
+    # TODO: JIRA
+fi
 
 if oc get pods -n pelorus | grep -q Crash ; then
     echo "Some pods are not functioning properly"
