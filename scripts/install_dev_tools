@@ -88,11 +88,24 @@ function get_download_url_from_github_api() {
     kernel_name="$(uname -s)" # e.g. Linux / Darwin
 
     # Little hack for grep as some projects are shipping release tarballs
-    # as x86_64 and some as amd64
-    if [[ "${arch}" == "x86_64" ]]; then
-        arch="-e ${arch} -e amd64"
-    elif [[ "${arch}" == "amd64" ]]; then
-        arch="-e ${arch} -e x86_64"
+    # as x86_64 and some as amd64.
+    if [[ ${kernel_name} == "Darwin" ]]; then
+        # Also, some projects are shipping universal binaries to support both
+        # x86 and arm macs. They are exposed as "all".
+        # This is a special case so we don't get `-e -e ${arch}`
+        if [[ ${arch} == "x86_64" ]]; then
+            arch="-e ${arch} -e amd64 -e all"
+        elif [[ ${arch} == "amd64" ]]; then
+            arch="-e ${arch} -e x86_64 -e all"
+        elif [[ ${arch} == "arm64" ]]; then
+            arch="-e ${arch} -e all"
+        fi
+    else
+        if [[ ${arch} == "x86_64" ]]; then
+            arch="-e ${arch} -e amd64"
+        elif [[ ${arch} == "amd64" ]]; then
+            arch="-e ${arch} -e x86_64"
+        fi
     fi
 
     # Call the API to find the latest binary matching kernel and architecture
