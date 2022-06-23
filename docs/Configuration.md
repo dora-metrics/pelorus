@@ -116,13 +116,13 @@ Note: The requirement to label the build with `app.kubernetes.io/name=<app_name>
 Create a secret containing your Git username and token.
 
 ```shell
-oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> -n pelorus
+oc create secret generic github-secret --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> -n pelorus
 ```
 
 Create a secret containing your Git username, token, and API.  An API example is `github.mycompany.com/api/v3`
 
 ```shell
-oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
+oc create secret generic github-secret --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
 ```
 
 #### Instance Config
@@ -145,8 +145,8 @@ This exporter provides several configuration options, passed via `pelorus-config
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
-| `GIT_USER` | yes | User's github username | unset |
-| `GIT_TOKEN` | yes | User's Github API Token | unset |
+| `USER` | yes | User's github username | unset |
+| `TOKEN` | yes | User's Github API Token | unset |
 | `GIT_API` | no | Github API FQDN.  This allows the override for Github Enterprise users.  Currently only applicable to `github` provider type. | `api.github.com` |
 | `GIT_PROVIDER` | no | Set Git provider type. Can be `github`, `gitlab`, or `bitbucket` | `github` |
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |

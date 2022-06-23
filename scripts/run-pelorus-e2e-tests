@@ -179,11 +179,11 @@ if [ "${ENABLE_FAIL_EXP}" == true ]; then
     if [[ $secret_present = 0 ]]; then
         echo "The github-secret was found"
         GITHUB_SECRET_CONFIGURED=true
-    # if GIT_USER and GIT_TOKEN are set
-    elif [[ -z ${!GIT_USER} && -z ${!GIT_TOKEN} ]]; then
+    # if TOKEN are set
+    elif [[ -n ${TOKEN} ]]; then
         # turn off debug if enabled
         if [[ $- == *x* ]]; then set +x; export debug_set_off=true; fi
-        oc -n $PELORUS_NAMESPACE create secret generic github-secret --from-literal=GITHUB_USER="$GIT_USER" --from-literal=TOKEN="$GIT_TOKEN"
+        oc -n $PELORUS_NAMESPACE create secret generic github-secret --from-literal=TOKEN="$TOKEN"
         # if debug was turned off, turn it back on.
         if [[ $debug_set_off == true ]]; then set -x; fi
         GITHUB_SECRET_CONFIGURED=true

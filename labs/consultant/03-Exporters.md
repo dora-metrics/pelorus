@@ -61,8 +61,8 @@ Confirm you have a [Github Personal Access Token](https://help.github.com/en/git
 Use the token information and the command below to generate a Github secret:
 
     oc create secret generic github-secret \
-      --from-literal=GIT_USER=<username> \
-      --from-literal=GIT_TOKEN=<personal access token> -n pelorus
+      --from-literal=USER=<username> \
+      --from-literal=TOKEN=<personal access token> -n pelorus
 
 Update the `values.yaml` and then upgrade our helm installation of Pelorus to add an additional exporter to the `instances` list:
 

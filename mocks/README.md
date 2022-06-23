@@ -27,8 +27,8 @@ Mock started at https://localhost:3000 (pid: 0, name: mockoon-openshift)
 Set up your envs in order to use the mock server.
 
 ```sh
-export GIT_USER=gituser
-export GIT_TOKEN=gittoken
+export USER=gituser
+export TOKEN=gittoken
 export GIT_API=localhost:3000
 export LOG_LEVEL=DEBUG
 export NAMESPACES=basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod
