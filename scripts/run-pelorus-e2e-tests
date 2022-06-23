@@ -62,6 +62,13 @@ function cleanup_and_exit() {
           fi
       fi
     fi
+    # Show logs from pods which are in CrashLoopBackOff state
+    for failing_pod in $(oc get pods -n "${PELORUS_NAMESPACE}" | grep -i crash | cut -d ' ' -f1);
+    do
+        echo "Logs from crashed pod: ${failing_pod}"
+        oc logs -n "${PELORUS_NAMESPACE}" "${failing_pod}"
+    done
+
     # Propagate exit value if was provided
     [ -n "${exit_val}" ] && echo "Exit code: ${exit_val}" && exit "$exit_val"
     exit 0
