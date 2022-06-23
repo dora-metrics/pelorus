@@ -243,22 +243,13 @@ oc create -f "${DWN_DIR}/mongo-persistent.yaml"
 retry 2m 5s oc wait pod --for=condition=Ready -n mongo-persistent -l app=mongo
 retry 10m 10s oc wait pod --for=condition=Ready -n mongo-persistent -l app=todolist
 
-# Test Committime and Deploytime
-committime_route=$(oc get route -n ${PELORUS_NAMESPACE} committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-deploytime_route=$(oc get route -n ${PELORUS_NAMESPACE} deploytime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-
-curl "$committime_route" 2>&1 | grep todolist
-curl "$deploytime_route" 2>&1 | grep todolist
-
-# Test Failure Exporter
-if [ "${ENABLE_FAIL_EXP}" == true ]; then
-    # GITHUB
-    if [ "${GITHUB_SECRET_CONFIGURED}" == true ]; then
-        failuretime_route=$(oc get route -n ${PELORUS_NAMESPACE} failure-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-        curl "$failuretime_route" 2>&1 | grep todolist
-    fi
-    # TODO: JIRA
-fi
+# Test all deployed exporters
+exporters=$(oc get route -n "${PELORUS_NAMESPACE}"|grep "-exporter")
+echo "$exporters"
+for exporter_route in $(echo "$exporters" | awk '{print $2}');
+do
+    curl "$exporter_route" 2>&1 | grep todolist || exit 2
+done
 
 if oc get pods -n pelorus | grep -q Crash ; then
     echo "Some pods are not functioning properly"
