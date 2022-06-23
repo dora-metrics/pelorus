@@ -86,6 +86,8 @@ def unset_envs():
         "GITHUB_USER",
         "GITHUB_TOKEN",
         "GITHUB_API",
+        "USER",
+        "TOKEN",
     ]
 
     for var in vars:
@@ -95,15 +97,18 @@ def unset_envs():
 
 
 @pytest.mark.parametrize(
-    "git_user,git_token,git_api,github_user,github_token,github_api",
+    "git_user,git_token,git_api,github_user,github_token,github_api,user,token",
     [
-        (None, None, None, "goodU", "goodT", "goodA"),
-        ("goodU", "goodT", "goodA", None, None, None),
-        ("goodU", "goodT", "goodA", "badU", "badT", "badA"),
+        (None, None, None, "goodU", "goodT", "goodA", None, None),
+        ("goodU", "goodT", "goodA", None, None, None, None, None),
+        ("goodU", "goodT", "goodA", "badU", "badT", "badA", None, None),
+        (None, None, "goodA", None, None, None, "goodU", "goodT"),
+        ("badU", "badT", "goodA", None, None, None, "goodU", "goodT"),
+        (None, None, "goodA", "badU", "badT", None, "goodU", "goodT"),
     ],
 )
 def test_ugprade_legacy_vars(
-    git_user, git_token, git_api, github_user, github_token, github_api
+    git_user, git_token, git_api, github_user, github_token, github_api, user, token
 ):
     unset_envs()
     if git_user:
@@ -118,8 +123,12 @@ def test_ugprade_legacy_vars(
         os.environ["GITHUB_TOKEN"] = github_token
     if github_api:
         os.environ["GITHUB_API"] = github_api
+    if user:
+        os.environ["USER"] = user
+    if token:
+        os.environ["TOKEN"] = token
     pelorus.upgrade_legacy_vars()
-    assert os.environ["GIT_USER"] == "goodU"
-    assert os.environ["GIT_TOKEN"] == "goodT"
+    assert os.environ["USER"] == "goodU"
+    assert os.environ["TOKEN"] == "goodT"
     assert os.environ["GIT_API"] == "goodA"
     unset_envs()

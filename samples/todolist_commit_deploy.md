@@ -118,7 +118,7 @@ To develop a Pelorus exporter please fork the Pelorus git source and branch
 2. If you have forked Pelorus to a private git repository
 Create a GitHub Personal Access Token and store it as a secret in Openshift:
 ```
-oc create secret generic github-secret --from-literal=GIT_USER=<username> --from-literal=GIT_TOKEN=<personal access token> --namespace pelorus
+oc create secret generic github-secret --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> --namespace pelorus
 ```
 
 Ensure you configure the exporters in /var/tmp/values.yml to use the github-secret:

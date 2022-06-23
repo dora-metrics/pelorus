@@ -221,8 +221,8 @@ Running an exporter on your local machine should follow this process:
 
 3. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](Configuration.md#configuring-exporters) to see supported variables).
 
-        export GIT_TOKEN=xxxx
-        export GIT_USER=xxxx
+        export TOKEN=xxxx
+        export USER=xxxx
 
 4. Log in to your OpenShift cluster
 
