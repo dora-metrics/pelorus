@@ -209,7 +209,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             metric = self._set_repo_url(metric, repo_url, build, errors)
 
-            metric = self._set_commit_hash(metric, errors)
+            metric = self._set_commit_hash_from_annotations(metric, errors)
 
             metric = self._set_commit_timestamp(metric, errors)
 
@@ -238,7 +238,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             logging.error(e, exc_info=True)
             return None
 
-    def _set_commit_hash(self, metric: CommitMetric, errors: list) -> CommitMetric:
+    def _set_commit_hash_from_annotations(
+        self, metric: CommitMetric, errors: list
+    ) -> CommitMetric:
         if not metric.commit_hash:
             commit_hash_annotation = get_env_var(
                 COMMIT_HASH_ANNOTATION_ENV,
@@ -254,7 +256,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     metric.commit_hash,
                 )
             else:
-                errors.append("Couldn't get commit hash")
+                errors.append("Couldn't get commit hash from annotations")
         return metric
 
     def _set_repo_url(
@@ -337,7 +339,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         Check the cache for the commit_time.
         If absent, call the API implemented by the subclass.
         """
-        if metric.commit_hash not in self._commit_dict:
+        if metric.commit_hash and metric.commit_hash not in self._commit_dict:
             logging.debug(
                 "sha: %s, commit_timestamp not found in cache, executing API call.",
                 metric.commit_hash,
@@ -349,7 +351,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             else:
                 # Add the timestamp to the cache
                 self._commit_dict[metric.commit_hash] = metric.commit_timestamp
-        else:
+        elif metric.commit_hash:
             metric.commit_timestamp = self._commit_dict[metric.commit_hash]
             logging.debug(
                 "Returning sha: %s, commit_timestamp: %s, from cache.",
