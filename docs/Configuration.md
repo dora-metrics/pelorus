@@ -189,7 +189,13 @@ This exporter provides several configuration options, passed via `pelorus-config
 
 ### Failure Time Exporter
 
-The job of the deploy time exporter is to capture the timestamp at which a failure occurs in a production environment and when it is resolved.
+The job of the failure time exporter is to capture the timestamp at which a failure occurs in a production environment and when it is resolved.
+
+Failure Time Exporter may be deployed with one of three backends, such as JIRA, GithHub Issues and ServiceNow. In one clusters' namespace there may be multiple instances of the Failure Time Exporter for each of the backends or/and watched projects.
+
+Each of the backend requires specific [configuration](#failureconfigmap), that may be used via ConfigMap associated with the exporter instance.
+
+For GitHub Issues and JIRA backends we require that all issues associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label, or custom label if it was configured via `APP_LABEL`.
 
 #### Suggested Secrets
 
@@ -224,6 +230,9 @@ oc create secret generic snow-secret \
 ```
 
 #### Instance Config Jira
+
+Note: By default JIRA exporter expects specific workflow to be used, where the issue needs to be `Resolved` with `resolutiondate` and all the relevant issues to be type of `Bug` with `Highest` priority with `app.kubernetes.io/name=<app_name>` label. This however can be customized to the orgaization needs by configuring `JIRA_JQL_SEARCH_QUERY`, `JIRA_RESOLVED_STATUS` and `APP_LABEL` options. Please refer to the [Failure Exporter ConfigMap Data Values](#failureconfigmap).
+
 ```yaml
 exporters:
   instances:
@@ -246,10 +255,10 @@ exporters:
     - github-issue-secret
     env_from_configmaps:
     - pelorus-config
-    - committime-config
+    - failuretime-github-config
 ```
 
-#### ConfigMap Data Values
+#### <a id="failureconfigmap"></a>ConfigMap Data Values
 This exporter provides several configuration options, passed via `pelorus-config` and `failuretime-config` variables. User may define own ConfigMaps and pass to the committime exporter in a similar way.
 
 | Variable | Required | Explanation | Default Value |
@@ -259,6 +268,7 @@ This exporter provides several configuration options, passed via `pelorus-config
 | `SERVER` | yes | URL to the Jira or ServiceNowServer  | unset  |
 | `USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
+| `APP_LABEL` | no | Used in GitHub and JIRA only. Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
 | `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2`. Value is ignored if `JIRA_JQL_SEARCH_QUERY` is defined. | unset |
 | `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
