@@ -213,10 +213,13 @@ fi
 # From now on, exit if something goes wrong
 set -e
 
-# Check if PULL_NUMBER exists and it's actual number
-if [ ${PULL_NUMBER+x} ] && [[ $PULL_NUMBER =~ ^[0-9]+$ ]]; then
-    echo "Provided PULL_NUMBER: '$PULL_NUMBER'"
-    sed -i "s/source_ref:.*/source_ref: refs\/pull\/${PULL_NUMBER}\/head/" "${DWN_DIR}/ci_values.yaml"
+# If this is a pull request from pelorus
+if [ ${REPO_NAME} == "pelorus" ]; then
+    # Check if PULL_NUMBER exists and it's actual number
+    if [ ${PULL_NUMBER+x} ] && [[ $PULL_NUMBER =~ ^[0-9]+$ ]]; then
+        echo "Provided PULL_NUMBER: '$PULL_NUMBER'"
+        sed -i "s/source_ref:.*/source_ref: refs\/pull\/${PULL_NUMBER}\/head/" "${DWN_DIR}/ci_values.yaml"
+    fi
 fi
 
 # Ensure we are in the top-level directory of pelorus project
