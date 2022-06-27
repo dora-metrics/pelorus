@@ -110,7 +110,7 @@ mockoon-tests: $(PELORUS_VENV)
 .PHONY: e2e-tests e2e-tests-scenario-1 e2e-tests-scenario-1
 e2e-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-pelorus-e2e-tests
+	./scripts/run-pelorus-e2e-tests -o konveyor -e failure
 
 e2e-tests-scenario-1: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
