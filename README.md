@@ -30,3 +30,8 @@ Pelorus documentation is available at [pelorus.readthedocs.io](https://pelorus.r
 ## Contributing to Pelorus
 
 If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found in the [contribution guide](./CONTRIBUTING.md)
+
+
+## Statement of Support
+
+Our support policy can be found in the [Upstream Support statement](docs/UpstreamSupport.md)
