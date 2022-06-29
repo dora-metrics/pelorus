@@ -181,7 +181,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             logging.debug(
                 (
                     "For project %(project)s, repo %(repo)s, build %(build)s, "
-                    "commit %(commit)s BitBucket returned %(response)s",
+                    "commit %(commit)s BitBucket returned %(response)s"
                 ),
                 dict(
                     project=project_name,
@@ -197,7 +197,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             logging.error(
                 (
                     "HTTP Error while searching for project %(project)s, repo %(repo)s, build %(build)s, "
-                    "commit %(commit)s: %(http_err)s",
+                    "commit %(commit)s: %(http_err)s"
                 ),
                 dict(
                     project=project_name,
@@ -211,7 +211,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             logging.error(
                 (
                     "Response for project %(project)s, repo %(repo)s, build %(build)s, "
-                    "commit %(commit)s was not valid JSON: %(json_err)s",
+                    "commit %(commit)s was not valid JSON: %(json_err)s"
                 ),
                 dict(
                     project=project_name,
