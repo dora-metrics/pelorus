@@ -4,7 +4,7 @@ set -euo pipefail
 
 all_cmds_found=0
 for cmd in oc tkn; do
-   if ! which -s $cmd; then
+   if ! command -v $cmd; then
       echo "No $cmd executable found in $PATH" >&2
       all_cmds_found=1
    fi
