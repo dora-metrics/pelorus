@@ -13,20 +13,40 @@ from committime.collector_base import AbstractCommitCollector
 class ApiVersion(enum.Enum):
     """Known versions of the Bitbucket API."""
 
-    V_1_0 = "1.0"
-    V_2_0 = "2.0"
+    root: str
+    test: str
+    pattern: str
+
+    def __init__(self, root, test, pattern):
+        self.root = root
+        self.test = test
+        self.pattern = pattern
+
+    V_2_0 = (
+        "api",
+        "2.0/repositories",
+        "2.0/repositories/{group}/{project}/commit/{commit}",
+    )
+
+    V_1_0 = (
+        "rest/api",
+        "1.0/projects",
+        "1.0/projects/{group}/repos/{project}/commits/{commit}",
+    )
+
+    def commit_url(self, server: str, group: str, project: str, commit: str) -> str:
+        return pelorus.url_joiner(
+            server,
+            self.root,
+            self.pattern.format(group=group, project=project, commit=commit),
+        )
+
+    def test_url(self, server: str) -> str:
+        return pelorus.url_joiner(server, self.root, self.test)
 
 
 class BitbucketCommitCollector(AbstractCommitCollector):
 
-    # globals for Bitbucket v1 API
-    V1_API_ROOT = "rest/api"
-    V1_API_TEST = "1.0/projects"
-    V1_API_PATTERN = "1.0/projects/{group}/repos/{project}/commits/{commit}"
-    # globals for Bitbucket v2 API
-    V2_API_ROOT = "api"
-    V2_API_TEST = "2.0/repositories"
-    V2_API_PATTERN = "2.0/repositories/{group}/{project}/commit/{commit}"
     # Default http headers needed for API calls
     DEFAULT_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 
@@ -40,22 +60,19 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             "BitBucket",
             "%Y-%m-%dT%H:%M:%S%z",
         )
-        self.__server_dict: dict[str, ApiVersion] = {}
+        self.__cached_server_api_versions: dict[str, ApiVersion] = {}
         self.__session = requests.Session()
         self.__session.verify = tls_verify
+        self.__session.headers.update(self.DEFAULT_HEADERS)
+        self.__session.auth = (self._username, self._token)
 
-    # base class impl
     def get_commit_time(self, metric: CommitMetric):
-        """Method called to collect data and send to Prometheus"""
-
         git_server = metric.git_server
+
         # do a simple check for hosted Git services.
         if "github" in git_server or "gitlab" in git_server:
             logging.warn("Skipping non BitBucket server, found %s" % (git_server))
             return None
-
-        # Set the session auth
-        self.__session.auth = (self._username, self._token)
 
         try:
             # Get or figure out the BB API version
@@ -64,9 +81,9 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             if api_version is None:
                 return metric
 
-            if api_version == ApiVersion.V_1_0:
+            if api_version is ApiVersion.V_1_0:
                 metric = self.get_commit_time_v1(metric)
-            elif api_version == ApiVersion.V_2_0:
+            elif api_version is ApiVersion.V_2_0:
                 metric = self.get_commit_time_v2(metric)
             else:
                 raise RuntimeError(f"unknown API Version {api_version}")
@@ -99,9 +116,6 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         # URL munging copied from original code.
         # TODO: this is messy. We should investigate the parsing that CommitMetric is doing.
 
-        # start with the V1 globals
-        api_root = self.V1_API_ROOT
-        api_pattern = self.V1_API_PATTERN
         # Due to the BB V1 git pattern differences, need remove '/scm' and parse again.
         old_url = metric.repo_url
         # Parse out the V1 /scm, for whatever reason why it is present.
@@ -115,10 +129,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         # set the URL back to the original
         metric.repo_url = old_url
 
-        api_server = pelorus.url_joiner(git_server, api_root)
-
         api_dict = self.get_commit_information(
-            api_pattern, api_server, group, project_name, sha, metric
+            git_server, ApiVersion.V_1_0, group, project_name, sha, metric
         )
 
         if api_dict is None:
@@ -126,9 +138,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
 
         # API V1 has the commit timestamp, which does not need to be converted
         commit_timestamp = api_dict["committerTimestamp"]
-        logging.debug(
-            "API v1 returned sha: %s, timestamp: %s" % (sha, str(commit_timestamp))
-        )
+        logging.debug("API v1 returned sha: %s, timestamp: %s", sha, commit_timestamp)
         # Convert timestamp from miliseconds to seconds
         converted_timestamp = commit_timestamp / 1000
         # set the timestamp in the metric
@@ -148,13 +158,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         sha = metric.commit_hash
         group = metric.repo_group
 
-        api_root = self.V2_API_ROOT
-        api_pattern = self.V2_API_PATTERN
-
-        api_server = pelorus.url_joiner(git_server, api_root)
-
         api_dict = self.get_commit_information(
-            api_pattern, api_server, group, project_name, sha, metric
+            git_server, ApiVersion.V_2_0, group, project_name, sha, metric
         )
 
         if api_dict is None:
@@ -163,9 +168,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         # API V2 only has the commit time, which needs to be converted.
         # get the commit date/time
         commit_time = api_dict["date"]
-        logging.debug(
-            "API v2 returned sha: %s, commit date: %s" % (sha, str(commit_time))
-        )
+        logging.debug("API v2 returned sha: %s, commit date: %s", sha, commit_time)
         # set the commit time from the API
         metric.commit_time = commit_time
         # set the timestamp after conversion
@@ -175,8 +178,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
 
     def get_commit_information(
         self,
-        api_pattern: str,
-        api_server: str,
+        git_server: str,
+        api_version: ApiVersion,
         group: str,
         project_name: str,
         sha: str,
@@ -196,12 +199,9 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         """
         api_response = None
         try:
-            path = api_pattern.format(group=group, project=project_name, commit=sha)
-            url = pelorus.url_joiner(api_server, path)
+            url = api_version.commit_url(git_server, group, project_name, sha)
 
-            response = self.__session.request(
-                "GET", url=url, headers=self.DEFAULT_HEADERS
-            )
+            response = self.__session.get(url)
             response.encoding = "utf-8"
             response.raise_for_status()
 
@@ -256,33 +256,51 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         return api_response
 
     def get_api_version(self, git_server: str) -> Optional[ApiVersion]:
-        """Checks the map for a the Git server API version.  If not found it makes an API call to determine."""
-        api_version = self.__server_dict.get(git_server)
+        """
+        Get the API version for the server from the cache.
+        If absent, test API urls to see which version is correct.
+        """
+        api_version = self.__cached_server_api_versions.get(git_server)
 
         if api_version is not None:
             return api_version
 
-        if self.check_api_verison(git_server, self.V2_API_ROOT, self.V2_API_TEST):
-            api_version = self.__server_dict[git_server] = ApiVersion.V_2_0
-        elif self.check_api_verison(git_server, self.V1_API_ROOT, self.V1_API_TEST):
-            api_version = self.__server_dict[git_server] = ApiVersion.V_1_0
+        try:
+            for api_version in ApiVersion:
+                if self.check_api_verison(git_server, api_version):
+                    api_version = self.__cached_server_api_versions[
+                        git_server
+                    ] = api_version
+        except requests.HTTPError as e:
+            logging.error(
+                "While testing for API Version %s at url %s, got response: %s",
+                ApiVersion._name_,
+                git_server,
+                e,
+            )
 
         return api_version
 
-    def check_api_verison(self, git_server: str, api_root: str, api_test: str) -> bool:
-        """Makes an API call to determine the API version"""
-        api_server = pelorus.url_joiner(git_server, api_root)
-        url = pelorus.url_joiner(api_server, api_test)
+    def check_api_verison(self, git_server: str, api_version: ApiVersion) -> bool:
+        """
+        Check if the git_server supports a given ApiVersion.
+        Will return True if so, False if there's some non-successful response,
+        or re-raise the requests.HTTPError if the response was 401 UNAUTHORIZED
+        """
+        url = api_version.test_url(git_server)
 
-        response = self.__session.request("GET", url=url, headers=self.DEFAULT_HEADERS)
-        status_code = response.status_code
+        response = self.__session.get(url)
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            status = e.response.status_code
 
-        if status_code == 200:
-            return True
-        else:
+            if status == requests.codes.unauthorized:
+                raise
+
             logging.warning(
                 "While testing API version at URL %s got response: %s",
                 url,
-                status_code,
+                status,
             )
             return False
