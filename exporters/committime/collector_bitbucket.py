@@ -30,7 +30,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
     # Default http headers needed for API calls
     DEFAULT_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 
-    def __init__(self, kube_client, username, token, namespaces, apps):
+    def __init__(self, kube_client, username, token, namespaces, apps, tls_verify=True):
         super().__init__(
             kube_client,
             username,
@@ -42,6 +42,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         )
         self.__server_dict: dict[str, ApiVersion] = {}
         self.__session = requests.Session()
+        self.__session.verify = tls_verify
 
     # base class impl
     def get_commit_time(self, metric: CommitMetric):
@@ -132,6 +133,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                 )
             else:
                 raise RuntimeError(f"unknown API Version {api_version}")
+        except requests.exceptions.SSLError as e:
+            logging.error("TLS error talking to %s: %s", git_server, e)
         except Exception:
             logging.error(
                 "Failed processing commit time for build %s" % metric.build_name,

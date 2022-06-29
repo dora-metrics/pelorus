@@ -17,7 +17,14 @@ from committime.collector_gitlab import GitLabCommitCollector
 class GitFactory:
     @staticmethod
     def getCollector(
-        kube_client, username, token, namespaces, apps, git_api, git_provider
+        kube_client,
+        username,
+        token,
+        namespaces,
+        apps,
+        git_api,
+        git_provider,
+        tls_verify: bool,
     ):
         if git_provider == "gitlab":
             return GitLabCommitCollector(kube_client, username, token, namespaces, apps)
@@ -27,7 +34,7 @@ class GitFactory:
             )
         if git_provider == "bitbucket":
             return BitbucketCommitCollector(
-                kube_client, username, token, namespaces, apps
+                kube_client, username, token, namespaces, apps, tls_verify=tls_verify
             )
         if git_provider == "gitea":
             return GiteaCommitCollector(
@@ -66,7 +73,7 @@ if __name__ == "__main__":
     start_http_server(8080)
 
     collector = GitFactory.getCollector(
-        dyn_client, username, token, namespaces, apps, git_api, git_provider
+        dyn_client, username, token, namespaces, apps, git_api, git_provider, tls_verify
     )
     REGISTRY.register(collector)
 
