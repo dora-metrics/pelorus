@@ -136,12 +136,12 @@ def upgrade_legacy_vars():
         os.environ["GIT_API"] = api
 
 
-def url_joiner(url, path, trailing=None):
-    """Join to sections for a URL and add proper forward slashes"""
-    url_link = "/".join(s.strip("/") for s in [url, path])
-    if trailing:
-        url_link += "/"
-    return url_link
+def url_joiner(base: str, *parts: str):
+    """
+    Joins each part together (including the base url) with a slash, stripping any leading or trailing slashes.
+    Used for "normalizing" URLs to handle most use cases.
+    """
+    return base.strip("/") + "/" + "/".join(s.strip("/") for s in parts)
 
 
 class AbstractPelorusExporter(ABC):
