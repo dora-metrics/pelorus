@@ -1,6 +1,6 @@
 import enum
 import logging
-from typing import Optional
+from typing import Optional, cast
 
 import requests
 import requests.exceptions
@@ -148,6 +148,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             converted_timestamp
         )
 
+        return metric
+
     def get_commit_time_v2(self, metric: CommitMetric) -> CommitMetric:
         """
         Get commit time information from the V2 version of the API.
@@ -175,6 +177,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
             metric.commit_time, self._timedate_format
         )
+
+        return metric
 
     def get_commit_information(
         self,
@@ -266,15 +270,16 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             return api_version
 
         try:
-            for api_version in ApiVersion:
-                if self.check_api_verison(git_server, api_version):
+            for potential_api_version in ApiVersion:
+                if self.check_api_verison(git_server, potential_api_version):
                     api_version = self.__cached_server_api_versions[
                         git_server
-                    ] = api_version
+                    ] = potential_api_version
+                    break
         except requests.HTTPError as e:
             logging.error(
-                "While testing for API Version %s at url %s, got response: %s",
-                ApiVersion._name_,
+                "While testing for API Version %s at server %s, got response: %s",
+                cast(ApiVersion, potential_api_version)._name_,
                 git_server,
                 e,
             )
@@ -292,6 +297,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         response = self.__session.get(url)
         try:
             response.raise_for_status()
+            return True
         except requests.HTTPError as e:
             status = e.response.status_code
 
