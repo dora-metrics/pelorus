@@ -214,7 +214,7 @@ fi
 set -e
 
 # If this is a pull request from pelorus
-if [ ${REPO_NAME} == "pelorus" ]; then
+if [ "${REPO_NAME}" == "pelorus" ]; then
     # Check if PULL_NUMBER exists and it's actual number
     if [ ${PULL_NUMBER+x} ] && [[ $PULL_NUMBER =~ ^[0-9]+$ ]]; then
         echo "Provided PULL_NUMBER: '$PULL_NUMBER'"
