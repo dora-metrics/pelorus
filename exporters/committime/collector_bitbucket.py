@@ -64,84 +64,114 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             if api_version is None:
                 return metric
 
-            # get the project, group, and commit sha properties from the existing metric
-            project_name = metric.repo_project
-            sha = metric.commit_hash
-            group = metric.repo_group
-
-            # set API variables depending on the version
             if api_version == ApiVersion.V_1_0:
-                # start with the V1 globals
-                api_root = self.V1_API_ROOT
-                api_pattern = self.V1_API_PATTERN
-                # Due to the BB V1 git pattern differences, need remove '/scm' and parse again.
-                old_url = metric.repo_url
-                # Parse out the V1 /scm, for whatever reason why it is present.
-                new_url = old_url.replace("/scm", "")
-                # set the new url, so the parsing will happen
-                metric.repo_url = new_url
-                # set the new project name
-                project_name = metric.repo_project
-                # set the new group
-                group = metric.repo_group
-                # set the URL back to the original
-                metric.repo_url = old_url
+                metric = self.get_commit_time_v1(metric)
             elif api_version == ApiVersion.V_2_0:
-                # Just set the V2 globals
-                api_root = self.V2_API_ROOT
-                api_pattern = self.V2_API_PATTERN
-            else:
-                raise RuntimeError(f"unknown API Version {api_version}")
-
-            # Create the API server from the Git server and API Root
-            api_server = pelorus.url_joiner(git_server, api_root)
-
-            api_j = self.get_commit_information(
-                api_pattern, api_server, group, project_name, sha, metric
-            )
-
-            if api_j is None:
-                return metric
-
-            if api_version == ApiVersion.V_2_0:
-                # API V2 only has the commit time, which needs to be converted.
-                # get the commit date/time
-                commit_time = api_j["date"]
-                logging.debug(
-                    "API v2 returned sha: %s, commit date: %s" % (sha, str(commit_time))
-                )
-                # set the commit time from the API
-                metric.commit_time = commit_time
-                # set the timestamp after conversion
-                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
-                    metric.commit_time, self._timedate_format
-                )
-            elif api_version == ApiVersion.V_1_0:
-                # API V1 has the commit timestamp, which does not need to be converted
-                commit_timestamp = api_j["committerTimestamp"]
-                logging.debug(
-                    "API v1 returned sha: %s, timestamp: %s"
-                    % (sha, str(commit_timestamp))
-                )
-                # Convert timestamp from miliseconds to seconds
-                converted_timestamp = commit_timestamp / 1000
-                # set the timestamp in the metric
-                metric.commit_timestamp = converted_timestamp
-                # convert the time stamp to datetime and set in metric
-                metric.commit_time = pelorus.convert_timestamp_to_date_time_str(
-                    converted_timestamp
-                )
+                metric = self.get_commit_time_v2(metric)
             else:
                 raise RuntimeError(f"unknown API Version {api_version}")
         except requests.exceptions.SSLError as e:
-            logging.error("TLS error talking to %s: %s", git_server, e)
+            logging.error(
+                "TLS error talking to %s for build %s: %s",
+                git_server,
+                metric.build_name,
+                e,
+            )
         except Exception:
             logging.error(
-                "Failed processing commit time for build %s" % metric.build_name,
+                "Failed processing commit time for build %s",
+                metric.build_name,
                 exc_info=True,
             )
             raise
         return metric
+
+    def get_commit_time_v1(self, metric: CommitMetric) -> CommitMetric:
+        """
+        Get commit time information from the V1 version of the API.
+        """
+        git_server = metric.git_server
+
+        project_name = metric.repo_project
+        sha = metric.commit_hash
+        group = metric.repo_group
+
+        # URL munging copied from original code.
+        # TODO: this is messy. We should investigate the parsing that CommitMetric is doing.
+
+        # start with the V1 globals
+        api_root = self.V1_API_ROOT
+        api_pattern = self.V1_API_PATTERN
+        # Due to the BB V1 git pattern differences, need remove '/scm' and parse again.
+        old_url = metric.repo_url
+        # Parse out the V1 /scm, for whatever reason why it is present.
+        new_url = old_url.replace("/scm", "")
+        # set the new url, so the parsing will happen
+        metric.repo_url = new_url
+        # set the new project name
+        project_name = metric.repo_project
+        # set the new group
+        group = metric.repo_group
+        # set the URL back to the original
+        metric.repo_url = old_url
+
+        api_server = pelorus.url_joiner(git_server, api_root)
+
+        api_dict = self.get_commit_information(
+            api_pattern, api_server, group, project_name, sha, metric
+        )
+
+        if api_dict is None:
+            return metric
+
+        # API V1 has the commit timestamp, which does not need to be converted
+        commit_timestamp = api_dict["committerTimestamp"]
+        logging.debug(
+            "API v1 returned sha: %s, timestamp: %s" % (sha, str(commit_timestamp))
+        )
+        # Convert timestamp from miliseconds to seconds
+        converted_timestamp = commit_timestamp / 1000
+        # set the timestamp in the metric
+        metric.commit_timestamp = converted_timestamp
+        # convert the time stamp to datetime and set in metric
+        metric.commit_time = pelorus.convert_timestamp_to_date_time_str(
+            converted_timestamp
+        )
+
+    def get_commit_time_v2(self, metric: CommitMetric) -> CommitMetric:
+        """
+        Get commit time information from the V2 version of the API.
+        """
+        git_server = metric.git_server
+
+        project_name = metric.repo_project
+        sha = metric.commit_hash
+        group = metric.repo_group
+
+        api_root = self.V2_API_ROOT
+        api_pattern = self.V2_API_PATTERN
+
+        api_server = pelorus.url_joiner(git_server, api_root)
+
+        api_dict = self.get_commit_information(
+            api_pattern, api_server, group, project_name, sha, metric
+        )
+
+        if api_dict is None:
+            return metric
+
+        # API V2 only has the commit time, which needs to be converted.
+        # get the commit date/time
+        commit_time = api_dict["date"]
+        logging.debug(
+            "API v2 returned sha: %s, commit date: %s" % (sha, str(commit_time))
+        )
+        # set the commit time from the API
+        metric.commit_time = commit_time
+        # set the timestamp after conversion
+        metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
+            metric.commit_time, self._timedate_format
+        )
 
     def get_commit_information(
         self,
@@ -156,7 +186,6 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         Call the bitbucket API to get commit information.
 
         Returns None if any of the following occur:
-        - there was an exception,
         - the response status code was not a success
         - the response body was not valid JSON
         - the response body was JSON, but not a dictionary
@@ -223,12 +252,6 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                     commit=metric.commit_hash,
                     json_err=e,
                 ),
-            )
-        except Exception:
-            logging.warning(
-                "Failed to find project: %s, repo: %s for build %s"
-                % (metric.repo_url, project_name, metric.build_name),
-                exc_info=True,
             )
         return api_response
 
