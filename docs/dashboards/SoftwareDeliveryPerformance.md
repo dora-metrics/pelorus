@@ -81,8 +81,8 @@ The following exporters are required to calculate _Mean Time to Restore_:
 
 The exporters are only responsible for gathering data about individual events. Before the dashboard consumes them, we perform some aggregation calculations in a set of [PrometheusRules](https://github.com/konveyor/pelorus/blob/master/charts/deploy/templates/prometheus-rules.yaml). This converts individual `failure_creation_timestamp` and `failure_resolution_timestamp` data points into the following metrics:
 
-* `fr:time_to_restore` - A calculated time to restore for each failure event (`failure_resolution_timestamp - failure_creation_timestamp`)
-* `fr:time_to_restore:global` - A global average of all `fr:time_to_restore` calculations.
+* `sdp:time_to_restore` - A calculated time to restore for each failure event (`failure_resolution_timestamp - failure_creation_timestamp`)
+* `sdp:time_to_restore:global` - A global average of all `sdp:time_to_restore` calculations.
 
 The dashboard then displays this information for a given time range, and compares that number to the previous time range.
 
@@ -107,6 +107,6 @@ The following exporters are require to calculate _Change Failure Rate_:
 
 The exporters are only responsible for gathering data about individual events. Before the dashboard consumes them, we perform some aggregation calculations in a set of [PrometheusRules](https://github.com/konveyor/pelorus/blob/master/charts/deploy/templates/prometheus-rules.yaml). This converts individual `failure_creation_timestamp` and `deploy_time` data points into the following metric:
 
-* `fr:change_failure_rate` - A ratio of the number of failed changes to the total number of changes to the system.
+* `sdp:change_failure_rate` - A ratio of the number of failed changes to the total number of changes to the system.
 
 The dashboard then displays this metric over the selected time range, as well as a compares it to the previous time range.
