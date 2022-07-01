@@ -181,7 +181,7 @@ isort-check: $(PELORUS_VENV)
 
 # Linting
 
-.PHONY: lint pylava chart-lint chart-lint-optional shellcheck shellcheck-optional
+.PHONY: lint pylava chart-lint chart-lint-optional shellcheck shellcheck-optional chart-check-bump
 ## lint: lint python code, shell scripts, and helm charts
 lint: pylava chart-lint-optional shellcheck-optional
 
@@ -195,6 +195,12 @@ pylava: $(PELORUS_VENV)
 # devs don't have it installed.
 
 # shellcheck follows a similar pattern, but is not currently set up for CI.
+
+## chart-check-bump: lint helm charts, attempting to bump their versions if required
+chart-check-bump: $(PELORUS_VENV)
+	./scripts/install_dev_tools -v $(PELORUS_VENV) -c ct && \
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/chart-check-and-bump
 
 chart-lint: $(PELORUS_VENV)
 	./scripts/install_dev_tools -v $(PELORUS_VENV) -c ct && \

@@ -29,7 +29,7 @@ Currently we have two charts:
     * A set of Grafana Dashboards and Datasources
     * The Pelorus exporters, managed in an [exporter](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
 
-We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `ct lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
+We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `make chart-lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
 
 ### Updating the chart versions
 
@@ -40,8 +40,15 @@ We have provided scripts that can test when a version bump is needed and do the 
 1. Ensure the development environment is set up with `make dev-env`.
 2. Run `make chart-lint` to lint the charts, including checking the version number.
 
-You can check all chart versions and bump them if needed with `./scripts/chart-check-and-bump`,
-or bump specific charts with `./scripts/bump-version CHART_PATH [ CHART_PATH ...]`.
+You can check all chart versions and bump them if needed with a script that compares upstream pelorus repository with the changes in a fork. To do so ensure your upstream repository is added to your fork by:
+
+    $ git remote add upstream https://github.com/konveyor/pelorus.git
+    $ git pull
+    $ make chart-check-bump
+
+or bump specific charts with shell script:
+
+    $ ./scripts/bump-version CHART_PATH [ CHART_PATH ...]
 
 ## Dashboard Development
 
@@ -51,14 +58,17 @@ To effectively do dashboard development, you'll likely need at least two browser
 
 The following outlines a workflow for working on a dashboard:
 
-1. Sign in to Grafana via the Grafana route.
+1. Sign in to Grafana via the Grafana route. To check the route:
+
+        $ oc get route grafana-route -n pelorus
+
 1. Once signed in, sign as an administrator
     1. Click the signin button in the bottom right corner:  
     ![Signin button](img/signin.png)
     1. The admin credentials can be pulled from the following commands:
 
-            oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_USER}' | base64 -d
-            oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
+            $ oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_USER}' | base64 -d
+            $ oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
 1. Export the dashboard JSON.
     1. Open the dashboard, and select the **Share...** button.
     1. Select the **Export** tab.
@@ -113,20 +123,28 @@ A Pelorus exporter is simply a [Prometheus exporter](https://prometheus.io/docs/
 
 ### Exporter directory layout
 
-The following is a minimal directory structure for a Pelorus exporter.
+The following is a recommended directory structure for a Pelorus exporter `<NAME>`.
 
 ```
-exporters/exporter/
-├── app.py
-├── README.md
-└── values.yaml
+.
+├── charts
+│   └── pelorus
+│       ├── configmaps
+│       │   └── <NAME>.yaml
+│       └── values.yaml
+└── exporters
+    ├── <NAME>
+    │   ├── app.py
+    │   └── README.md
+    └── tests
+        └── test_<NAME>.py
 ```
 
 ### Dev Environment Setup
 
 #### Python & Repo Setup
 
-After cloning the repo, you'll need a python version that's >= 3.9 but <= 3.10.2.
+After cloning the repo, you'll need a python version that's >= 3.9 but < 3.11.
 
 Running `make dev-env` should be enough to get you started.
 
@@ -134,8 +152,8 @@ This will:
 
 - check for the right version of python
 - set up a virtual environment
-- install required CLI tools such as helm, oc, tkn and ct (inside .venv/bin)
-- install dependencies
+- install required CLI tools such as helm, oc, tkn and ct, promtool, conftest (inside .venv/bin)
+- install required python runtime and test dependencies
 - install the exporters package
 - set up git hooks for formatting and linting checks
 - configure `git blame` to ignore large revisions that just changed formatting
@@ -221,12 +239,17 @@ Running an exporter on your local machine should follow this process:
 
 3. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](Configuration.md#configuring-exporters) to see supported variables).
 
+        export LOG_LEVEL=debug
         export TOKEN=xxxx
         export USER=xxxx
 
-4. Log in to your OpenShift cluster
+4. Log in to your OpenShift cluster  OR export KUBECONFIG environment variable
 
         oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443
+
+        # OR
+
+        export KUBECONFIG=/path/to/kubeconfig_file
 
 5. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
 
@@ -249,13 +272,25 @@ At this point, your exporter should be available at http://localhost:8080
 
 The following are notes and general steps for testing Pull Requests for specific types of changes.
 
+To checkout PR we recommend using [GitHub CLI](https://cli.github.com/), which simplifies process of pulling PRs.
+
+Ensure you have [Pelorus](https://github.com/konveyor/pelorus) GitHub project Forked into your GitHub user space.
+
+#### <a id="checkout"></a>
+Checkout the PR on top of your fork.
+
+    git clone git@github.com:<your_github_username>/pelorus.git
+    cd pelorus
+    gh pr checkout 535
+
+    # If asked:
+    # ? Which should be the base repository, select:
+    # > konveyor/pelorus
+
+
 ### Dashboard Changes
 
-1. Clone/checkout the PR fork/branch
-
-        git remote add themoosman git@github.com:themoosman/pelorus.git
-        git fetch themoosman
-        git checkout themoosman/feature-branch
+1. [Checkout](#checkout) the PR on top of your fork.
 
 2. [Install Pelorus](Install.md) from checked out fork/branch.
 
@@ -275,13 +310,9 @@ The following are notes and general steps for testing Pull Requests for specific
 
 ### Exporter Changes
 
-Most exporter changes can be tested locally.
+Each PR runs exporter tests in the CI systems, however those changes can be tested locally in a very similar way they run in the CI.
 
-1. Clone/checkout the PR fork/branch
-
-        git remote add themoosman git@github.com:themoosman/pelorus.git
-        git fetch themoosman
-        git checkout themoosman/feature-branch
+1. [Checkout](#checkout) the PR on top of your fork.
 
 2. Set up the dev environment
 
@@ -291,11 +322,16 @@ Most exporter changes can be tested locally.
 
         . .venv/bin/activate
 
-4. Run unit tests using `python -m pytest`.
+4. Check what type of tests you can run
+
+        make help
+
+5. As an example run unit tests using `make unit-tests`.
     1. You can also run coverage reports with the following:
 
-            coverage run -m pytest
+            coverage run -m pytest -rap -m "not integration and not mockoon"
             coverage report
+
 
 5. Gather necessary [configuration information](Configuration.md#configuring-exporters).
 6. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
@@ -309,6 +345,15 @@ For testing changes to the helm chart, you should just follow the [standard inst
 
 * All expected pods are running and healthy
 * Any expected behavior changes mentioned in the PR can be observed.
+
+A different way is to simply run e2e-tests against your cluster, to do so, **ENSURE** your pelorus namespace is either not existing or no resources are within that namespace.
+
+    ​export KUBECONFIG=/path/to/kubeconfig_file
+    # DANGEROUS as this will remove your previously deployed pelorus instance
+    oc delete namespace pelorus
+    make e2e-tests
+    # Check if command ran without failures
+    echo $?
 
 You can do some rudimentary linting with `make chart-lint`.
 
