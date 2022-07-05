@@ -14,11 +14,6 @@ Before deploying the tooling, you must have the following prepared
   * jq
   * git
 
-Additionally, if you are planning to use the out of the box exporters to collect Software Delivery data, you will need:
-
-* A [Github Personal Access Token](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line)
-* A [Jira Personal Access Token](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
-
 ## Initial Deployment
 
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.

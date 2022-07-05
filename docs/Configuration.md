@@ -87,6 +87,64 @@ data:
   NAMESPACES: "default"    # ""
 ```
 
+### Authentication to Remote Services
+
+Pelorus exporters make use of `personal access tokens` when authentication is 
+required.  It is recommended to configure the Pelorus exporters with authenticaion
+via the `TOKEN` key to avoid connection rate limiting and access restrictions.
+
+More information about personal access tokens:
+* [Github Personal Access Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+
+* [Jira / Bitbucket Personal Access Tokens](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
+
+* [Gitlab Personal Access Tokens](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
+
+* [Microsoft Azure DevOps Tokens](https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows)
+
+* [Gitea Tokens](https://docs.gitea.io/en-us/api-usage/#generating-and-listing-api-tokens)
+
+To store a personal access token securely and to make the token available to Pelorus use
+Openshift secrets. Pelorus can utilize secrets for all of the exporters. The following
+is an example for the committime exporter.
+
+A simple Github example:
+```shell
+oc create secret generic github-secret --from-literal=TOKEN=<personal access token> -n pelorus
+```
+
+A Pelorus exporter can require additional information to collect data such as the 
+remote `GIT_API` or `USER` information.  It is recommended to consult the requirements
+for each Pelorus exporter in this guide and include the additional key / value information in the Openshift secret. An API example is `github.mycompany.com/api/v3`
+
+The cli commands can also be substituted with Secret templates. Example files can be found [here](https://github.com/konveyor/pelorus/tree/master/charts/pelorus/secrets)
+
+Create a secret containing your Git username, token, and API example:  
+
+```shell
+oc create secret generic github-secret --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
+```
+
+A Jira example:
+```shell
+oc create secret generic jira-secret \
+--from-literal=SERVER=<Jira Server> \
+--from-literal=USER=<username/e-mail> \
+--from-literal=TOKEN=<personal access token> \
+-n pelorus
+```
+
+A ServiceNow example:
+```shell
+oc create secret generic snow-secret \
+--from-literal=SERVER=<ServiceNow Server> \
+--from-literal=USER=<username> \
+--from-literal=TOKEN=<personal access token> \
+--from-literal=TRACKER_PROVICER=servicenow \
+--from-literal=APP_FIELD=<Custom app label field> \
+-n pelorus
+```
+
 ### Commit Time Exporter
 
 The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
@@ -111,19 +169,6 @@ Custom Annotation names may also be configured using ConfigMap Data Values.
 
 Note: The requirement to label the build with `app.kubernetes.io/name=<app_name>` for the annotated Builds applies.
 
-#### Suggested Secrets
-
-Create a secret containing your Git username and token.
-
-```shell
-oc create secret generic github-secret --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> -n pelorus
-```
-
-Create a secret containing your Git username, token, and API.  An API example is `github.mycompany.com/api/v3`
-
-```shell
-oc create secret generic github-secret --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
-```
 
 #### Instance Config
 
@@ -197,37 +242,6 @@ Each of the backend requires specific [configuration](#failureconfigmap), that m
 
 For GitHub Issues and JIRA backends we require that all issues associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label, or custom label if it was configured via `APP_LABEL`.
 
-#### Suggested Secrets
-
-Create a secret containing your Jira information.
-
-```shell
-oc create secret generic jira-secret \
---from-literal=SERVER=<Jira Server> \
---from-literal=USER=<username/e-mail> \
---from-literal=TOKEN=<personal access token> \
--n pelorus
-```
-
-For Github create a secret containing your Github token.
-
-```shell
-oc create secret generic github-issue-secret \
---from-literal=TOKEN=<personal access token> \
--n pelorus
-```
-
-For ServiceNow create a secret containing your ServiceNow information.
-
-```shell
-oc create secret generic snow-secret \
---from-literal=SERVER=<ServiceNow Server> \
---from-literal=USER=<username> \
---from-literal=TOKEN=<personal access token> \
---from-literal=TRACKER_PROVICER=servicenow \
---from-literal=APP_FIELD=<Custom app label field> \
--n pelorus
-```
 
 #### Instance Config Jira
 
