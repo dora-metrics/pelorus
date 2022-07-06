@@ -142,7 +142,7 @@ function install_helm() {
     fi
 
     chmod +x "${helm_install_script}" 
-    HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false "${helm_install_script}"
+    HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false VERIFY_CHECKSUM=false "${helm_install_script}"
 }
 
 # Function to check if particular cli binary should be installed
