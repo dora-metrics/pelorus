@@ -18,3 +18,5 @@ nav:
     - Software Delivery Performance: dashboards/SoftwareDeliveryPerformance.md
   - Pelorus Development:
     - Dev Guide: Development.md
+  - Support:
+    - Upstream Support: UpstreamSupport.md
