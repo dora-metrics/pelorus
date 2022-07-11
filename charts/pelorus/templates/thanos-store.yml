@@ -30,7 +30,7 @@ spec:
           name: trusted-certs
       containers:
       - name: thanos-store
-        image: quay.io/thanos/thanos:v0.8.1
+        image: {{ .Values.images.thanos }}
         args:
         - "store"
         - "--log.level=info"
