@@ -4,10 +4,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
+  {{- if .Values.deployment }}
   {{- with .Values.deployment.labels }}
 {{ toYaml . | indent 4 }}
   {{- end }}
-  {{- if not .Values.deployment.labels }}
+  {{- end }}
+  {{- if not .Values.deployment }}
     app.kubernetes.io/component: prometheus
     app.kubernetes.io/name: pelorus
     app.kubernetes.io/version: v0.33.0
@@ -26,9 +28,16 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
+  {{- if .Values.deployment }}
   {{- with .Values.deployment.labels }}
 {{ toYaml . | indent 4 }}
-  {{- end }}  
+  {{- end }}
+  {{- end }}
+  {{- if not .Values.deployment }}
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/name: pelorus
+    app.kubernetes.io/version: v0.33.0
+  {{- end }}
   name: pelorus-thanos
 rules:
 - apiGroups:

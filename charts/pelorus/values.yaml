@@ -10,6 +10,12 @@ extra_prometheus_hosts:
 # Uncomment this if your cluster serves privately signed certificates
 # custom_ca: true
 
+# Thanos / S3 Storage with noobaa
+# thanos_bucket_name: thanos
+# bucket_access_point: s3.noobaa.svc
+# bucket_access_key:
+# bucket_secret_access_key:
+
 exporters:
   instances:
   - app_name: deploytime-exporter

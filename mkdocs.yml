@@ -12,7 +12,7 @@ nav:
     - Installation: Install.md
     - Demo: Demo.md
     - Configuration: Configuration.md
-    - MinIO for Long Term Storage: MinIO.md
+    - NooBaa for Long Term Storage: Noobaa.md
   - Dashboards:
     - Dashboard Summary: Dashboards.md
     - Software Delivery Performance: dashboards/SoftwareDeliveryPerformance.md
