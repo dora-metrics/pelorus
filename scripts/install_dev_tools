@@ -29,6 +29,10 @@ TMP_DIR_PREFIX="pelorus_tmp_"
 TKN_CLIENT_API_URL="https://api.github.com/repos/tektoncd/cli/releases/latest"
 CT_CLIENT_API_URL="https://api.github.com/repos/helm/chart-testing/releases/latest"
 CONFTEST_CLIENT_API_URL="https://api.github.com/repos/open-policy-agent/conftest/releases/latest"
+
+# Required to get noobaa CLI
+NOOBAA_OPERATOR_API_URL="https://api.github.com/repos/noobaa/noobaa-operator/releases/latest"
+
 # Required to get the promtool
 PROMETHEUS_API_URL="https://api.github.com/repos/prometheus/prometheus/releases/latest"
 
@@ -87,9 +91,14 @@ function get_download_url_from_github_api() {
     arch="$(uname -m)"
     kernel_name="$(uname -s)" # e.g. Linux / Darwin
 
+    # Noobaa CLI provides direct link to the binary,
+    # which uses either "linux" or "mac" as part of the url
+    noobaa_arch="linux"
+
     # Little hack for grep as some projects are shipping release tarballs
     # as x86_64 and some as amd64.
     if [[ ${kernel_name} == "Darwin" ]]; then
+        noobaa_arch="mac"
         # Also, some projects are shipping universal binaries to support both
         # x86 and arm macs. They are exposed as "all".
         # This is a special case so we don't get `-e -e ${arch}`
@@ -111,12 +120,18 @@ function get_download_url_from_github_api() {
     # Call the API to find the latest binary matching kernel and architecture
     local url_cmd
     local download_url
-    url_cmd="curl -s ${api_url} | \
-          grep -o -E 'https://(.*).tar.gz' | \
-          grep -i '${kernel_name}' | \
-          grep ${arch} | head -n 1"
+    
+    # Noobaa uses different binary url schema
+    if [ "${api_url}" == "${NOOBAA_OPERATOR_API_URL}" ]; then
+        url_cmd="curl -s ${api_url} | grep 'download_url' | \
+              grep -o -E 'https://(.*)-${noobaa_arch}-(.*)[0-9]'  | head -n 1" 
+    else
+        url_cmd="curl -s ${api_url} | \
+              grep -o -E 'https://(.*)(.tar.gz)' | \
+              grep -i '${kernel_name}' | \
+              grep ${arch} | head -n 1"
+    fi
     download_url=$(eval "${url_cmd}")
-
     if [ -z "${download_url}" ]; then
         echo "get_download_url_from_github(): download_url not available." >&2
         echo "command used to get URL: $ ${url_cmd}" >&2
@@ -308,3 +323,16 @@ if should_cli_be_installed "bats" "${cli_tools_arr[@]}" && \
       rm -rf bats-core-upstream
     popd || exit
 fi
+
+# nooba CLI
+if should_cli_be_installed "noobaa" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/noobaa")" ]; then
+      NOOBAA_CLIENT_URL=$(get_download_url_from_github_api "${NOOBAA_OPERATOR_API_URL}") \
+                    || (echo "$NOOBAA_CLIENT_URL"; cleanup_and_exit 2)
+      echo "$NOOBAA_CLIENT_URL"
+      download_file_from_url "${NOOBAA_CLIENT_URL}" "${DWN_DIR}"
+      NOOBAA_CLIENT_PATH="${DWN_DIR}"/$(basename "${NOOBAA_CLIENT_URL}")
+      mv "${NOOBAA_CLIENT_PATH}" "${VENV}/bin/noobaa"
+      chmod +x "${VENV}/bin/noobaa"
+fi
+
