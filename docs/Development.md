@@ -213,7 +213,7 @@ Code also comes with a nice debugger feature. Here is a starter configuration to
             "env": {
                 "SERVER": "<Jira server url>",
                 "PROJECT": "<Jira project ID>",
-                "USER": "<Jira username>",
+                "API_USER": "<Jira username>",
                 "TOKEN": "<Jira personal access token>",
                 "LOG_LEVEL": "INFO",
                 "APP_LABEL": "app.kubernetes.io/name"
@@ -241,7 +241,7 @@ Running an exporter on your local machine should follow this process:
 
         export LOG_LEVEL=debug
         export TOKEN=xxxx
-        export USER=xxxx
+        export API_USER=xxxx
 
 4. Log in to your OpenShift cluster  OR export KUBECONFIG environment variable
 

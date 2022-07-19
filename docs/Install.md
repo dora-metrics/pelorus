@@ -95,7 +95,7 @@ metadata:
 data:
   PROVIDER: "servicenow"    # jira
   SERVER:
-  USER:
+  API_USER:
   TOKEN:
   PROJECTS:              # Only for jira provider, comma separated list
   APP_FIELD: "default"   # u_application / only for ServiceNow provider
