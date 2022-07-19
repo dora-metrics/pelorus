@@ -33,7 +33,7 @@ PROVIDER_TYPES = ["jira", "github", "servicenow"]
 class TrackerFactory:
     @staticmethod
     def getCollector() -> AbstractFailureCollector:
-        username = pelorus.utils.get_env_var("USER")
+        username = pelorus.utils.get_env_var("API_USER")
         token = pelorus.utils.get_env_var("TOKEN")
         tracker_api = pelorus.utils.get_env_var("SERVER")
         tracker_provider = pelorus.utils.get_env_var(

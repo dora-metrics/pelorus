@@ -44,11 +44,11 @@ if __name__ == "__main__":
 
     dyn_client = pelorus.utils.get_k8s_client()
 
-    username = pelorus.utils.get_env_var("USER", "")
+    username = pelorus.utils.get_env_var("API_USER", "")
     token = pelorus.utils.get_env_var("TOKEN", "")
     if not username and not token:
         logging.info(
-            "No USER and no TOKEN given. This is okay for public repositories only."
+            "No API_USER and no TOKEN given. This is okay for public repositories only."
         )
     git_api = pelorus.utils.get_env_var("GIT_API", pelorus.DEFAULT_GIT_API)
     git_provider = pelorus.utils.get_env_var("GIT_PROVIDER", pelorus.DEFAULT_GIT)
