@@ -87,7 +87,7 @@ def unset_envs():
         "GITHUB_USER",
         "GITHUB_TOKEN",
         "GITHUB_API",
-        "USER",
+        "API_USER",
         "TOKEN",
     ]
 
@@ -109,12 +109,12 @@ class LegacyVarsArgs(NamedTuple):
     github_user: Optional[str] = None
     github_token: Optional[str] = None
     github_api: Optional[str] = None
-    user: Optional[str] = None
+    api_user: Optional[str] = None
     token: Optional[str] = None
 
 
 @pytest.mark.parametrize(
-    "_test_name,git_user,git_token,git_api,github_user,github_token,github_api,user,token",
+    "_test_name,git_user,git_token,git_api,github_user,github_token,github_api,api_user,token",
     [
         LegacyVarsArgs(
             name="github_{user,token,api} work on their own",
@@ -124,7 +124,7 @@ class LegacyVarsArgs(NamedTuple):
             github_user="goodU",
             github_token="goodT",
             github_api="goodA",
-            user=None,
+            api_user=None,
             token=None,
         ),
         LegacyVarsArgs(
@@ -135,7 +135,7 @@ class LegacyVarsArgs(NamedTuple):
             github_user=None,
             github_token=None,
             github_api=None,
-            user=None,
+            api_user=None,
             token=None,
         ),
         LegacyVarsArgs(
@@ -146,40 +146,40 @@ class LegacyVarsArgs(NamedTuple):
             github_user="badU",
             github_token="badT",
             github_api="badA",
-            user=None,
+            api_user=None,
             token=None,
         ),
         LegacyVarsArgs(
-            name="user, token work on their own",
+            name="api_user, token work on their own",
             git_user=None,
             git_token=None,
             git_api="goodA",
             github_user=None,
             github_token=None,
             github_api=None,
-            user="goodU",
+            api_user="goodU",
             token="goodT",
         ),
         LegacyVarsArgs(
-            name="user, token have precedence over git_*",
+            name="api_user, token have precedence over git_*",
             git_user="badU",
             git_token="badT",
             git_api="goodA",
             github_user=None,
             github_token=None,
             github_api=None,
-            user="goodU",
+            api_user="goodU",
             token="goodT",
         ),
         LegacyVarsArgs(
-            name="user, token have precedence over github_*",
+            name="api_user, token have precedence over github_*",
             git_user=None,
             git_token=None,
             git_api="goodA",
             github_user="badU",
             github_token="badT",
             github_api=None,
-            user="goodU",
+            api_user="goodU",
             token="goodT",
         ),
     ],
@@ -192,7 +192,7 @@ def test_ugprade_legacy_vars(
     github_user,
     github_token,
     github_api,
-    user,
+    api_user,
     token,
 ):
     unset_envs()
@@ -208,12 +208,12 @@ def test_ugprade_legacy_vars(
         os.environ["GITHUB_TOKEN"] = github_token
     if github_api:
         os.environ["GITHUB_API"] = github_api
-    if user:
-        os.environ["USER"] = user
+    if api_user:
+        os.environ["API_USER"] = api_user
     if token:
         os.environ["TOKEN"] = token
     pelorus.upgrade_legacy_vars()
-    assert os.environ["USER"] == "goodU"
+    assert os.environ["API_USER"] == "goodU"
     assert os.environ["TOKEN"] == "goodT"
     assert os.environ["GIT_API"] == "goodA"
     unset_envs()
