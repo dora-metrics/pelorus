@@ -18,8 +18,8 @@ class GitFactory:
     @staticmethod
     def getCollector(
         kube_client,
-        username,
-        token,
+        username: str,
+        token: str,
         namespaces,
         apps,
         git_api,

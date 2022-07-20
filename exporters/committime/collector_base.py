@@ -44,8 +44,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     def __init__(
         self,
         kube_client,
-        username,
-        token,
+        username: str,
+        token: str,
         namespaces: list[str],
         apps,
         collector_name,

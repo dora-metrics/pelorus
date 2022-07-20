@@ -50,7 +50,9 @@ class BitbucketCommitCollector(AbstractCommitCollector):
     # Default http headers needed for API calls
     DEFAULT_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 
-    def __init__(self, kube_client, username, token, namespaces, apps, tls_verify=True):
+    def __init__(
+        self, kube_client, username: str, token: str, namespaces, apps, tls_verify=True
+    ):
         super().__init__(
             kube_client,
             username,
@@ -64,7 +66,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         self.__session = requests.Session()
         self.__session.verify = tls_verify
         self.__session.headers.update(self.DEFAULT_HEADERS)
-        self.__session.auth = (self._username, self._token)
+        if self._username and self._token:
+            self.__session.auth = (self._username, self._token)
 
     def get_commit_time(self, metric: CommitMetric):
         git_server = metric.git_server
