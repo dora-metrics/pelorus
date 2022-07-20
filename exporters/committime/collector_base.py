@@ -156,7 +156,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return metrics
 
     @abstractmethod
-    def get_commit_time(self, metric) -> CommitMetric:
+    def get_commit_time(self, metric) -> Optional[CommitMetric]:
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 

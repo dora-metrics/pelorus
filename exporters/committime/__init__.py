@@ -127,14 +127,14 @@ class CommitMetric:
     # commit_timestamp: very special handling, the main purpose of each committime collector
     # comitter: not required to calculate committime
     _BUILD_MAPPING = dict(
-        build_name=["metadata.name", True],
-        build_config_name=["metadata.labels.buildconfig", True],
-        namespace=["metadata.namespace", True],
-        image_location=["status.outputDockerImageReference", True],
-        image_hash=["status.output.to.imageDigest", True],
-        commit_hash=["spec.revision.git.commit", False],
-        repo_url=["spec.source.git.uri", False],
-        committer=["spec.revision.git.author.name", False],
+        build_name=("metadata.name", True),
+        build_config_name=("metadata.labels.buildconfig", True),
+        namespace=("metadata.namespace", True),
+        image_location=("status.outputDockerImageReference", True),
+        image_hash=("status.output.to.imageDigest", True),
+        commit_hash=("spec.revision.git.commit", False),
+        repo_url=("spec.source.git.uri", False),
+        committer=("spec.revision.git.author.name", False),
     )
 
     _ANNOTATION_MAPPIG = dict(
@@ -152,9 +152,9 @@ def commit_metric_from_build(app: str, build, errors: list) -> CommitMetric:
     # lookup path.
     # Collect all errors to be reported at once instead of failing fast.
     metric = CommitMetric(app)
-    for attr_name, path in CommitMetric._BUILD_MAPPING.items():
-        with collect_bad_attribute_path_error(errors, path[1]):
-            value = get_nested(build, path[0], name="build")
+    for attr_name, (path, required) in CommitMetric._BUILD_MAPPING.items():
+        with collect_bad_attribute_path_error(errors, required):
+            value = get_nested(build, path, name="build")
             setattr(metric, attr_name, value)
 
     return metric
