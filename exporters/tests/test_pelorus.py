@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from typing import NamedTuple, Optional
 
 import pytest
 
@@ -86,7 +87,7 @@ def unset_envs():
         "GITHUB_USER",
         "GITHUB_TOKEN",
         "GITHUB_API",
-        "USER",
+        "API_USER",
         "TOKEN",
     ]
 
@@ -96,19 +97,103 @@ def unset_envs():
         print("%s: %s" % (var, pelorus.utils.get_env_var(var)))
 
 
+class LegacyVarsArgs(NamedTuple):
+    """
+    Arguments for upgrade_legacy_vars parametrized testing.
+    """
+
+    name: str
+    git_user: Optional[str] = None
+    git_token: Optional[str] = None
+    git_api: Optional[str] = None
+    github_user: Optional[str] = None
+    github_token: Optional[str] = None
+    github_api: Optional[str] = None
+    api_user: Optional[str] = None
+    token: Optional[str] = None
+
+
 @pytest.mark.parametrize(
-    "git_user,git_token,git_api,github_user,github_token,github_api,user,token",
+    "_test_name,git_user,git_token,git_api,github_user,github_token,github_api,api_user,token",
     [
-        (None, None, None, "goodU", "goodT", "goodA", None, None),
-        ("goodU", "goodT", "goodA", None, None, None, None, None),
-        ("goodU", "goodT", "goodA", "badU", "badT", "badA", None, None),
-        (None, None, "goodA", None, None, None, "goodU", "goodT"),
-        ("badU", "badT", "goodA", None, None, None, "goodU", "goodT"),
-        (None, None, "goodA", "badU", "badT", None, "goodU", "goodT"),
+        LegacyVarsArgs(
+            name="github_{user,token,api} work on their own",
+            git_user=None,
+            git_token=None,
+            git_api=None,
+            github_user="goodU",
+            github_token="goodT",
+            github_api="goodA",
+            api_user=None,
+            token=None,
+        ),
+        LegacyVarsArgs(
+            name="git_{user,token,api} work on their own",
+            git_user="goodU",
+            git_token="goodT",
+            git_api="goodA",
+            github_user=None,
+            github_token=None,
+            github_api=None,
+            api_user=None,
+            token=None,
+        ),
+        LegacyVarsArgs(
+            name="git_* takes precedence over github_*",
+            git_user="goodU",
+            git_token="goodT",
+            git_api="goodA",
+            github_user="badU",
+            github_token="badT",
+            github_api="badA",
+            api_user=None,
+            token=None,
+        ),
+        LegacyVarsArgs(
+            name="api_user, token work on their own",
+            git_user=None,
+            git_token=None,
+            git_api="goodA",
+            github_user=None,
+            github_token=None,
+            github_api=None,
+            api_user="goodU",
+            token="goodT",
+        ),
+        LegacyVarsArgs(
+            name="api_user, token have precedence over git_*",
+            git_user="badU",
+            git_token="badT",
+            git_api="goodA",
+            github_user=None,
+            github_token=None,
+            github_api=None,
+            api_user="goodU",
+            token="goodT",
+        ),
+        LegacyVarsArgs(
+            name="api_user, token have precedence over github_*",
+            git_user=None,
+            git_token=None,
+            git_api="goodA",
+            github_user="badU",
+            github_token="badT",
+            github_api=None,
+            api_user="goodU",
+            token="goodT",
+        ),
     ],
 )
 def test_ugprade_legacy_vars(
-    git_user, git_token, git_api, github_user, github_token, github_api, user, token
+    _test_name,
+    git_user,
+    git_token,
+    git_api,
+    github_user,
+    github_token,
+    github_api,
+    api_user,
+    token,
 ):
     unset_envs()
     if git_user:
@@ -123,12 +208,12 @@ def test_ugprade_legacy_vars(
         os.environ["GITHUB_TOKEN"] = github_token
     if github_api:
         os.environ["GITHUB_API"] = github_api
-    if user:
-        os.environ["USER"] = user
+    if api_user:
+        os.environ["API_USER"] = api_user
     if token:
         os.environ["TOKEN"] = token
     pelorus.upgrade_legacy_vars()
-    assert os.environ["USER"] == "goodU"
+    assert os.environ["API_USER"] == "goodU"
     assert os.environ["TOKEN"] == "goodT"
     assert os.environ["GIT_API"] == "goodA"
     unset_envs()

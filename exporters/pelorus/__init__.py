@@ -116,14 +116,19 @@ def missing_configs(vars):
 
 
 def upgrade_legacy_vars():
-    github_user = utils.get_env_var("GITHUB_USER")
     github_token = utils.get_env_var("GITHUB_TOKEN")
-    git_username = utils.get_env_var("GIT_USER")
     git_token = utils.get_env_var("GIT_TOKEN")
     api = utils.get_env_var("GITHUB_API", DEFAULT_GIT_API)
-    if not utils.get_env_var("USER"):
-        if git_username or github_user:
-            os.environ["USER"] = git_username or github_user
+
+    api_user = utils.get_env_var("API_USER")
+    github_user = utils.get_env_var("GITHUB_USER")
+    git_username = utils.get_env_var("GIT_USER")
+
+    assigned_user = api_user or git_username or github_user
+
+    if assigned_user:
+        os.environ["API_USER"] = assigned_user
+
     if not utils.get_env_var("TOKEN"):
         if git_token or github_token:
             os.environ["TOKEN"] = git_token or github_token

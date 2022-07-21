@@ -114,7 +114,7 @@ oc create secret generic github-secret --from-literal=TOKEN=<personal access tok
 ```
 
 A Pelorus exporter can require additional information to collect data such as the 
-remote `GIT_API` or `USER` information.  It is recommended to consult the requirements
+remote `GIT_API` or `API_USER` information.  It is recommended to consult the requirements
 for each Pelorus exporter in this guide and include the additional key / value information in the Openshift secret. An API example is `github.mycompany.com/api/v3`
 
 The cli commands can also be substituted with Secret templates. Example files can be found [here](https://github.com/konveyor/pelorus/tree/master/charts/pelorus/secrets)
@@ -122,14 +122,14 @@ The cli commands can also be substituted with Secret templates. Example files ca
 Create a secret containing your Git username, token, and API example:  
 
 ```shell
-oc create secret generic github-secret --from-literal=USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
+oc create secret generic github-secret --from-literal=API_USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
 ```
 
 A Jira example:
 ```shell
 oc create secret generic jira-secret \
 --from-literal=SERVER=<Jira Server> \
---from-literal=USER=<username/e-mail> \
+--from-literal=API_USER=<username/e-mail> \
 --from-literal=TOKEN=<personal access token> \
 -n pelorus
 ```
@@ -138,7 +138,7 @@ A ServiceNow example:
 ```shell
 oc create secret generic snow-secret \
 --from-literal=SERVER=<ServiceNow Server> \
---from-literal=USER=<username> \
+--from-literal=API_USER=<username> \
 --from-literal=TOKEN=<personal access token> \
 --from-literal=TRACKER_PROVICER=servicenow \
 --from-literal=APP_FIELD=<Custom app label field> \
@@ -190,7 +190,7 @@ This exporter provides several configuration options, passed via `pelorus-config
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
-| `USER` | yes | User's github username | unset |
+| `API_USER` | yes | User's github username | unset |
 | `TOKEN` | yes | User's Github API Token | unset |
 | `GIT_API` | no | Github API FQDN.  This allows the override for Github Enterprise users.  Currently only applicable to `github` provider type. | `api.github.com` |
 | `GIT_PROVIDER` | no | Set Git provider type. Can be `github`, `gitlab`, or `bitbucket` | `github` |
@@ -280,7 +280,7 @@ This exporter provides several configuration options, passed via `pelorus-config
 | `PROVIDER` | no | Set the type of failure provider. One of `jira`, `servicenow` | `jira` |
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 | `SERVER` | yes | URL to the Jira or ServiceNowServer  | unset  |
-| `USER` | yes | Tracker Username | unset |
+| `API_USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
 | `APP_LABEL` | no | Used in GitHub and JIRA only. Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
 | `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
@@ -303,7 +303,7 @@ metadata:
 data:
   PROVIDER: "github"     # jira  |  jira, github, servicenow
   SERVER:                #       |  URL to the Jira or ServiceNowServer, can be overriden by env_from_secrets
-  USER:                  #       |  Tracker Username, can be overriden by env_from_secrets
+  API_USER:                  #       |  Tracker Username, can be overriden by env_from_secrets
   TOKEN:                 #       |  User's API Token, can be overriden by env_from_secrets
   PROJECTS: "konveyor/todolist-mongo-go,konveyor/todolist-mariadb-go"
   APP_FIELD: "todolist"  #       |  This is optional for the Github failure exporter

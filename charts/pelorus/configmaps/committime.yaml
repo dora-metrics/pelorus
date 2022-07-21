@@ -7,7 +7,7 @@ metadata:
   name: committime-config
   namespace: pelorus
 data:
-  USER: "default"            # ""  |  User's github username, can be overriden by env_from_secrets
+  API_USER: "default"            # ""  |  User's github username, can be overriden by env_from_secrets
   TOKEN: "default"           # ""  |  User's Github API Token, can be overriden by env_from_secrets
   GIT_API: "default"         # api.github.com  |  Github Enterprise API FQDN, can be overriden by env_from_secrets
   GIT_PROVIDER: "default"    # github  |  github, gitlab, or bitbucket
