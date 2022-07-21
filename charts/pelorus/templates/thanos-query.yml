@@ -35,7 +35,7 @@ spec:
   {{- end }}
       containers:
       - name: thanos-query
-        image: quay.io/thanos/thanos:v0.8.1
+        image: quay.io/thanos/thanos:v0.27.0
         args:
         - "query"
         - "--log.level=info"
@@ -70,12 +70,18 @@ spec:
         - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
   {{- end}}
         - -skip-auth-regex=^/metrics
-        image: registry.redhat.io/openshift3/oauth-proxy:v3.11
+        image: image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4
         name: thanos-proxy
         ports:
         - containerPort: 9092
           name: web-tls
-        resources: {}
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 100Mi
         volumeMounts:
         - mountPath: /etc/tls/private
           name: secret-prometheus-pelorus-tls

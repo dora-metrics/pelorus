@@ -52,7 +52,7 @@ See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all 
 
 ### Configure Long Term Storage (Recommended)
 
-The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for noobaa with the local s3 service name:
+The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for NooBaa with the local s3 service name:
 
 ```
 bucket_access_point: s3.noobaa.svc
@@ -69,73 +69,21 @@ bucket_secret_access_key: <your secret access key>
 thanos_bucket_name: <bucket name here>
 ```
 
-Then pass this to runhelm.sh like this:
+Then run `helm upgrade` with updated `values.yaml` configuration:
 
 ```
 helm upgrade pelorus charts/deploy --namespace pelorus --values values.yaml
 ```
 
-If you don't have an object storage provider, we recommend [MinIO](https://min.io/) as a free, open source option. You can follow our [MinIO quickstart](MinIO.md) to host an instance on OpenShift and configure Pelorus to use it.
+If you don't have an object storage provider, we recommend [NooBaa](https://www.noobaa.io/) as a free, open source option. You can follow our [NooBaa quickstart](Noobaa.md) to host an instance on OpenShift and configure Pelorus to use it.
 
 ### Deploying Across Multiple Clusters
 
 By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](Architecture.md) for details. You define exporters for the desired meterics in each of the clusters which metrics will be evaluated.  The main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
 
-#### Configure Development Cluster.
-
-The development configuration uses same AWS S3 bucket and tracks commits and failure resolution to development:
-
-
-```
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: failuretime-config
-  namespace: pelorus
-data:
-  PROVIDER: "servicenow"    # jira
-  SERVER:
-  API_USER:
-  TOKEN:
-  PROJECTS:              # Only for jira provider, comma separated list
-  APP_FIELD: "default"   # u_application / only for ServiceNow provider
-```
-
-```
-# Define shared S3 storage
-#
-bucket_access_point: s3.us-east-2.amazonaws.com
-bucket_access_key: <your access key>
-bucket_secret_access_key: <your secret access key>
-thanos_bucket_name: <bucket name here>```
-
-deployment:
-  labels:
-    app.kubernetes.io/component: development
-    app.kubernetes.io/name: pelorus
-    app.kubernetes.io/version: v0.33.0
-
-exporters:
-  instances:
-  - app_name: committime-exporter
-    exporter_type: committime
-    env_from_secrets:
-    - github-secret
-    env_from_configmaps:
-    - pelorus-config
-    - committime-config
-  - app_name: failuretime-exporter
-    exporter_type: failure
-    env_from_secrets:
-    - sn-secret
-    env_from_configmaps:
-    - pelorus-config
-    - failuretime-config
-```
-
 #### Configure Production Cluster.
 
-The produciton configuration uses same AWS S3 bucket and tracks deployments to production:
+The produciton configuration example with one deploytime exporter, which uses AWS S3 bucket and tracks deployments to production:
 
 ```
 bucket_access_point: s3.us-east-2.amazonaws.com
