@@ -86,6 +86,13 @@ dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
 
+.PHONY: e2e-tests-dev-env
+## e2e-tests-dev-env: set up environment required to run e2e tests
+e2e-tests-dev-env: $(PELORUS_VENV)
+	./scripts/install_dev_tools -v $(PELORUS_VENV) -c oc,helm
+	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
+	$(info **** To later deactivate VENV: $$deactivate)
+
 # Release
 
 .PHONY: release minor-release major-release
@@ -109,15 +116,15 @@ mockoon-tests: $(PELORUS_VENV)
 ## e2e-tests-scenario-1: run e2e-tests with latest quay images
 ## e2e-tests-scenario-2: run e2e-tests for deploytime exporter using different exporter install methods
 .PHONY: e2e-tests e2e-tests-scenario-1 e2e-tests-scenario-1
-e2e-tests: $(PELORUS_VENV)
+e2e-tests: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/run-pelorus-e2e-tests -o konveyor -e failure
 
-e2e-tests-scenario-1: $(PELORUS_VENV)
+e2e-tests-scenario-1: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/run-pelorus-e2e-tests -f "periodic/quay_images_latest.yaml"
 
-e2e-tests-scenario-2: $(PELORUS_VENV)
+e2e-tests-scenario-2: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/run-pelorus-e2e-tests "periodic/different_deployment_methods.yaml"
 
