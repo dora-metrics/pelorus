@@ -145,11 +145,104 @@ oc create secret generic snow-secret \
 -n pelorus
 ```
 
+### Labels
+
+Labels are key/value pairs that are attached to objects, such as pods. Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users and Pelorus.
+
+The commit time, deploy time, and failure exporters all rely on labels to indentify the application that is associated with an object.  The object can
+include a build, build configuration, deployment or issue.
+
+In Pelorus the default label is: `app.kubernetes.io/name=<app_name>` where 
+app_name is the name of the application(s) being monitored. The label can
+be customized by setting the `APP_LABEL` variable to your custom value. 
+
+An example may be to override the APP_LABEL for the failure exporter to indicate a production bug or issue.
+The `APP_LABEL` with the value `production_issue/name` may give more context than `app.kubernetes.io/name`
+In this case the Github issue would be labeled with `production_issue/name=todolist`
+
+Example Failure exporter config:
+```
+- app_name: failure-exporter
+  exporter_type: failure
+  env_from_secrets:
+  - github-secret
+  extraEnv:
+  - name: LOG_LEVEL
+    value: DEBUG
+  - name: PROVIDER
+    value: github
+  - name: PROJECTS
+    value: konveyor/mig-demo-apps,konveyor/oadp-operator
+  - name: APP_LABEL
+    value: production_issue/name
+```
+
+> **Warning** 
+> If the application label is not properly configured, Pelorus will not collect data for that object.  
+
+In the following examples an application named [todolist](https://github.com/konveyor/mig-demo-apps/blob/master/apps/todolist-mongo-go/mongo-persistent.yaml) is being monitored.
+
+Example BuildConfig:
+```
+- kind: BuildConfig
+  apiVersion: build.openshift.io/v1
+  metadata:
+    name: todolist
+    namespace: mongo-persistent
+    labels:
+      app.kubernetes.io/name: todolist
+```
+
+Example DeploymentConfig:
+```
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    name: todolist
+    namespace: mongo-persistent
+    labels:
+      app: todolist
+      app.kubernetes.io/name: todolist
+      application: todolist
+      deploymentconfig: todolist-mongo-go
+```
+
+Example ReplicaSet:
+```
+replicas: 1
+template:
+  metadata:
+    creationTimestamp:
+    labels:
+      e2e-app: "true"
+      application: todolist
+      deploymentconfig: todolist-mongo-go
+      app.kubernetes.io/name: todolist
+```
+
+Example Application via the cli:
+```
+oc -n mongo-persistent new-app todolist -l "app.kubernetes.io/name=todolist"
+```
+
+Example Github issue:
+
+Create an issue, and create a Github issue label: "app.kubernetes.io/name=todolist".  Here is a working [example](https://github.com/konveyor/mig-demo-apps/issues/82)
+
+![github_issue](img/github_issue.png)
+
+Jira issue:
+
+In the Jira project issue settings, create a label with the text "app.kubernetes.io/name=todolist". 
+
+![jira_issue](img/jira_issue.png)
+
+
 ### Commit Time Exporter
 
 The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
 
-We require that all builds associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label.
+We require that all builds associated with a particular application be labeled with the same `app.kubernetes.io/name=<app_name>` label.
 
 Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issue or a pull request to add support for additional Git providers!
 
