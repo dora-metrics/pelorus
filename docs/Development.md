@@ -188,7 +188,7 @@ Code also comes with a nice debugger feature. Here is a starter configuration to
             "program": "${workspaceFolder}/exporters/committime/app.py",
             "console": "integratedTerminal",
             "env": {
-                "GITHUB_USER": "<github username here>",
+                "API_USER": "<github username here>",
                 "GITHUB_TOKEN": "<personal access token here>",
                 "LOG_LEVEL": "INFO",
                 "APP_LABEL": "app.kubernetes.io/name"
