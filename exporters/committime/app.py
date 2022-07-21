@@ -17,7 +17,14 @@ from committime.collector_gitlab import GitLabCommitCollector
 class GitFactory:
     @staticmethod
     def getCollector(
-        kube_client, username, token, namespaces, apps, git_api, git_provider
+        kube_client,
+        username: str,
+        token: str,
+        namespaces,
+        apps,
+        git_api,
+        git_provider,
+        tls_verify: bool,
     ):
         if git_provider == "gitlab":
             return GitLabCommitCollector(kube_client, username, token, namespaces, apps)
@@ -27,7 +34,7 @@ class GitFactory:
             )
         if git_provider == "bitbucket":
             return BitbucketCommitCollector(
-                kube_client, username, token, namespaces, apps
+                kube_client, username, token, namespaces, apps, tls_verify=tls_verify
             )
         if git_provider == "gitea":
             return GiteaCommitCollector(
@@ -55,16 +62,18 @@ if __name__ == "__main__":
     tls_verify = bool(
         strtobool(pelorus.utils.get_env_var("TLS_VERIFY", pelorus.DEFAULT_TLS_VERIFY))
     )
-    namespaces = None
-    if pelorus.utils.get_env_var("NAMESPACES") is not None:
-        namespaces = [
-            proj.strip() for proj in pelorus.utils.get_env_var("NAMESPACES").split(",")
-        ]
+
+    namespaces_env = pelorus.utils.get_env_var("NAMESPACES", "")
+    if namespaces_env:
+        namespaces = [proj.strip() for proj in namespaces_env.split(",")]
+    else:
+        namespaces = []
+
     apps = None
     start_http_server(8080)
 
     collector = GitFactory.getCollector(
-        dyn_client, username, token, namespaces, apps, git_api, git_provider
+        dyn_client, username, token, namespaces, apps, git_api, git_provider, tls_verify
     )
     REGISTRY.register(collector)
 

@@ -44,9 +44,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     def __init__(
         self,
         kube_client,
-        username,
-        token,
-        namespaces,
+        username: str,
+        token: str,
+        namespaces: list[str],
         apps,
         collector_name,
         timedate_format,
@@ -96,7 +96,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             yield commit_metric
 
     def generate_metrics(
-        self, watched_namespaces: Optional[str] = None
+        self, watched_namespaces: Optional[list[str]] = None
     ) -> Iterable[CommitMetric]:
         """Method called by the collect to create a list of metrics to publish"""
         # This will loop and look at OCP builds (calls get_git_commit_time)
@@ -156,7 +156,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return metrics
 
     @abstractmethod
-    def get_commit_time(self, metric) -> CommitMetric:
+    def get_commit_time(self, metric) -> Optional[CommitMetric]:
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 
