@@ -28,8 +28,12 @@ def _print_version():
     """
     import __main__
 
-    # name of dir above app.py
-    exporter_name = pathlib.PurePath(__main__.__file__).parent.name
+    file = getattr(__main__, "__file__", None)
+    if file:
+        # name of dir above app.py
+        exporter_name = pathlib.PurePath(file).parent.name
+    else:
+        exporter_name = "INTERPRETER"
 
     repo, ref, commit = (
         utils.get_env_var(f"OPENSHIFT_BUILD_{var.upper()}")

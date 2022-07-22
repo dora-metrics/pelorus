@@ -43,6 +43,9 @@ def test_nested_lookup_collect():
 
 
 def test_env_var_default():
+    if "PELORUS_DEFAULT_KEYWORD" in os.environ:
+        del os.environ["PELORUS_DEFAULT_KEYWORD"]
+
     # Empty string should give us empty string
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = ""
     assert get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT") == ""
@@ -53,8 +56,6 @@ def test_env_var_default():
         get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT")
 
     # Use env variable instead of default value
-    if "PELORUS_DEFAULT_KEYWORD" in os.environ:
-        del os.environ["PELORUS_DEFAULT_KEYWORD"]
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = pelorus.utils.DEFAULT_VAR_KEYWORD
     assert (
         get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT", "default_value") == "default_value"
