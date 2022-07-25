@@ -37,6 +37,8 @@ NOOBAA_OPERATOR_API_URL="https://api.github.com/repos/noobaa/noobaa-operator/rel
 PROMETHEUS_API_URL="https://api.github.com/repos/prometheus/prometheus/releases/latest"
 
 HELM_INSTALL_SCRIPT="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+# Used to download HELM version if git API failed with providing correct one
+HELM_FALLBACK_VERSION="v3.9.2"
 
 # Bats are required for conftest
 BATS_REPO_URL="https://github.com/bats-core/bats-core"
@@ -158,6 +160,13 @@ function install_helm() {
 
     chmod +x "${helm_install_script}" 
     HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false VERIFY_CHECKSUM=false "${helm_install_script}"
+    helm_install=$?
+    type helm
+    helm_installed=$?
+    if [ $helm_install -ne 0 ] || [ $helm_installed -ne 0 ]; then
+        echo "Installing fallback HELM version"
+        HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false VERIFY_CHECKSUM=false "${helm_install_script}" --version "${HELM_FALLBACK_VERSION}"
+    fi
 }
 
 # Function to check if particular cli binary should be installed
