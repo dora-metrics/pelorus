@@ -89,6 +89,7 @@ dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
 .PHONY: e2e-tests-dev-env
 ## e2e-tests-dev-env: set up environment required to run e2e tests
 e2e-tests-dev-env: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/install_dev_tools -v $(PELORUS_VENV) -c oc,helm
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
