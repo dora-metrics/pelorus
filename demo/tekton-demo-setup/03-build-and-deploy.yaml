@@ -116,6 +116,25 @@ objects:
     spec:
       to:
         name: ${APPLICATION_NAME}
+  - kind: BuildConfig
+    apiVersion: build.openshift.io/v1
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+    spec:
+      source:
+        type: Git
+        git:
+          uri: https://github.com/konveyor/pelorus
+          ref: master
+          contextDir: "demo/python-example"
+      strategy:
+        sourceStrategy:
+          from:
+            kind: "ImageStreamTag"
+            name: ${APPLICATION_NAME}:latest
   - kind: DeploymentConfig
     apiVersion: apps.openshift.io/v1
     metadata:
