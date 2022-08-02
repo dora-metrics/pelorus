@@ -35,6 +35,16 @@ COMMIT_HASH_ANNOTATION_ENV = "COMMIT_HASH_ANNOTATION"
 COMMIT_REPO_URL_ANNOTATION_ENV = "COMMIT_REPO_URL_ANNOTATION"
 
 
+class UnsupportedGITProvider(Exception):
+    """
+    Exception raised for unsupported GIT provider
+    """
+
+    def __init__(self, message):
+        self.message = message
+        super().__init__(message)
+
+
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
     Base class for a CommitCollector.
@@ -345,7 +355,11 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 "sha: %s, commit_timestamp not found in cache, executing API call.",
                 metric.commit_hash,
             )
-            metric = self.get_commit_time(metric)
+            try:
+                metric = self.get_commit_time(metric)
+            except UnsupportedGITProvider as ex:
+                errors.append(ex.message)
+                return None
             # If commit time is None, then we could not get the value from the API
             if metric.commit_time is None:
                 errors.append("Couldn't get commit time")

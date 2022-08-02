@@ -19,7 +19,7 @@ import logging
 
 import gitlab
 import requests
-from collector_base import AbstractCommitCollector
+from collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 import pelorus
 
@@ -39,10 +39,6 @@ class GitLabCommitCollector(AbstractCommitCollector):
     def _connect_to_gitlab(self, metric) -> gitlab.Gitlab:
         """Method to connect to Gitlab instance."""
         git_server = metric.git_server
-
-        if "github" in git_server or "bitbucket" in git_server:
-            logging.warn("Skipping non GitLab server, found %s" % (git_server))
-            return None
 
         gitlab_client = None
 
@@ -67,6 +63,18 @@ class GitLabCommitCollector(AbstractCommitCollector):
     # base class impl
     def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
+
+        git_server = metric.git_server
+
+        if (
+            "github" in git_server
+            or "gitea" in git_server
+            or "bitbucket" in git_server
+            or "azure" in git_server
+        ):
+            raise UnsupportedGITProvider(
+                "Skipping non GitLab server, found %s" % (git_server)
+            )
 
         gl = self._connect_to_gitlab(metric)
         if not gl:

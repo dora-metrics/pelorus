@@ -1,7 +1,7 @@
 import logging
 
 import requests
-from collector_base import AbstractCommitCollector
+from collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 import pelorus
 
@@ -36,8 +36,6 @@ class GiteaCommitCollector(AbstractCommitCollector):
     # base class impl
     def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
-        session = requests.Session()
-        session.verify = False
 
         git_server = metric.git_server
 
@@ -47,8 +45,12 @@ class GiteaCommitCollector(AbstractCommitCollector):
             or "gitlab" in git_server
             or "azure" in git_server
         ):
-            logging.warn("Skipping non Gitea server, found %s" % (git_server))
-            return None
+            raise UnsupportedGITProvider(
+                "Skipping non Gitea server, found %s" % (git_server)
+            )
+
+        session = requests.Session()
+        session.verify = False
 
         url = (
             self._prefix

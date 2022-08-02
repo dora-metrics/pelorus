@@ -6,7 +6,7 @@ import requests.exceptions
 
 import pelorus
 from committime import CommitMetric
-from committime.collector_base import AbstractCommitCollector
+from committime.collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 
 def commit_url(server: str, group: str, project: str, commit: str) -> str:
@@ -44,9 +44,15 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         git_server = metric.git_server
 
         # do a simple check for hosted Git services.
-        if "github" in git_server or "gitlab" in git_server:
-            logging.warn("Skipping non BitBucket server, found %s" % (git_server))
-            return None
+        if (
+            "github" in git_server
+            or "gitea" in git_server
+            or "gitlab" in git_server
+            or "azure" in git_server
+        ):
+            raise UnsupportedGITProvider(
+                "Skipping non BitBucket server, found %s" % (git_server)
+            )
 
         try:
             git_server = metric.git_server
