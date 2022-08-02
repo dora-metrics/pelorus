@@ -19,6 +19,9 @@ black
 isort
 pylava
 
+# Issue #584
+pyflakes <= 2.4.0
+
 # Required by `ct lint` command
 yamale
 yamllint
