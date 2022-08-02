@@ -5,6 +5,8 @@ from abc import ABC
 from datetime import datetime, timezone
 from typing import Optional, Sequence
 
+from prometheus_client.registry import Collector
+
 from . import utils
 
 DEFAULT_APP_LABEL = "app.kubernetes.io/name"
@@ -148,10 +150,5 @@ def url_joiner(base: str, *parts: str):
     return base.strip("/") + "/" + "/".join(s.strip("/") for s in parts)
 
 
-class AbstractPelorusExporter(ABC):
-    """
-    Base class for PelorusExporter
-    """
-
-    def __init_():
-        pass
+class AbstractPelorusExporter(Collector, ABC):
+    pass
