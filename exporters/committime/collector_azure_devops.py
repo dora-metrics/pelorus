@@ -2,7 +2,7 @@ import logging
 
 import requests
 from azure.devops.connection import Connection
-from collector_base import AbstractCommitCollector
+from collector_base import AbstractCommitCollector, UnsupportedGITProvider
 from msrest.authentication import BasicAuthentication
 
 import pelorus
@@ -24,12 +24,6 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
     # base class impl
     def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
-        session = requests.Session()
-        session.verify = False
-
-        logging.debug("metric.repo_project %s" % (metric.repo_project))
-        logging.debug("metric.git_api %s" % (self._git_api))
-
         git_server = self._git_api
 
         if (
@@ -38,8 +32,15 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
             or "gitlab" in git_server
             or "gitea" in git_server
         ):
-            logging.warn("Skipping non Azure DevOps server, found %s" % (git_server))
-            return None
+            raise UnsupportedGITProvider(
+                "Skipping non Azure DevOps server, found %s" % (git_server)
+            )
+
+        session = requests.Session()
+        session.verify = False
+
+        logging.debug("metric.repo_project %s" % (metric.repo_project))
+        logging.debug("metric.git_api %s" % (self._git_api))
 
         # Private or personal token
         # Fill in with your personal access token and org URL

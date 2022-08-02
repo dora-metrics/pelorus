@@ -5,7 +5,7 @@ import requests
 
 import pelorus
 
-from .collector_base import AbstractCommitCollector
+from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 
 class GitHubCommitCollector(AbstractCommitCollector):
@@ -45,9 +45,15 @@ class GitHubCommitCollector(AbstractCommitCollector):
         """Method called to collect data and send to Prometheus"""
         git_server = metric.git_fqdn
         # check for gitlab or bitbucket
-        if "gitlab" in git_server or "bitbucket" in git_server:
-            logging.warn("Skipping non GitHub server, found %s" % (git_server))
-            return None
+        if (
+            "gitea" in git_server
+            or "gitlab" in git_server
+            or "bitbucket" in git_server
+            or "azure" in git_server
+        ):
+            raise UnsupportedGITProvider(
+                "Skipping non GitHub server, found %s" % (git_server)
+            )
 
         url = (
             self._prefix
