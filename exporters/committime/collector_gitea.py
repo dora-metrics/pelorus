@@ -1,9 +1,10 @@
 import logging
 
 import requests
-from collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 import pelorus
+
+from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 # import urllib3
 # urllib3.disable_warnings()
