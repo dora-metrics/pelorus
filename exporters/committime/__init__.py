@@ -63,6 +63,8 @@ class CommitMetric:
 
     @repo_url.setter
     def repo_url(self, value):
+        # Ensure git URI does not end with "/", issue #590
+        value = value.strip("/")
         self.__repo_url = value
         self.__parse_repourl()
 
