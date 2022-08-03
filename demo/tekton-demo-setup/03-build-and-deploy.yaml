@@ -56,8 +56,26 @@ objects:
         - name: git-revision
           type: string
           default: master
+        - name: BUILD_TYPE
+          default: 'buildconfig'
+          description: 'buildconfig, binary, source, s2i'
+          type: string
       tasks:
+        - name: import-build-image
+          params:
+            - name: SCRIPT
+              value: | 
+                oc import-image centos/python-38-centos7:latest --confirm -n basic-python-tekton
+          taskRef:
+            kind: ClusterTask
+            name: openshift-client
         - name: checkout
+          runAfter:
+          - import-build-image
+          when:
+            - input: "$(params.BUILD_TYPE)"
+              operator: notin
+              values: ["buildconfig", "source"]
           taskRef:
             name: git-clone
             kind: ClusterTask
@@ -69,7 +87,25 @@ objects:
           workspaces:
             - name: output
               workspace: repo
-        - name: s2i-python-build
+        - name: listfiles
+          when:
+            - input: "$(params.BUILD_TYPE)"
+              operator: notin
+              values: ["buildconfig", "source"]
+          taskRef:
+            name: debug
+            kind: Task
+          workspaces:
+            - name: debug
+              workspace: repo
+          runAfter:
+          - checkout 
+        # s2i build
+        - name: builds2i
+          when:
+            - input: "$(params.BUILD_TYPE)"
+              operator: in
+              values: ["s2i"]
           taskRef:
             name: s2i-python
             kind: ClusterTask
@@ -81,7 +117,93 @@ objects:
           workspaces:
             - name: source
               workspace: repo
-          runAfter: [checkout]
+          runAfter: 
+            - listfiles
+        # buildConfig build
+        - name: buildconfig
+          when:
+            - input: "$(params.BUILD_TYPE)"
+              operator: in
+              values: ["buildconfig"]
+          params:
+            - name: SCRIPT
+              value: | 
+                oc start-build basic-python-tekton --wait
+            - name: VERSION
+              value: latest
+          runAfter: [import-build-image]
+          taskRef:
+            kind: ClusterTask
+            name: openshift-client
+        # source build
+        - name: source
+          when:
+            - input: "$(params.BUILD_TYPE)"
+              operator: in
+              values: ["source"]
+          params:
+            - name: SCRIPT
+              value: | 
+                # create build
+                echo "oc new-build python -D --context-dir=demo/python-example --name=basic-python-tekton $(params.git-url)#$(params.git-revision)"
+                "oc new-build python -D --context-dir=demo/python-example --name=basic-python-tekton $(params.git-url)#$(params.git-revision)"
+                # label build name
+                echo "oc label bc basic-python-tekton app.kubernetes.io/name=basic-python-tekton"
+                oc label bc basic-python-tekton app.kubernetes.io/name=basic-python-tekton
+          runAfter: [import-build-image]
+          taskRef:
+            kind: ClusterTask
+            name: openshift-client
+        # binary build
+        - name: buildbinary
+          when:
+            - input: "$(params.BUILD_TYPE)"
+              operator: in
+              values: ["binary"]
+          taskRef:
+            kind: ClusterTask
+            name: openshift-client
+          params:
+            - name: SCRIPT
+              value: | 
+                #ls -la $(workspaces.manifest-dir.path)
+                cd $(workspaces.manifest-dir.path)
+                pwd
+                # create build
+                echo "oc new-build python --name=basic-python-tekton --binary=true"
+                oc new-build python --name=basic-python-tekton --binary=true
+                # label build name
+                echo "oc label bc basic-python-tekton app.kubernetes.io/name=basic-python-tekton"
+                oc label bc basic-python-tekton app.kubernetes.io/name=basic-python-tekton
+                # start build
+                oc start-build bc/basic-python-tekton --from-dir=$(workspaces.manifest-dir.path)/demo/python-example --wait
+                # annotate build
+                echo "annotate binary build with git data: "
+                echo "git-url: $(params.git-url)"
+                echo "commit.id: $(tasks.checkout.results.commit)"
+                oc annotate build basic-python-tekton-1 --overwrite \
+                io.openshift.build.commit.id="$(tasks.checkout.results.commit)" \
+                io.openshift.build.source-location="$(params.git-url)"
+            - name: VERSION
+              value: latest
+          workspaces:
+            - name: manifest-dir
+              workspace: repo
+          runAfter: 
+            - listfiles
+      # test the build
+      finally:
+        - name: test-build
+          params:
+            - name: SCRIPT
+              value: | 
+                curl $(oc get route -n basic-python-tekton basic-python-tekton -o=template='http://{{.spec.host | printf "%s\n"}}') 2>&1 | grep "Hello world!" || exit 2
+          timeout: 2m
+          retries: 3
+          taskRef:
+            kind: ClusterTask
+            name: openshift-client
+          
   # Deploy
   - kind: Service
     apiVersion: v1
@@ -101,6 +223,29 @@ objects:
           targetPort: 8080
       selector:
         deploymentConfig: ${APPLICATION_NAME}
+  - kind: BuildConfig
+    apiVersion: build.openshift.io/v1
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+    spec:
+      source:
+        type: Git
+        git:
+          uri: https://github.com/konveyor/pelorus
+          ref: master
+        contextDir: "demo/python-example"
+      strategy:
+        sourceStrategy:
+          from:
+            kind: "ImageStreamTag"
+            name: "python-38-centos7:latest"
+      output:
+        to:
+          kind: ImageStreamTag
+          name: "basic-python-tekton:latest"
   - kind: Route
     apiVersion: route.openshift.io/v1
     metadata:

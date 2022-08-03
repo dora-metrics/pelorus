@@ -2,6 +2,35 @@
 #Assumes User is logged in to cluster
 set -euo pipefail
 
+Help()
+{
+   # Display Help
+   echo "Execute a tekton pipeline with various build types."
+   echo
+   echo "Syntax: scriptTemplate [-h|g|b|]"
+   echo "options:"
+   echo "g     the git url"
+   echo "h     Print this Help."
+   echo "b     build type [buildconfig, binary, source, s2i]"
+   echo
+}
+
+# Get the options
+while getopts ":hg:b:" option; do
+   case $option in
+      h) # display Help
+         Help
+         exit;;
+      g) # Enter the git url
+         url=$OPTARG;;
+      b) # Enter the build type 
+         build_type=$OPTARG;;
+     \?) # Invalid option
+         echo "Error: Invalid option"
+         exit;;
+   esac
+done
+
 all_cmds_found=0
 for cmd in oc tkn; do
    if ! command -v $cmd; then
@@ -14,6 +43,9 @@ if ! [[ $all_cmds_found ]]; then exit 1; fi
 
 tekton_setup_dir="$(dirname "${BASH_SOURCE[0]}")/tekton-demo-setup"
 python_example_txt="$(dirname "${BASH_SOURCE[0]}")/python-example/response.txt"
+
+echo "Clean up resources prior to execution:"
+oc delete buildConfig basic-python-tekton
 
 echo "Setting up resources:"
 
@@ -38,8 +70,6 @@ oc process -f "$tekton_setup_dir/03-build-and-deploy.yaml" | oc apply -f -
 
 route="$(oc get -n basic-python-tekton route/basic-python-tekton --output=go-template='http://{{.spec.host}}')"
 
-url=$1
-
 counter=1
 
 current_branch="$(git symbolic-ref HEAD)"
@@ -48,7 +78,8 @@ current_branch=${current_branch##refs/heads/}
 function run_pipeline {
    tkn pipeline start -n basic-python-tekton --showlog basic-python-tekton-pipeline \
       -w name=repo,claimName=basic-python-tekton-build-pvc \
-      -p git-url="$url" -p git-revision="$current_branch"
+      -p git-url="$url" -p git-revision="$current_branch" \
+      -p BUILD_TYPE="$build_type"
 }
 
 echo -e "\nRunning pipeline\n"
