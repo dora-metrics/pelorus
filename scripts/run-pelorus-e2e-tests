@@ -20,6 +20,11 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 DEFAULT_VENV="${SCRIPT_DIR}/../.venv"
 TMP_DIR_PREFIX="pelorus_tmp_"
 PELORUS_NAMESPACE="pelorus"
+# Used in CI
+PROW_SECRETS_DIR="/var/run/konveyor/pelorus/pelorus-github/"
+
+# Binary build script
+BINARY_BUILD_SCRIPT="${SCRIPT_DIR}/e2e-tests-templates/build_binary_app"
 
 
 # Used to download required files prior to running the job
@@ -69,6 +74,11 @@ function cleanup_and_exit() {
         oc logs -n "${PELORUS_NAMESPACE}" "${failing_pod}"
     done
 
+    # Cleanup binary builds
+    for binary_build_ns in "${BINARY_BUILDS_NAMESPACES[@]}"; do
+        "${BINARY_BUILD_SCRIPT}" -c -n "${binary_build_ns}"
+    done
+
     # Propagate exit value if was provided
     [ -n "${exit_val}" ] && echo "Exit code: ${exit_val}" && exit "$exit_val"
     exit 0
@@ -93,7 +103,8 @@ function print_help() {
     printf "\t  -f\tvalues filename passed to the Pelorus deployment from the todolist-mongo-go project\n"
     printf "\t  -o\tgithub organization of the mig-demo-apps\n"
     printf "\t  -d\tpath to virtualenv DIR\n"
-    printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"
+    printf "\t  -s\tpath to DIR with secrets files (used in prow CI)\n"
+    printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"    
 
     exit 0
 }
@@ -112,13 +123,21 @@ set +a
 ### Options
 OPTIND=1
 ENABLE_FAIL_EXP=false
-while getopts "h?b:d:o:f:e:" option; do
+ENABLE_GITLAB_COM_EXP=false
+ENABLE_GITEA_COM_EXP=false
+ENABLE_BITBUCKET_COM_EXP=false
+
+# Used for cleanup to ensure created binary builds can be safely deleted
+BINARY_BUILDS_NAMESPACES=()
+
+while getopts "h?b:d:s:o:f:e:" option; do
     case "$option" in
     h|\?) print_help;;
     b)    demo_branch=$OPTARG;;
     f)    ci_filename=$OPTARG;;
     o)    demo_org=$OPTARG;;
     d)    venv_dir=$OPTARG;;
+    s)    secrets_dir=$OPTARG;;
     e)    enable_exporters=$OPTARG;;
     esac
 done
@@ -129,10 +148,17 @@ else
     VENV="${venv_dir}"
 fi
 
+if [ -z "${secrets_dir}" ]; then
+    SECRETS_DIR="${PROW_SECRETS_DIR}"
+else
+    SECRETS_DIR="${secrets_dir}"
+fi
+
 if [ -n "${enable_exporters}" ]; then
-    if echo ",$enable_exporters," | grep -q ",failure,"; then
-        ENABLE_FAIL_EXP=true
-    fi
+    echo ",$enable_exporters," | grep -q ",failure," && ENABLE_FAIL_EXP=true && echo "Enabling Failure exporter"
+    echo ",$enable_exporters," | grep -q ",gitlab_committime," && ENABLE_GITLAB_COM_EXP=true && echo "Enabling Gitlab committime exporter"
+    echo ",$enable_exporters," | grep -q ",gitea_committime," && ENABLE_GITEA_COM_EXP=true && echo "Enabling Gitea committime exporter"
+    echo ",$enable_exporters," | grep -q ",bitbucket_committime," && ENABLE_BITBUCKET_COM_EXP=true && echo "Enabling Bitbucket committime exporter"
 fi
 
 if [ -z "${demo_branch}" ]; then
@@ -169,39 +195,175 @@ sed -i.bak "s/your_org/$demo_org/g" "${DWN_DIR}/mongo-persistent.yaml"
 # Show what has been modified:
 diff -uNr "${DWN_DIR}/mongo-persistent.yaml" "${DWN_DIR}/mongo-persistent.yaml.bak"
 
+# Used to create secret temporary file that is used with oc apply
+# command. This is to ensure API Tokens are hidden from the terminal
+# output.
+#
+# Arguments:
+#    $1 - namespace for which secret will be applied, e.g. pelorus
+#    $2 - secret name, e.g. github-secret
+#    $3 - api token value
+#    $4 - (Optional) - api user name. Not all API tokens require corresponding user.
+#
+# Return:
+#    path to the temporary secret file
+#
+function mksecret_temp() {
+    TMP_FILE=$(TMPDIR="${DWN_DIR}" mktemp -t "XXXXX.pelorus.yaml")
+    local secret_namespace=$1
+    local secret_name=$2
+    local api_token=$3
+    local api_user=$4
+
+cat <<EOF >> "${TMP_FILE}"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: $secret_name
+  namespace: $secret_namespace
+type: Opaque
+stringData:
+  API_TOKEN: $api_token
+  TOKEN: $api_token
+EOF
+
+    if [[ -n ${api_user} ]]; then
+        echo "  USER: $api_user" >> "${TMP_FILE}"
+    fi
+
+    echo "${TMP_FILE}"
+}
+
+function create_k8s_secret() {
+    local secret_name=$1
+    local env_token_name=$2
+    local env_user_name="${3:-NO_USERNAME_DEFINED_VAR}"
+
+    SECRET_CONFIGURED=false
+    oc -n $PELORUS_NAMESPACE get secret "${secret_name}"
+    secret_present=$?
+    if [[ $secret_present = 0 ]]; then
+        echo "Secret $secret_name was found"
+        SECRET_CONFIGURED=true
+    else
+      echo "Secret $secret_name was not found, checking env variables to create one"
+      secret_filepath=""
+      # TOKEN must always be set, USER may be required depending on the backend type
+      if [[ -n ${!env_token_name} ]] && [[ -n ${!env_user_name} ]]; then
+          echo "API Token and user passed from env var"
+          secret_filepath=$( mksecret_temp "$PELORUS_NAMESPACE" "$secret_name" "${!env_token_name}" "${!env_user_name}" )
+      elif [[ -n ${!env_token_name} ]]; then
+          echo "API Token passed from env var"
+          secret_filepath=$( mksecret_temp "$PELORUS_NAMESPACE" "$secret_name" "${!env_token_name}" )
+      elif [ -r "${SECRETS_DIR}/${env_token_name}" ] && [ -r "${SECRETS_DIR}/${env_user_name}" ]; then
+          echo "Getting API TOKEN and API USER from secrets mounted directory"
+          secret_filepath=$( mksecret_temp "$PELORUS_NAMESPACE" "$secret_name" "$( cat "${SECRETS_DIR}/${env_token_name}" )" "$( cat "${SECRETS_DIR}/${env_user_name}" )" )
+      elif [ -r "${SECRETS_DIR}/${env_token_name}" ]; then
+          echo "Getting API TOKEN from secrets mounted directory"
+          secret_filepath=$( mksecret_temp "$PELORUS_NAMESPACE" "$secret_name" "$( cat "${SECRETS_DIR}/${env_token_name}" )" )
+      else
+          echo "ERROR: API Token for ${secret_name} not provided, exiting..."
+          exit 1
+      fi
+      # Ensure path is set and file is readable
+      if [[ -n "${secret_filepath}" ]] && [ -r "${secret_filepath}" ]; then
+          oc apply -f "${secret_filepath}"
+          oc_apply=$?
+          if [[ $oc_apply = 0 ]]; then
+              echo "Secret $secret_name was added"
+              SECRET_CONFIGURED=true
+          fi
+          rm "${secret_filepath}"
+      fi
+    fi
+    echo "${SECRET_CONFIGURED}"
+}
+
 # enable the pelorus failure exporter for github
 if [ "${ENABLE_FAIL_EXP}" == true ]; then
-    GITHUB_SECRET_CONFIGURED=false
-    # if github-secret is created in ci
-    oc -n $PELORUS_NAMESPACE get secret github-secret
-    secret_present=$?
-
-    if [[ $secret_present = 0 ]]; then
-        echo "The github-secret was found"
-        GITHUB_SECRET_CONFIGURED=true
-    # if TOKEN are set
-    elif [[ -n ${TOKEN} ]]; then
-        # turn off debug if enabled
-        if [[ $- == *x* ]]; then set +x; export debug_set_off=true; fi
-        oc -n $PELORUS_NAMESPACE create secret generic github-secret --from-literal=TOKEN="$TOKEN"
-        # if debug was turned off, turn it back on.
-        if [[ $debug_set_off == true ]]; then set -x; fi
-        GITHUB_SECRET_CONFIGURED=true
-    else
-        echo "The pelorus github failure exporter was enabled, but the TOKEN was not configured properly"
+    secret_configured=$(create_k8s_secret github-secret TOKEN)
+    secret_exit=$?
+    echo "${secret_configured}"
+    if [[ $secret_exit != 0 ]]; then
         exit 1
     fi
 
     # uncomment the failure exporter in ci_values.yaml
-    if [ $GITHUB_SECRET_CONFIGURED == true ]; then
+    if [[ "$secret_configured" == *true ]]; then
         sed -i.bak "s/#@//g" "${DWN_DIR}/ci_values.yaml"
         echo "The pelorus failure exporter has been enabled"
     fi
 
     # if required update the failure issue github organization
-    if [ $demo_org != "konveyor" ]; then
+    if [ "$demo_org" != "konveyor" ]; then
         sed -i.bak "s/konveyor\/mig-demo-apps/$demo_org\/mig-demo-apps/g" "${DWN_DIR}/ci_values.yaml"
     fi
+fi
+
+# enable gitlab committime exporter
+if [ "${ENABLE_GITLAB_COM_EXP}" == true ]; then
+    secret_configured=$(create_k8s_secret gitlab-secret GITLAB_API_TOKEN)
+    secret_exit=$?
+    echo "${secret_configured}"
+    if [[ $secret_exit != 0 ]]; then
+        exit 1
+    fi
+    # uncomment the gitlab committime exporter in ci_values.yaml
+    if [[ "$secret_configured" == *true ]]; then
+        sed -i.bak "s/#gitlab-committime@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus gitlab committime exporter has been enabled"
+    fi
+
+    # namespace must much one from ci_values.yaml
+    build_ns="gitlab-binary"
+    BINARY_BUILDS_NAMESPACES+=("${build_ns}")
+    build_uri="https://gitlab.com/mpryc/pelorus-gitlab"
+    build_hash="b807fd8e1b2bd1755eca14960e5352fe89ff466e"
+    "${BINARY_BUILD_SCRIPT}" -n "${build_ns}" -b "${build_ns}-todolist" -u "${build_uri}" -s "${build_hash}"
+fi
+
+# enable gitea committime exporter
+if [ "${ENABLE_GITEA_COM_EXP}" == true ]; then
+    secret_configured=$(create_k8s_secret gitea-secret GITEA_API_TOKEN)
+    secret_exit=$?
+    echo "${secret_configured}"
+    if [[ $secret_exit != 0 ]]; then
+        exit 1
+    fi
+    # uncomment the gitea committime exporter in ci_values.yaml
+    if [[ "$secret_configured" == *true ]]; then
+        sed -i.bak "s/#gitea-committime@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus gitea committime exporter has been enabled"
+    fi
+
+    # namespace must much one from ci_values.yaml
+    build_ns="gitea-binary"
+    BINARY_BUILDS_NAMESPACES+=("${build_ns}")
+    build_uri="https://try.gitea.io/mpryc/pelorus-gitea"
+    build_hash="897f5c490442e88cc609c241da880128ad02e42b"
+    "${BINARY_BUILD_SCRIPT}" -n "${build_ns}" -b "${build_ns}-todolist" -u "${build_uri}" -s "${build_hash}"
+fi
+
+# enable bitbucket committime exporter
+if [ "${ENABLE_BITBUCKET_COM_EXP}" == true ]; then
+    secret_configured=$(create_k8s_secret bitbucket-secret BITBUCKET_API_TOKEN BITBUCKET_API_USER)
+    secret_exit=$?
+    echo "${secret_configured}"    
+    if [[ $secret_exit != 0 ]]; then
+        exit 1
+    fi
+    # uncomment the bitbucket committime exporter in ci_values.yaml
+    if [[ "$secret_configured" == *true ]]; then
+        sed -i.bak "s/#bitbucket-committime@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus bitbucket committime exporter has been enabled"
+    fi
+
+    # namespace must much one from ci_values.yaml
+    build_ns="bitbucket-binary"
+    BINARY_BUILDS_NAMESPACES+=("${build_ns}")
+    build_uri="https://bitbucket.org/michalpryc/pelorus-bitbucket"
+    build_hash="e2c4ef00468dfc10aad1bd2d4c9d470160a7f471"
+    "${BINARY_BUILD_SCRIPT}" -n "${build_ns}" -b "${build_ns}-todolist" -u "${build_uri}" -s "${build_hash}"
 fi
 
 # We do check for the exit status, as we are not really interested in the
@@ -242,6 +404,9 @@ retry 5m 5s ogns grafana-service
 retry 5m 5s ogns prometheus-operated
 retry 5m 5s ogns prometheus-pelorus
 
+# Print ci_values.yaml for easy debug
+cat "${DWN_DIR}/ci_values.yaml"
+
 # update exporter values and helm upgrade
 helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml"
 
@@ -258,6 +423,8 @@ exporters=$(oc get route -n "${PELORUS_NAMESPACE}"|grep "-exporter")
 echo "$exporters"
 for exporter_route in $(echo "$exporters" | awk '{print $2}');
 do
+    echo "$exporter_route"
+    curl "$exporter_route"
     curl "$exporter_route" 2>&1 | grep todolist || exit 2
 done
 
