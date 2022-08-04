@@ -144,12 +144,15 @@ objects:
           params:
             - name: SCRIPT
               value: | 
+                oc delete buildConfig basic-python-tekton --wait || true
                 # create build
-                echo "oc new-build python -D --context-dir=demo/python-example --name=basic-python-tekton $(params.git-url)#$(params.git-revision)"
-                "oc new-build python -D --context-dir=demo/python-example --name=basic-python-tekton $(params.git-url)#$(params.git-revision)"
+                sleep 3
+                echo "oc new-build python -D $'FROM centos/python-38-centos7:latest\nCOPY demo/python-example .\nEXPOSE 8080\nENTRYPOINT ["python", "example.py"]' --name=basic-python-tekton $(params.git-url)#$(params.git-revision)"
+                oc new-build python  -D $'FROM centos/python-38-centos7:latest\nCOPY demo/python-example .\nEXPOSE 8080\nENTRYPOINT ["python", "example.py"]' --name=basic-python-tekton $(params.git-url)#$(params.git-revision)
+                sleep 30
                 # label build name
                 echo "oc label bc basic-python-tekton app.kubernetes.io/name=basic-python-tekton"
-                oc label bc basic-python-tekton app.kubernetes.io/name=basic-python-tekton
+                oc label bc basic-python-tekton --overwrite app.kubernetes.io/name=basic-python-tekton
           runAfter: [import-build-image]
           taskRef:
             kind: ClusterTask
@@ -166,6 +169,7 @@ objects:
           params:
             - name: SCRIPT
               value: | 
+                oc delete buildConfig basic-python-tekton || true
                 #ls -la $(workspaces.manifest-dir.path)
                 cd $(workspaces.manifest-dir.path)
                 pwd

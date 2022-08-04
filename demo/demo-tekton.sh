@@ -45,7 +45,7 @@ tekton_setup_dir="$(dirname "${BASH_SOURCE[0]}")/tekton-demo-setup"
 python_example_txt="$(dirname "${BASH_SOURCE[0]}")/python-example/response.txt"
 
 echo "Clean up resources prior to execution:"
-oc delete buildConfig basic-python-tekton
+oc delete buildConfig basic-python-tekton || true
 
 echo "Setting up resources:"
 
