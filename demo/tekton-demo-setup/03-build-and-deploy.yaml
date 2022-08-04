@@ -58,7 +58,7 @@ objects:
           default: master
         - name: BUILD_TYPE
           default: 'buildconfig'
-          description: 'buildconfig, binary, source, s2i'
+          description: 'buildconfig, binary, s2i'
           type: string
       tasks:
         - name: import-build-image
@@ -75,7 +75,7 @@ objects:
           when:
             - input: "$(params.BUILD_TYPE)"
               operator: notin
-              values: ["buildconfig", "source"]
+              values: ["buildconfig"]
           taskRef:
             name: git-clone
             kind: ClusterTask
@@ -91,7 +91,7 @@ objects:
           when:
             - input: "$(params.BUILD_TYPE)"
               operator: notin
-              values: ["buildconfig", "source"]
+              values: ["buildconfig"]
           taskRef:
             name: debug
             kind: Task
@@ -135,33 +135,6 @@ objects:
           taskRef:
             kind: ClusterTask
             name: openshift-client
-        # source build
-        - name: source
-          when:
-            - input: "$(params.BUILD_TYPE)"
-              operator: in
-              values: ["source"]
-          params:
-            - name: SCRIPT
-              value: | 
-                oc delete buildConfig basic-python-tekton --wait || true
-                cd $(workspaces.manifest-dir.path)
-                pwd
-                # create build
-                sleep 3
-                echo "oc new-build python -D $'FROM centos/python-38-centos7:latest\nCOPY demo/python-example .\nEXPOSE 8080\nENTRYPOINT ["python", "example.py"]' --name=basic-python-tekton $(params.git-url)#$(params.git-revision)"
-                oc new-build python  -D $'FROM centos/python-38-centos7:latest\nCOPY demo/python-example .\nEXPOSE 8080\nENTRYPOINT ["python", "example.py"]' --name=basic-python-tekton $(params.git-url)#$(params.git-revision)
-                sleep 30
-                # label build name
-                echo "oc label bc basic-python-tekton app.kubernetes.io/name=basic-python-tekton"
-                oc label bc basic-python-tekton --overwrite app.kubernetes.io/name=basic-python-tekton
-          runAfter: [import-build-image]
-          taskRef:
-            kind: ClusterTask
-            name: openshift-client
-          workspaces:
-            - name: manifest-dir
-              workspace: repo
         # binary build
         - name: buildbinary
           when:

@@ -2,11 +2,19 @@
 
 Scripts to demonstrate pelorus functionality live here.
 
-## demo-tekton
+## demo-tekton.sh
 
 Although the pelorus functionality isn't merged yet, you can set up a basic python tekton pipeline with this script.
 
-It takes a single argument which is the downstream/fork URL you'll be pushing to.
+Example:
+```
+./demo-tekton.sh -g https://github.com/konveyor/pelorus.git -b binary
+```
+
+Help:
+```
+/demo-tekton.sh -h
+```
 
 ## demo.sh
 

@@ -11,7 +11,7 @@ Help()
    echo "options:"
    echo "g     the git url"
    echo "h     Print this Help."
-   echo "b     build type [buildconfig, binary, source, s2i]"
+   echo "b     build type [buildconfig, binary, s2i]"
    echo
 }
 
