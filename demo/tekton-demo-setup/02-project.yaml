@@ -6,7 +6,7 @@ metadata:
   name: basic-python-tekton
   creationTimestam: null
 ---
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   name: debug

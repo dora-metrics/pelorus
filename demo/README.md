@@ -13,7 +13,7 @@ Example:
 
 Help:
 ```
-/demo-tekton.sh -h
+./demo-tekton.sh -h
 ```
 
 ## demo.sh
