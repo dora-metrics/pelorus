@@ -6,6 +6,9 @@ metadata:
   name: basic-python-tekton
   creationTimestam: null
 ---
+# notes: each task specifies the workspace name
+# the same pvc is used, only the mounted directory changes based on the name
+# in this case "debug"
 apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
@@ -15,11 +18,10 @@ spec:
     - name: debug
   steps:
   - name: list-workspace-files
-    image: ubuntu
-    command:
-    - /bin/bash
-    args:
-    - -c
-    - |
+    image: bitnami/git
+    script: |
       set -ex
       find /workspace
+      cd /workspace/debug 
+      git remote -vv 
+      git log -n 1

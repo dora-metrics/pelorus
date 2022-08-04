@@ -66,6 +66,7 @@ objects:
             - name: SCRIPT
               value: | 
                 oc import-image centos/python-38-centos7:latest --confirm -n basic-python-tekton
+                oc import-image bitnami/git --from=docker.io/bitnami/git:latest --confirm -n basic-python-tekton
           taskRef:
             kind: ClusterTask
             name: openshift-client
