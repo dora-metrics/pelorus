@@ -145,6 +145,8 @@ objects:
             - name: SCRIPT
               value: | 
                 oc delete buildConfig basic-python-tekton --wait || true
+                cd $(workspaces.manifest-dir.path)
+                pwd
                 # create build
                 sleep 3
                 echo "oc new-build python -D $'FROM centos/python-38-centos7:latest\nCOPY demo/python-example .\nEXPOSE 8080\nENTRYPOINT ["python", "example.py"]' --name=basic-python-tekton $(params.git-url)#$(params.git-revision)"
@@ -157,6 +159,9 @@ objects:
           taskRef:
             kind: ClusterTask
             name: openshift-client
+          workspaces:
+            - name: manifest-dir
+              workspace: repo
         # binary build
         - name: buildbinary
           when:
