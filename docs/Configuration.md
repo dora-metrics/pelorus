@@ -116,6 +116,7 @@ oc create secret generic github-secret --from-literal=TOKEN=<personal access tok
 A Pelorus exporter can require additional information to collect data such as the 
 remote `GIT_API` or `API_USER` information.  It is recommended to consult the requirements
 for each Pelorus exporter in this guide and include the additional key / value information in the Openshift secret. An API example is `github.mycompany.com/api/v3`
+or `https://gitea.mycompany.com`.
 
 The cli commands can also be substituted with Secret templates. Example files can be found [here](https://github.com/konveyor/pelorus/tree/master/charts/pelorus/secrets)
 
@@ -285,7 +286,7 @@ This exporter provides several configuration options, passed via `pelorus-config
 |---|---|---|---|
 | `API_USER` | yes | User's github username | unset |
 | `TOKEN` | yes | User's Github API Token | unset |
-| `GIT_API` | no | Github API FQDN.  This allows the override for Github Enterprise users.  Currently only applicable to `github` provider type. | `api.github.com` |
+| `GIT_API` | no | GitHub, Gitea or Azure DevOps API FQDN. This allows the override for Enterprise users. Currently only applicable to `github`, `gitea` and `azure-devops` provider types. | `api.github.com`, or `https://try.gitea.io`. No default for Azure DevOps. |
 | `GIT_PROVIDER` | no | Set Git provider type. Can be `github`, `gitlab`, or `bitbucket` | `github` |
 | `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 | `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
