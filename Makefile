@@ -24,7 +24,7 @@ CHART_TEST=$(shell which ct)
 
 SHELLCHECK=$(shell which shellcheck)
 # Sync with .github/workflows/shellcheck.yaml
-SHELL_SCRIPTS=./demo/demo-tekton \
+SHELL_SCRIPTS=demo/demo-tekton.sh \
        scripts/create_release_pr \
        scripts/install_dev_tools \
        scripts/pre-commit \
