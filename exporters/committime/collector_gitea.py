@@ -13,7 +13,7 @@ from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 class GiteaCommitCollector(AbstractCommitCollector):
 
     _prefix_pattern = "%s/api/v1/repos/"
-    _defaultapi = "try.gitea.io/api/v1"
+    _defaultapi = "https://try.gitea.io"
     _prefix = _prefix_pattern % _defaultapi
     _suffix = "/git/commits/"
 
