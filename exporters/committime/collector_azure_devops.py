@@ -2,10 +2,11 @@ import logging
 
 import requests
 from azure.devops.connection import Connection
-from collector_base import AbstractCommitCollector, UnsupportedGITProvider
 from msrest.authentication import BasicAuthentication
 
 import pelorus
+
+from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 
 class AzureDevOpsCommitCollector(AbstractCommitCollector):

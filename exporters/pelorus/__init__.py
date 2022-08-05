@@ -5,6 +5,8 @@ from abc import ABC
 from datetime import datetime, timezone
 from typing import Optional, Sequence
 
+from prometheus_client.registry import Collector
+
 from . import utils
 
 DEFAULT_APP_LABEL = "app.kubernetes.io/name"
@@ -14,7 +16,7 @@ DEFAULT_LOG_FORMAT = "%(asctime)-15s %(levelname)-8s %(message)s"
 DEFAULT_LOG_DATE_FORMAT = "%m-%d-%Y %H:%M:%S"
 DEFAULT_GIT = "github"
 DEFAULT_GIT_API = ""
-DEFAULT_TLS_VERIFY = "True"
+DEFAULT_TLS_VERIFY = True
 DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = "unknown"
 DEFAULT_TRACKER_APP_FIELD = "u_application"
@@ -148,10 +150,5 @@ def url_joiner(base: str, *parts: str):
     return base.strip("/") + "/" + "/".join(s.strip("/") for s in parts)
 
 
-class AbstractPelorusExporter(ABC):
-    """
-    Base class for PelorusExporter
-    """
-
-    def __init_():
-        pass
+class AbstractPelorusExporter(Collector, ABC):
+    pass

@@ -19,9 +19,10 @@ import logging
 
 import gitlab
 import requests
-from collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 import pelorus
+
+from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 
 class GitLabCommitCollector(AbstractCommitCollector):

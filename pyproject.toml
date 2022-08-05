@@ -6,6 +6,7 @@ known_first_party = ["pelorus"]
 [tool.pytest.ini_options]
 testpaths = ["exporters/tests"]
 markers = [
-    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')"
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "mockoon: tests that should be run with mockoon running"
 ]
 log_cli = true

@@ -8,28 +8,54 @@ from kubernetes.client import ApiClient, Configuration
 from openshift.dynamic import DynamicClient
 
 from committime import CommitMetric
+from committime.app import CommittimeConfig
 from committime.collector_github import GitHubCommitCollector
+from pelorus.config import load_and_log
 
 
-def setup_collector():
+def _make_dyn_client():
     kube_config = Configuration()
     kube_config.host = "https://localhost:3000"
     kube_config.verify_ssl = False
-    dyn_client = DynamicClient(ApiClient(configuration=kube_config))
+    return DynamicClient(ApiClient(configuration=kube_config))
 
-    username = "gituser"
-    token = "gittoken"
-    git_api = "localhost:3000"
-    namespaces = (
-        "basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod".split(
-            ","
-        )
-    )
+
+USERNAME = "gituser"
+TOKEN = "gittoken"
+GIT_API = "localhost:3000"
+NAMESPACES = "basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod"
+
+
+def setup_collector():
+    dyn_client = _make_dyn_client()
+
+    namespaces = NAMESPACES.split(",")
     apps = None
     tls_verify = False
     return GitHubCommitCollector(
-        dyn_client, username, token, namespaces, apps, git_api, tls_verify
+        dyn_client, USERNAME, TOKEN, namespaces, apps, GIT_API, tls_verify
     )
+
+
+def setup_collector_from_env_loading():
+    env = dict(
+        API_USER=USERNAME,
+        TOKEN=TOKEN,
+        NAMESPACES=NAMESPACES,
+        GIT_API=GIT_API,
+        GIT_PROVIDER="github",
+    )
+
+    config = load_and_log(
+        CommittimeConfig,
+        other=dict(
+            kube_client=_make_dyn_client(),
+            tls_verify=False,
+        ),
+        env=env,
+    )
+
+    return config.make_collector()
 
 
 def expected_commits() -> list[CommitMetricEssentials]:
@@ -81,8 +107,9 @@ class CommitMetricEssentials:
 
 
 @pytest.mark.mockoon
-def test_github_provider():
-    collector = setup_collector()
+@pytest.mark.parametrize("setup", (setup_collector, setup_collector_from_env_loading))
+def test_github_provider(setup):
+    collector = setup()
 
     actual = [
         CommitMetricEssentials.from_commit_metric(cm)
