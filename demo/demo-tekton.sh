@@ -65,10 +65,12 @@ tekton_setup_dir="$(dirname "${BASH_SOURCE[0]}")/tekton-demo-setup"
 python_example_txt="$(dirname "${BASH_SOURCE[0]}")/python-example/response.txt"
 
 echo "Clean up resources prior to execution:"
+# cleaning resources vs. deleting the namespace to preserve pipeline run history
 oc delete --all imagestream -n basic-python-tekton &> /dev/null || true
 oc scale dc/basic-python-tekton --replicas=0 &> /dev/null || true
 oc delete dc/basic-python-tekton -n basic-python-tekton &> /dev/null || true
 oc delete buildConfig basic-python-tekton &> /dev/null || true
+oc delete buildconfig.build.openshift.io/basic-python-tekton &> /dev/null || true
 oc delete -all pods -n basic-python-tekton  &> /dev/null || true
 oc delete --all replicationcontroller -n basic-python-tekton &> /dev/null || true
 
