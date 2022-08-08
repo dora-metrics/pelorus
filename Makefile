@@ -119,7 +119,7 @@ mockoon-tests: $(PELORUS_VENV)
 .PHONY: e2e-tests e2e-tests-scenario-1 e2e-tests-scenario-1
 e2e-tests: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-pelorus-e2e-tests -o konveyor -e failure,gitlab_committime,bitbucket_committime
+	./scripts/run-pelorus-e2e-tests -o konveyor -e failure,gitlab_committime,gitea_committime,bitbucket_committime
 
 e2e-tests-scenario-1: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
