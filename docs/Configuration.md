@@ -257,7 +257,12 @@ Note: The requirement to label the build with `app.kubernetes.io/name=<app_name>
 #### An example workflow for an OpenShift binary build:
 
 ```
-NS=mongo-persistent
+# sample_app in current directory
+cat app.py 
+#!/usr/bin/env python3
+print("Hello World")
+
+NS=binary-build
 NAME=python-binary-build
 
 oc create namespace "${NS}"
@@ -265,7 +270,7 @@ oc create namespace "${NS}"
 oc new-build python --name="${NAME}" --binary=true -n "${NS}"  -l "app.kubernetes.io/name=${NAME}"
 oc start-build "bc/${NAME}" --from-file=./app.py --follow -n "${NS}"
 
-
+oc get builds -n "${NS}"
 oc -n "${NS}" annotate build "${NAME}-1" --overwrite \
 io.openshift.build.commit.id=7810f2a85d5c89cb4b17e9a3208a311af65338d8 \
 io.openshift.build.source-location=http://github.com/konveyor/pelorus
