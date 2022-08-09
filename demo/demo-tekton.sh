@@ -70,6 +70,7 @@ oc project basic-python-tekton
 
 echo "Clean up resources prior to execution:"
 # cleaning resources vs. deleting the namespace to preserve pipeline run history
+# resources are cleaned to ensure that the new running artifact is from the latest build
 oc delete --all imagestream -n basic-python-tekton &> /dev/null || true
 oc scale dc/basic-python-tekton --replicas=0 &> /dev/null || true
 oc delete dc/basic-python-tekton -n basic-python-tekton &> /dev/null || true
