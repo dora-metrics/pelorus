@@ -1,14 +1,8 @@
 # NooBaa and Pelorus Quickstart
+NooBaa is a software-driven data service that provides an S3 object-storage interface used for testing and development of the Pelorus project. This section walks through deploying NooBaa Operator on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](Install.md#configure-long-term-storage-recommended) solution.
 
-NooBaa is a software-driven data service that provides S3 object-storage interface that we use for testing and development of Pelorus project.
-
-The following is a walkthrough for deploying NooBaa Operator on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](Install.md#configure-long-term-storage-recommended) solution.
-
-## Install NooBaa Operator CLI
-
-NooBaa Operator installation may be done using `noobaa` CLI that helps to easy most management tasks.
-
-To install `noobaa` CLI please refer to the [NooBaa README](https://github.com/noobaa/noobaa-operator/blob/master/README.md) or simply install it as part of our dev-env from the pelorus git folder:
+## Installing NooBaa Operator CLI
+NooBaa Operator is installed using `noobaa` CLI which can be installed by referring to the [NooBaa README](https://github.com/noobaa/noobaa-operator/blob/master/README.md) or as part of the Pelorus dev-env in the Pelorus git folder:
 
 ```
 make dev-env
@@ -16,28 +10,24 @@ source .venv/bin/activate
 noobaa --help
 ```
 
-## Configure Namespace
+## Installing NooBaa
+To retain Pelorus dashboard data in the long-term, create a namespace, install an instance of [NooBaa operator](https://github.com/noobaa/noobaa-operator) and create a bucket called `thanos`.
 
-NooBaa can be deployed in the same namespace as Pelorus or a separate one.
+**Procedure**
+
+1. Deploy NooBaa in the same namespace as Pelorus or a separate one.
 
 ```
 oc create namespace pelorus
 ```
-
-## Install NooBaa
-
-To retain Pelorus dashboard data in the long-term, we'll deploy an instance of [NooBaa operator](https://github.com/noobaa/noobaa-operator) and create a bucket called `thanos`.
-
-### Deploy NooBaa
-
-To deploy NooBaa simply run:
+1. Install NooBaa.
 
 ```
 noobaa install --namespace pelorus
 ```
+1. Store the S3 credentials from installation for updating the Pelorus configuration in a later step.
 
-At this stage it's important to store S3 Credentials, that they appeared during `noobaa install --namespace pelorus` step.
-They will be used later in the [Update Pelorus Configuration](#update-pelorus-configuration) step. Credentials can be always received using `noobaa status` command:
+> **Note:** Credentials can be retrieved using `noobaa status` command:
 
 ```
 #------------------#
@@ -47,8 +37,7 @@ They will be used later in the [Update Pelorus Configuration](#update-pelorus-co
 AWS_ACCESS_KEY_ID     : <s3 access key>
 AWS_SECRET_ACCESS_KEY : <s3 secred access key>
 ```
-
-After running `noobaa install --namespace pelorus` step, you may confirm that installation went fine by checking the System Status output and ensuring that ll the services are marked with ✅:
+4. Confirm the installation was success by checking the System Status output and verifying all the services are marked with ✅:
 
 ```
 $ noobaa status
@@ -88,24 +77,20 @@ INFO[0007] ✅ System Phase is "Ready"
 INFO[0007] ✅ Exists:  "noobaa-admin"
 ```
 
-### Create NooBaa bucket
+5. Create the NooBaa bucket.
 
-We use default `thanos` bucket name. User may choose any bucket name.
-To create `thanos` NooBaa bucket:
-
+> **Note:** Pelorus uses the `thanos` bucket name by default, but users can choose any bucket name.
 ```
 noobaa bucket create thanos
 ```
 
-At any time to check if the bucket was created succesfully and it's healthy run the command:
-
+6. Verify the bucket was successfully created and running properly.
 ```
 noobaa bucket status thanos
 ```
 
-## Update Pelorus Configuration
+## Updating Pelorus Configuration
+Follow the steps below to update the Pelorus stack.
 
-To update our Pelorus stack, follow the instructions provided in the [Long Term Storage](Install.md#configure-long-term-storage-recommended).
-
-Ensure that `<s3 access key>`, `<s3 secred access key>` and `<bucket name>` are used from the [Deploy NooBaa
-](#deploy-noobaa) step and `s3.noobaa.svc` as bucket access point.
+1. Follow the instructions provided in the [Long Term Storage](Install.md#configure-long-term-storage-recommended) procedure of the Install Guide.
+1. Verify the `<s3 access key>`, `<s3 secred access key>`, and `<bucket name>` from the installation are used, and `s3.noobaa.svc` is used as the bucket access point.

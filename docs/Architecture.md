@@ -20,18 +20,17 @@ Pelorus is composed of the following open source components.
 
 ### Prometheus and Grafana
 
-Pelorus is built on top of [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/), an industry standard open source metrics gathering and dashboarding stack. This allows for us to focus on the core differntiators for Pelorus - the metrics we care about, methods of gathering then, and building information radiators from those metrics.
+[Prometheus](https://prometheus.io/) monitors and stores time-series data and Grafana](https://grafana.com/) provides dashboard visualization of the metrics.  Pelorus is built on these open source tools and focuses on the core differentiators, methods of gathering them, and building information radiators from those metrics.
 
-[Thanos](https://thanos.io/) is a set of Prometheus components that provide high availability and long term storage of Prometheus data. We use Thanos in Pelorus to give our dashboards the ability to look back over months or years of organizational data.
+#### Thanos
+[Thanos](https://thanos.io/) is a sub-set of Prometheus components that provide high availability and long term data storage. Thanos gives Pelorus dashboards the ability to look back over months or years of organizational data.
 
-### Pelorus Exporters
+### Pelorus exporters
+[Exporters](https://prometheus.io/docs/instrumenting/exporters/) are Prometheus bot that gathers and exposes data. Pelorus uses the exporter framework to build integrations with common IT systems to gather the relevant dashboard data.
 
-An [exporter](https://prometheus.io/docs/instrumenting/exporters/) is a Prometheus concept of a bot that gathers and exposes data. Pelorus uses the exporter framework to build integrations with a myriad of common IT systems from which we can then gather the relevant data for our dashboards.
+## Multi-cluster architecture (production)
+Pelorus typically needs to be installed across multiple Kubernetes clusters in production environments. In most cases, the key clusters are the Development cluster where builds are happening, and Production.
 
+Below is an example of Pelorus Multi-Cluster architecture.
 
-## Multi-Cluster Architecture (Production)
-
-In production environments, Pelorus will typically need to be installed across multiple kubernetes clusters. In most cases, the two clusters that matter are the "Development" cluster (where builds are happening)
-
-![Pelorus Multi-Cluster Architecture](img/multi-cluster_architecture.png)
-
+![](img/multi-cluster_architecture.png)

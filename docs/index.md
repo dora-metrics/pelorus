@@ -4,11 +4,11 @@
 
 ![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
 
-Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
+Pelorus helps IT organizations measure their impact on the overall performance of their organization by gathering team and organizational behaviors metrics over time. It focuses on key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 
-- Software Delivery Performance
-- Product Quality and Sustainability
-- Customer experience
+* Software Delivery Performance
+* Product Quality and Sustainability
+* Customer experience
 
 To understand the motivation, see [Our Philosophy](Philosophy.md).
 

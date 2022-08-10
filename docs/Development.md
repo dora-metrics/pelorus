@@ -4,122 +4,138 @@ We appreciate your interest in contributing to Pelorus! Use this guide to help y
 
 There are three main tracks of Pelorus development to consider.
 
-1. [Deployment Automation](#contributing-to-deployment-automation)  
-This track mostly involves testing, fixing, and updating our Helm chart(s) to streamline the installation and configuration experience. Knowledge of Helm, OpenShift, Operators and Prometheus configuration is assumed for this work.
-2. [Dashboard Development](#dashboard-development)  
-This is where we take the raw data we've collected and turn it into actionable visual representations that will help IT organizations make important decisions. Knowledge of Grafana and PromQL is required for contribution here.
-3. [Exporter Development](#exporter-development)  
-This track is focused around the development of custom [Prometheus exporters](https://prometheus.io/docs/instrumenting/writing_exporters/) to gather the information we need in order to calculate our core metrics. Python development experience is assumed.
+[Deployment Automation](#contributing-to-deployment-automation)  
+This track mostly involves testing, fixing, and updating our Helm chart(s) to streamline the installation and configuration experience. Experience with configuring Helm, OpenShift, Operators, and Prometheus is required for this work.
+
+[Dashboard Development](#dashboard-development)  
+This is where we take the collected raw data and turn it into actionable, visual representations that will help IT organizations make important decisions. Knowledge of Grafana and PromQL is required for contribution.
+
+[Exporter Development](#exporter-development)  
+This track is focused around the development of custom [Prometheus exporters](https://prometheus.io/docs/instrumenting/writing_exporters/) to gather information to calculate our core metrics. Python development experience is required.
 
 ## Contributing to Deployment Automation
+[Helm](https://helm.sh/) is used to provide an automated deployment and configuration experience for Pelorus. We are always working to cover more and more complex use cases with our Helm charts. In order to be able to effectively contribute to these charts, you will need a cluster that satisfies all of the installation prerequisites for Pelorus.
 
-We use [Helm](https://helm.sh) to provide an automated deployment and configuration experience for Pelorus. We are always doing work to cover more and more complex use cases with our helm charts. In order to be able to effectively contribute to these charts, you'll need a cluster that satisfies all of the installation prerequisites for Pelorus.
+See the [Install guide](Install.md) for more details.
 
-See the [Install guide](Install.md) for more details on that.
+Currently there are two charts:
 
-Currently we have two charts:
-
-1. The [operators](https://github.com/konveyor/pelorus/blob/master/charts/operators/) chart installs the community operators on which Pelorus depends.
+1. The [Operators chart](https://github.com/konveyor/pelorus/blob/master/charts/operators/) installs the community operators that Pelorus depends on.
     * [Prometheus Operator](https://operatorhub.io/operator/prometheus)
     * [Grafana Operator](https://operatorhub.io/operator/grafana-operator)
-2. The [pelorus](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/) chart manages the Pelorus stack, which includes:
+2. The [Pelorus chart](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/) manages the Pelorus stack, which includes:
     * Prometheus
     * Thanos
     * Grafana
     * A set of Grafana Dashboards and Datasources
     * The Pelorus exporters, managed in an [exporter](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
 
-We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `make chart-lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
+Pelorus uses Helm's [chart-testing tool](https://github.com/helm/chart-testing) to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `make chart-lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
 
 ### Updating the chart versions
-
 When any of our Helm charts are updated, we need to bump the version number.
-This allows for a seemless upgrade experience.
-We have provided scripts that can test when a version bump is needed and do the bumping for you.
+This allows for a seemless upgrade experience. We have provided scripts that can test when a version bump is needed and do the bumping for you.
 
-1. Ensure the development environment is set up with `make dev-env`.
-2. Run `make chart-lint` to lint the charts, including checking the version number.
+**Procedure**
+1. Verify the development environment is set up with `make dev-env`.
+1. Run `make chart-lint` to lint the charts, including checking the version number.
+> **Note:** (Optional) Check all chart versions and bump them if needed with a script that compares upstream Pelorus repository with the changes in a fork.
 
-You can check all chart versions and bump them if needed with a script that compares upstream pelorus repository with the changes in a fork. To do so ensure your upstream repository is added to your fork by:
-
-    $ git remote add upstream https://github.com/konveyor/pelorus.git
-    $ git pull
-    $ make chart-check-bump
-
+1. Verify the upstream repository is added to the fork.
+```
+$ git remote add upstream https://github.com/konveyor/pelorus.git
+$ git pull
+$ make chart-check-bump
+```
 or bump specific charts with shell script:
-
-    $ ./scripts/bump-version CHART_PATH [ CHART_PATH ...]
+```
+$ ./scripts/bump-version CHART_PATH [ CHART_PATH ...]
+```
 
 ## Dashboard Development
+Pelorus is continually working to enhance and bugfix the dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](Dashboards.md) user guide for more information.
 
-We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Dashboards](Dashboards.md) user guide for that information.
+For effective dashboard development, you will likely need at least two browser windows open, one with Grafana, and another with Prometheus for testing queries. Since our dashboards are imported to Grafana via the Grafana Operator, they get imported in read-only mode. Because of this, you will need to make a copy of it for development purposes.
 
-To effectively do dashboard development, you'll likely need at least two browser windows open, one with Grafana, and another with Prometheus for testing queries. Since our dashboards are imported to Grafana via the Grafana Operator, they get imported in read-only mode. Because of this, you'll need to make a copy of it for development purposes.
+The following procedures outline a workflow for working on a dashboard:
 
-The following outlines a workflow for working on a dashboard:
+### Getting started
+Follow the steps below to sign in and pull the administrator credentials.
 
-1. Sign in to Grafana via the Grafana route. To check the route:
+**Procedure**
+1. Get the Grafana route to sign in.
+```
+$ oc get route grafana-route -n pelorus
+```
+1. Sign in as an administrator.
+1. Click the **Sign In** button in the bottom right corner.
+1. Pull the admin credentials.
+```
+$ oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_USER}' | base64 -d
+$ oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
+```
 
-        $ oc get route grafana-route -n pelorus
+### Exporting the dashboard JSON
+Follow the steps below to
 
-1. Once signed in, sign as an administrator
-    1. Click the signin button in the bottom right corner:  
-    ![Signin button](img/signin.png)
-    1. The admin credentials can be pulled from the following commands:
+**Procedure**
+1. Open the dashboard, and select the **Share...** button.
+1. Select the **Export** tab.
+1. Click **View JSON**.
+1. Click **Copy to Clipboard**.
 
-            $ oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_USER}' | base64 -d
-            $ oc get secrets -n pelorus grafana-admin-credentials -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
-1. Export the dashboard JSON.
-    1. Open the dashboard, and select the **Share...** button.
-    1. Select the **Export** tab.
-    1. Click **View JSON**.
-    1. Click **Copy to Clipboard**.
-1. Import as a new dashboard
-    1. Click **Create** -> **Import**.
-    1. Paste your JSON code in the box and click **Load**.
-    1. Change the _Name_ and _Unique Identifier_ fields, and click **Import**.
-1. Make changes to the live dashboard. You can do this by clicking the dropdown by the panel names, and selecting **Edit**.
-1. Once you are happy with your changes, export your updated dashboard, and replace the existing content in the `GrafanaDashbaord` CR.
-    1. Open the dashboard, and select the **Share...** button.
-    1. Select the **Export** tab.
-    1. Click **View JSON**.
-    1. Click **Copy to Clipboard**.
-    1. Open the appropriate `GrafanaDashboard` CR file, and paste the new dashboard JSON over the existing.
+### Import as a new dashboard
+Follow the steps below to
 
-        **NOTE:**
+**Procedure**
+1. Click **Create**, then **Import**.
+1. Paste the JSON code in the box and click **Load**.
+1. Change the **Name** and **Unique Identifier** fields and click **Import**.
+1. Click the drop-down list by the panel names and click **Edit** to make changes to the live dashboard.
 
-        > Be sure to match the indentation of the previous dashboard JSON. Your git diffs should still show only the lines changed like the example below.
+### Finalizing dashboard development
+Follow the steps below to verify the changes, export the updated dashboard and replace the existing content in the GrafanaDashbaord CR.
 
-             $ git diff charts/deploy/templates/metrics-dashboard.yaml
-             diff --git a/charts/deploy/templates/metrics-dashboard.yaml b/charts/deploy/templates/metrics-dashboard.yaml
-             index 73151ad..c470afc 100644
-             --- a/charts/deploy/templates/metrics-dashboard.yaml
-             +++ b/charts/deploy/templates/metrics-dashboard.yaml
-             @@ -25,7 +25,7 @@ spec:
-                         "editable": true,
-                         "gnetId": null,
-                         "graphTooltip": 0,
-             -            "id": 2,
-             +            "id": 3,
-                         "links": [],
-                         "panels": [
-                             {
-             @@ -323,7 +323,7 @@ spec:
-                             "tableColumn": "",
-                             "targets": [
-                                 {
-             -                    "expr": "count (deploy_timestamp)",
-             +                    "expr": "count (count_over_time (deploy_timestamp [$__range]) )",
-                                 "format": "time_series",
-                                 "instant": true,
-                                 "intervalFactor": 1,
-             @@ -410,7 +410,7 @@ spec:
+**Procedure**
 
-You're done! Commit your changes and open a PR!
+1. Open the dashboard and click the **Share...** button.
+1. Click the **Export** tab.
+1. Click **View JSON**.
+1. Click **Copy to Clipboard**.
+1. Open the appropriate `GrafanaDashboard` CR file, and paste the new dashboard JSON over the existing.
+
+> **Important:** Match the indentation of the previous dashboard JSON. The git diffs should still show only the lines changed like in the example below.
+```
+ $ git diff charts/deploy/templates/metrics-dashboard.yaml
+ diff --git a/charts/deploy/templates/metrics-dashboard.yaml b/charts/deploy/templates/metrics-dashboard.yaml
+ index 73151ad..c470afc 100644
+ --- a/charts/deploy/templates/metrics-dashboard.yaml
+ +++ b/charts/deploy/templates/metrics-dashboard.yaml
+ @@ -25,7 +25,7 @@ spec:
+             "editable": true,
+             "gnetId": null,
+             "graphTooltip": 0,
+ -            "id": 2,
+ +            "id": 3,
+             "links": [],
+             "panels": [
+                 {
+ @@ -323,7 +323,7 @@ spec:
+                 "tableColumn": "",
+                 "targets": [
+                     {
+ -                    "expr": "count (deploy_timestamp)",
+ +                    "expr": "count (count_over_time (deploy_timestamp [$__range]) )",
+                     "format": "time_series",
+                     "instant": true,
+                     "intervalFactor": 1,
+ @@ -410,7 +410,7 @@ spec:
+````
+7. Commit your changes and open a PR.
 
 ## Exporter Development
 
-A Pelorus exporter is simply a [Prometheus exporter](https://prometheus.io/docs/instrumenting/writing_exporters/). While they can technically be written in many languages, we've written ours in Python using the [Prometheus python client](https://github.com/prometheus/client_python) library. We chose Python because it seems to be the most popular programming language for operations teams.
+A Pelorus exporter is simply a [Prometheus exporter](https://prometheus.io/docs/instrumenting/writing_exporters/). While they can technically be written in many languages, we've written ours in Python using the [Prometheus python client library](https://github.com/prometheus/client_python). We chose Python because it seems to be the most popular programming language for operations teams.
 
 ### Exporter directory layout
 
@@ -140,13 +156,8 @@ The following is a recommended directory structure for a Pelorus exporter `<NAME
         └── test_<NAME>.py
 ```
 
-### Dev Environment Setup
-
-#### Python & Repo Setup
-
-After cloning the repo, you'll need a python version that's >= 3.9 but < 3.11.
-
-Running `make dev-env` should be enough to get you started.
+### Python development environment setup and and repo setup
+Install Python (version >= 3.9 but < 3.11) after cloning the repo. Running `make dev-env` should be enough to get started.
 
 This will:
 
@@ -159,20 +170,20 @@ This will:
 - configure `git blame` to ignore large revisions that just changed formatting
 
 #### IDE Setup (VSCode)
+Most developers use Visual Studio Code for Python development. The following extensions for VSCode are useful and can be installed by hitting `Ctrl+P` and pasting the commands below.
+**Procedure**
 
-Most of us use Visual Studio Code to do our python development. The following extensions for VSCode are useful. Each can be installed by hitting `Ctrl+P` and pasting the commands below.
+1. Install [Markdown Preview Github Styling](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-preview-github-styles)
+```
+ext install bierner.markdown-preview-github-styles
+```
+1. Install [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+```
+ext install ms-python.python
+```
+> **Note:** The Python extension can activate the virtualenv automatically.
 
-* [Markdown Preview Github Styling](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-preview-github-styles)
-
-        ext install bierner.markdown-preview-github-styles
-
-* [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
-
-        ext install ms-python.python
-
-The python extension can activate your virtualenv automatically.
-
-Code also comes with a nice debugger feature. Here is a starter configuration to use with our exporters. Just create a file called `.vscode/launch.json` in your `pelorus/` project directory with the following content.
+1. Create a file called `.vscode/launch.json` in your `pelorus/` project directory with the following content for a starter VSCode degug configuration to use with Pelorus exporters.
 
 ```json
 {
@@ -223,27 +234,28 @@ Code also comes with a nice debugger feature. Here is a starter configuration to
 }
 ```
 
-For more information, see the [Debugging](https://code.visualstudio.com/docs/editor/debugging) doc in VS Code.
+For more information, see the [Debugging](https://code.visualstudio.com/docs/editor/debugging) document in VS Code.
 
-### Running locally
+### Running exporters locally
+Follow the steps below to run an exporter on a local machine.
 
-Running an exporter on your local machine should follow this process:
+**Procedure**
 
-1. Set up your local dev environment:
-
-        make dev-env
-
-2. Activate your virtual environment
-
-        . .venv/bin/activate
-
-3. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](Configuration.md#configuring-exporters) to see supported variables).
-
-        export LOG_LEVEL=debug
-        export TOKEN=xxxx
-        export API_USER=xxxx
-
-4. Log in to your OpenShift cluster  OR export KUBECONFIG environment variable
+1. Set up your local dev environment.
+```
+make dev-env
+```
+1. Activate your virtual environment.
+```
+. .venv/bin/activate
+```
+1. Set any environment variables required (or desired) for the given exporter see ([Configuring exporters](https://konveyor.github.io/pelorus/configuration/#configuring-exporters) for supported variables).
+```
+export LOG_LEVEL=debug
+export TOKEN=xxxx
+export USER=xxxx
+```
+1. Log in to your OpenShift cluster  OR export KUBECONFIG environment variable
 
         oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443
 
@@ -251,144 +263,151 @@ Running an exporter on your local machine should follow this process:
 
         export KUBECONFIG=/path/to/kubeconfig_file
 
-5. (Optional) To avoid certificate warnings and some possible errors, you need to set up your local machine to trust your cluster certificate
+1. . Log into the OpenShift cluster OR export the KUBECONFIG environment variable.
+```
+oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443
+```
+**OR**
 
-    1.  Download your cluster ca.crt file
-    2.  Add cert to system trust bundle
-    3.  Pass cert bundle with your login command
+```
+export KUBECONFIG=/path/to/kubeconfig_file
+```
+**Optional** Avoid certificate warnings and some possible errors by setting up your local machine to trust your cluster certificate.
+1. Download your cluster ca.crt file.
+1. Add cert to the system trust bundle.
+1. Pass the cert bundle with your login command.
+```
+oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443  --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
+```
+1. Start the exporter.
+```
+python exporters/committime/app.py
+```
+1. Find the exporter at http://localhost:8080.
+```
+curl http://localhost:8080
+```
 
-            oc login --token=<token> --server=https://api.cluster-my.fun.domain.com:6443  --certificate-authority=/etc/pki/tls/certs/ca-bundle.crt
+## Testing pull requests
+Follow the steps below for testing Pull Requests for specific types of changes.
 
-6. Start the exporter
+**Procedure:**
 
-        python exporters/committime/app.py
-
-At this point, your exporter should be available at http://localhost:8080
-
-    curl http://localhost:8080
-
-
-## Testing Pull Requests
-
-The following are notes and general steps for testing Pull Requests for specific types of changes.
-
-To checkout PR we recommend using [GitHub CLI](https://cli.github.com/), which simplifies process of pulling PRs.
-
-Ensure you have [Pelorus](https://github.com/konveyor/pelorus) GitHub project Forked into your GitHub user space.
+1. Checkout the PR. (Recommend using [GitHub CLI](https://cli.github.com/), which simplifies process of pulling PRs.)
+1. Verify you have [Pelorus GitHub](https://github.com/konveyor/pelorus) project Forked into your GitHub user space.
 
 #### <a id="checkout"></a>
-Checkout the PR on top of your fork.
+Checkout the PR on top of the fork.
+```
+git clone git@github.com:<your_github_username>/pelorus.git
+cd pelorus
+gh pr checkout 535
 
-    git clone git@github.com:<your_github_username>/pelorus.git
-    cd pelorus
-    gh pr checkout 535
+# If asked:
+# ? Which should be the base repository, select:
+# > konveyor/pelorus
+```
 
-    # If asked:
-    # ? Which should be the base repository, select:
-    # > konveyor/pelorus
+### Making dashboard changes
+Follow the steps below to make changes to the dashboard.
 
+> **Note:**: In most cases you can deploy changes to an existing deployment to retain existing data.
 
-### Dashboard Changes
+**Procedure**
 
 1. [Checkout](#checkout) the PR on top of your fork.
+1. [Install Pelorus](Install.md) from checked out fork/branch.
+Log into Grafana via the grafana route.
+```
+oc get route grafana-route -n pelorus
+```
+1. Click on the dashboard containing changes, and visually validate the behavior change described in the PR.
 
-2. [Install Pelorus](Install.md) from checked out fork/branch.
-
-    **NOTE:**
-
-    > In most cases you can deploy changes to an existing deployment to retain existing data.
-
-3. Log into Grafana via the grafana route.
-
-        oc get route grafana-route -n pelorus
-
-4. Click on the dashboard containing changes, and visually validate the behavior change described in the PR.
-
-    **NOTE:**
-
-    > Eventually we'd like to have some Selenium tests in place to validate dashboards. If you have skills in this area let us know!
+> **Note:** Eventually Pelorus would like to have some Selenium tests in place to validate dashboards. If you have skills in this area let us know.
 
 ### Exporter Changes
+Each PR runs exporter tests in the CI systems, however those changes can be tested locally in a very similar way they run in the CLI. Follow the steps below to export the changes.
 
-Each PR runs exporter tests in the CI systems, however those changes can be tested locally in a very similar way they run in the CI.
+**Procedure**
 
 1. [Checkout](#checkout) the PR on top of your fork.
 
-2. Set up the dev environment
+1. Set up the dev environment.
+```
+make dev-env
+```
+1. Activate your virtual environment.
+```
+. .venv/bin/activate
+```
+1. Check what type of tests you can run.
+```
+make help
+```
+1. As an example run unit tests using `make unit-tests`.
 
-        make dev-env
+> **Note:** You can also run coverage reports with the following:
+```
+coverage run -m pytest -rap -m "not integration and not mockoon"
+coverage report
+```
 
-3. Activate your virtual environment
+6. Gather necessary [configuration information](Configuration.md#configuring-exporters).
+1. [Run exporter locally](#running-locally). This can done either by the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in the IDE Debugger.
+1. Once exporter is running, test is using `curl localhost:8080`and validate:
+    * A valid response with metrics.
+    * The format of expected metrics.
 
-        . .venv/bin/activate
-
-4. Check what type of tests you can run
-
-        make help
-
-5. As an example run unit tests using `make unit-tests`.
-    1. You can also run coverage reports with the following:
-
-            coverage run -m pytest -rap -m "not integration and not mockoon"
-            coverage report
-
-
-5. Gather necessary [configuration information](Configuration.md#configuring-exporters).
-6. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
-7. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
-    1. You get a valid response with metrics.
-    1. Confirm the format of expected metrics.
-
-### Helm Install changes
-
-For testing changes to the helm chart, you should just follow the [standard install process](Install.md), then verify that:
+### Making Helm install changes
+    For testing changes to the Helm chart, follow the [standard install process][standard install process](Install.md), then verify that:
 
 * All expected pods are running and healthy
 * Any expected behavior changes mentioned in the PR can be observed.
 
-A different way is to simply run e2e-tests against your cluster, to do so, **ENSURE** your pelorus namespace is either not existing or no resources are within that namespace.
+Another way to test changes is by running e2e-tests against your cluster. To do so, verify the Pelorus namespace either does not exist or no resources are within that namespace.
+```
+​export KUBECONFIG=/path/to/kubeconfig_file
+# DANGEROUS as this will remove your previously deployed pelorus instance
+oc delete namespace pelorus
+make e2e-tests
+# Check if command ran without failures
+echo $?
+```
+> **Note:** Rudimentary linting with `make chart-lint` can be done.
 
-    ​export KUBECONFIG=/path/to/kubeconfig_file
-    # DANGEROUS as this will remove your previously deployed pelorus instance
-    oc delete namespace pelorus
-    make e2e-tests
-    # Check if command ran without failures
-    echo $?
+Pelorus is in the process of refactoring our Helm charts so that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html).
 
-You can do some rudimentary linting with `make chart-lint`.
+## Release management process
+The following steps are a walkthrough of the process to create and manage versioned releases of Pelorus. Pelorus release versions follow SemVer versioning conventions. Change of the version is managed via Makefile.
 
-We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.
+**Procedure**
 
-## Release Management Process
+1. Create Pelorus Pull Request with the release you are about to make.
 
-The following is a walkthrough of the process we follow to create and manage versioned releases of Pelorus.
-Pelorus release versions follow SemVer versioning conventions. Change of the version is managed via Makefile.
+    * For PATCH version bump use:
+```
+make release
+```
+    * For minor-release version:
+```
+make minor-release
+```
+    * For major-release version:
+```
+make major-release
+```
+1. Propose Pull Request to the project github repository.
+> **Important:**Verify the PR is labeled with "minor" or "major" if one was created.
 
-1. Create Pelorus Pull Request with the release you're about to make.  
 
-    For PATCH version bump use:
-
-        make release
-
-    For minor-release version:
-
-        make minor-release
-
-    For major-release version:
-
-        make major-release
-
-2. Propose Pull Request to the project github repository. Ensure that the PR is labeled with "minor" or "major" if one was created.
-
-3. After PR is merged on the [Pelorus releases](https://github.com/konveyor/pelorus/releases) page, click edit on the latest **Draft**.
-    * Click **Publish Release**.
+3. After PR is merged on the [Pelorus releases page](https://github.com/konveyor/pelorus/releases), click **Edit** on the latest Draft.
+1. Click **Publish Release**.
 
 ## Testing the Docs
-
-Our documentation gets published via [readthedocs](https://readthedocs.org/), via the [mkdocs](https://www.mkdocs.org/) framework. Mkdocs can be run locally for testing the rendering of the markdown files. If you followed the [local setup](#running-locally) instructions above, you should already have mkdocs installed.
+Pelorus documentation gets published via [readthedocs](https://readthedocs.org/), via the [mkdocs](https://www.mkdocs.org/) framework. Mkdocs can be run locally for testing the rendering of the markdown files. If you followed the [local setup](#running-locally) instructions above, you should already have mkdocs installed.
 
 Stand up the local server by running:
-
-    mkdocs serve
-
+```
+mkdocs serve
+```
 The mkdocs config is controlled by the mkdocs.yml file in the root of this project. All of the documents that will be served are in the [/docs](/docs) folder.
