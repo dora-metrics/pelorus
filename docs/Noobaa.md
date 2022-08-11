@@ -2,7 +2,7 @@
 NooBaa is a software-driven data service that provides an S3 object-storage interface used for testing and development of the Pelorus project. This section walks through deploying NooBaa Operator on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](Install.md#configure-long-term-storage-recommended) solution.
 
 ## Installing NooBaa Operator CLI
-NooBaa Operator is installed using `noobaa` CLI which can be installed by referring to the [NooBaa README](https://github.com/noobaa/noobaa-operator/blob/master/README.md) or as part of the Pelorus dev-env in the Pelorus git folder:
+NooBaa Operator is installed using `noobaa` CLI which can be installed by referring to the [NooBaa README](https://github.com/noobaa/noobaa-operator/blob/master/README.md) or as part of the Pelorus dev-env in the Pelorus Git folder:
 
 ```
 make dev-env
@@ -11,23 +11,19 @@ noobaa --help
 ```
 
 ## Installing NooBaa
-To retain Pelorus dashboard data in the long-term, create a namespace, install an instance of [NooBaa operator](https://github.com/noobaa/noobaa-operator) and create a bucket called `thanos`.
+To retain Pelorus dashboard data in the long-term, create a namespace, install an instance of [NooBaa operator](https://github.com/noobaa/noobaa-operator), and create a bucket called `thanos`.
 
 **Procedure**
 
 1. Deploy NooBaa in the same namespace as Pelorus or a separate one.
-
 ```
 oc create namespace pelorus
 ```
-1. Install NooBaa.
-
+2. Install NooBaa.
 ```
 noobaa install --namespace pelorus
 ```
-1. Store the S3 credentials from installation for updating the Pelorus configuration in a later step.
-
-> **Note:** Credentials can be retrieved using `noobaa status` command:
+3. Store the S3 credentials from installation for updating the Pelorus configuration in a later step.
 
 ```
 #------------------#
@@ -37,8 +33,11 @@ noobaa install --namespace pelorus
 AWS_ACCESS_KEY_ID     : <s3 access key>
 AWS_SECRET_ACCESS_KEY : <s3 secred access key>
 ```
-4. Confirm the installation was success by checking the System Status output and verifying all the services are marked with ✅:
 
+
+> **Note:** Credentials can be retrieved using `noobaa status`.
+
+4. Confirm the installation was success by checking the System Status output and verifying all the services are marked with a ✅.
 ```
 $ noobaa status
 [...]
@@ -78,19 +77,19 @@ INFO[0007] ✅ Exists:  "noobaa-admin"
 ```
 
 5. Create the NooBaa bucket.
-
-> **Note:** Pelorus uses the `thanos` bucket name by default, but users can choose any bucket name.
 ```
 noobaa bucket create thanos
 ```
+
+> **Note:** Pelorus uses the `thanos` bucket name by default, but users can choose any bucket name.
 
 6. Verify the bucket was successfully created and running properly.
 ```
 noobaa bucket status thanos
 ```
 
-## Updating Pelorus Configuration
+## Updating the Pelorus configuration
 Follow the steps below to update the Pelorus stack.
 
 1. Follow the instructions provided in the [Long Term Storage](Install.md#configure-long-term-storage-recommended) procedure of the Install Guide.
-1. Verify the `<s3 access key>`, `<s3 secred access key>`, and `<bucket name>` from the installation are used, and `s3.noobaa.svc` is used as the bucket access point.
+1. Verify the `<s3 access key>`, `<s3 secred access key>`, and `<bucket name>` from the installation are used; and `s3.noobaa.svc` is used as the bucket access point.

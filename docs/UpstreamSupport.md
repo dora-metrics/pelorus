@@ -1,17 +1,17 @@
 # Pelorus Upstream Support Statement
 
-The Pelorus engineering team will provide `best-effort` level support for Pelorus on the current and the most recent previous versions of Openshift.  For example, if the latest released version of Openshift is `4.10`, the engineering team will accept [issues](https://github.com/konveyor/pelorus/issues) written for OpenShift `4.10` and `4.9`.
+The Pelorus engineering team will provide `best-effort` level support for Pelorus on the current and the most recent, previous versions of Openshift.  For example, if the latest released version of Openshift is `4.10`, the engineering team will accept [issues](https://github.com/konveyor/pelorus/issues) written for OpenShift `4.10` and `4.9`.
 
-* To file a bug create a [Github issue](https://github.com/konveyor/pelorus/issues) with the label "kind/bug"
+* To file a bug, create a [Github issue](https://github.com/konveyor/pelorus/issues) with the label "kind/bug".
 
-* To file a feature request create a [Github issue](https://github.com/konveyor/pelorus/issues) with the label "feature"
+* To request a feature, create a [Github issue](https://github.com/konveyor/pelorus/issues) with the label "feature".
 
 * Consider opening a [discussion](https://github.com/konveyor/pelorus/discussions) thread to discuss any feature, bug, or enhancement prior to opening a Github issue.
 
 ## Backend Exporters
-Pelorus's exporters support various backends or services. The Pelorus team is working to ensure an optimal experience for each backend integrated with Pelorus. Our goal is for each backend to be checked by OpenShift's Prow Continuous Integration system to ensure the quality of each service's integration with Pelorus.
+Pelorus exporters support various backends or services. The team is working to ensure an optimal experience for each backend integrated with Pelorus. Our goal is for each backend to be checked by OpenShift's Prow Continuous Integration system to ensure the quality of each service's integration with Pelorus.
 
-Below is the status of each Pelorus backend exporter. Any backend with out CI integration will have an associated Github issue in CI status and Status.  To get the latest known status please refer to the issue.
+Below is the status of each Pelorus backend exporter. Any backend without CI integration will have an associated Github issue in CI status and Status.  To get the latest known status please refer to the issue.
 
 ### Committime Exporter
 

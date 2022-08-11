@@ -1,8 +1,8 @@
 # Configuration
 
-## Configuring The Pelorus Stack
+## Configuring the Pelorus stack
 
-The Pelorus stack (Prometheus, Grafana, Thanos, etc.) is configured by changing the `values.yaml` file that is passed to Helm. The recommended practice is to make a copy of the one [values.yaml](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) file and [charts/pelorus/configmaps/](https://github.com/konveyor/pelorus/tree/master/charts/pelorus/configmaps) directory, and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `charts/pelorus/configmaps` files with `values.yaml` and applying the changes like so:
+The Pelorus stack (Prometheus, Grafana, Thanos, etc.) is configured by changing the `values.yaml` file that is passed to Helm. The recommended practice is to make a copy of the  [values.yaml](https://GitHub.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) file and [charts/pelorus/configmaps/](https://GitHub.com/konveyor/pelorus/tree/master/charts/pelorus/configmaps) directory, and store it in a local configuration repo for safe development. Once tested, update the `charts/pelorus/configmaps` files with `values.yaml` and apply the changes.
 
 ```
 oc apply -f `myclusterconfigs/pelorus/configmaps
@@ -14,15 +14,15 @@ The following configurations may be made through the `values.yaml` file:
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
-| `openshift_prometheus_htpasswd_auth` | yes | The contents for the htpasswd file that Prometheus will use for basic authentication user. | User: `internal`, Password: `changeme` |
-| `openshift_prometheus_basic_auth_pass` | yes | The password that grafana will use for its Prometheus datasource. Must match the above. | `changme` |
-| `custom_ca` | no | Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki)  | `false`  |
-| `exporters` | no | Specified which exporters to install. See [Configuring Exporters](#configuring-exporters). | Installs deploytime exporter only. |
+| `openshift_prometheus_htpasswd_auth` | yes | htpasswd file contents used for basic Prometheus user authentication. | User: `internal`, Password: `changeme` |
+| `openshift_prometheus_basic_auth_pass` | yes | Grafana password for its Prometheus datasource. Must match htpassword. | `changme` |
+| `custom_ca` | no | Determines if the cluster serves custom signed certificates for ingress (e.g. router certs). `true` will load the custom certs via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki)  | `false`  |
+| `exporters` | no | Specifies which exporters to install. See [Configuring Exporters](#configuring-exporters). | Installs deploytime exporter only. |
 
 ## Configuring exporters
 The _exporter_ data collection application pulls data from various tools and platforms so it can be consumed by Pelorus dashboards. Each exporter gets deployed individually alongside the core Pelorus stack.
 
-There are currently three _exporter_ types which need to be specified using  `exporters.instances.exporter_type` value:
+There are currently three _exporter_ types which need to be specified using the `exporters.instances.exporter_type` value:
 * `deploytime`
 * `failure`
 * `comittime`
@@ -46,10 +46,10 @@ Each exporter has a unique set of environment variables to configure its integra
 ```yaml
 exporters:
   instances:
-  - app_name: committime-github
+  - app_name: committime-GitHub
     exporter_type: comittime
     env_from_secrets:
-    - github-credentials
+    - GitHub-credentials
     env_from_configmaps:
     - pelorus-config
     - committime-config
@@ -57,7 +57,7 @@ exporters:
   - app_name: committime-gh-enterprise
     exporter_type: comittime
     env_from_secrets:
-    - github-enterprise-credentials
+    - GitHub-enterprise-credentials
     env_from_configmaps:
     - pelorus-config
     - comittime-enterprise-config
@@ -66,7 +66,7 @@ exporters:
 ### Exporter ConfigMap configuration values
 Each exporter is configured using ConfigMap objects. Each ConfigMap must be in a separate file and must be applied to the cluster before deploying the Pelorus Helm chart.
 
-> **Important:**  Store the ConfigMap folder outside of local Pelorus Git repository and modify accordingly.
+> **Important:**  Store the ConfigMap folder outside of the local Pelorus Git repository and modify accordingly.
 
 ConfigMap can be applied individually or all together:
 ```shell
@@ -77,7 +77,7 @@ oc apply -f charts/pelorus/configmaps/deploytime.yaml
 oc apply -f charts/pelorus/configmaps/
 ```
 
-Example ConfigMap for the `deploytime-exporter` with the unique name `deploytime-config`:
+This is an example ConfigMap for the `deploytime-exporter` with the unique name `deploytime-config`:
 ```
 apiVersion: v1
 kind: ConfigMap
@@ -92,29 +92,29 @@ data:
 ### Authentication to remote services
 Pelorus exporters use `personal access tokens` when authentication is required. It is recommended to configure the Pelorus exporters with authentication using the `TOKEN` key to avoid connection rate limiting and access restrictions.
 
-See [Github Personal Access Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) for more information about personal access tokens.
+See [GitHub Personal Access Tokens](https://docs.GitHub.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) for more information about personal access tokens.
 
 * [Jira / Bitbucket Personal Access Tokens](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
 * [Gitlab Personal Access Tokens](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
 * [Microsoft Azure DevOps Tokens](https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows)
 * [Gitea Tokens](https://docs.gitea.io/en-us/api-usage/#generating-and-listing-api-tokens)
 
-Use Openshift secrets to store a personal access token securely and make it available to Pelorus to use for all of the exporters. The following is an example for the committime exporter in Github.
+Use Openshift secrets to store a personal access token securely and make it available to Pelorus to use for all of the exporters. The following is an example for the committime exporter in GitHub.
 
 ```shell
-oc create secret generic github-secret --from-literal=TOKEN=<personal access token> -n pelorus
+oc create secret generic GitHub-secret --from-literal=TOKEN=<personal access token> -n pelorus
 ```
 
-A Pelorus exporter can require additional information to collect data such as the remote `GIT_API` or `USER` information. It is recommended to consult the requirements for each Pelorus exporter in this guide and include the additional key/value information in the Openshift secret. An API example is `github.mycompany.com/api/v3` or `https://gitea.mycompany.com`.
+A Pelorus exporter can require additional information to collect data such as the remote `GIT_API` or `USER` information. It is recommended to consult the requirements for each Pelorus exporter in this guide and include the additional key/value information in the Openshift secret. An API example is `GitHub.mycompany.com/api/v3` or `https://gitea.mycompany.com`.
 
-CLI commands can also be substituted with Secret templates. Example files can be found [here](https://github.com/konveyor/pelorus/tree/master/charts/pelorus/secrets)
+CLI commands can also be substituted with secret templates. Example files can be found [here](https://GitHub.com/konveyor/pelorus/tree/master/charts/pelorus/secrets).
 
-Below is an example of creating a secret containing the Git username, token, and sample API.
+Here is an example of creating a secret containing the Git username, token, and sample API.
 
 ```shell
-oc create secret generic github-secret --from-literal=API_USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
+oc create secret generic GitHub-secret --from-literal=API_USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
 ```
-This is an example of creating a secret in Jira.
+Example of creating a secret in Jira.
 ```shell
 oc create secret generic jira-secret \
 --from-literal=SERVER=<Jira Server> \
@@ -122,7 +122,7 @@ oc create secret generic jira-secret \
 --from-literal=TOKEN=<personal access token> \
 -n pelorus
 ```
-This is an example of creating a secret in ServiceNow.
+Example of creating a secret in ServiceNow.
 ```shell
 oc create secret generic snow-secret \
 --from-literal=SERVER=<ServiceNow Server> \
@@ -134,28 +134,26 @@ oc create secret generic snow-secret \
 ```
 
 ### Labels
-
-Labels are key/value pairs that are attached to objects, such as pods. Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users and Pelorus.
+Labels are key/value pairs that are attached to objects such as pods. They are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users and Pelorus.
 
 The commit time, deploy time, and failure exporters all rely on labels to identify the application that is associated with an object.  The object can include a build, build configuration, deployment, or issue.
 
 The default Pelorus label is: `app.kubernetes.io/name=<app_name>` where
-app_name is the name of the application(s) being monitored. The label can
-be customized by setting the `APP_LABEL` variable to a custom value.
+`app_name` is the name of the application(s) being monitored. The label can be customized by setting the `APP_LABEL` variable to a custom value.
 
-An example may be to override the APP_LABEL for the failure exporter to indicate a production bug or issue. The `APP_LABEL` with the value `production_issue/name` may give more context than `app.kubernetes.io/name`. In this case, the Github issue would be labeled with `production_issue/name=todolist`.
+An example may be to override the APP_LABEL for the failure exporter to indicate a production bug or issue. The `APP_LABEL` with the value `production_issue/name` may give more context than `app.kubernetes.io/name`. In this case, the GitHub issue would be labeled with `production_issue/name=todolist`.
 
 Example Failure exporter config:
 ```
 - app_name: failure-exporter
   exporter_type: failure
   env_from_secrets:
-  - github-secret
+  - GitHub-secret
   extraEnv:
   - name: LOG_LEVEL
     value: DEBUG
   - name: PROVIDER
-    value: github
+    value: GitHub
   - name: PROJECTS
     value: konveyor/mig-demo-apps,konveyor/oadp-operator
   - name: APP_LABEL
@@ -164,7 +162,7 @@ Example Failure exporter config:
 
 > **Warning** If the application label is not properly configured, Pelorus will not collect data for that object.
 
-In the following examples an application named [todolist](https://github.com/konveyor/mig-demo-apps/blob/master/apps/todolist-mongo-go/mongo-persistent.yaml) is being monitored.
+In the following examples an application named [todolist](https://GitHub.com/konveyor/mig-demo-apps/blob/master/apps/todolist-mongo-go/mongo-persistent.yaml) is being monitored.
 
 Example BuildConfig:
 ```
@@ -209,29 +207,28 @@ Example Application via the CLI:
 oc -n mongo-persistent new-app todolist -l "app.kubernetes.io/name=todolist"
 ```
 
-##Example Github issue##
+**Example GitHub issue**
 
-Create an issue and create a Github issue label: "app.kubernetes.io/name=todolist".  Here is a working [example](https://github.com/konveyor/mig-demo-apps/issues/82)
+Create an issue and create a GitHub issue label: "app.kubernetes.io/name=todolist".  Here is a working [example](https://GitHub.com/konveyor/mig-demo-apps/issues/82):
 
-![github_issue](img/github_issue.png)
+![GitHub_issue](img/GitHub_issue.png)
 
-##Jira issue##
+**Example Jira issue**
 
 Create a label in the Jira project issue settings with the text "app.kubernetes.io/name=todolist".
 
 ![jira_issue](img/jira_issue.png)
-
 
 ## Configuring the Commit Time Exporter
 The Commit Time Exporter finds relevant builds in OpenShift and associates a commit from the build's source code repository with a container image built from that commit. It captures a timestamp for the commit and the resulting image hash so the Deploy Time Exporter can associate that image with a production deployment.
 
 > **Important:** All builds associated with a particular application must be labelled with the same `app.kubernetes.io/name=&lt;app_name>` label.
 
-> **Note:** Currently Pelorus supports GitHub and GitLab, with BitBucket coming soon. Open an issue or a pull request to add support for additional Git providers.
+> **Note:** Currently Pelorus supports GitHub and GitLab (BitBucket coming soon). Open an issue or a pull request to add support for additional Git providers.
 
 #### Annotated Binary (local) source build support
 
-The Commit Time Exporter may be used in conjunction with builds where values required to gather commit time from the source repository are missing. In this case, each build is required to be annotated with two values allowing the Commit Time Exporter to calculate metric from the Build.
+The Commit Time Exporter may be used in conjunction with builds where values required to gather commit time from the source repository are missing. In this case, each build is required to be annotated with two values allowing the Commit Time Exporter to calculate metrics from the build.
 
 Annotate the build with the following commands:
 ```shell
@@ -242,10 +239,10 @@ oc annotate build <build-name> -n <namespace> --overwrite io.openshift.build.sou
 
 Custom annotation names may also be configured using ConfigMap Data Values.
 
-> **Note:** The requirement to label the build with `app.kubernetes.io/name=&lt;app_name>` for the annotated Builds applies.
+> **Note:** The requirement to label the build with `app.kubernetes.io/name=&lt;app_name>` for the annotated builds applies.
 
 
-#### Instance Config
+**Instance Config**
 
 ```yaml
 exporters:
@@ -253,7 +250,7 @@ exporters:
   - app_name: committime-exporter
     exporter_type: committime
     env_from_secrets:
-    - github-secret
+    - GitHub-secret
     env_from_configmaps:
     - pelorus-config
     - committime-config
@@ -261,28 +258,28 @@ exporters:
 
 #### ConfigMap Data Values
 
-This exporter provides several configuration options, passed via `pelorus-config` and `committime-config` variables. Users can define their own ConfigMaps and pass them to the committime exporter in a similar way.
+This exporter provides several configuration options that are passed using `pelorus-config` and `committime-config` variables. Users can define their own ConfigMaps and pass them to the committime exporter in a similar way.
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
-| `API_USER` | yes | User's github username | unset |
-| `TOKEN` | yes | User's Github API Token | unset |
-| `GIT_API` | no | GitHub, Gitea or Azure DevOps API FQDN. This allows the override for Enterprise users. Currently only applicable to `github`, `gitea` and `azure-devops` provider types. | `api.github.com`, or `https://try.gitea.io`. No default for Azure DevOps. |
-| `GIT_PROVIDER` | no | Set Git provider type. Can be `github`, `gitlab`, or `bitbucket` | `github` |
-| `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
-| `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
-| `COMMIT_HASH_ANNOTATION` | no | Annotation name associated with the Build from which hash is used to calculate commit time | `io.openshift.build.commit.id` |
-| `COMMIT_REPO_URL_ANNOTATION` | no | Annotation name associated with the Build from which GIT repository URL is used to calculate commit time | `io.openshift.build.source-location` |
+| `API_USER` | yes | User's GitHub username | unset |
+| `TOKEN` | yes | User's GitHub API Token | unset |
+| `GIT_API` | no | GitHub, Gitea or Azure DevOps API FQDN. Allows override for Enterprise users. Currently only applicable to `GitHub`, `gitea` and `azure-devops` provider types. | `api.GitHub.com`, or `https://try.gitea.io`. No default for Azure DevOps. |
+| `GIT_PROVIDER` | no | Set Git provider type. Can be `GitHub`, `gitlab`, or `bitbucket` | `GitHub` |
+| `LOG_LEVEL` | no | Set the log level. Select one: `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+| `APP_LABEL` | no | Changes the label key used to identify applications.  | `app.kubernetes.io/name`  |
+| `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. Ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
+| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. Select to use in other data values to indicate `Default Value` should be used | `default` |
+| `COMMIT_HASH_ANNOTATION` | no | Annotation name associated with the build hash used to calculate commit time. | `io.openshift.build.commit.id` |
+| `COMMIT_REPO_URL_ANNOTATION` | no | Annotation name associated with the build from which GIT repository URL is used to calculate commit time. | `io.openshift.build.source-location` |
 
 
-### DConfiguring the Deploy Time Exporter
+## Configuring the Deploy Time Exporter
 The Deploy Time Exporter captures the timestamp of a deployment in a production environment.
 
-> **Important:** All deployments associated with a particular application must be labelled with the same `app.kubernetes.io/name=&lt;app_name>` label.
+> **Important:** All deployments associated with a particular application must be labeled with the same `app.kubernetes.io/name=&lt;app_name>` label.
 
-### Instance configuration
+**Instance configuration**
 
 ```yaml
 exporters:
@@ -294,31 +291,31 @@ exporters:
     - deploytime-config
 ```
 
-#### ConfigMap Data Values Exporter
-The ConfigMap Data Values Exporter provides several configuration options that are passed using `pelorus-config` and `deploytime-config` variables. Users can define custom ConfigMaps and pass them to the committime exporter in a similar way.
+## ConfigMap Data Values Exporter
+The ConfigMap Data Values Exporter provides several configuration options that are passed using `pelorus-config` and `deploytime-config` variables. Users can define custom ConfigMaps and pass them to the Commit Time Exporter in a similar way.
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
-| `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
+| `LOG_LEVEL` | no | Set the log level. Select one: `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+| `APP_LABEL` | no | Changes the label key used to identify applications.  | `app.kubernetes.io/name`  |
 | `PROD_LABEL` | no | Changes the label key used to identify namespaces that are considered production environments. | unset; matches all namespaces |
-| `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
+| `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. Ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
+| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. Select to use in other data values to indicate `Default Value` should be used | `default` |
 
 ### Configuring the Failure Time Exporter
 The Failure Time Exporter captures the timestamp of a failure in a production environment and when it is resolved.
 
 Failure Time Exporter may be deployed with one of three backends: JIRA, GithHub Issues, and ServiceNow. One clusters' namespace can have multiple instances of the Failure Time Exporter for each backend and/or watched projects.
 
-Each of the backend requires specific[configuration](#failureconfigmap)using the ConfigMap associated with the exporter instance.
+Each of the backends requires specific [configurations](#failureconfigmap) using the ConfigMap associated with the exporter instance.
 
-> **Important:** All GitHub Issues and JIRA backends issues associated with a particular application must be labelled with the same `app.kubernetes.io/name=&lt;app_name>` label, or custom label if it was configured via `APP_LABEL`.
+> **Important:** All GitHub Issues and JIRA backend issues associated with a particular application must be labelled with the same `app.kubernetes.io/name=&lt;app_name>` label, or a custom label if it was configured via `APP_LABEL`.
 
 
 #### Instance Config Jira Exporter
 The Instance Config JIRA Exporter expects a specific workflow be used when the issue needs to be `Resolved` with `resolutiondate` and all the relevant issues to be a `Bug` with the `Highest` priority with the `app.kubernetes.io/name=&lt;app_name>` label.
 
-This exporter can be customized to orgaizational needs by configuring `JIRA_JQL_SEARCH_QUERY`, `JIRA_RESOLVED_STATUS` and `APP_LABEL` options. Please refer to the [Failure Exporter ConfigMap Data Values](https://pelorus.readthedocs.io/en/latest/Configuration/#failureconfigmap).
+This exporter can be customized to orgaizational needs by configuring `JIRA_JQL_SEARCH_QUERY`, `JIRA_RESOLVED_STATUS` and `APP_LABEL` options. Refer to the [Failure Exporter ConfigMap Data Values](https://pelorus.readthedocs.io/en/latest/Configuration/#failureconfigmap).
 
 ```yaml
 exporters:
@@ -332,38 +329,38 @@ exporters:
     - failuretime-config
 ```
 
-#### Instance Config Github
+**Instance Config GitHub**
 ```yaml
 exporters:
   instances:
   - app_name: failuretime-exporter
     exporter_type: failure
     env_from_secrets:
-    - github-issue-secret
+    - GitHub-issue-secret
     env_from_configmaps:
     - pelorus-config
-    - failuretime-github-config
+    - failuretime-GitHub-config
 ```
 
 #### <a id="failureconfigmap"></a>ConfigMap Data Values
-This exporter provides several configuration options, passed via `pelorus-config` and `failuretime-config` variables. Users may define their own ConfigMaps and pass them to the committime exporter in a similar way.
+This exporter provides several configuration options, passed via `pelorus-config` and `failuretime-config` variables. Users can define their own ConfigMaps and pass them to the Commit Time Exporter in a similar way.
 
 | Variable | Required | Explanation | Default Value |
 |---|---|---|---|
-| `PROVIDER` | no | Set the type of failure provider. One of `jira`, `servicenow` | `jira` |
-| `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `SERVER` | yes | URL to the Jira or ServiceNowServer  | unset  |
+| `PROVIDER` | no | Set the type of failure provider. Select one: `jira`, `servicenow` | `jira` |
+| `LOG_LEVEL` | no | Set the log level. Select one: `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+| `SERVER` | yes | URL to the Jira or ServiceNowServer.  | unset  |
 | `API_USER` | yes | Tracker Username | unset |
 | `TOKEN` | yes | User's API Token | unset |
-| `APP_LABEL` | no | Used in GitHub and JIRA only. Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
+| `APP_LABEL` | no | Used in GitHub and JIRA only. Changes the label key used to identify applications.  | `app.kubernetes.io/name`  |
 | `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
-| `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2`. Value is ignored if `JIRA_JQL_SEARCH_QUERY` is defined. | unset |
-| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
+| `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. Ex: `PROJECTKEY1,PROJECTKEY2`. Value is ignored if `JIRA_JQL_SEARCH_QUERY` is defined. | unset |
+| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. Select to use in other data values to indicate `Default Value` should be used. | `default` |
 | `JIRA_JQL_SEARCH_QUERY` | no | Used for Jira Exporter to define custom JQL query to gather list issues. Ex: `type in ("Bug") AND priority in ("Highest","Medium") AND project in ("Project_1","Project_2")` | unset |
-| `JIRA_RESOLVED_STATUS` | no | Used for Jira Exporter to define list Issue states that indicates whether issue is considered resolved. Comma separated string. ex: `Done,Closed,Resolved,Fixed` | unset |
+| `JIRA_RESOLVED_STATUS` | no | Used for Jira Exporter to define list Issue states that indicate whether issue is considered resolved. Comma separated string. Ex: `Done,Closed,Resolved,Fixed` | unset |
 
-### Github failure exporter details
-Use the Github failure exporter is to define the Github token and Github projects. The `TOKEN` should be defined in an OpenShift secret as described above, and the `PROJECTS` are defined in the failure exporter ConfigMap. This is an example of the Github Failure Exporter.
+### GitHub Failure Exporter details
+Use the GitHub Failure Exporter to define the GitHub token and GitHub projects. The `TOKEN` should be defined in an OpenShift secret as described above, and the `PROJECTS` are defined in the Failure Exporter ConfigMap. This is an example of the GitHub Failure Exporter.
 
 ```
 kind: ConfigMap
@@ -371,19 +368,19 @@ metadata:
   name: failuretime-config
   namespace: pelorus
 data:
-  PROVIDER: "github"     # jira  |  jira, github, servicenow
+  PROVIDER: "GitHub"     # jira  |  jira, GitHub, servicenow
   SERVER:                #       |  URL to the Jira or ServiceNowServer, can be overriden by env_from_secrets
   API_USER:                  #       |  Tracker Username, can be overriden by env_from_secrets
   TOKEN:                 #       |  User's API Token, can be overriden by env_from_secrets
   PROJECTS: "konveyor/todolist-mongo-go,konveyor/todolist-mariadb-go"
-  APP_FIELD: "todolist"  #       |  This is optional for the Github failure exporter
+  APP_FIELD: "todolist"  #       |  This is optional for the GitHub failure exporter
 ```
 
-The `PROJECTS` key is comma deliniated and formated at "Github_organization/Github_repository". The `APP_FIELD` key can be used to associate the Github repository with a particular application
+The `PROJECTS` key is comma deliniated and formated at "GitHub_organization/GitHub_repository". The `APP_FIELD` key can be used to associate the GitHub repository with a particular application
 
-Any Github issue must be labeled as a "bug".  Any issue can optionally have a label associated with a particular application.  If an application is not found, it will default the app to the Github repository name.
+Any GitHub issue must be labeled as a `bug` and can optionally have a label associated with a particular application. If an application is not found, it will default the app to the GitHub repository name.
 
-This is an example of the output with the `APP_FIELD` for the [todolist-mongo-go repository](https://github.com/konveyor/todolist-mongo-go).
+This is an example of the output with the `APP_FIELD` for the [todolist-mongo-go repository](https://GitHub.com/konveyor/todolist-mongo-go).
 ```
 05-25-2022 13:09:40 INFO     Collected failure_creation_timestamp{ app=todolist, issue_number=3 } 1652305808.0
 05-25-2022 13:09:40 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=4 } 1652462194.0
@@ -397,7 +394,7 @@ This is an example of not setting the `APP_FIELD`.
 05-25-2022 13:16:14 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=3 } 1652394664.0
 ```
 
-### ServiceNow failure exporter details
+### ServiceNow Failure Exporter details
 ServiceNow integration is configured to process resolved (stage=6) Incident objects. Because ServiceNow does not have tags in all versions, there may be a need to configure a custom field on the Incident object to provide an application name to match Openshift Labels. The exporter uses the `opened_at` field for a created timestamp and the `resolved_at` field for the resolution timestamp. The exporter monitors all incidents and will create a resolution record when a `resolved_at` field is populated.
 
 A custom field can be configured with the following steps:

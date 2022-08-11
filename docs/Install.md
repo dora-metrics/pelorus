@@ -38,24 +38,19 @@ The following are deployed:
     * A `Grafana` instance
     * A `ServiceMonitor` instance for scraping the Pelorus exporters
     * A `GrafanaDatasource` pointing to Prometheus
-    * A set of `GrafanaDashboards`. See [Dashboards](https://pelorus.readthedocs.io/en/latest/Dashboards/) for more details.
+    * A set of `GrafanaDashboards`. See [Dashboards](https://pelorus.readthedocs.io/en/latest/Dashboards/) for more details
 * Deploy Time exporter
 
-Additional configuration is required to deploy other exporters.
-
-See the [Configuration Guide](Configuration.md) for more information on exporters.
-
-Additional features can be enabled for the core stack.
+Additional configuration is required to deploy other exporters. See the [Configuration Guide](Configuration.md) for more information on exporters. Additional features can be enabled for the core stack.
 
 ## Customizing Pelorus
-
 See [Configuring the Pelorus Stack](Configuration.md) for a complete list of possible configuration items. The following sections describe the most commonly supported Pelorus deployment customizations.
 
 ### Configure long term storage
-
-> **Note:** This customization is recommended
-
 The Pelorus chart supports deploying a Thanos instance for long term storage and can use any S3 bucket provider. The following is an example of configuring a values.yaml file for NooBaa with the local S3 service name.
+
+> **Note:** This customization is recommended.
+
 ```
 bucket_access_point: s3.noobaa.svc
 bucket_access_key: <your access key>
@@ -84,10 +79,8 @@ By default, this tool will pull in data from the cluster in which it is running.
 
 Exporters for the desired metrics in each of the clusters which metrics will be evaluated must be defined. The main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via Thanos.
 
-#### Configure Production Cluster.
-
 ## Configuring the production cluster
-The production configuration example with one deploytime exporter uses the same AWS S3 bucket and tracks deployments to production.
+The production configuration example with one Deploy Time Exporter uses the same AWS S3 bucket and tracks deployments to production.
 ```
 bucket_access_point: s3.us-east-2.amazonaws.com
 bucket_access_key: <your access key>
@@ -109,7 +102,7 @@ exporters:
     - deploytime-config
 ```
 ## Uninstalling Pelorus
-Removing Pelorus is done using these two commands.
+Removing Pelorus is performed using these two commands.
 ```
     helm uninstall pelorus --namespace pelorus
     helm uninstall operators --namespace pelorus

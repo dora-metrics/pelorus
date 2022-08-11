@@ -3,18 +3,21 @@ Pelorus dashboards show Key Performance Indicators (KPIs) that measure various B
 
 ## Terminology
 **Exporters**
+
 Exporters enable Pelorus to customize data points to capture metrics from various providers including:
 * Deploy Time Exporter
 * Commit Time Exporter
 * Failure Time Exporter
 
 **Providers**
+
 The source from which exporters automate collection of data points (metrics) including:
 * OpenShift
 * Git providers (GitHub, GitLab, Bitbucket)
 * Issue trackers (JIRA, ServiceNow)
 
 **Metrics**
+
 The data points that are collected from the providers including:
 * deploy_time
 * commit_time
@@ -22,6 +25,7 @@ The data points that are collected from the providers including:
 * failure_resolution
 
 **Measures**
+
 Metrics calculated to represent an outcome. Each outcome is made measurable by a set of representative measures including:
 * Lead Time for Change
 * Deployment Frequency
