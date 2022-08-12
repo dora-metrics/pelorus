@@ -256,12 +256,17 @@ Note: The requirement to label the build with `app.kubernetes.io/name=<app_name>
 
 #### An example workflow for an OpenShift binary build:
 
+* Sample Application
+
 ```
-# sample_app in current directory
 cat app.py 
 #!/usr/bin/env python3
 print("Hello World")
+```
 
+* Binary build steps
+
+```
 NS=binary-build
 NAME=python-binary-build
 
@@ -277,6 +282,7 @@ io.openshift.build.source-location=http://github.com/konveyor/pelorus
 
 oc -n "${NS}" new-app "${NAME}" -l "app.kubernetes.io/name=${NAME}"
 ```
+
 
 #### Additional Examples
 
