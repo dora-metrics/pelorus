@@ -18,7 +18,7 @@ The following configurations may be made through the `values.yaml` file:
 | `custom_ca` | no | Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki)  | `false`  |
 | `exporters` | no | Specified which exporters to install. See [Configuring Exporters](#configuring-exporters). | Installs deploytime exporter only. |
 
-## Configuring Exporters
+## Configuring Exporters Overview
 
 An _exporter_ is a data collection application that pulls data from various tools and platforms and exposes it such that it can be consumed by Pelorus dashboards. Each exporter gets deployed individually alongside the core Pelorus stack.
 
@@ -238,18 +238,9 @@ In the Jira project issue settings, create a label with the text "app.kubernetes
 
 ![jira_issue](img/jira_issue.png)
 
+### Annotations and local build support
 
-### Commit Time Exporter
-
-The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
-
-We require that all builds associated with a particular application be labeled with the same `app.kubernetes.io/name=<app_name>` label.
-
-Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issue or a pull request to add support for additional Git providers!
-
-#### Annotated Binary (local) source build support
-
-Commit Time Exporter may be used in conjunction with Builds where values required to gather commit time from the source repository are missing. In such case each Build is required to be annotated with two values allowing Commit Time Exporter to calculate metric from the Build.
+Commit Time Exporter may be used in conjunction with Builds **where values required to gather commit time from the source repository are missing**. In such case each Build is required to be annotated with two values allowing Commit Time Exporter to calculate metric from the Build.
 
 To annotate Build use the following commands:
 
@@ -262,6 +253,50 @@ oc annotate build <build-name> -n <namespace> --overwrite io.openshift.build.sou
 Custom Annotation names may also be configured using ConfigMap Data Values.
 
 Note: The requirement to label the build with `app.kubernetes.io/name=<app_name>` for the annotated Builds applies.
+
+#### An example workflow for an OpenShift binary build:
+
+* Sample Application
+
+```
+cat app.py 
+#!/usr/bin/env python3
+print("Hello World")
+```
+
+* Binary build steps
+
+```
+NS=binary-build
+NAME=python-binary-build
+
+oc create namespace "${NS}"
+
+oc new-build python --name="${NAME}" --binary=true -n "${NS}"  -l "app.kubernetes.io/name=${NAME}"
+oc start-build "bc/${NAME}" --from-file=./app.py --follow -n "${NS}"
+
+oc get builds -n "${NS}"
+oc -n "${NS}" annotate build "${NAME}-1" --overwrite \
+io.openshift.build.commit.id=7810f2a85d5c89cb4b17e9a3208a311af65338d8 \
+io.openshift.build.source-location=http://github.com/konveyor/pelorus
+
+oc -n "${NS}" new-app "${NAME}" -l "app.kubernetes.io/name=${NAME}"
+```
+
+
+#### Additional Examples
+
+There are many ways to build and deploy applications in OpenShift.  Additional examples of how to annotate builds such that Pelorus will properly discover the commit metadata can be found in the  [Pelorus tekton demo](https://github.com/konveyor/pelorus/tree/master/demo)
+
+## Configuring Exporters Details
+
+### Commit Time Exporter
+
+The job of the commit time exporter is to find relevant builds in OpenShift and associate a commit from the build's source code repository with a container image built from that commit. We capture a timestamp for the commit, and the resulting image hash, so that the Deploy Time Exporter can later associate that image with a production deployment.
+
+We require that all builds associated with a particular application be labeled with the same `app.kubernetes.io/name=<app_name>` label.
+
+Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issue or a pull request to add support for additional Git providers!
 
 
 #### Instance Config
