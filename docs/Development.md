@@ -1,8 +1,6 @@
 # Pelorus Development Guide
 
-We appreciate your interest in contributing to Pelorus! Use this guide to help you get up and running.
-
-There are three main tracks of Pelorus development to consider.
+We appreciate your interest in contributing to Pelorus! Use this guide to help you get up and running. There are three main tracks of Pelorus development to consider.
 
 [Deployment Automation](#contributing-to-deployment-automation)  
 This track mostly involves testing, fixing, and updating our Helm chart(s) to streamline installation and configuration. Experience with configuring Helm, OpenShift, Operators, and Prometheus is required for this work.

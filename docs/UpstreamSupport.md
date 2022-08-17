@@ -1,6 +1,6 @@
 # Pelorus Upstream Support Statement
 
-The Pelorus engineering team will provide `best-effort` level support for Pelorus on the current and the most recent, previous versions of Openshift.  For example, if the latest released version of Openshift is `4.10`, the engineering team will accept [issues](https://github.com/konveyor/pelorus/issues) written for OpenShift `4.10` and `4.9`.
+The Pelorus engineering team provides `best-effort` level support for Pelorus on the current and the most recent, previous versions of Openshift.  For example, if the latest released version of Openshift is `4.10`, the engineering team will accept [issues](https://github.com/konveyor/pelorus/issues) written for OpenShift `4.10` and `4.9`.
 
 * To file a bug, create a [Github issue](https://github.com/konveyor/pelorus/issues) with the label "kind/bug".
 

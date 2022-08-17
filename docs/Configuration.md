@@ -2,7 +2,7 @@
 
 ## Configuring the Pelorus stack
 
-The Pelorus stack (Prometheus, Grafana, Thanos, etc.) is configured by changing the `values.yaml` file that is passed to Helm. The recommended practice is to make a copy of the  [values.yaml](https://GitHub.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) file and [charts/pelorus/configmaps/](https://GitHub.com/konveyor/pelorus/tree/master/charts/pelorus/configmaps) directory, and store it in a local configuration repo for safe development. Once tested, update the `charts/pelorus/configmaps` files with `values.yaml` and apply the changes.
+The Pelorus stack (Prometheus, Grafana, Thanos, etc.) is configured by changing the `values.yaml` file that is passed to Helm. The recommended practice is to make a copy of the [values.yaml](https://GitHub.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) file and [charts/pelorus/configmaps/](https://GitHub.com/konveyor/pelorus/tree/master/charts/pelorus/configmaps) directory, and store it in a local configuration repo for safe development. Once tested, update the `charts/pelorus/configmaps` files with `values.yaml` and apply the changes.
 
 ```
 oc apply -f `myclusterconfigs/pelorus/configmaps

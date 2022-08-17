@@ -9,8 +9,8 @@ The following are required to deploy Pelorus:
 * A machine from which to run the install (usually your laptop)
   * The OpenShift Command Line Tool (oc)
   * [Helm3](https://github.com/helm/helm/releases)
-  * jq
-  * git
+  * JQ
+  * Git
 
 ## Initial Deployment
 Pelorus gets installed using three Helm charts. The first deploys the required Pelorus operators, the second deploys the core Pelorus stack, and the third deploys the exporters that gather the data.

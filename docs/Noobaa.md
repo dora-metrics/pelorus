@@ -1,5 +1,5 @@
 # NooBaa and Pelorus Quickstart
-NooBaa is a software-driven data service that provides an S3 object-storage interface used for testing and development of the Pelorus project. This section walks through deploying NooBaa Operator on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](Install.md#configure-long-term-storage-recommended) solution.
+NooBaa is a software-driven data service that provides an S3 object-storage interface used for testing and developing the Pelorus project. This section walks through deploying NooBaa Operator on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](Install.md#configure-long-term-storage-recommended) solution.
 
 ## Installing NooBaa Operator CLI
 NooBaa Operator is installed using `noobaa` CLI which can be installed by referring to the [NooBaa README](https://github.com/noobaa/noobaa-operator/blob/master/README.md) or as part of the Pelorus dev-env in the Pelorus Git folder:

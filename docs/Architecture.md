@@ -2,8 +2,6 @@
 
 The following diagram shows the various components and traffic flows in the Pelorus ecosystem.
 
-## Basic architecture and components
-
 ![Pelorus Architecture Diagram](img/architecture.png)
 
 Pelorus is composed of the following open source components:

@@ -2,6 +2,8 @@
 Pelorus dashboards show Key Performance Indicators (KPIs) that measure various Bridge Outcomes. Learn what we measure and why on the [Our Philosophy](https://github.com/konveyor/konveyor.github.io/blob/main/content/Pelorus/philosophy.md) page.
 
 ## Terminology
+Below are some common terms to better understand Pelorus.
+
 **Exporters**
 
 Exporters enable Pelorus to customize data points to capture metrics from various providers including:

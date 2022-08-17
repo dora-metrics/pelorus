@@ -1,3 +1,5 @@
+# Pelorus philosophy
+
 Studies have shown that elite digital organizations tend to outperform their peers in software delivery and operational performance, but very few of them are actually measuring their software delivery and operational performance in a meaningful way. Despite the evidence that shows how this performance leads to higher organizational performance, even fewer are using that information to learn and continuously improve their organization.
 
 As software delivery and operational performance has a proven correlation to organizational performance, there are other similar bridge outcomes that organizations can build a shared focus. Measuring and improving on a specific set of business outcomes within an IT organization will result in a notable positive impact on the organization as a whole.

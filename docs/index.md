@@ -10,9 +10,7 @@ Pelorus helps IT organizations measure their impact on the overall performance o
 * Product quality and sustainability
 * Customer experience
 
-To understand our motivation, see [Our Philosophy](Philosophy.md).
-
-For more background on the project you can read @trevorquinn's blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
+To understand our motivation, see [Our Philosophy](Philosophy.md). For more background on the project you can read @trevorquinn's blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
 
 ## Software Delivery Performance as an outcome
 

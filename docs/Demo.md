@@ -1,7 +1,7 @@
 # Pelorus Demo
 
 ### Assumptions
-- oc, Helm command line tools installed
+- OpenShift Container, Helm command line tools installed
 - Logged into OCP Cluster via the CLI and UI as kubeadmin
 
 ### Goal
