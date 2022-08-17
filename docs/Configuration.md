@@ -22,6 +22,7 @@ The following configurations may be made through the `values.yaml` file:
 ## Configuring exporters overview
 The _exporter_ data collection application pulls data from various tools and platforms so it can be consumed by Pelorus dashboards. Each exporter gets deployed individually alongside the core Pelorus stack.
 
+
 There are currently three _exporter_ types which need to be specified using the `exporters.instances.exporter_type` value:
 * `deploytime`
 * `failure`
@@ -258,8 +259,43 @@ io.openshift.build.source-location=http://github.com/konveyor/pelorus
 oc -n "${NS}" new-app "${NAME}" -l "app.kubernetes.io/name=${NAME}"
 ```
 
+#### Additional examples
 
-#### Additional Examples
+There are many ways to build and deploy applications in OpenShift.  Additional examples of how to annotate builds such that Pelorus will properly discover the commit metadata can be found in the  [Pelorus tekton demo](https://github.com/konveyor/pelorus/tree/master/demo)
+
+## Configuring exporters details
+
+#### An example workflow for an OpenShift binary build:
+
+* Sample Application
+
+```
+cat app.py 
+#!/usr/bin/env python3
+print("Hello World")
+```
+
+* Binary build steps
+
+```
+NS=binary-build
+NAME=python-binary-build
+
+oc create namespace "${NS}"
+
+oc new-build python --name="${NAME}" --binary=true -n "${NS}"  -l "app.kubernetes.io/name=${NAME}"
+oc start-build "bc/${NAME}" --from-file=./app.py --follow -n "${NS}"
+
+oc get builds -n "${NS}"
+oc -n "${NS}" annotate build "${NAME}-1" --overwrite \
+io.openshift.build.commit.id=7810f2a85d5c89cb4b17e9a3208a311af65338d8 \
+io.openshift.build.source-location=http://github.com/konveyor/pelorus
+
+oc -n "${NS}" new-app "${NAME}" -l "app.kubernetes.io/name=${NAME}"
+```
+
+
+#### Additional examples
 
 There are many ways to build and deploy applications in OpenShift.  Additional examples of how to annotate builds such that Pelorus will properly discover the commit metadata can be found in the  [Pelorus tekton demo](https://github.com/konveyor/pelorus/tree/master/demo)
 
@@ -273,7 +309,7 @@ We require that all builds associated with a particular application be labeled w
 
 Currently we support GitHub and GitLab, with BitBucket coming soon. Open an issue or a pull request to add support for additional Git providers!
 
-#### Instance Config
+#### Instance config
 
 ```yaml
 exporters:

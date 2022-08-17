@@ -123,7 +123,7 @@ e2e-tests: e2e-tests-dev-env
 
 e2e-tests-scenario-1: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-pelorus-e2e-tests -f "periodic/quay_images_latest.yaml"
+	./scripts/run-pelorus-e2e-tests -f "periodic/quay_images_latest.yaml" -o konveyor -e failure,gitlab_committime,gitea_committime,bitbucket_committime
 
 e2e-tests-scenario-2: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \

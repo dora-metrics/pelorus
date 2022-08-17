@@ -7,12 +7,36 @@ parameters:
     name: APPLICATION_NAME
     value: basic-python-tekton
   - name: NAMESPACE
-    description: The namespace the imagestream and pipeline will be deployed in.
+    description: The namespace the various objects will be deployed in.
     value: basic-python-tekton
 objects:
   # Build
-  - apiVersion: image.openshift.io/v1
-    kind: ImageStream
+  - kind: BuildConfig
+    apiVersion: build.openshift.io/v1
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        app.kubernetes.io/name: ${APPLICATION_NAME}
+    spec:
+      source:
+        type: Git
+        git:
+          uri: https://github.com/konveyor/pelorus
+          ref: master
+        contextDir: "demo/python-example"
+      strategy:
+        sourceStrategy:
+          from:
+            kind: "ImageStreamTag"
+            name: "python-39:latest"
+      output:
+        to:
+          kind: ImageStreamTag
+          name: "basic-python-tekton:latest"
+
+  - kind: ImageStream
+    apiVersion: image.openshift.io/v1
     metadata:
       name: ${APPLICATION_NAME}
       namespace: ${NAMESPACE}
@@ -21,6 +45,7 @@ objects:
         app.kubernetes.io/instance: ${APPLICATION_NAME}-build
         app.kubernetes.io/component: api
         app.kubernetes.io/part-of: ${APPLICATION_NAME}
+
   - kind: PersistentVolumeClaim
     apiVersion: v1
     metadata:
@@ -36,8 +61,30 @@ objects:
       resources:
         requests:
           storage: 500Mi
-  - apiVersion: tekton.dev/v1beta1
-    kind: Pipeline
+
+  - kind: Task
+    apiVersion: tekton.dev/v1alpha1
+    metadata:
+      name: debug
+      namespace: ${NAMESPACE}
+    spec:
+      # notes: each task specifies the workspace name
+      # the same pvc is used, only the mounted directory changes based on the name
+      # in this case "debug"
+      workspaces:
+        - name: debug
+      steps:
+        - name: list-workspace-files
+          image: ubi9/toolbox
+          script: |
+            set -ex
+            find /workspace
+            cd /workspace/debug 
+            git remote -vv 
+            git log -n 1
+
+  - kind: Pipeline
+    apiVersion: tekton.dev/v1beta1
     metadata:
       name: ${APPLICATION_NAME}-pipeline
       namespace: ${NAMESPACE}
@@ -57,22 +104,22 @@ objects:
           type: string
           default: master
         - name: BUILD_TYPE
-          default: 'buildconfig'
-          description: 'buildconfig, binary, s2i'
+          default: "buildconfig"
+          description: "what type of build to run. One of buildconfig, binary, or s2i"
           type: string
       tasks:
         - name: import-build-image
           params:
             - name: SCRIPT
-              value: | 
-                oc import-image centos/python-38-centos7:latest --confirm -n basic-python-tekton
-                oc import-image bitnami/git --from=docker.io/bitnami/git:latest --confirm -n basic-python-tekton
+              value: |
+                oc import-image python-39 --from=registry.access.redhat.com/ubi9/python-39:latest --confirm -n basic-python-tekton
+                oc import-image toolbox --from=registry.access.redhat.com/ubi9/toolbox:latest --confirm -n basic-python-tekton
           taskRef:
             kind: ClusterTask
             name: openshift-client
         - name: checkout
           runAfter:
-          - import-build-image
+            - import-build-image
           when:
             - input: "$(params.BUILD_TYPE)"
               operator: notin
@@ -100,7 +147,7 @@ objects:
             - name: debug
               workspace: repo
           runAfter:
-          - checkout 
+            - checkout
         # s2i build
         - name: builds2i
           when:
@@ -118,7 +165,7 @@ objects:
           workspaces:
             - name: source
               workspace: repo
-          runAfter: 
+          runAfter:
             - listfiles
         # buildConfig build
         - name: buildconfig
@@ -128,7 +175,7 @@ objects:
               values: ["buildconfig"]
           params:
             - name: SCRIPT
-              value: | 
+              value: |
                 oc start-build basic-python-tekton --wait
             - name: VERSION
               value: latest
@@ -147,7 +194,7 @@ objects:
             name: openshift-client
           params:
             - name: SCRIPT
-              value: | 
+              value: |
                 oc delete buildConfig basic-python-tekton || true
                 #ls -la $(workspaces.manifest-dir.path)
                 cd $(workspaces.manifest-dir.path)
@@ -172,21 +219,21 @@ objects:
           workspaces:
             - name: manifest-dir
               workspace: repo
-          runAfter: 
+          runAfter:
             - listfiles
       # test the build
       finally:
         - name: test-build
           params:
             - name: SCRIPT
-              value: | 
-                curl $(oc get route -n basic-python-tekton basic-python-tekton -o=template='http://{{.spec.host | printf "%s\n"}}') 2>&1 | grep "Hello world!" || exit 2
+              value: |
+                curl $(oc get route -n basic-python-tekton basic-python-tekton -o=template='http://{{.spec.host}}') 2>&1 | grep "Hello world!" || exit 2
           timeout: 2m
           retries: 3
           taskRef:
             kind: ClusterTask
             name: openshift-client
-          
+
   # Deploy
   - kind: Service
     apiVersion: v1
@@ -206,29 +253,7 @@ objects:
           targetPort: 8080
       selector:
         deploymentConfig: ${APPLICATION_NAME}
-  - kind: BuildConfig
-    apiVersion: build.openshift.io/v1
-    metadata:
-      name: ${APPLICATION_NAME}
-      namespace: ${NAMESPACE}
-      labels:
-        app.kubernetes.io/name: ${APPLICATION_NAME}
-    spec:
-      source:
-        type: Git
-        git:
-          uri: https://github.com/konveyor/pelorus
-          ref: master
-        contextDir: "demo/python-example"
-      strategy:
-        sourceStrategy:
-          from:
-            kind: "ImageStreamTag"
-            name: "python-38-centos7:latest"
-      output:
-        to:
-          kind: ImageStreamTag
-          name: "basic-python-tekton:latest"
+
   - kind: Route
     apiVersion: route.openshift.io/v1
     metadata:
@@ -244,6 +269,7 @@ objects:
     spec:
       to:
         name: ${APPLICATION_NAME}
+
   - kind: DeploymentConfig
     apiVersion: apps.openshift.io/v1
     metadata:

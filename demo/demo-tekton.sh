@@ -64,8 +64,13 @@ if ! [[ $all_cmds_found ]]; then exit 1; fi
 tekton_setup_dir="$(dirname "${BASH_SOURCE[0]}")/tekton-demo-setup"
 python_example_txt="$(dirname "${BASH_SOURCE[0]}")/python-example/response.txt"
 
+echo "Switch to the basic-python-tekton namespace"
+oc get ns basic-python-tekton || oc create ns basic-python-tekton
+oc project basic-python-tekton
+
 echo "Clean up resources prior to execution:"
 # cleaning resources vs. deleting the namespace to preserve pipeline run history
+# resources are cleaned to ensure that the new running artifact is from the latest build
 oc delete --all imagestream -n basic-python-tekton &> /dev/null || true
 oc scale dc/basic-python-tekton --replicas=0 &> /dev/null || true
 oc delete dc/basic-python-tekton -n basic-python-tekton &> /dev/null || true
@@ -93,7 +98,8 @@ fi
 
 
 echo "3. Setting up build and deployment information"
-oc process -f "$tekton_setup_dir/03-build-and-deploy.yaml" | oc apply -f -
+oc process -f "$tekton_setup_dir/03-build-and-deploy.yaml" > /tmp/03-build-and-deploy.yaml.out 2>/tmp/03-build-and-deploy.yaml.err
+oc apply -f /tmp/03-build-and-deploy.yaml.out
 
 route="$(oc get -n basic-python-tekton route/basic-python-tekton --output=go-template='http://{{.spec.host}}')"
 
