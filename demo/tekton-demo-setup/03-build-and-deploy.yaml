@@ -167,6 +167,20 @@ objects:
               workspace: repo
           runAfter:
             - listfiles
+        # label the tekton s2i build
+        - name: labels2i
+          when:
+            - input: "$(params.BUILD_TYPE)"
+              operator: in
+              values: ["s2i"]
+          params:
+            - name: SCRIPT
+              value: |
+                oc label image "$(tasks.builds2i.results.IMAGE_DIGEST)" app.kubernetes.io/name=basic-python-tekton
+          runAfter: [builds2i]
+          taskRef:
+            kind: ClusterTask
+            name: openshift-client
         # buildConfig build
         - name: buildconfig
           when:
