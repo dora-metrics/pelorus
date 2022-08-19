@@ -25,6 +25,7 @@ class Release(NamedTuple):
     A tagged release of a GitHub project.
     """
 
+    name: str
     tag_name: str
     published_at: datetime
 
@@ -33,10 +34,11 @@ class Release(NamedTuple):
         """
         Create from the JSON object returned by the `/releases` resource.
         """
+        name = json_object["name"]
         tag_name = json_object["tag_name"]
         published_at = parse_datetime(json_object["published_at"])
 
-        return Release(tag_name, published_at)
+        return Release(name, tag_name, published_at)
 
 
 class ProjectSpec(NamedTuple):
@@ -84,6 +86,9 @@ class ProjectSpec(NamedTuple):
             for x in comma_or_whitespace_separated(set)(var)
         )
 
+    def __str__(self):
+        return f"{self.organization}/{self.repo}"
+
 
 @frozen
 class GitHubReleaseCollector(AbstractPelorusExporter):
@@ -111,18 +116,35 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
 
         for project in self.projects:
             releases = set(self._get_releases_for_project(project))
+            logging.debug("Got %d releases for project %s", len(releases), project)
+
             commits = self._get_each_tag_commit(
                 project, set(release.tag_name for release in releases)
             )
+            logging.debug("Got %d tagged commits for project %s", len(commits), project)
 
             namespace, app = project.organization, project.app
 
             for release in releases:
                 if commit := commits.get(release.tag_name):
+                    logging.info(
+                        "Collected (release) deploy_timestamp{namespace/org=%s, app/repo=%s, image/commit=%s} %s",
+                        namespace,
+                        app,
+                        commit,
+                        release.published_at,
+                    )
                     metric.add_metric(
                         [namespace, app, commit, release.tag_name, commit],
                         release.published_at.timestamp(),
                         release.published_at.timestamp(),
+                    )
+                else:
+                    logging.error(
+                        "Project %s's release %s (tag %s) did not have a matching commit",
+                        project,
+                        release.name,
+                        release.tag_name,
                     )
 
         yield metric
