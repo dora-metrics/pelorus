@@ -151,4 +151,8 @@ def url_joiner(base: str, *parts: str):
 
 
 class AbstractPelorusExporter(Collector, ABC):
-    pass
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+
+        # make sure __hash__ is something prometheus' registry can handle properly.
+        cls.__hash__ = lambda self: id(self)  # type: ignore

@@ -60,6 +60,8 @@ class ConfigClass:
 `kw_only=True` is requires so we can have a mandatory field after one with a default.
 We recommend its use even if that doesn't apply to you.
 
+**Please note if using this directly on a collector:** use `hash=False`. Prometheus hashes the collector itself, and you may have unhashable types in it. `attrs` will generate `__hash__` by default, overriding the default reasonable implementation.
+Inheriting from `AbstractPelorusExporter` will take care of this for you by manually defining a `__hash__`, so `attrs` will skip it.
 
 # Tutorial: Advanced Usage
 
