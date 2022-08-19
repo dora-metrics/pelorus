@@ -36,6 +36,8 @@ BUILDCONFIG_PATH="charts/pelorus/charts/exporters/templates/_buildconfig.yaml"
 PELORUS_CHART="charts/pelorus/Chart.yaml"
 OPERATOR_CHART="charts/operators/Chart.yaml"
 
+INSTALL_DOC="docs/Install.md"
+
 TRUE=1
 FALSE=0
 
@@ -105,6 +107,9 @@ else
   NEXT_CHART_VER=$( echo "${CHART_VER}" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
   sed -i "s/^version:.*/version: $NEXT_CHART_VER/g" "$PELORUS_CHART"
 fi
+
+# Update branch in the Install documentation
+sed -i "s/--branch v.* /--branch v$V_MAJOR.$V_MINOR.$V_PATCH /g" "$INSTALL_DOC"
 
 if [[ $major ]]; then
   printf "\nIMPORTANT:\n\t Do include \"major release\" text in the first line of your commit message, or label your PR with: \"major\"\n\n"
