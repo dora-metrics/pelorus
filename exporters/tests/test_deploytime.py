@@ -9,7 +9,8 @@ from openshift.dynamic import DynamicClient  # type: ignore
 from openshift.dynamic.discovery import Discoverer  # type: ignore
 
 import pelorus
-from deploytime.app import DeployTimeMetric, generate_metrics, image_sha
+from deploytime import DeployTimeMetric
+from deploytime.app import generate_metrics, image_sha
 from tests.openshift_mocks import *
 
 # pylava:ignore=W0401

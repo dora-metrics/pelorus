@@ -3,13 +3,13 @@ import re
 import time
 from typing import Iterable, Optional
 
-import attr
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY, GaugeMetricFamily
 
 import pelorus
+from deploytime import DeployTimeMetric
 
 supported_replica_objects = {"ReplicaSet", "ReplicationController"}
 
@@ -89,27 +89,6 @@ class DeployTimeCollector:
                 "No NAMESPACES given and PROD_LABEL did not return any matching namespaces."
             )
         return namespaces
-
-
-@attr.frozen(kw_only=True)
-class DeployTimeMetric:
-    name: str
-    namespace: str
-    # WARNING: do not mutate the dict after hashing or things may break.
-    labels: dict[str, str]
-    deploy_time: object
-    image_sha: str
-
-    def __hash__(self):
-        return hash(
-            (
-                self.name,
-                self.namespace,
-                hash(tuple(self.labels.items())),
-                self.deploy_time,
-                self.image_sha,
-            )
-        )
 
 
 def image_sha(image_url_or_id: str) -> Optional[str]:

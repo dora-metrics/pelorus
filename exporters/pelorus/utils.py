@@ -156,6 +156,22 @@ def collect_bad_attribute_path_error(error_list: list, append: bool = True):
             error_list.append(e)
 
 
+@dataclasses.dataclass
+class BadAttributesError(Exception):
+    """
+    An error representing some number of missing attributes.
+    """
+
+    missing_attributes: list[BadAttributePathError]
+
+    @property
+    def message(self):
+        return ". ".join(str(x) for x in self.missing_attributes)
+
+    def __str__(self):
+        return self.message
+
+
 class SpecializeDebugFormatter(logging.Formatter):
     """
     Uses a different format for DEBUG messages that has more information.
@@ -264,3 +280,7 @@ class TokenAuth(requests.auth.AuthBase):
     def __call__(self, r: requests.PreparedRequest):
         r.headers["Authorization"] = self.auth_str
         return r
+
+
+def join_url_path_components(*components: str) -> str:
+    return "/".join(c.strip("/") for c in components)
