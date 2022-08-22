@@ -5,3 +5,29 @@ displayName: Basic Python Tekton App
 metadata:
   name: basic-python-tekton
   creationTimestam: null
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipeline-role
+rules:
+- apiGroups:
+  - image.openshift.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pipeline-role-binding
+  namespace: basic-python-tekton
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pipeline-role
+subjects:
+- kind: ServiceAccount
+  name: pipeline
+  namespace: basic-python-tekton
