@@ -177,6 +177,8 @@ objects:
             - name: SCRIPT
               value: |
                 oc label image "$(tasks.builds2i.results.IMAGE_DIGEST)" app.kubernetes.io/name=basic-python-tekton
+                oc annotate image "$(tasks.builds2i.results.IMAGE_DIGEST)" io.openshift.build.commit.id="$(tasks.checkout.results.commit)"
+                oc annotate image "$(tasks.builds2i.results.IMAGE_DIGEST)" io.openshift.build.source-location="$(tasks.checkout.results.url)"
           runAfter: [builds2i]
           taskRef:
             kind: ClusterTask
