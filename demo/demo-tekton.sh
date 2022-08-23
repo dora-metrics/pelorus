@@ -109,6 +109,7 @@ function run_pipeline {
    tkn pipeline start -n basic-python-tekton --showlog basic-python-tekton-pipeline \
       -w name=repo,claimName=basic-python-tekton-build-pvc \
       -p git-url="$url" -p git-revision="$current_branch" \
+      -l app.kubernetes.io/name=basic-python-tekton \
       -p BUILD_TYPE="$build_type"
 }
 
