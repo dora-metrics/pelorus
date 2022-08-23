@@ -4,6 +4,7 @@ from typing import Optional
 import requests
 
 import pelorus
+from pelorus.certificates import set_up_requests_certs
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
@@ -41,6 +42,9 @@ class GitHubCommitCollector(AbstractCommitCollector):
             self._git_api = self._defaultapi
         self._prefix = self._prefix_pattern % self._git_api
 
+        self.session = requests.Session()
+        self.session.verify = set_up_requests_certs(tls_verify)
+
     def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
         git_server = metric.git_fqdn
@@ -64,7 +68,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
             + metric.commit_hash
         )
         auth = (self._username, self._token) if self._username and self._token else None
-        response = requests.get(url, auth=auth, verify=self._tls_verify)
+        response = self.session.get(url, auth=auth)
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github
             logging.warning(

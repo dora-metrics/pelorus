@@ -6,6 +6,7 @@ import requests
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from pelorus.certificates import set_up_requests_certs
 
 SN_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 SN_QUERY = "/api/now/table/incident?sysparm_fields={0}%2C{1}%2Cstate%2Cnumber%2C{2} \
@@ -32,6 +33,8 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
             self.app_name_field = pelorus.utils.get_env_var("APP_FIELD")
         self.page_size = 100
         super().__init__(server, user, apikey)
+        self.session = requests.Session()
+        self.session.verify = set_up_requests_certs()
 
     def search_issues(self):
         # Connect to ServiceNow
@@ -84,7 +87,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         tracker_url = self.server + self.tracker_query
 
         # Do the HTTP request
-        response = requests.get(
+        response = self.session.get(
             tracker_url, auth=(self.user, self.apikey), headers=SN_HEADERS
         )
         # Check for HTTP codes other than 200

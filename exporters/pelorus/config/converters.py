@@ -49,4 +49,7 @@ def comma_or_whitespace_separated(
     return _converter
 
 
-__all__ = ["comma_separated", "comma_or_whitespace_separated"]
+__all__ = [
+    "comma_separated",
+    "comma_or_whitespace_separated",
+]

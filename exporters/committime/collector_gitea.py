@@ -3,6 +3,7 @@ import logging
 import requests
 
 import pelorus
+from pelorus.certificates import set_up_requests_certs
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
@@ -33,6 +34,8 @@ class GiteaCommitCollector(AbstractCommitCollector):
         else:
             self._git_api = self._defaultapi
         self._prefix = self._prefix_pattern % self._git_api
+        self.session = requests.Session()
+        self.session.verify = set_up_requests_certs()
 
     # base class impl
     def get_commit_time(self, metric):
@@ -50,9 +53,6 @@ class GiteaCommitCollector(AbstractCommitCollector):
                 "Skipping non Gitea server, found %s" % (git_server)
             )
 
-        session = requests.Session()
-        session.verify = False
-
         url = (
             self._prefix
             + metric.repo_group
@@ -62,10 +62,8 @@ class GiteaCommitCollector(AbstractCommitCollector):
             + metric.commit_hash
         )
         logging.info("URL %s" % (url))
-        response = requests.get(url, auth=(self._username, self._token))
-        logging.info(
-            "response %s" % (requests.get(url, auth=(self._username, self._token)))
-        )
+        response = self.session.get(url, auth=(self._username, self._token))
+        logging.info("response %s", response)
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github
             logging.warning(

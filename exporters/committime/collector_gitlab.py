@@ -21,6 +21,7 @@ import gitlab
 import requests
 
 import pelorus
+from pelorus.certificates import set_up_requests_certs
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
@@ -36,6 +37,9 @@ class GitLabCommitCollector(AbstractCommitCollector):
             "GitLab",
             "%Y-%m-%dT%H:%M:%S.%f%z",
         )
+        set_up_requests_certs()
+        self.session = requests.Session()
+        self.session = set_up_requests_certs()
 
     def _connect_to_gitlab(self, metric) -> gitlab.Gitlab:
         """Method to connect to Gitlab instance."""
@@ -43,21 +47,23 @@ class GitLabCommitCollector(AbstractCommitCollector):
 
         gitlab_client = None
 
-        session = requests.Session()
-        session.verify = False
-
         if self._token:
             # Private or personal token
             logging.debug("Connecting to GitLab server using token: %s" % (git_server))
             gitlab_client = gitlab.Gitlab(
-                git_server, private_token=self._token, api_version=4, session=session
+                git_server,
+                private_token=self._token,
+                api_version=4,
+                session=self.session,
             )
         else:
             # Public repo without token
             logging.debug(
                 "Connecting to GitLab server without token: %s" % (git_server)
             )
-            gitlab_client = gitlab.Gitlab(git_server, api_version=4, session=session)
+            gitlab_client = gitlab.Gitlab(
+                git_server, api_version=4, session=self.session
+            )
 
         return gitlab_client
 

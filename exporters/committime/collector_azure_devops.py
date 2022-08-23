@@ -1,6 +1,5 @@
 import logging
 
-import requests
 from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 
@@ -36,9 +35,6 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
             raise UnsupportedGITProvider(
                 "Skipping non Azure DevOps server, found %s" % (git_server)
             )
-
-        session = requests.Session()
-        session.verify = False
 
         logging.debug("metric.repo_project %s" % (metric.repo_project))
         logging.debug("metric.git_api %s" % (self._git_api))
