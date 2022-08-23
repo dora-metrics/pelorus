@@ -372,6 +372,12 @@ if oc get namespace mongo-persistent 2>/dev/null; then
     oc delete -f "${DWN_DIR}/mongo-persistent.yaml"
 fi
 
+# Delete mongo-persistent-scc (securitycontextconstraints.security.openshift.io)
+# which may be left from previous runs.
+if oc get scc mongo-persistent-scc 2>/dev/null; then
+    oc delete scc mongo-persistent-scc
+fi
+
 # From now on, exit if something goes wrong
 set -e
 
