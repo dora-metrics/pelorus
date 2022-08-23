@@ -33,6 +33,7 @@ from pelorus.utils import get_env_var, get_nested
 # Default ones are in the CommitMetric._ANNOTATION_MAPPIG
 COMMIT_HASH_ANNOTATION_ENV = "COMMIT_HASH_ANNOTATION"
 COMMIT_REPO_URL_ANNOTATION_ENV = "COMMIT_REPO_URL_ANNOTATION"
+COMMIT_DATE_ANNOTATION_ENV = "COMMIT_DATE_ANNOTATION"
 
 
 class UnsupportedGITProvider(Exception):
@@ -56,7 +57,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         kube_client,
         username: str,
         token: str,
-        namespaces: list[str],
+        namespaces: set[str],
         apps,
         collector_name,
         timedate_format,
@@ -82,7 +83,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             "Commit timestamp",
             labels=["namespace", "app", "commit", "image_sha"],
         )
-        commit_metrics = self.generate_metrics(self._namespaces)
+
+        commit_metrics = self.generate_metrics()
+
         for my_metric in commit_metrics:
             logging.info(
                 "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s"
@@ -106,28 +109,57 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             )
             yield commit_metric
 
-    def generate_metrics(
-        self, watched_namespaces: Optional[list[str]] = None
-    ) -> Iterable[CommitMetric]:
-        """Method called by the collect to create a list of metrics to publish"""
-        # This will loop and look at OCP builds (calls get_git_commit_time)
-
+    def _get_watched_namespaces(self) -> set[str]:
+        watched_namespaces = self._namespaces
         if not watched_namespaces:
             logging.info("No namespaces specified, watching all namespaces")
             v1_namespaces = self._kube_client.resources.get(
                 api_version="v1", kind="Namespace"
             )
-            watched_namespaces = [
+            watched_namespaces = {
                 namespace.metadata.name for namespace in v1_namespaces.get().items
-            ]
+            }
         logging.info("Watching namespaces: %s" % (watched_namespaces))
+        return watched_namespaces
+
+    def _get_openshift_obj_by_app(
+        self, openshift_obj: str, app_label: str
+    ) -> Optional[dict]:
+
+        # use a jsonpath expression to find all values for the app label
+        jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
+
+        jsonpath_expr = parse(jsonpath_str)
+
+        found = jsonpath_expr.find(openshift_obj)
+
+        apps = {match.value for match in found}
+
+        if not apps:
+            return None
+
+        items_by_app = {}
+
+        for app in apps:
+            items_by_app[app] = list(
+                filter(
+                    lambda b: b.metadata.labels[app_label] == app, openshift_obj.items
+                )
+            )
+
+        return items_by_app
+
+    def generate_metrics(self) -> Iterable[CommitMetric]:
+        """Method called by the collect to create a list of metrics to publish"""
+        # This will loop and look at OCP builds (calls get_git_commit_time)
+
+        watched_namespaces = self._get_watched_namespaces()
 
         # Initialize metrics list
         metrics = []
         for namespace in watched_namespaces:
             # Initialized variables
             builds = []
-            apps = []
             builds_by_app = {}
             app_label = pelorus.get_app_label()
             logging.debug(
@@ -141,28 +173,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
-            # use a jsonpath expression to find all values for the app label
-            jsonpath_str = (
-                "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
-            )
-            jsonpath_expr = parse(jsonpath_str)
+            builds_by_app = self._get_openshift_obj_by_app(builds, app_label)
 
-            found = jsonpath_expr.find(builds)
-
-            apps = [match.value for match in found]
-
-            if not apps:
-                continue
-            # remove duplicates
-            apps = list(dict.fromkeys(apps))
-            builds_by_app = {}
-
-            for app in apps:
-                builds_by_app[app] = list(
-                    filter(lambda b: b.metadata.labels[app_label] == app, builds.items)
-                )
-
-            metrics += self.get_metrics_from_apps(builds_by_app, namespace)
+            if builds_by_app:
+                metrics += self.get_metrics_from_apps(builds_by_app, namespace)
 
         return metrics
 

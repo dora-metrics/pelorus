@@ -8,7 +8,7 @@ from kubernetes.client import ApiClient, Configuration
 from openshift.dynamic import DynamicClient
 
 from committime import CommitMetric
-from committime.app import CommittimeConfig
+from committime.app import GitCommittimeConfig
 from committime.collector_github import GitHubCommitCollector
 from pelorus.config import load_and_log
 
@@ -47,7 +47,7 @@ def setup_collector_from_env_loading():
     )
 
     config = load_and_log(
-        CommittimeConfig,
+        GitCommittimeConfig,
         other=dict(
             kube_client=_make_dyn_client(),
             tls_verify=False,
@@ -113,7 +113,7 @@ def test_github_provider(setup):
 
     actual = [
         CommitMetricEssentials.from_commit_metric(cm)
-        for cm in collector.generate_metrics(collector._namespaces)
+        for cm in collector.generate_metrics()
     ]
 
     actual.sort(key=lambda commit: commit.commit_timestamp)

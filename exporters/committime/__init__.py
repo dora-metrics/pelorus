@@ -142,6 +142,7 @@ class CommitMetric:
     _ANNOTATION_MAPPIG = dict(
         repo_url="io.openshift.build.source-location",
         commit_hash="io.openshift.build.commit.id",
+        commit_time="io.openshift.build.commit.date",
     )
 
 
