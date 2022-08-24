@@ -25,44 +25,60 @@ spec:
         application: {{ .app_name }}
         pelorus.konveyor.io/exporter-type: {{ .exporter_type | default "generic-exporter" }}
     spec:
-      containers:
-      - name: {{ .app_name }}
-        imagePullPolicy: Always
-        envFrom:
-      {{- range .env_from_configmaps | default (list "default-pelorus-config" "default-deploytime-config") }}
-        - configMapRef:
-            name: {{ . }}
-      {{- end}}
-      {{- range .env_from_secrets }}
-        - secretRef:
-            name: {{ . }}
-      {{- end}}
-        env:
-{{- if .exporter_type }}
-        - name: APP_FILE
-          value: {{ .exporter_type }}/app.py
-{{- end }}
-{{- if and (not .source_ref) (not .source_url) }}
-        - name: PELORUS_IMAGE_TAG
-          value: {{ .app_name }}:{{ .image_tag | default "stable" }}
-{{- end }}
-{{- if .extraEnv }}
-{{ toYaml .extraEnv | indent 8 }}
-{{- end }}
-        ports:
-        - containerPort: 8080
-          protocol: TCP
-        readinessProbe:
-          tcpSocket:
-            port: 8080
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:
-          tcpSocket:
-            port: 8080
-          initialDelaySeconds: 15
-          periodSeconds: 20
       serviceAccount: pelorus-exporter
+      volumes:
+        {{- range $config := .custom_certs }}
+        - name: custom-cert-volume-{{$config.map_name}}
+          configMap:
+            name: {{ $config.map_name }}
+        {{- end }}
+      containers:
+        - name: {{ .app_name }}
+          imagePullPolicy: Always
+
+          volumeMounts:
+            {{- range $config := .custom_certs }}
+            - name: custom-cert-volume-{{$config.map_name}}
+              mountPath: /etc/pelorus/custom_certs/{{$config.map_name}}
+            {{- end }}
+
+          envFrom:
+            {{- range .env_from_configmaps | default (list "default-pelorus-config" "default-deploytime-config") }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
+
+            {{- range .env_from_secrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end}}
+          env:
+            {{- if .exporter_type }}
+            - name: APP_FILE
+              value: {{ .exporter_type }}/app.py
+            {{- end }}
+
+            {{- if and (not .source_ref) (not .source_url) }}
+            - name: PELORUS_IMAGE_TAG
+              value: {{ .app_name }}:{{ .image_tag | default "stable" }}
+            {{- end }}
+
+            {{- if .extraEnv }}
+            {{- toYaml .extraEnv | nindent 12}}
+            {{- end }}
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
   triggers:
   - type: ConfigChange
   - imageChangeParams:
@@ -71,10 +87,10 @@ spec:
       - {{ .app_name }}
       from:
         kind: ImageStreamTag
-{{- if or .source_ref .source_url }}
+        {{- if or .source_ref .source_url }}
         name: {{ .app_name }}:latest
-{{- else }}
+        {{- else }}
         name: {{ .app_name }}:{{ .image_tag | default "stable" }}
-{{- end }}
+        {{- end }}
     type: ImageChange
 {{- end }}

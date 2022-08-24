@@ -1,15 +1,16 @@
 from http.server import HTTPServer
+from pathlib import Path
 
 import pytest
 import requests
 
 
 def test_custom_requests_certs(
-    combined_certificates: str,
+    combined_certificates: Path,
     https_server: HTTPServer,
 ):
     session = requests.Session()
-    session.verify = combined_certificates
+    session.verify = str(combined_certificates)
 
     session.get(f"https://127.0.0.1:{https_server.server_port}")
 

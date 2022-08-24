@@ -1,3 +1,6 @@
+"""
+Custom cert generation.
+"""
 import shutil
 import ssl
 import subprocess
@@ -10,6 +13,10 @@ CERT_X509_SAN_EXT_CONFIG = "subjectAltName=IP:127.0.0.1"
 
 
 class CustomCerts(NamedTuple):
+    """
+    A cert chain bundle and a private key file.
+    """
+
     bundle: Path
     keyfile: Path
 
@@ -23,23 +30,23 @@ def context_for_certs_dir(custom: CustomCerts) -> SSLContext:
     return ctx
 
 
-def create_certs(tmp_path: Path) -> CustomCerts:
+def create_certs(working_dir: Path) -> CustomCerts:
     """
     NOTE: no security guarantees here-- this is just for testing.
 
     Create a CA certificate, leaf certificate,
     and an unencrypted private key for the leaf cert.
     """
-    run = partial(subprocess.run, cwd=tmp_path, check=True)
+    run = partial(subprocess.run, cwd=working_dir, check=True)
 
     # although we use absolute paths as args,
     # openssl produces some other files as side effects.
-    priv_key_path = tmp_path / "priv.key"
-    ca_cert_path = tmp_path / "ca.pem"
-    csr_path = tmp_path / "req.csr"
-    csr_ext_path = tmp_path / "req.csr.ext"
-    leaf_cert_path = tmp_path / "leaf.pem"
-    bundle_path = tmp_path / "bundle.pem"
+    priv_key_path = working_dir / "priv.key"
+    ca_cert_path = working_dir / "ca.pem"
+    csr_path = working_dir / "req.csr"
+    csr_ext_path = working_dir / "req.csr.ext"
+    leaf_cert_path = working_dir / "leaf.pem"
+    bundle_path = working_dir / "bundle.pem"
 
     # create private key
     run(["openssl", "genpkey", "-algorithm", "rsa", "-out", priv_key_path])

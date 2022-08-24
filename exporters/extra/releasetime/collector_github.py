@@ -14,6 +14,7 @@ from prometheus_client.core import GaugeMetricFamily
 from requests import Session
 
 from pelorus import AbstractPelorusExporter
+from pelorus.certificates import set_up_requests_certs
 from pelorus.config import REDACT, env_vars, load_and_log, log
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.utils import TokenAuth, join_url_path_components
@@ -103,6 +104,8 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
     def __attrs_post_init__(self):
         if not self.projects:
             raise ValueError("No projects specified for GitHub deploytime collector")
+
+        self._session.verify = set_up_requests_certs()
 
         if self.token:
             self._session.auth = TokenAuth(self.token)
