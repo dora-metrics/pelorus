@@ -7,6 +7,7 @@ import requests.exceptions
 import pelorus
 from committime import CommitMetric
 from committime.collector_base import AbstractCommitCollector, UnsupportedGITProvider
+from pelorus.certificates import set_up_requests_certs
 
 
 def commit_url(server: str, group: str, project: str, commit: str) -> str:
@@ -35,7 +36,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             "%Y-%m-%dT%H:%M:%S%z",
         )
         self.__session = requests.Session()
-        self.__session.verify = tls_verify
+        self.__session.verify = set_up_requests_certs(tls_verify)
         self.__session.headers.update(self.DEFAULT_HEADERS)
         if self._username and self._token:
             self.__session.auth = (self._username, self._token)

@@ -24,6 +24,7 @@ import requests
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from pelorus.certificates import set_up_requests_certs
 from pelorus.utils import TokenAuth
 
 # One query limit, exporter will query multiple times.
@@ -66,6 +67,7 @@ class GithubFailureCollector(AbstractFailureCollector):
         self.session = requests.Session()
         # disable .netrc
         self.session.trust_env = False
+        self.session.verify = set_up_requests_certs()
         if apikey:
             self.session.auth = TokenAuth(apikey)
         try:
