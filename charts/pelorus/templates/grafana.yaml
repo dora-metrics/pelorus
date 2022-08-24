@@ -15,18 +15,18 @@ spec:
       enabled: True
     auth.anonymous:
       enabled: True
+  service:
+    name: "grafana-service"
+    labels:
+      app: "grafana"
+      type: "grafana-service"
+  ingress:
+    enabled: true
+  client:
+    preferService: True
+  serviceAccount:
+    annotations:
+      serviceaccounts.openshift.io/oauth-redirectreference.primary: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"grafana-route"}}'
   dashboardLabelSelector:
     - matchExpressions:
         - { key: "app", operator: In, values: ['grafana'] }
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: grafana-route
-  namespace: mongo-persistent
-spec:
-  path: "/"
-  to:
-    kind: Service
-    name: grafana-service
-
