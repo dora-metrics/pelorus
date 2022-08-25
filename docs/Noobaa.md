@@ -51,7 +51,7 @@ AWS_SECRET_ACCESS_KEY : <s3 secred access key>
 After running `noobaa install --namespace pelorus` step, you may confirm that installation went fine by checking the System Status output and ensuring that ll the services are marked with ✅:
 
 ```
-$ noobaa status
+$ noobaa status --namespace pelorus
 [...]
 INFO[0004] System Status:
 INFO[0004] ✅ Exists: NooBaa "noobaa"
@@ -94,13 +94,13 @@ We use default `thanos` bucket name. User may choose any bucket name.
 To create `thanos` NooBaa bucket:
 
 ```
-noobaa bucket create thanos
+noobaa bucket create thanos --namespace pelorus
 ```
 
 At any time to check if the bucket was created succesfully and it's healthy run the command:
 
 ```
-noobaa bucket status thanos
+noobaa bucket status thanos --namespace pelorus
 ```
 
 ## Update Pelorus Configuration
@@ -108,4 +108,22 @@ noobaa bucket status thanos
 To update our Pelorus stack, follow the instructions provided in the [Long Term Storage](Install.md#configure-long-term-storage-recommended).
 
 Ensure that `<s3 access key>`, `<s3 secred access key>` and `<bucket name>` are used from the [Deploy NooBaa
-](#deploy-noobaa) step and `s3.noobaa.svc` as bucket access point.
+](#deploy-noobaa) step and `s3.noobaa.svc` as bucket access point as in example:
+
+```yaml
+# Thanos / S3 Storage with noobaa
+thanos_bucket_name: thanos
+bucket_access_point: s3.noobaa.svc
+bucket_access_key: <s3 access key>
+bucket_secret_access_key: <s3 secred access key>
+
+exporters:
+  instances:
+  - app_name: committime-exporter
+    exporter_type: committime
+    env_from_secrets:
+    - github-secret
+    env_from_configmaps:
+    - pelorus-config
+    - committime-config
+```

@@ -668,7 +668,7 @@ exporters:
     - pelorus-config
     - image-committime-config
 ```
-Refer to the [Annotations, Docker Labels and Image support](#annotations-docker-labels-and-mage-support) for information how to enable Commit Time Exporter for the Image use case.
+Refer to the [Annotations, Docker Labels and Image support](#annotations-docker-labels-and-image-support) for information how to enable Commit Time Exporter for the Image use case.
 
 #### ConfigMap Data Values
 
