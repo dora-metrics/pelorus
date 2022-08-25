@@ -11,12 +11,12 @@ helm upgrade pelorus charts/pelorus --namespace pelorus --values myclusterconfig
 
 The following configurations may be made through the `values.yaml` file:
 
-| Variable | Required | Explanation | Default Value |
-|---|---|---|---|
-| `openshift_prometheus_htpasswd_auth` | yes | The contents for the htpasswd file that Prometheus will use for basic authentication user. | User: `internal`, Password: `changeme` |
-| `openshift_prometheus_basic_auth_pass` | yes | The password that grafana will use for its Prometheus datasource. Must match the above. | `changme` |
-| `custom_ca` | no | Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki)  | `false`  |
-| `exporters` | no | Specified which exporters to install. See [Configuring Exporters](#configuring-exporters). | Installs deploytime exporter only. |
+| Variable                               | Required | Explanation                                                                                                                                                                                                                                                                                                                       | Default Value                          |
+|----------------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
+| `openshift_prometheus_htpasswd_auth`   | yes      | The contents for the htpasswd file that Prometheus will use for basic authentication user.                                                                                                                                                                                                                                        | User: `internal`, Password: `changeme` |
+| `openshift_prometheus_basic_auth_pass` | yes      | The password that grafana will use for its Prometheus datasource. Must match the above.                                                                                                                                                                                                                                           | `changme`                              |
+| `custom_ca`                            | no       | Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki) | `false`                                |
+| `exporters`                            | no       | Specified which exporters to install. See [Configuring Exporters](#configuring-exporters).                                                                                                                                                                                                                                        | Installs deploytime exporter only.     |
 
 ## Configuring Exporters Overview
 
@@ -264,6 +264,62 @@ oc create secret generic snow-secret \
 --from-literal=APP_FIELD=<Custom app label field> \
 -n pelorus
 ```
+
+### Custom Certificates
+
+If you run services internally with certificates not signed by typical public root CAs,
+you can supply your own custom certificates.
+
+Currently, this is only supported for the following exporters:
+
+| Exporter Type | Exporter Backend |
+|---------------|------------------|
+| Commit Time   | BitBucket        |
+| Commit Time   | Gitea            |
+| Commit Time   | GitHub           |
+| Commit Time   | GitLab           |
+| Failure       | GitHub           |
+
+We hope to expand this list in the future.
+
+To use custom certificates, create `ConfigMap`s that have keys ending in `.pem`,
+with their values as PEM-formatted certificate files.
+Then under each exporter's `custom_certs` key, list each cert with `map_name: $NAME_HERE`. 
+
+#### Custom Certificates Example
+
+First, you need a dir full of PEM-formatted certificates. Be careful not to expose private keys!
+
+```console
+$ ls ./certificates
+trusted_internal_CA.pem
+$ cat trusted_internal_CA.pem
+-----BEGIN CERTIFICATE-----
+(elided)
+-----END CERTIFICATE-----
+```
+
+Next, create the secret based on this directory.
+```shell
+oc create configmap my-certs --from-file=./certificates
+```
+
+Then configure the exporter to use the `ConfigMap`'s certificates:
+```yaml
+- app_name: committime-exporter
+  exporter_type: committime
+  custom_certs:
+    - map_name: my-certs
+```
+
+When it starts up, you should see information about custom certificate usage, depending upon your `LOG_LEVEL`:
+```log
+08-24-2022 19:08:59 INFO Combining custom certificate file /etc/pelorus/custom_certs/my-certs/foo.pem
+08-24-2022 19:08:59 DEBUG /opt/app-root/lib64/python3.9/site-packages/pelorus/certificates.py:48 _combine_certificates() Combined certificate bundle created at /tmp/custom-certsklkg4hel.pem
+```
+
+...and then requests to internal services using certs in the given chains should work.
+
 
 ### Labels
 
@@ -618,21 +674,21 @@ Refer to the [Annotations, Docker Labels and Image support](#annotations-docker-
 
 This exporter provides several configuration options, passed via `pelorus-config` and `committime-config` variables. User may define own ConfigMaps and pass to the committime exporter in a similar way.
 
-| Variable | Required | Supported provider | Explanation | Default Value |
-|---|---|---|---|---|
-| `PROVIDER` | no | | Provider from which commit date is taken. `git` or `image` |
-| `API_USER` | yes | `git` | User's github username | unset |
-| `TOKEN` | yes | `git` | User's Github API Token | unset |
-| `GIT_API` | no | `git` | GitHub, Gitea or Azure DevOps API FQDN. This allows the override for Enterprise users. Currently only applicable to `github`, `gitea` and `azure-devops` provider types. | `api.github.com`, or `https://try.gitea.io`. No default for Azure DevOps. |
-| `GIT_PROVIDER` | no | `git` | Set Git provider type. Can be `github`, `bitbucket`, `gitea`, `azure-devops` or `gitlab` | `github` |
-| `LOG_LEVEL` | no | `git`, `image` | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `APP_LABEL` | no | `git`, `image` | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
-| `NAMESPACES` | no | `git` | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-| `PELORUS_DEFAULT_KEYWORD` | no | `git`, `image` | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
-| `COMMIT_HASH_ANNOTATION` | no | `git`, `image` | Annotation name associated with the Build from which hash is used to calculate commit time | `io.openshift.build.commit.id` |
-| `COMMIT_REPO_URL_ANNOTATION` | no | `git`, `image` | Annotation name associated with the Build from which GIT repository URL is used to calculate commit time | `io.openshift.build.source-location` |
-| `COMMIT_DATE_ANNOTATION` | no | `image` | Annotation name associated with the Image from which commit time is taken. | `io.openshift.build.commit.date` |
-| `COMMIT_DATE_FORMAT` | no | `image` | Format in `1989 C standard` to convert time and date found in the Docker Label `io.openshift.build.commit.date` or annotation for the Image | `%a %b %d %H:%M:%S %Y %z` |
+| Variable                     | Required | Supported provider | Explanation                                                                                                                                                              | Default Value                                                             |
+|------------------------------|----------|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| `PROVIDER`                   | no       |                    | Provider from which commit date is taken. `git` or `image`                                                                                                               |                                                                           |
+| `API_USER`                   | yes      | `git`              | User's github username                                                                                                                                                   | unset                                                                     |
+| `TOKEN`                      | yes      | `git`              | User's Github API Token                                                                                                                                                  | unset                                                                     |
+| `GIT_API`                    | no       | `git`              | GitHub, Gitea or Azure DevOps API FQDN. This allows the override for Enterprise users. Currently only applicable to `github`, `gitea` and `azure-devops` provider types. | `api.github.com`, or `https://try.gitea.io`. No default for Azure DevOps. |
+| `GIT_PROVIDER`               | no       | `git`              | Set Git provider type. Can be `github`, `bitbucket`, `gitea`, `azure-devops` or `gitlab`                                                                                 | `github`                                                                  |
+| `LOG_LEVEL`                  | no       | `git`, `image`     | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`                                                                                                            | `INFO`                                                                    |
+| `APP_LABEL`                  | no       | `git`, `image`     | Changes the label key used to identify applications                                                                                                                      | `app.kubernetes.io/name`                                                  |
+| `NAMESPACES`                 | no       | `git`              | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci`                                                                     | unset; scans all namespaces                                               |
+| `PELORUS_DEFAULT_KEYWORD`    | no       | `git`, `image`     | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used                                                        | `default`                                                                 |
+| `COMMIT_HASH_ANNOTATION`     | no       | `git`, `image`     | Annotation name associated with the Build from which hash is used to calculate commit time                                                                               | `io.openshift.build.commit.id`                                            |
+| `COMMIT_REPO_URL_ANNOTATION` | no       | `git`, `image`     | Annotation name associated with the Build from which GIT repository URL is used to calculate commit time                                                                 | `io.openshift.build.source-location`                                      |
+| `COMMIT_DATE_ANNOTATION`     | no       | `image`            | Annotation name associated with the Image from which commit time is taken.                                                                                               | `io.openshift.build.commit.date`                                          |
+| `COMMIT_DATE_FORMAT`         | no       | `image`            | Format in `1989 C standard` to convert time and date found in the Docker Label `io.openshift.build.commit.date` or annotation for the Image                              | `%a %b %d %H:%M:%S %Y %z`                                                 |
 
 ### Deploy Time Exporter
 
@@ -656,13 +712,13 @@ exporters:
 
 This exporter provides several configuration options, passed via `pelorus-config` and `deploytime-config` variables. User may define own ConfigMaps and pass to the committime exporter in a similar way.
 
-| Variable | Required | Explanation | Default Value |
-|---|---|---|---|
-| `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `APP_LABEL` | no | Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
-| `PROD_LABEL` | no | Changes the label key used to identify namespaces that are considered production environments. | unset; matches all namespaces |
-| `NAMESPACES` | no | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci` | unset; scans all namespaces |
-| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
+| Variable                  | Required | Explanation                                                                                                       | Default Value                 |
+|---------------------------|----------|-------------------------------------------------------------------------------------------------------------------|-------------------------------|
+| `LOG_LEVEL`               | no       | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`                                                     | `INFO`                        |
+| `APP_LABEL`               | no       | Changes the label key used to identify applications                                                               | `app.kubernetes.io/name`      |
+| `PROD_LABEL`              | no       | Changes the label key used to identify namespaces that are considered production environments.                    | unset; matches all namespaces |
+| `NAMESPACES`              | no       | Restricts the set of namespaces from which metrics will be collected. ex: `myapp-ns-dev,otherapp-ci`              | unset; scans all namespaces   |
+| `PELORUS_DEFAULT_KEYWORD` | no       | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default`                     |
 
 ### Failure Time Exporter
 
@@ -709,19 +765,19 @@ exporters:
 #### <a id="failureconfigmap"></a>ConfigMap Data Values
 This exporter provides several configuration options, passed via `pelorus-config` and `failuretime-config` variables. User may define own ConfigMaps and pass to the committime exporter in a similar way.
 
-| Variable | Required | Explanation | Default Value |
-|---|---|---|---|
-| `PROVIDER` | no | Set the type of failure provider. One of `jira`, `github`, `servicenow` | `jira` |
-| `LOG_LEVEL` | no | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `SERVER` | yes | URL to the Jira or ServiceNowServer  | unset  |
-| `API_USER` | yes | Tracker Username | unset |
-| `TOKEN` | yes | User's API Token | unset |
-| `APP_LABEL` | no | Used in GitHub and JIRA only. Changes the label key used to identify applications  | `app.kubernetes.io/name`  |
-| `APP_FIELD` | no | Required for ServiceNow, field used for the Application label. ex: "u_appName" | 'u_application' |
-| `PROJECTS` | no | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2`. Value is ignored if `JIRA_JQL_SEARCH_QUERY` is defined. | unset |
-| `PELORUS_DEFAULT_KEYWORD` | no | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used | `default` |
-| `JIRA_JQL_SEARCH_QUERY` | no | Used for Jira Exporter to define custom JQL query to gather list issues. Ex: `type in ("Bug") AND priority in ("Highest","Medium") AND project in ("Project_1","Project_2")` | unset |
-| `JIRA_RESOLVED_STATUS` | no | Used for Jira Exporter to define list Issue states that indicates whether issue is considered resolved. Comma separated string. ex: `Done,Closed,Resolved,Fixed` | unset |
+| Variable                  | Required | Explanation                                                                                                                                                                        | Default Value            |
+|---------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------|
+| `PROVIDER`                | no       | Set the type of failure provider. One of `jira`, `github`, `servicenow`                                                                                                            | `jira`                   |
+| `LOG_LEVEL`               | no       | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`                                                                                                                      | `INFO`                   |
+| `SERVER`                  | yes      | URL to the Jira or ServiceNowServer                                                                                                                                                | unset                    |
+| `API_USER`                | yes      | Tracker Username                                                                                                                                                                   | unset                    |
+| `TOKEN`                   | yes      | User's API Token                                                                                                                                                                   | unset                    |
+| `APP_LABEL`               | no       | Used in GitHub and JIRA only. Changes the label key used to identify applications                                                                                                  | `app.kubernetes.io/name` |
+| `APP_FIELD`               | no       | Required for ServiceNow, field used for the Application label. ex: "u_appName"                                                                                                     | 'u_application'          |
+| `PROJECTS`                | no       | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2`. Value is ignored if `JIRA_JQL_SEARCH_QUERY` is defined. | unset                    |
+| `PELORUS_DEFAULT_KEYWORD` | no       | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used                                                                  | `default`                |
+| `JIRA_JQL_SEARCH_QUERY`   | no       | Used for Jira Exporter to define custom JQL query to gather list issues. Ex: `type in ("Bug") AND priority in ("Highest","Medium") AND project in ("Project_1","Project_2")`       | unset                    |
+| `JIRA_RESOLVED_STATUS`    | no       | Used for Jira Exporter to define list Issue states that indicates whether issue is considered resolved. Comma separated string. ex: `Done,Closed,Resolved,Fixed`                   | unset                    |
 
 ### Github failure exporter details
 

@@ -27,6 +27,8 @@ from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
+    session: requests.Session
+
     def __init__(self, kube_client, username, token, namespaces, apps):
         super().__init__(
             kube_client,
@@ -37,9 +39,8 @@ class GitLabCommitCollector(AbstractCommitCollector):
             "GitLab",
             "%Y-%m-%dT%H:%M:%S.%f%z",
         )
-        set_up_requests_certs()
         self.session = requests.Session()
-        self.session = set_up_requests_certs()
+        self.session.verify = set_up_requests_certs()
 
     def _connect_to_gitlab(self, metric) -> gitlab.Gitlab:
         """Method to connect to Gitlab instance."""

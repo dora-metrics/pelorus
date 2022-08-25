@@ -9,9 +9,6 @@ signed by one of the `certifi`-trusted roots.
 
 Giving custom certificates to `requests` means it _overrides_ checking certifi,
 so we have to combine them ourselves.
-
-Because we can't control third-party libraries that wrap `requests`,
-we'll create our own combined file, and set the environment variable to point to it.
 """
 import atexit
 import logging
@@ -19,19 +16,20 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Iterable, Union
+from typing import Optional, Union
 
 import certifi
-from attrs import field, frozen
 
-from pelorus.config import load_and_log
-from pelorus.config.converters import comma_separated
+DEFAULT_CERT_DIR = Path("/etc/pelorus/custom_certs")
 
 
 # TODO: validate and/or automate making sure the file is PEM versus DER?
-def _combine_certificates(custom_cert_paths: Iterable[Union[str, Path]]) -> str:
+# TODO: what if the certs are missing trailing newlines? Will they still work?
+def _combine_certificates(dir_to_check: Path = DEFAULT_CERT_DIR) -> str:
     """
-    Combines the certificates at the given paths with the certificates from `certifi`.
+    Combines the certificates with the certificates from `certifi`.
+    All certificates ending in `.pem` under each directory under `dir_to_check`
+    is combined (e.g. `dir_to_check/*/*.pem`).
     Returns the path of the combined file.
     """
     target_fd, target_path = tempfile.mkstemp(suffix=".pem", prefix="custom-certs")
@@ -40,8 +38,11 @@ def _combine_certificates(custom_cert_paths: Iterable[Union[str, Path]]) -> str:
         with open(certifi.where(), "rb") as source:
             shutil.copyfileobj(source, target)
 
-        for source_path in custom_cert_paths:
-            with open(source_path, "rb") as source:
+        for source_path in dir_to_check.glob("*/*.pem"):
+            logging.info("Combining custom certificate file %s", source_path)
+
+            with source_path.open("rb") as source:
+                target.write(f"# custom cert from {source_path}\n".encode())
                 shutil.copyfileobj(source, target)
 
     logging.debug("Combined certificate bundle created at %s", target_path)
@@ -55,30 +56,7 @@ def _register_cleanup(path: str):
     atexit.register(os.remove, path)
 
 
-@frozen
-class RequestsCertificatesConfig:
-    """
-    Configuration for adding custom certificates
-    for requests-based exporters.
-
-    May expand to other uses in the future.
-    """
-
-    requests_custom_pem_cert_files: set[str] = field(
-        factory=set, converter=comma_separated(set)
-    )
-    """
-    A comma-separated list of paths to PEM-encoded certs.
-    This verbose name is used to draw attention to the fact(s) that:
-    - it is currently for requests-based exporters only.
-    - it is looking for _file paths_, not the entire certificate itself.
-    - the certs must be PEM encoded, not DER encoded.
-    """
-
-
-def set_up_requests_certs(
-    verify: Union[bool, str, None] = None
-) -> Union[bool, str, None]:
+def set_up_requests_certs(verify: Optional[bool] = None) -> Union[bool, str]:
     """
     Set up custom certificates based on the way requests is configured.
 
@@ -92,33 +70,25 @@ def set_up_requests_certs(
     This should only be called once in the program's lifetime.
     We'll have to revisit this if there comes a use case for multiple Sessions.
 
-    If `verify` is set to a value that `requests` would use to check certificates
-    (anything but False), then this function will combine the certifi certs
-    and the custom certs given:
-
-    - the certificates listed in the appropriate env vars (see RequestsCertificatesConfig)
-    - the certificate file specified as an argument (if given a string)
+    If `verify` is set to `True` or `None`, then this function will combine
+    the certifi certs and the custom certs under `/etc/pelorus/custom_certs/*/*.pem`.
 
     It will combine them into a temporary file, the path of which is returned.
     It will also register that file for removal at program exit.
 
-    If given `True` or `None` and no certs are specified in the above env vars,
-    that value is passed along, and no custom cert handling is performed.
-    If given `False`, that is returned.
+    If `verify` is `False`, `False` is returned for ease of use with the above example.
     """
     if verify is False:
+        logging.warn(
+            "Disabling TLS verification. Custom certificates are now supported, consider using them: "
+            "https://pelorus.readthedocs.io/en/latest/Configuration/index.html#custom-certificates"
+        )
         return False
 
-    files = load_and_log(RequestsCertificatesConfig).requests_custom_pem_cert_files
+    file = _combine_certificates()
+    _register_cleanup(file)
 
-    if isinstance(verify, str):
-        files.add(verify)
-
-    if files:
-        verify = _combine_certificates(files)
-        _register_cleanup(verify)
-
-    return verify
+    return file
 
 
 __all__ = ["set_up_requests_certs"]
