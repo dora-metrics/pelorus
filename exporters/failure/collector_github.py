@@ -75,6 +75,7 @@ class GithubFailureCollector(AbstractFailureCollector):
         except Exception:
             logging.warning("github username not found")
             raise
+        logging.info(f"Bug Label: " + pelorus.get_github_issue_label())
 
     def _get_github_user(self) -> str:
         # login and get username
@@ -124,7 +125,7 @@ class GithubFailureCollector(AbstractFailureCollector):
             for issue in all_issues:
                 is_bug = False
                 labels = issue["labels"]
-                is_bug = any(label for label in labels if "bug" in label["name"])
+                is_bug = any(label for label in labels if pelorus.get_github_issue_label() in label["name"])
                 logging.debug(
                     "Found issue opened: {}, {}: {}".format(
                         issue["created_at"], issue["number"], issue["title"]

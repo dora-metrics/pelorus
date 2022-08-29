@@ -20,6 +20,7 @@ DEFAULT_TLS_VERIFY = True
 DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = "unknown"
 DEFAULT_TRACKER_APP_FIELD = "u_application"
+DEFAULT_GITHUB_ISSUE_LABEL = "bug"
 
 
 def _print_version():
@@ -110,6 +111,8 @@ def get_app_label():
 def get_prod_label():
     return utils.get_env_var("PROD_LABEL", DEFAULT_PROD_LABEL)
 
+def get_github_issue_label():
+    return utils.get_env_var("GITHUB_ISSUE_LABEL", DEFAULT_GITHUB_ISSUE_LABEL)
 
 def missing_configs(vars):
     missing_configs = False
@@ -129,6 +132,9 @@ def upgrade_legacy_vars():
     api_user = utils.get_env_var("API_USER")
     github_user = utils.get_env_var("GITHUB_USER")
     git_username = utils.get_env_var("GIT_USER")
+
+    github_issue_label = utils.get_env_var("GITHUB_ISSUE_LABEL", 
+        DEFAULT_GITHUB_ISSUE_LABEL)
 
     assigned_user = api_user or git_username or github_user
 
