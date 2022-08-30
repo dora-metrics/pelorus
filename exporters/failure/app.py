@@ -76,6 +76,7 @@ if __name__ == "__main__":
 
     logging.info("Server: " + collector.server)
     logging.info(f"User: {collector.user}")
+    logging.info("APP_LABEL: " + pelorus.get_app_label())
     start_http_server(8080)
 
     REGISTRY.register(collector)

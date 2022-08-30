@@ -7,10 +7,11 @@ metadata:
   name: failuretime-config
   namespace: pelorus
 data:
-  PROVIDER: "default"    # jira  |  jira, github, servicenow
-  SERVER:                #       |  URL to the Jira or ServiceNowServer, can be overriden by env_from_secrets
-  API_USER:                  #       |  Tracker Username, can be overriden by env_from_secrets
-  TOKEN:                 #       |  User's API Token, can be overriden by env_from_secrets
+  PROVIDER: "default"             # jira  |  jira, github, servicenow
+  SERVER:                         #       |  URL to the Jira or ServiceNowServer, can be overriden by env_from_secrets
+  API_USER:                       #       |  Tracker Username, can be overriden by env_from_secrets
+  TOKEN:                          #       |  User's API Token, can be overriden by env_from_secrets
+  GITHUB_ISSUE_LABEL: "default"   # bug   |  bug  |  github default label for an issue marked as a bug.
   APP_FIELD: "default"   # u_application  | Required for ServiceNow,  used for the Application label. ex: "u_appName"
   PROJECTS:
 
