@@ -137,7 +137,7 @@ class ImageCommitCollector(AbstractCommitCollector):
                 COMMIT_DATE_ANNOTATION_ENV,
                 CommitMetric._ANNOTATION_MAPPIG.get("commit_time"),
             )
-            commit_time = metric.annotations.get(commit_time_annotation)
+            commit_time = metric.annotations.get(commit_time_annotation).strip()
             if commit_time:
                 metric.commit_time = commit_time
                 logging.debug(

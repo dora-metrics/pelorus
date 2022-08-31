@@ -63,16 +63,22 @@ objects:
           storage: 500Mi
 
   - kind: Task
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     metadata:
       name: debug
       namespace: ${NAMESPACE}
+      description: collect git repo debug information 
     spec:
       # notes: each task specifies the workspace name
       # the same pvc is used, only the mounted directory changes based on the name
       # in this case "debug"
       workspaces:
         - name: debug
+      results: 
+        - name: list-files
+          description: lists the repos files
+        - name: commit-time
+          description: get the time of the last commit
       steps:
         - name: list-workspace-files
           image: ubi9/toolbox
@@ -82,6 +88,17 @@ objects:
             cd /workspace/debug 
             git remote -vv 
             git log -n 1
+        - name: time-last-commit
+          image: ubi9/toolbox
+          script: |
+            set -ex
+            find /workspace
+            cd /workspace/debug 
+            git log -1 --format=%cd > "$(results.commit-time.path)"
+        - name: debug-time-last-commit
+          image: ubi9/toolbox
+          script: |
+            cat "$(results.commit-time.path)"
 
   - kind: Pipeline
     apiVersion: tekton.dev/v1beta1
@@ -179,6 +196,7 @@ objects:
                 oc label image "$(tasks.builds2i.results.IMAGE_DIGEST)" app.kubernetes.io/name=basic-python-tekton
                 oc annotate image "$(tasks.builds2i.results.IMAGE_DIGEST)" io.openshift.build.commit.id="$(tasks.checkout.results.commit)"
                 oc annotate image "$(tasks.builds2i.results.IMAGE_DIGEST)" io.openshift.build.source-location="$(tasks.checkout.results.url)"
+                oc annotate image "$(tasks.builds2i.results.IMAGE_DIGEST)" io.openshift.build.commit.date="$(tasks.listfiles.results.commit-time)" 
           runAfter: [builds2i]
           taskRef:
             kind: ClusterTask
