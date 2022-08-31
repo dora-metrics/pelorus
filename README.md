@@ -35,3 +35,6 @@ If you are interested in contributing to the Pelorus project, please review our 
 ## Statement of Support
 
 Our support policy can be found in the [Upstream Support statement](docs/UpstreamSupport.md)
+
+## Code of Conduct
+Refer to Konveyor's Code of Conduct [here](https://github.com/konveyor/community/blob/main/CODE_OF_CONDUCT.md).
