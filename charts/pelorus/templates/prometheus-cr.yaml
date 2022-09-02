@@ -7,8 +7,8 @@ metadata:
 spec:
   {{- if .Values.bucket_access_point }}
   thanos:
-    baseImage: quay.io/thanos/thanos
-    version: v0.8.1
+    image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.28.0" }}
+    version: {{ .Values.thanos_version | default "v0.28.0" }}
     objectStorageConfig:
       key: thanos.yaml
       name: thanos-objstore-config
