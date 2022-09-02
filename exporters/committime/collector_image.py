@@ -139,7 +139,7 @@ class ImageCommitCollector(AbstractCommitCollector):
             )
             commit_time = metric.annotations.get(commit_time_annotation)
             if commit_time:
-                metric.commit_time = commit_time
+                metric.commit_time = commit_time.strip()
                 logging.debug(
                     "Commit time for image %s provided by '%s' annotation: %s",
                     metric.image_hash,
