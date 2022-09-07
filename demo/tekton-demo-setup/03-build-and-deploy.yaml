@@ -137,10 +137,6 @@ objects:
         - name: checkout
           runAfter:
             - import-build-image
-          when:
-            - input: "$(params.BUILD_TYPE)"
-              operator: notin
-              values: ["buildconfig"]
           taskRef:
             name: git-clone
             kind: ClusterTask
@@ -153,10 +149,6 @@ objects:
             - name: output
               workspace: repo
         - name: listfiles
-          when:
-            - input: "$(params.BUILD_TYPE)"
-              operator: notin
-              values: ["buildconfig"]
           taskRef:
             name: debug
             kind: Task
@@ -210,10 +202,11 @@ objects:
           params:
             - name: SCRIPT
               value: |
+                oc patch bc/basic-python-tekton  -p '{"spec":{"source":{"git":{"uri": "$(tasks.checkout.results.url)"}}}}'
                 oc start-build basic-python-tekton --wait
             - name: VERSION
               value: latest
-          runAfter: [import-build-image]
+          runAfter: [listfiles]
           taskRef:
             kind: ClusterTask
             name: openshift-client
