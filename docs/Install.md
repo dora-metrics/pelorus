@@ -50,6 +50,32 @@ You may additionally want to enabled other features for the core stack. Read on 
 
 See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
 
+### Configure Prometheus Persistent Volume (Recommended)
+
+Unlike ephemeral volume that have a lifetime of a pod, persistent volume allows to withstand container restarts or crashes making Prometheus data resilient to such situations.
+Pelorus chart allows to use underlying [Prometheus Operator Storage](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md#storage-provisioning-on-aws) capabilities by using prerequisite Kubernetes [`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/).
+
+It is recommended to use Prometheus Persistent Volume together with the [Long Term Storage](#configure-long-term-storage-recommended).
+
+To install or upgrade helm chart with PVC that uses default StorageClass and default 2Gi capacity, use one additional field in the `values.yaml` file:
+
+```yaml
+prometheus_storage: true
+# prometheus_storage_pvc_capacity: "<PVC requested volume capacity>" # Optional, default 2Gi
+# prometheus_storage_pvc_storageclass: "<your storage class name>"   # Optional, default "gp2"
+```
+
+Then run `helm upgrade` with updated `values.yaml` configuration:
+
+```shell
+helm upgrade pelorus charts/pelorus --namespace pelorus --values values.yaml
+```
+
+To ensure PVC were properly created and Bound to the PV:
+```shell
+oc get pvc --namespace pelorus
+```
+
 ### Configure Long Term Storage (Recommended)
 
 The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for NooBaa with the local s3 service name:
@@ -72,7 +98,7 @@ thanos_bucket_name: <bucket name here>
 Then run `helm upgrade` with updated `values.yaml` configuration:
 
 ```
-helm upgrade pelorus charts/deploy --namespace pelorus --values values.yaml
+helm upgrade pelorus charts/pelorus --namespace pelorus --values values.yaml
 ```
 
 If you don't have an object storage provider, we recommend [NooBaa](https://www.noobaa.io/) as a free, open source option. You can follow our [NooBaa quickstart](Noobaa.md) to host an instance on OpenShift and configure Pelorus to use it.
@@ -83,13 +109,17 @@ By default, this tool will pull in data from the cluster in which it is running.
 
 #### Configure Production Cluster.
 
-The produciton configuration example with one deploytime exporter, which uses AWS S3 bucket and tracks deployments to production:
+The produciton configuration example with one deploytime exporter, which uses AWS S3 bucket and AWS volume for Prometheus and tracks deployments to production:
 
 ```
 bucket_access_point: s3.us-east-2.amazonaws.com
 bucket_access_key: <your access key>
 bucket_secret_access_key: <your secret access key>
-thanos_bucket_name: <bucket name here>```
+thanos_bucket_name: <bucket name here>
+
+prometheus_storage: true
+prometheus_storage_pvc_capacity: 20Gi
+prometheus_storage_pvc_storageclass: "gp2"
 
 deployment:
   labels:
@@ -111,6 +141,14 @@ exporters:
 
 Cleaning up Pelorus is very simple.
 
-    helm uninstall pelorus --namespace pelorus
-    helm uninstall operators --namespace pelorus
+```shell
+helm uninstall pelorus --namespace pelorus
+helm uninstall operators --namespace pelorus
 
+# If Pelorus was deployed with PVCs, you may want to delete them,
+# because helm uninstall will not remove PVCs
+oc get pvc -n pelorus
+oc delete pvc --namespace pelorus \
+    prometheus-prometheus-pelorus-db-prometheus-prometheus-pelorus-0 \
+    prometheus-prometheus-pelorus-db-prometheus-prometheus-pelorus-1
+```

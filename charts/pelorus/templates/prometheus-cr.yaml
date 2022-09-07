@@ -5,6 +5,18 @@ metadata:
   labels:
     prometheus: prometheus-pelorus
 spec:
+  {{- if eq (.Values.prometheus_storage | toString) "true" }}
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.prometheus_storage_pvc_storageclass }}
+        storageClassName: {{ .Values.prometheus_storage_pvc_storageclass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.prometheus_storage_pvc_capacity | default "2Gi" }}
+  {{- end }}
   {{- if .Values.bucket_access_point }}
   thanos:
     image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.28.0" }}
@@ -74,5 +86,4 @@ spec:
       readOnly: true
       mountPath: /etc/prometheus/configmaps/cluster-ca-bundle
 {{- end }}
-
 
