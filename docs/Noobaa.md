@@ -107,13 +107,13 @@ noobaa bucket status thanos --namespace pelorus
 
 To update our Pelorus stack, follow the instructions provided in the [Long Term Storage](Install.md#configure-long-term-storage-recommended).
 
-Ensure that `<s3 access key>`, `<s3 secred access key>` and `<bucket name>` are used from the [Deploy NooBaa
-](#deploy-noobaa) step and `s3.noobaa.svc` as bucket access point as in example:
+Ensure that `<s3 access key>`, `<s3 secred access key>` and the `<bucket name>` are used from the [Deploy NooBaa
+](#deploy-noobaa) step and `s3.pelorus.svc:443`, which is an `S3 InternalDNS Address` from the `noobaa status --namespace pelorus` command, as bucket access point as in example:
 
 ```yaml
 # Thanos / S3 Storage with noobaa
 thanos_bucket_name: thanos
-bucket_access_point: s3.noobaa.svc
+bucket_access_point: s3.pelorus.svc:443
 bucket_access_key: <s3 access key>
 bucket_secret_access_key: <s3 secred access key>
 

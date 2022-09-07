@@ -55,7 +55,7 @@ See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all 
 The Pelorus chart supports deploying a thanos instance for long term storage.  It can use any S3 bucket provider. The following is an example of configuring a values.yaml file for NooBaa with the local s3 service name:
 
 ```
-bucket_access_point: s3.noobaa.svc
+bucket_access_point: s3.pelorus.svc:443
 bucket_access_key: <your access key>
 bucket_secret_access_key: <your secret access key>
 ```
@@ -63,7 +63,7 @@ bucket_secret_access_key: <your secret access key>
 The default bucket name is thanos.  It can be overriden by specifying an additional value for the bucket name as in:
 
 ```
-bucket_access_point: s3.noobaa.svc
+bucket_access_point: s3.pelorus.svc:443
 bucket_access_key: <your access key>
 bucket_secret_access_key: <your secret access key>
 thanos_bucket_name: <bucket name here>

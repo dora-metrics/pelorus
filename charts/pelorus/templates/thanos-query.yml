@@ -35,7 +35,7 @@ spec:
   {{- end }}
       containers:
       - name: thanos-query
-        image: quay.io/thanos/thanos:v0.27.0
+        image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.28.0" }}
         args:
         - "query"
         - "--log.level=info"
