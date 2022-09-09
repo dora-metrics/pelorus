@@ -17,10 +17,10 @@ mkdocs
 # Makefile uses those in static code analysis - linting and formatting
 black
 isort
-pylava
+pylama[toml] >= 8.4.0
 
-# Issue #584
-pyflakes <= 2.4.0
+# # Issue #584
+# pyflakes <= 2.4.0
 
 # Required by `ct lint` command
 yamale
