@@ -10,3 +10,14 @@ markers = [
     "mockoon: tests that should be run with mockoon running"
 ]
 log_cli = true
+
+[tool.pylama]
+paths = "exporters"
+skip = "exporters/.eggs/*"
+
+[tool.pylama.linter.pycodestyle]
+max_line_length = 120
+
+[[tool.pylama.files]]
+path = "exporters/tests/*"
+ignore= "W0401"
