@@ -29,7 +29,7 @@ jobs:
         id: build-exporter
         uses: redhat-actions/s2i-build@v2
         with:
-          image: 'committime-exporter'
+          image: 'pelorus-committime-exporter'
           path_context: 'exporters'
           builder_image: ${{ env.builder_image }}
           tags: ${{ env.latesttag }} ${{ github.sha }}
@@ -57,7 +57,7 @@ jobs:
         id: build-exporter
         uses: redhat-actions/s2i-build@v2
         with:
-          image: 'deploytime-exporter'
+          image: 'pelorus-deploytime-exporter'
           path_context: 'exporters'
           builder_image: ${{ env.builder_image }}
           tags: ${{ env.latesttag }} ${{ github.sha }}
@@ -86,7 +86,36 @@ jobs:
         id: build-exporter
         uses: redhat-actions/s2i-build@v2
         with:
-          image: 'failure-exporter'
+          image: 'pelorus-failure-exporter'
+          path_context: 'exporters'
+          builder_image: ${{ env.builder_image }}
+          tags: ${{ env.latesttag }} ${{ github.sha }}
+          log_level: ${{ env.s2i_log_level }}
+
+
+      # Push Image to Quay registry
+      - name: Push To Quay Action
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-exporter.outputs.image }}
+          tags: ${{ steps.build-exporter.outputs.tags }}
+          registry: ${{ env.imageregistry }}/${{ env.imagenamespace }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+
+  build-releasetime:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Setup S2i and Build container image
+      - name: Setup and Build
+        id: releasetime-exporter
+        uses: redhat-actions/s2i-build@v2
+        with:
+          image: 'pelorus-releasetime-exporter'
           path_context: 'exporters'
           builder_image: ${{ env.builder_image }}
           tags: ${{ env.latesttag }} ${{ github.sha }}

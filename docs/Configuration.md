@@ -93,9 +93,9 @@ Each exporter can be deployed from the pre-built images or from the source code 
 
 If not defined specifically, exporters are using pre-built container images with the `stable` tag from the following sources:
 
-  * Quay repository for the [committime-exporter](https://quay.io/repository/pelorus/committime-exporter)
-  * Quay repository for the [failure-exporter](https://quay.io/repository/pelorus/failure-exporter)
-  * Quay repository for the [deploytime-exporter](https://quay.io/repository/pelorus/deploytime-exporter)
+  * Quay repository for the [committime-exporter](https://quay.io/repository/migtools/pelorus-committime-exporter)
+  * Quay repository for the [failure-exporter](https://quay.io/repository/migtools/pelorus-failure-exporter)
+  * Quay repository for the [deploytime-exporter](https://quay.io/repository/migtools/pelorus-deploytime-exporter)
 
 #### Pre-built Quay images
 
