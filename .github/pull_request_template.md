@@ -2,9 +2,9 @@
 
 ## Linked Issues?
 
-resolves #<issue number> <-- Use this if merging should auto-close an issue
+resolves #<issue number>
 
-related to #<issue number> <-- Use this if it shouldn't
+related to #<issue number>
 
 ## Testing Instructions
 

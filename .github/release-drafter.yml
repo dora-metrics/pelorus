@@ -4,14 +4,18 @@ categories:
   - title: '🚀 Features'
     labels:
       - 'feature'
+      - 'kind/feature'
   - title: '🐛 Bug Fixes'
     labels:
+      - 'kind/bug'
       - 'bug'
       - 'fix'
   - title: '🛠️ Misc. Improvements'
     label: 'maintenance'
   - title: '📖 Documentation'
-    label: 'docs'
+    labels:
+      - 'docs'
+      - 'kind/documentation'
   - title: '🔡 Other changes'
   - title: '📦 Operator Updates'
     label: 'compatibility'
