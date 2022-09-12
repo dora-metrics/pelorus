@@ -126,6 +126,8 @@ ENABLE_FAIL_EXP=false
 ENABLE_GITLAB_COM_EXP=false
 ENABLE_GITEA_COM_EXP=false
 ENABLE_BITBUCKET_COM_EXP=false
+ENABLE_JIRA_FAIL_EXP=false
+ENABLE_JIRA_CUSTOM_FAIL_EXP=false
 
 # Used for cleanup to ensure created binary builds can be safely deleted
 BINARY_BUILDS_NAMESPACES=()
@@ -159,6 +161,8 @@ if [ -n "${enable_exporters}" ]; then
     echo ",$enable_exporters," | grep -q ",gitlab_committime," && ENABLE_GITLAB_COM_EXP=true && echo "Enabling Gitlab committime exporter"
     echo ",$enable_exporters," | grep -q ",gitea_committime," && ENABLE_GITEA_COM_EXP=true && echo "Enabling Gitea committime exporter"
     echo ",$enable_exporters," | grep -q ",bitbucket_committime," && ENABLE_BITBUCKET_COM_EXP=true && echo "Enabling Bitbucket committime exporter"
+    echo ",$enable_exporters," | grep -q ",jira_committime," && ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
+    echo ",$enable_exporters," | grep -q ",jira_custom_committime," && ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
 fi
 
 if [ -z "${demo_branch}" ]; then
@@ -215,6 +219,8 @@ function mksecret_temp() {
     local api_token=$3
     local api_user=$4
 
+# We store values under multiple value names to satisfy different exporter types.
+# e.g. API_USER is used in the failure exporter while USER in commit time
 cat <<EOF >> "${TMP_FILE}"
 apiVersion: v1
 kind: Secret
@@ -229,6 +235,7 @@ EOF
 
     if [[ -n ${api_user} ]]; then
         echo "  USER: $api_user" >> "${TMP_FILE}"
+        echo "  API_USER: $api_user" >> "${TMP_FILE}"
     fi
 
     echo "${TMP_FILE}"
@@ -364,6 +371,38 @@ if [ "${ENABLE_BITBUCKET_COM_EXP}" == true ]; then
     build_uri="https://bitbucket.org/michalpryc/pelorus-bitbucket"
     build_hash="e2c4ef00468dfc10aad1bd2d4c9d470160a7f471"
     "${BINARY_BUILD_SCRIPT}" -n "${build_ns}" -b "${build_ns}-todolist" -u "${build_uri}" -s "${build_hash}"
+fi
+
+# enable JIRA failure exporter
+if [ "${ENABLE_JIRA_FAIL_EXP}" == true ]; then
+    secret_configured=$(create_k8s_secret jira-secret JIRA_TOKEN JIRA_USER)
+    secret_exit=$?
+    echo "${secret_configured}"
+    if [[ $secret_exit != 0 ]]; then
+        exit 1
+    fi
+    # uncomment the jira failure exporter in ci_values.yaml
+    if [[ "$secret_configured" == *true ]]; then
+        sed -i.bak "s/#jira-failure@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus JIRA failure exporter has been enabled"
+    fi
+fi
+
+# enable JIRA with custom query failure exporter
+# Corresponding JIRA card to test against
+# https://pelorustest.atlassian.net/jira/core/projects/FIRST/board?selectedIssue=FIRST-14
+if [ "${ENABLE_JIRA_CUSTOM_FAIL_EXP}" == true ]; then
+    secret_configured=$(create_k8s_secret jira-secret JIRA_TOKEN JIRA_USER)
+    secret_exit=$?
+    echo "${secret_configured}"
+    if [[ $secret_exit != 0 ]]; then
+        exit 1
+    fi
+    # uncomment the jira failure exporter in ci_values.yaml
+    if [[ "$secret_configured" == *true ]]; then
+        sed -i.bak "s/#jira-custom-failure@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus JIRA custom failure exporter has been enabled"
+    fi
 fi
 
 # We do check for the exit status, as we are not really interested in the
