@@ -21,7 +21,7 @@ jobs:
       - name: Tag committime with release version
         uses: tinact/docker.image-retag@1.0.2
         with:
-          image_name: ${{ env.imagenamespace }}/committime-exporter
+          image_name: ${{ env.imagenamespace }}/pelorus-committime-exporter
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ env.releasetag }}
           registry: ${{ env.imageregistry }}
@@ -31,7 +31,7 @@ jobs:
       - name: Tag deploytime with released version
         uses: tinact/docker.image-retag@1.0.2
         with:
-          image_name: ${{ env.imagenamespace }}/deploytime-exporter
+          image_name: ${{ env.imagenamespace }}/pelorus-deploytime-exporter
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ env.releasetag }}
           registry: ${{ env.imageregistry }}
@@ -41,7 +41,17 @@ jobs:
       - name: Tag failure with released version
         uses: tinact/docker.image-retag@1.0.2
         with:
-          image_name: ${{ env.imagenamespace }}/failure-exporter
+          image_name: ${{ env.imagenamespace }}/pelorus-failure-exporter
+          image_old_tag: ${{ github.sha }}
+          image_new_tag: ${{ env.releasetag }}
+          registry: ${{ env.imageregistry }}
+          registry_username: ${{ secrets.QUAY_USERNAME }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Tag failure with released version
+        uses: tinact/docker.image-retag@1.0.2
+        with:
+          image_name: ${{ env.imagenamespace }}/pelorus-releasetime-exporter
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ env.releasetag }}
           registry: ${{ env.imageregistry }}

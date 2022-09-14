@@ -50,4 +50,15 @@ exporters:
 #    env_from_secrets:
 #    - github-secret
 
+# Experimental GitHub releasetime exporter
+#  - app_name: releasetime-exporter
+#    env_from_configmaps:
+#    - pelorus-config
+#    - releasetime-config
+#    env_from_secrets:
+#    - github-secret
+#    extraEnv:
+#    - name: APP_FILE
+#      value: extra/releasetime/app.py
+
 snapshot_schedule: "@monthly"
