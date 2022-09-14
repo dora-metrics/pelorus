@@ -127,7 +127,7 @@ e2e-tests-scenario-1: e2e-tests-dev-env
 
 e2e-tests-scenario-2: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-pelorus-e2e-tests "periodic/different_deployment_methods.yaml"
+	./scripts/run-pelorus-e2e-tests -f "periodic/different_deployment_methods.yaml"
 
 # Integration tests
 ## integration-tests: pytest -rap -m integration
