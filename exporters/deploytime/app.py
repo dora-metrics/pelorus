@@ -208,6 +208,7 @@ def get_replicas(
 
 
 if __name__ == "__main__":
+    pelorus.setup_logging()
     dyn_client = pelorus.utils.get_k8s_client()
 
     namespaces = {

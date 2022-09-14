@@ -55,7 +55,7 @@ def _print_version():
 
 
 # region: logging setup
-def _setup_logging():
+def setup_logging():
     _print_version()
     loglevel = utils.get_env_var("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
     numeric_level = getattr(logging, loglevel, None)
@@ -71,8 +71,6 @@ def _setup_logging():
     root_logger.setLevel(numeric_level)
     print(f"Initializing Logger with LogLevel: {loglevel}")
 
-
-_setup_logging()
 
 
 # endregion
