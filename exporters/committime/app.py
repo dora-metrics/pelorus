@@ -156,6 +156,7 @@ class GitCommittimeConfig:
 
 
 if __name__ == "__main__":
+    pelorus.setup_logging()
     provider_config = load_and_log(CommittimeTypeConfig)
 
     dyn_client = pelorus.utils.get_k8s_client()

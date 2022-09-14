@@ -70,6 +70,7 @@ class TrackerFactory:
 
 
 if __name__ == "__main__":
+    pelorus.setup_logging()
     logging.info("===== Starting Failure Collector =====")
 
     collector = TrackerFactory.getCollector()

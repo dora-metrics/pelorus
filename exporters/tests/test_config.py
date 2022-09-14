@@ -3,6 +3,7 @@ from typing import Optional
 import pytest
 from attrs import define, field
 
+import pelorus
 from pelorus.config import load_and_log
 from pelorus.config.converters import comma_separated
 from pelorus.config.loading import env_vars, no_env_vars
@@ -86,6 +87,8 @@ def test_loading_from_other():
 
 
 def test_logging(caplog: pytest.LogCaptureFixture):
+    pelorus.setup_logging()
+
     @define(kw_only=True)
     class Loggable:
         regular_field: str = field(default="LOG ME 1")
