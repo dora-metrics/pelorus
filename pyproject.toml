@@ -12,7 +12,7 @@ markers = [
 log_cli = true
 
 [tool.pylama]
-paths = "exporters"
+paths = "exporters scripts"
 skip = "exporters/.eggs/*"
 
 [tool.pylama.linter.pycodestyle]

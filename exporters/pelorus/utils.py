@@ -26,11 +26,12 @@ import dataclasses
 import logging
 import os
 import sys
-from typing import Any, Optional, Union, overload
+from typing import Any, Generator, Optional, Union, cast, overload
 
 import requests
 import requests.auth
 from kubernetes import client, config
+from kubernetes.dynamic import Resource, ResourceInstance
 from openshift.dynamic import DynamicClient
 
 import pelorus
@@ -284,3 +285,25 @@ class TokenAuth(requests.auth.AuthBase):
 
 def join_url_path_components(*components: str) -> str:
     return "/".join(c.strip("/") for c in components)
+
+
+def paginate_resource(
+    resource: Resource,
+    query: dict[str, str],
+    # completely arbitrary. Could experiment.
+    limit: int = 50,
+) -> Generator[ResourceInstance, None, None]:
+    """
+    Paginate requests for openshift resources.
+    """
+    client = cast(DynamicClient, resource.client)
+
+    list_ = client.get(resource, **query, limit=limit)
+
+    yield from list_.items
+
+    continue_token = list_.metadata.get("continue")
+
+    while continue_token:
+        list_ = client.get(resource, **query, limit=limit, _continue=continue_token)
+        yield from list_.items
