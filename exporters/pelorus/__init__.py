@@ -72,7 +72,6 @@ def setup_logging():
     print(f"Initializing Logger with LogLevel: {loglevel}")
 
 
-
 # endregion
 
 # A NamespaceSpec lists namespaces to restrict the search to.
