@@ -22,6 +22,7 @@ TMP_DIR_PREFIX="pelorus_tmp_"
 PELORUS_NAMESPACE="pelorus"
 # Used in CI
 PROW_SECRETS_DIR="/var/run/konveyor/pelorus/pelorus-github/"
+PROW_S3_SECRETS_DIR="/var/run/konveyor/pelorus/pelorus-s3amazon/"
 
 # Binary build script
 BINARY_BUILD_SCRIPT="${SCRIPT_DIR}/e2e-tests-templates/build_binary_app"
@@ -105,6 +106,8 @@ function print_help() {
     printf "\t  -d\tpath to virtualenv DIR\n"
     printf "\t  -s\tpath to DIR with secrets files (used in prow CI)\n"
     printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"    
+    printf "\t  -t\tenable Thanos with s3 bucket\n"
+    printf "\t  -c\tpath to DIR with secrets files for s3 bucket\n"
 
     exit 0
 }
@@ -128,11 +131,12 @@ ENABLE_GITEA_COM_EXP=false
 ENABLE_BITBUCKET_COM_EXP=false
 ENABLE_JIRA_FAIL_EXP=false
 ENABLE_JIRA_CUSTOM_FAIL_EXP=false
+ENABLE_THANOS=false
 
 # Used for cleanup to ensure created binary builds can be safely deleted
 BINARY_BUILDS_NAMESPACES=()
 
-while getopts "h?b:d:s:o:f:e:" option; do
+while getopts "h?b:d:s:o:f:e:tc:" option; do
     case "$option" in
     h|\?) print_help;;
     b)    demo_branch=$OPTARG;;
@@ -141,6 +145,8 @@ while getopts "h?b:d:s:o:f:e:" option; do
     d)    venv_dir=$OPTARG;;
     s)    secrets_dir=$OPTARG;;
     e)    enable_exporters=$OPTARG;;
+    t)    ENABLE_THANOS=true;;
+    c)    s3_secrets_dir=$OPTARG;;
     esac
 done
 
@@ -154,6 +160,12 @@ if [ -z "${secrets_dir}" ]; then
     SECRETS_DIR="${PROW_SECRETS_DIR}"
 else
     SECRETS_DIR="${secrets_dir}"
+fi
+
+if [ -z "${s3_secrets_dir}" ]; then
+    S3_SECRETS_DIR="${PROW_S3_SECRETS_DIR}"
+else
+    S3_SECRETS_DIR="${s3_secrets_dir}"
 fi
 
 if [ -n "${enable_exporters}" ]; then
@@ -198,6 +210,68 @@ sed -i.bak "s/your_org/$demo_org/g" "${DWN_DIR}/mongo-persistent.yaml"
 
 # Show what has been modified:
 diff -uNr "${DWN_DIR}/mongo-persistent.yaml" "${DWN_DIR}/mongo-persistent.yaml.bak"
+
+# Used to create Values Helm file for use with deployment
+# that is passed together with other values files as additional
+# --values <path_to_thanos_config> parameter
+#
+# Arguments:
+#    $1 - S3 compatible bucket access point
+#    $2 - S3 compatible bucket name
+#    $3 - S3 compatible bucket access key
+#    $4 - S3 compatible bucket secret access key
+#
+# Return:
+#    path to the temporary Helm file that allows to enable Thanos
+#
+function s3_thanos_tmp() {
+    TMP_FILE=$(TMPDIR="${DWN_DIR}" mktemp -t "XXXXX.thanos.pelorus.yaml")
+    local bucket_access_point=$1
+    local thanos_bucket_name=$2
+    local bucket_access_key=$3
+    local bucket_secret_access_key=$4
+
+cat <<EOF >> "${TMP_FILE}"
+thanos_bucket_name: $thanos_bucket_name
+bucket_access_point: $bucket_access_point
+bucket_access_key: $bucket_access_key
+bucket_secret_access_key: $bucket_secret_access_key
+EOF
+
+    echo "${TMP_FILE}"
+}
+
+function create_s3_thanos_config() {
+    local env_s3_host=$1
+    local env_s3_bucket=$2
+    local env_s3_access_key=$3
+    local env_s3_secret_key=$4
+
+    thanos_config_filepath=""
+    # Either pass everything as env variables or as files inside s3 secret folder
+    if [[ -n ${!env_s3_host} ]] && [[ -n ${!env_s3_bucket} ]] && \
+       [[ -n ${!env_s3_access_key} ]] && [[ -n ${!env_s3_secret_key} ]]; then
+         echo "Getting S3 bucket credentials and access data from the env variables" 1>&2
+         thanos_config_filepath=$( s3_thanos_tmp "${!env_s3_host}" "${!env_s3_bucket}" "${!env_s3_access_key}" "${!env_s3_secret_key}" )
+    elif [ -r "${S3_SECRETS_DIR}/${env_s3_host}" ] && [ -r "${S3_SECRETS_DIR}/${env_s3_bucket}" ] && \
+         [ -r "${S3_SECRETS_DIR}/${env_s3_access_key}" ] && [ -r "${S3_SECRETS_DIR}/${env_s3_secret_key}" ]; then
+         echo "Getting S3 bucket credentials and access data from the ${S3_SECRETS_DIR} folder" 1>&2
+         thanos_config_filepath=$( s3_thanos_tmp "$( cat "${S3_SECRETS_DIR}/${env_s3_host}" )" "$( cat "${S3_SECRETS_DIR}/${env_s3_bucket}" )" \
+                               "$( cat "${S3_SECRETS_DIR}/${env_s3_access_key}" )" "$( cat "${S3_SECRETS_DIR}/${env_s3_secret_key}" )" )
+    else
+        echo "ERROR: Thanos could not be used, due to missing secret values, exiting..." 1>&2
+        echo "${thanos_config_filepath}"
+        exit 1
+    fi
+
+    # Ensure path is set and file is readable
+    if [[ -n "${thanos_config_filepath}" ]] && [ -r "${thanos_config_filepath}" ]; then
+        echo "${thanos_config_filepath}"
+    else
+        echo "ERROR: Thanos config file can not be read, exiting..." 1>&2
+        exit 1
+    fi
+}
 
 # Used to create secret temporary file that is used with oc apply
 # command. This is to ensure API Tokens are hidden from the terminal
@@ -452,8 +526,17 @@ retry 5m 5s ogns prometheus-pelorus
 # Print ci_values.yaml for easy debug
 cat "${DWN_DIR}/ci_values.yaml"
 
+# Thanos and s3 support
+THANOS_HELM_FLAG=""
+if [ "${ENABLE_THANOS}" == true ]; then
+    echo "Enabling Thanos support"
+    thanos_config_file=$(create_s3_thanos_config  s3_host s3_bucket s3_access_key s3_secret_key)
+    THANOS_HELM_FLAG=" --values ${thanos_config_file}"
+    echo "${THANOS_HELM_FLAG}"
+fi
+
 # update exporter values and helm upgrade
-helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml"
+eval helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml" "${THANOS_HELM_FLAG}"
 
 retry 10m 5s owpr deploytime
 retry 10m 5s owpr committime
