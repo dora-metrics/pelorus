@@ -112,7 +112,7 @@ jobs:
 
       # Setup S2i and Build container image
       - name: Setup and Build
-        id: releasetime-exporter
+        id: build-exporter
         uses: redhat-actions/s2i-build@v2
         with:
           image: 'pelorus-releasetime-exporter'
