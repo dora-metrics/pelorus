@@ -561,3 +561,16 @@ if oc get pods -n pelorus | grep -q Crash ; then
     oc get pods -n pelorus
     exit 1
 fi
+
+# Validate Thanos, by querying thanos-query with the known data, 20 years from now should be sufficient and should
+# not be greater then this CI setup ;)
+if [ "${ENABLE_THANOS}" == true ]; then
+    THANOS_QUERY_HOST=$(oc get route thanos-pelorus -n pelorus --no-headers -o custom-columns="HOST:spec.host")
+    echo "Thanos query host: $THANOS_QUERY_HOST"
+    DEPLOY_NO=$(curl -u internal:changeme -k --data-urlencode 'query=count(count_over_time(deploy_timestamp{app="todolist"}[20y]))' "https://${THANOS_QUERY_HOST}/api/v1/query" | jq -r '.data.result[] | [.value]' | grep \" | tr -dc '0-9')
+    echo "Deploy count: $DEPLOY_NO"
+    if [ "$DEPLOY_NO" -lt "3" ]; then
+        echo "Thanos and s3 data is not as expected"
+        exit 1
+    fi
+fi
