@@ -50,6 +50,14 @@ You may additionally want to enabled other features for the core stack. Read on 
 
 See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
 
+### Configure Prometheus Retention
+
+Prometheus is removing data older than 1 year, so if the metric you are interested in happened to be older than 1 year it won't be visible. This is configurable in the `values.yaml` file with the following option:
+
+```yaml
+prometheus_retention: 1y
+```
+
 ### Configure Prometheus Persistent Volume (Recommended)
 
 Unlike ephemeral volume that have a lifetime of a pod, persistent volume allows to withstand container restarts or crashes making Prometheus data resilient to such situations.
