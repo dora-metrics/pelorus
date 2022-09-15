@@ -157,11 +157,11 @@ exporters:
 
 `Build`s must have a commit hash and repository URL associated with them.
 
-The commit hash comes from either the build's `spec.revision.git.commit` (populated in Source to Image builds), or [falls back to the annotation `io.openshift.build.commit.id`](./Configuration.md#annotations-and-local-build-support).
+The commit hash comes from either the build's `spec.revision.git.commit` (populated in Source to Image builds), or falls back to the [annotation](./Configuration.md#annotations-and-local-build-support) `io.openshift.build.commit.id`.
 
-The repository URL comes from either the build's `spec.source.git.uri` (populated in Source to Image builds), or [falls back to the annotation `io.openshift.build.source-location`](./Configuration.md#annotations-and-local-build-support).
+The repository URL comes from either the build's `spec.source.git.uri` (populated in Source to Image builds), or falls back to the [annotation](./Configuration.md#annotations-and-local-build-support) `io.openshift.build.source-location`.
 
-[The commit time exporter(s) must be configured](./Configuration.md#commit-time-exporter) to point to the proper git provider(s).
+The commit time exporter(s) must be [configured](./Configuration.md#commit-time-exporter) to point to the proper git provider(s).
 
 <!-- TODO: info about image exporter -->
 
