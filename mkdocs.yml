@@ -4,6 +4,8 @@ theme: readthedocs
 markdown_extensions:
   - def_list
   - tables
+  - toc:
+      permalink: True
 nav:
   - Introduction:
     - Welcome to Pelorus: index.md
