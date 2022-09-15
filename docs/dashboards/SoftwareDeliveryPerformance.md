@@ -2,6 +2,9 @@
 
 _Software Delivery Performance_ is a measure of an organization's ability to effectively deliver software-based products they have built to their customers. It is comprised of 4 _measures_ that provide a balanced perspective, taking both speed to market and stability measures into account. Tracking _Software Delivery Performance_ over time provides IT organizations with data they can use to make smarter investments in their internal tools and processes to optimize their delivery processes based on the types of products they are delivering. This outcomes provides a bridge between development, operations and leadership, allowing them to better communicate about whether proposed work on infrastructure imrovements or process developments are in line with the overall vision and financial goals of the organization at large.
 
+
+## Measures
+
 ![Software Delivery Performance dashboard](../img/sdp-dashboard.png)
 
 The Pelorus _Software Delivery Performance_ dashboard tracks the four primary measures of software delivery:
@@ -13,7 +16,6 @@ The Pelorus _Software Delivery Performance_ dashboard tracks the four primary me
 
 For more information about Software Delivery Performance, check out the book [Accelerate](https://itrevolution.com/book/accelerate/) by Forsgren, Kim and Humble.
 
-## Measures
 
 ![Exporter relaionship diagram](../img/exporter-relationship-diagram.png)
 

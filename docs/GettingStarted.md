@@ -1,9 +1,27 @@
+# Getting Started
 
-# Installation
+## Basic Concepts
+
+Pelorus presents various [_measures_](../dashboards/SoftwareDeliveryPerformance#measures) to you, such as Lead Time for Change (how long it takes for a commit to wind up in production).
+
+These measures are calculated from various _metrics_.
+For example, the Lead Time for Change measure is calculated as the difference between the time of a deployment including that commit (`deploy_time`), and the time that commit was made (`commit_time`).
+
+These measures are provided using _exporters_, which collect information from various sources.
+For example, the `deploytime` exporter looks for running pods in OpenShift. The `committime` exporter looks for OpenShift Builds, and correlates them with git commit information from various _providers_, such as GitHub or Bitbucket.
+
+### Preparing Your Data
+
+To properly collect various metrics, Pelorus will need to find certain metadata. In common cases, this metadata may already be there! If not, you will need to adjust how these resources are created in OpenShift.
+
+For now, we'll focus on deploy time: to capture deployments, `Pod`s and their `ReplicationController`s must be labeled with the _app name_. This is `app.kubernetes.io/name` by default, but can be [customized](Configuration.md#labels).
+
+
+## Installation
 
 The following will walk through the deployment of Pelorus.
 
-## Prerequisites
+### Prerequisites
 
 Before deploying the tooling, you must have the following prepared
 
@@ -14,7 +32,7 @@ Before deploying the tooling, you must have the following prepared
   * jq
   * git
 
-## Initial Deployment
+### Initial Deployment
 
 Pelorus gets installed via helm charts. The first deploys the operators on which Pelorus depends, the second deploys the core Pelorus stack and the third deploys the exporters that gather the data. By default, the below instructions install into a namespace called `pelorus`, but you can choose any name you wish.
 
@@ -40,9 +58,7 @@ In a few seconds, you will see a number of resourced get created. The above comm
 * The following exporters:
     * Deploy Time
 
-From here, some additional configuration is required in order to deploy other exporters, and make the Pelorus
-
-See the [Configuration Guide](Configuration.md) for more information on exporters.
+From here, some additional [configuration](Configuration.md) and [data preparation](#preparing-your-data-details) is required in order to deploy other exporters.
 
 You may additionally want to enabled other features for the core stack. Read on to understand those options.
 
@@ -107,7 +123,7 @@ If you don't have an object storage provider, we recommend [NooBaa](https://www.
 
 By default, this tool will pull in data from the cluster in which it is running. The tool also supports collecting data across mulitple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket accross clusters. See [Pelorus Multi-Cluster Architecture](Architecture.md) for details. You define exporters for the desired meterics in each of the clusters which metrics will be evaluated.  The main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
 
-#### Configure Production Cluster.
+### Configure Production Cluster
 
 The produciton configuration example with one deploytime exporter, which uses AWS S3 bucket and AWS volume for Prometheus and tracks deployments to production:
 
@@ -135,7 +151,23 @@ exporters:
     - pelorus-config
     - deploytime-config
 ```
+## Preparing Your Data: Details
 
+#### Commit Time
+
+`Build`s must have a commit hash and repository URL associated with them.
+
+The commit hash comes from either the build's `spec.revision.git.commit` (populated in Source to Image builds), or [falls back to the annotation `io.openshift.build.commit.id`](./Configuration.md#annotations-and-local-build-support).
+
+The repository URL comes from either the build's `spec.source.git.uri` (populated in Source to Image builds), or [falls back to the annotation `io.openshift.build.source-location`](./Configuration.md#annotations-and-local-build-support).
+
+[The commit time exporter(s) must be configured](./Configuration.md#commit-time-exporter) to point to the proper git provider(s).
+
+<!-- TODO: info about image exporter -->
+
+#### Failure Time
+
+Metadata from issue trackers is provider-specific. See [Failure Time Exporter Configuration](./Configuration.md#failure-time-exporter) for details.
 
 ## Uninstalling
 
