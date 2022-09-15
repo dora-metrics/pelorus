@@ -15,6 +15,10 @@ import pelorus
 import pelorus.utils
 from pelorus.utils import paginate_resource
 
+DOCS_BASE_URL = "https://pelorus.readthedocs.io/en/stable/"
+DEPLOYTIME_PREPARE_DATA_URL = DOCS_BASE_URL + "GettingStarted#preparing-your-data"
+COMMITTIME_PREPARE_DATA_URL = DOCS_BASE_URL + "GettingStarted#commit-time"
+
 # A NOTE ON TERMINOLOGY:
 # what you might call a "resource" in openshift is called a ResourceInstance by the client.
 # to the client, a Resource is its "type definition".
@@ -197,6 +201,10 @@ class DeploytimeTroubleshootingReport:
     pods_missing_app_label: list[PodId]
     replicators_missing_app_label: dict[ReplicatorId, OwnedPods]
 
+    @property
+    def anything_to_report(self):
+        return self.pods_missing_app_label or self.replicators_missing_app_label
+
     def _print_pods(self):
         if not self.pods_missing_app_label:
             print("No pods were missing the app label", self.app_label)
@@ -216,10 +224,16 @@ class DeploytimeTroubleshootingReport:
         for replicator in self.replicators_missing_app_label:
             print(" ", replicator.kind_, replicator.name)
 
+    def _print_suggestion(self):
+        print(f"Add the label {self.app_label}.")
+        print("See", DEPLOYTIME_PREPARE_DATA_URL)
+
     def print_human_readable(self):
         self._print_pods()
         print()
         self._print_replicators()
+        if self.anything_to_report:
+            self._print_suggestion()
 
     def to_json(self) -> dict:
         pods_missing_label = [pod.name for pod in self.pods_missing_app_label]
@@ -253,6 +267,10 @@ class CommittimeTroubleshootingReport:
 
     builds_missing_app_label: list[BuildId]
 
+    @property
+    def anything_to_report(self):
+        return bool(self.builds_missing_app_label)
+
     def print_human_readable(self):
         if not self.builds_missing_app_label:
             print("No builds were missing the app label", self.app_label)
@@ -261,6 +279,8 @@ class CommittimeTroubleshootingReport:
         print("The following builds were missing the app label", self.app_label)
         for build in self.builds_missing_app_label:
             print(build.name)
+
+        # TODO: app label committime docs?
 
     def to_json(self) -> dict:
         return dict(

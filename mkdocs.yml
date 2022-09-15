@@ -4,16 +4,19 @@ theme: readthedocs
 markdown_extensions:
   - def_list
   - tables
+  - toc:
+      permalink: True
 nav:
   - Introduction:
     - Welcome to Pelorus: index.md
     - Our Philosphy: Philosophy.md
   - Using Pelorus:
+    - Getting Started: GettingStarted.md
     - Architecture: Architecture.md
-    - Installation: Install.md
     - Demo: Demo.md
     - Configuration: Configuration.md
     - NooBaa for Long Term Storage: Noobaa.md
+    - Troubleshooting: Troubleshooting.md
   - Dashboards:
     - Dashboard Summary: Dashboards.md
     - Software Delivery Performance: dashboards/SoftwareDeliveryPerformance.md
