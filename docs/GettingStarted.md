@@ -12,6 +12,8 @@ For example, the `deploytime` exporter looks for running pods in OpenShift. The 
 
 ### Preparing Your Data
 
+<!-- TODO: explain how app names work in the first place -->
+
 To properly collect various metrics, Pelorus will need to find certain metadata. In common cases, this metadata may already be there! If not, you will need to adjust how these resources are created in OpenShift.
 
 For now, we'll focus on deploy time: to capture deployments, `Pod`s and their `ReplicationController`s must be labeled with the _app name_. This is `app.kubernetes.io/name` by default, but can be [customized](Configuration.md#labels).
