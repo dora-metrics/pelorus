@@ -254,7 +254,11 @@ objects:
           params:
             - name: SCRIPT
               value: |
+                printf "Test the basic-python app is running:\n"
                 curl $(oc get route -n basic-python-tekton basic-python-tekton -o=template='http://{{.spec.host}}') 2>&1 | grep "Hello world!" || exit 2
+                printf "\n"
+                printf "Test that Pelorus has found the latest git commit:\n"
+                curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)"
           timeout: 2m
           retries: 3
           taskRef:
