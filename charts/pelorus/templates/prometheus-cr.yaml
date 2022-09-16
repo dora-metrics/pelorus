@@ -26,6 +26,7 @@ spec:
       name: thanos-objstore-config
   {{- end }}
   replicas: 2
+  retention: {{ .Values.prometheus_retention | default "1y" }}
   replicaExternalLabelName: ""
   ruleNamespaceSelector: {}
   ruleSelector: {}

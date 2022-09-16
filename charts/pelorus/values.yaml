@@ -19,6 +19,9 @@ extra_prometheus_hosts:
 ## Persistent storage for Prometheus Operator
 # https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md
 
+# Set Prometheus retention time. Older data values are deleted
+# prometheus_retention: 1y
+
 # Uncomment to use PVC for Prometheus
 # prometheus_storage: true
 
