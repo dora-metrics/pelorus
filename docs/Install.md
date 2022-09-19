@@ -52,10 +52,18 @@ See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all 
 
 ### Configure Prometheus Retention
 
+For detailed information about planning Prometheus storage capacity and configuration options please refer to the [operational aspects](https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects) of the Prometheus documentation.
+
 Prometheus is removing data older than 1 year, so if the metric you are interested in happened to be older than 1 year it won't be visible. This is configurable in the `values.yaml` file with the following option:
 
 ```yaml
 prometheus_retention: 1y
+```
+
+Additionally user have option to configure maximum size of storage to be used by Prometheus. The oldest data will get removed first if over that limit. If the data is within retention time but over retention size it will also be removed:
+
+```yaml
+prometheus_retention_size: 1GB
 ```
 
 ### Configure Prometheus Persistent Volume (Recommended)
