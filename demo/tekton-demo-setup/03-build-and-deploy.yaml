@@ -254,7 +254,23 @@ objects:
           params:
             - name: SCRIPT
               value: |
+                printf "Test the basic-python app is running:\n"
                 curl $(oc get route -n basic-python-tekton basic-python-tekton -o=template='http://{{.spec.host}}') 2>&1 | grep "Hello world!" || exit 2
+                printf "\n"
+                printf "Test that Pelorus has found the latest git commit:\n"
+                printf "Build Type is $(params.BUILD_TYPE)\n"
+                if [[ "$(params.BUILD_TYPE)" == "buildconfig" ]]; then
+                  printf "test buildconfig: requires exporter named committime-exporter \n"
+                  curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)" 
+                fi
+                if [[ "$(params.BUILD_TYPE)" == "binary" ]]; then
+                  printf "test binary: requires exporter named committime-exporter \n"
+                  curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)" 
+                fi
+                if [[ "$(params.BUILD_TYPE)" == "s2i" ]]; then
+                  printf "test s2i:  requires exporter named committime-image-exporter with variable PROVIDER=image \n"
+                  curl $(oc get route -n pelorus committime-image-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)"
+                fi
           timeout: 2m
           retries: 3
           taskRef:

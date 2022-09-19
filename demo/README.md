@@ -18,11 +18,11 @@ Help:
 ./demo-tekton.sh -h
 ```
 
-|Build Type   |Status         |
-|:------------|:--------------|
-| binary      | supported     |
-| buildConfig | supported     | 
-| s2i         | [work in progress](https://github.com/konveyor/pelorus/issues/371)|
+|Build Type   |Status         |Notes                                                |
+|:------------|:--------------|:----------------------------------------------------|
+| binary      | supported     | requires exporter committime-exporter               |
+| buildConfig | supported     | requires exporter committime-exporter               |
+| s2i         | supported     | requires exporter committime-image-exporter with provider=image    |   
 
 ## demo.sh
 
