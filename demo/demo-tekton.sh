@@ -7,12 +7,15 @@ Help()
    # Display Help
    echo "Execute a tekton pipeline with various build types."
    echo
-   echo "Syntax: scriptTemplate [-h|g|b|]"
+   echo "Syntax: scriptTemplate [-h|g|b|n]"
    echo "options:"
    echo "g     the git url"
    echo "r     git branch reference, use this for Pull Requests. e.g. refs/pull/587/head"
    echo "h     Print this Help."
    echo "b     build type [buildconfig, binary, s2i]"
+   echo "n     If set then no human interaction is required for subsequent deployments"
+   echo "t     Time in seconds to sleep between subsequent deployments, default 300 (no human only)"
+   echo "c     Number of deployments, default 1 (no human only)"
    echo
 }
 
@@ -21,9 +24,12 @@ current_branch="$(git symbolic-ref HEAD)"
 current_branch=${current_branch##refs/heads/}
 url="https://github.com/konveyor/pelorus"
 build_type="binary"
+NO_HUMAN=false
+sleep_between=300
+no_deployments=1
 
 # Get the options
-while getopts ":hg:b:r:" option; do
+while getopts ":hg:b:r:nt:c:" option; do
    case $option in
       h) # display Help
          Help
@@ -34,11 +40,23 @@ while getopts ":hg:b:r:" option; do
          current_branch=$OPTARG;;
       b) # Enter the build type 
          build_type=$OPTARG;;
-     \?) # Invalid option
+      n) # No human interaction
+         NO_HUMAN=true;;
+      t) # Sleep between subsequent deployments
+         sleep_between=$OPTARG;;
+      c) # Number of subsequent deployments
+         no_deployments=$OPTARG;;
+\?) # Invalid option
          echo "Error: Invalid option"
          exit;;
    esac
 done
+
+if [[ $(git status --porcelain --untracked-files=no) ]]; then
+  echo "Your local repository contains modified files and can not continue..."
+  git status --porcelain --untracked-files=no
+  exit 1
+fi
 
 echo "============================"
 echo "Executing the basic-python-tekton demo for Pelorus..."
@@ -49,7 +67,6 @@ echo "Git ref: $current_branch"
 echo "Build Type: $build_type"
 echo "============================"
 echo ""
-
 
 all_cmds_found=0
 for cmd in oc tkn; do
@@ -118,28 +135,42 @@ run_pipeline
 
 echo -e "\nWhen ready, page will be available at $route"
 
-while true; do
-   echo ""
-   echo "The pipeline and first run of the demo app has started. When it has finished, you may rerun (with commits) or quit now."
-   echo "1. Rerun with Commit"
-   echo "2. Quit"
-   read -r -p "Type 1 or 2: " -n 1 a
-   echo ""
-   case $a in
-      1* )
-         echo "We've modified this file, time to build and deploy a new version. Times modified: $counter" | tee -a "$python_example_txt"
-         git commit -m "modifying python example, number $counter" -- "$python_example_txt"
-         git push origin "$current_branch"
+if [ "${NO_HUMAN}" == false ]; then
+    while true; do
+       echo ""
+       echo "The pipeline and first run of the demo app has started. When it has finished, you may rerun (with commits) or quit now."
+       echo "1. Rerun with Commit"
+       echo "2. Quit"
+       read -r -p "Type 1 or 2: " -n 1 a
+       echo ""
+       case $a in
+          1* )
+             echo "We've modified this file, time to build and deploy a new version. Times modified: $counter" | tee -a "$python_example_txt"
+             git commit -m "modifying python example, number $counter" -- "$python_example_txt"
+             git push origin "$current_branch"
 
-         run_pipeline
+             run_pipeline
 
-         echo -e "\nWhen ready, page will be available at $route"
+             echo -e "\nWhen ready, page will be available at $route"
 
-         counter=$((counter+1))
-      ;;
+             counter=$((counter+1))
+          ;;
 
-      2* ) exit 0 ;;
-      * ) echo "I'm not sure what $a means, please give 1 or 2" >&2 ;;
-   esac
-done
-
+          2* ) exit 0 ;;
+          * ) echo "I'm not sure what $a means, please give 1 or 2" >&2 ;;
+       esac
+    done
+elif [ "${NO_HUMAN}" == true ]; then
+    while [ $counter -lt "$no_deployments" ]; do
+        echo "We've modified this file, time to build and deploy a new version. Times modified: $counter" | tee -a "$python_example_txt"
+        git commit -m "modifying python example, number $counter" -- "$python_example_txt"
+        git push origin "$current_branch"
+        run_pipeline
+        echo -e "\nWhen ready, page will be available at $route"
+        counter=$((counter+1))
+        # Do not sleep on the last iteration
+        if [ $counter -lt "$no_deployments" ]; then
+            sleep "$sleep_between"
+        fi
+    done
+fi
