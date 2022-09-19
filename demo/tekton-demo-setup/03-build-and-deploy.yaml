@@ -135,6 +135,7 @@ objects:
             kind: ClusterTask
             name: openshift-client
         - name: checkout
+          timeout: "0h1m0s"
           runAfter:
             - import-build-image
           taskRef:
