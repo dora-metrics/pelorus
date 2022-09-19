@@ -26,8 +26,11 @@ spec:
       name: thanos-objstore-config
   {{- end }}
   replicas: 2
-  retention: {{ .Values.prometheus_retention | default "1y" }}
   replicaExternalLabelName: ""
+  retention: {{ .Values.prometheus_retention | default "1y" }}
+  {{- if .Values.prometheus_retention_size }}
+  retentionSize: {{ .Values.prometheus_retention_size }}
+  {{- end }}
   ruleNamespaceSelector: {}
   ruleSelector: {}
   serviceAccountName: pelorus-prometheus
