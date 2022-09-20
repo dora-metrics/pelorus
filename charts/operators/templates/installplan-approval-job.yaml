@@ -20,7 +20,7 @@ spec:
             - |
               export HOME=/tmp/approver
 
-              echo "Approving operator Install096096
+              echo "Approving operator Install
               Plans.  Waiting a few seconds to make sure the InstallPlan gets created first."
               sleep 10
               for subscription in `oc get subscription.operators.coreos.com -o name`
