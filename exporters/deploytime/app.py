@@ -32,43 +32,45 @@ class DeployTimeCollector:
             return []
 
         metrics = generate_metrics(namespaces, self.client)
+
+        deploy_timestamp_metric = GaugeMetricFamily(
+            "deploy_timestamp",
+            "Deployment timestamp",
+            labels=["namespace", "app", "image_sha"],
+        )
+        deployment_active_metric = GaugeMetricFamily(
+            "deployment_active",
+            "Active deployments in cluster",
+            labels=["namespace", "app", "image_sha"],
+        )
+
         for m in metrics:
-            if m.timestamp:
-                logging.info(
-                    "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s"
-                    % (
-                        m.namespace,
-                        m.name,
-                        m.image_sha,
-                        pelorus.convert_date_time_to_timestamp(m.deploy_time),
-                    )
-                )
-                metric = GaugeMetricFamily(
-                    "deploy_timestamp",
-                    "Deployment timestamp",
-                    labels=["namespace", "app", "image_sha"],
-                )
-                metric.add_metric(
-                    [m.namespace, m.name, m.image_sha, m.deploy_time],
-                    pelorus.convert_date_time_to_timestamp(m.deploy_time),
-                    timestamp=pelorus.convert_date_time_to_timestamp(m.deploy_time),
-                )
-                yield (metric)
-            else:
-                logging.info(
-                    "Collected deployment_active{namespace=%s, app=%s, image=%s}"
-                    % (m.namespace, m.name, m.image_sha)
-                )
-                metric_no_timestamp = GaugeMetricFamily(
-                    "deployment_active",
-                    "Active deployments in cluster",
-                    labels=["namespace", "app", "image_sha"],
-                )
-                metric_no_timestamp.add_metric(
-                    [m.namespace, m.name, m.image_sha, m.deploy_time],
-                    pelorus.convert_date_time_to_timestamp(m.deploy_time),
-                )
-                yield (metric_no_timestamp)
+            logging.info(
+                "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
+                m.namespace,
+                m.name,
+                m.image_sha,
+                m.deploy_time_timestamp,
+                m.deploy_time,
+            )
+            deploy_timestamp_metric.add_metric(
+                [m.namespace, m.name, m.image_sha],
+                m.deploy_time_timestamp,
+                timestamp=m.deploy_time_timestamp,
+            )
+            logging.info(
+                "Collected deployment_active{namespace=%s, app=%s, image=%s} %s (%s)",
+                m.namespace,
+                m.name,
+                m.image_sha,
+                m.deploy_time_timestamp,
+                m.deploy_time,
+            )
+            deployment_active_metric.add_metric(
+                [m.namespace, m.name, m.image_sha],
+                m.deploy_time_timestamp,
+            )
+        return (deploy_timestamp_metric, deployment_active_metric)
 
     def get_and_log_namespaces(self) -> set[str]:
         """
@@ -201,18 +203,8 @@ def generate_metrics(
                     labels=rc.metadata.labels,
                     deploy_time=rc.metadata.creationTimestamp,
                     image_sha=sha,
-                    timestamp=True,
-                )
-                metric_no_timestamp = DeployTimeMetric(
-                    name=rc.metadata.labels[pelorus.get_app_label()],
-                    namespace=namespace,
-                    labels=rc.metadata.labels,
-                    deploy_time=rc.metadata.creationTimestamp,
-                    image_sha=sha,
-                    timestamp=False,
                 )
                 yield metric
-                yield metric_no_timestamp
 
 
 def get_replicas(

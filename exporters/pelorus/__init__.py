@@ -79,7 +79,9 @@ def setup_logging():
 NamespaceSpec = Optional[Sequence[str]]
 
 
-def convert_date_time_to_timestamp(date_time, format_string="%Y-%m-%dT%H:%M:%SZ"):
+def convert_date_time_to_timestamp(
+    date_time, format_string="%Y-%m-%dT%H:%M:%SZ"
+) -> float:
     timestamp = None
     try:
         if isinstance(date_time, datetime):
