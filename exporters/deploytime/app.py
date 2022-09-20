@@ -26,35 +26,51 @@ class DeployTimeCollector:
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
         logging.info("collect: start")
-        metric = GaugeMetricFamily(
-            "deploy_timestamp",
-            "Deployment timestamp",
-            labels=["namespace", "app", "image_sha"],
-        )
 
         namespaces = self.get_and_log_namespaces()
         if not namespaces:
             return []
 
         metrics = generate_metrics(namespaces, self.client)
-        # TODO: when merging 654, just ignore this whole section (overwrite with 654)
-        # all the code should be self-contained in the DeployTimeMetric anyway.
+
+        deploy_timestamp_metric = GaugeMetricFamily(
+            "deploy_timestamp",
+            "Deployment timestamp",
+            labels=["namespace", "app", "image_sha"],
+        )
+        deployment_active_metric = GaugeMetricFamily(
+            "deployment_active",
+            "Active deployments in cluster",
+            labels=["namespace", "app", "image_sha"],
+        )
+
         for m in metrics:
             logging.info(
-                "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s"
-                % (
-                    m.namespace,
-                    m.name,
-                    m.image_sha,
-                    m.deploy_time_timestamp,
-                )
+                "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
+                m.namespace,
+                m.name,
+                m.image_sha,
+                m.deploy_time_timestamp,
+                m.deploy_time,
             )
-            metric.add_metric(
+            deploy_timestamp_metric.add_metric(
                 [m.namespace, m.name, m.image_sha],
                 m.deploy_time_timestamp,
                 timestamp=m.deploy_time_timestamp,
             )
-            yield (metric)
+            logging.info(
+                "Collected deployment_active{namespace=%s, app=%s, image=%s} %s (%s)",
+                m.namespace,
+                m.name,
+                m.image_sha,
+                m.deploy_time_timestamp,
+                m.deploy_time,
+            )
+            deployment_active_metric.add_metric(
+                [m.namespace, m.name, m.image_sha],
+                m.deploy_time_timestamp,
+            )
+        return (deploy_timestamp_metric, deployment_active_metric)
 
     def get_and_log_namespaces(self) -> set[str]:
         """
