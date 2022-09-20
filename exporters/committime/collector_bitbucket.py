@@ -8,6 +8,7 @@ import pelorus
 from committime import CommitMetric
 from committime.collector_base import AbstractCommitCollector, UnsupportedGITProvider
 from pelorus.certificates import set_up_requests_certs
+from pelorus.timeutil import parse_tz_aware
 
 
 def commit_url(server: str, group: str, project: str, commit: str) -> str:
@@ -16,6 +17,9 @@ def commit_url(server: str, group: str, project: str, commit: str) -> str:
         server,
         f"api/2.0/repositories/{group}/{project}/commit/{commit}",
     )
+
+
+_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 
 
 class BitbucketCommitCollector(AbstractCommitCollector):
@@ -33,7 +37,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             namespaces,
             apps,
             "BitBucket",
-            "%Y-%m-%dT%H:%M:%S%z",
+            _DATETIME_FORMAT,
         )
         self.__session = requests.Session()
         self.__session.verify = set_up_requests_certs(tls_verify)
@@ -72,9 +76,9 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             commit_time = api_dict["date"]
             logging.debug("API v2 returned sha: %s, commit date: %s", sha, commit_time)
             metric.commit_time = commit_time
-            metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
-                metric.commit_time, self._timedate_format
-            )
+            metric.commit_timestamp = parse_tz_aware(
+                metric.commit_time, format=_DATETIME_FORMAT
+            ).timestamp()
         except requests.exceptions.SSLError as e:
             logging.error(
                 "TLS error talking to %s for build %s: %s",

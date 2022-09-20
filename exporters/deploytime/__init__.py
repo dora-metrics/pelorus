@@ -1,6 +1,8 @@
-from typing import Any
+from datetime import datetime
 
-from attrs import frozen
+from attrs import field, frozen
+
+from provider_common.openshift import convert_datetime
 
 
 @frozen
@@ -9,8 +11,12 @@ class DeployTimeMetric:
     namespace: str
     # WARNING: do not mutate the dict after hashing or things may break.
     labels: dict[str, str]
-    deploy_time: Any
+    deploy_time: datetime = field(converter=convert_datetime)
     image_sha: str
+
+    @property
+    def deploy_time_timestamp(self) -> float:
+        return self.deploy_time.timestamp()
 
     def __hash__(self):
         return hash(

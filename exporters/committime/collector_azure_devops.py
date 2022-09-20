@@ -1,9 +1,10 @@
 import logging
+from datetime import datetime
 
 from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 
-import pelorus
+from committime import CommitMetric
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
@@ -22,7 +23,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         )
 
     # base class impl
-    def get_commit_time(self, metric):
+    def get_commit_time(self, metric: CommitMetric):
         """Method called to collect data and send to Prometheus"""
         git_server = self._git_api
 
@@ -56,7 +57,11 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
             repository_id=metric.repo_project,
             project=metric.repo_project,
         )
-        logging.debug("Commit %s" % ((commit.committer.date).isoformat("T", "auto")))
+
+        timestamp: datetime = commit.committer.date
+        timestamp = timestamp.replace(microsecond=0)  # second precision
+
+        logging.debug("Commit %s", timestamp)
         if hasattr(commit, "innerExepction"):
             # This will occur when trying to make an API call to non-Github
             logging.warning(
@@ -70,12 +75,11 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
             )
         else:
             try:
-                metric.commit_time = commit.committer.date.isoformat("T", "auto")
-                logging.info("metric.commit_time %s" % (str(metric.commit_time)[:19]))
-                logging.info("self._timedate_format %s" % (self._timedate_format))
-                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
-                    (str(metric.commit_time)[:19]), self._timedate_format
-                )
+                metric.commit_time = timestamp.isoformat("T", "auto")
+                logging.info("metric.commit_time %s", timestamp)
+                metric.commit_timestamp = (
+                    timestamp.timestamp()
+                )  # hopefully they haven't provided a naive datetime
             except Exception:
                 logging.error(
                     "Failed processing commit time for build %s" % metric.build_name,

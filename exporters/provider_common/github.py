@@ -7,6 +7,7 @@ from urllib.error import HTTPError
 import requests
 from attrs import frozen
 
+from pelorus.timeutil import parse_assuming_utc
 from pelorus.utils import BadAttributePathError, get_nested
 
 # The maximum number of requests you're permitted to make per hour.
@@ -28,7 +29,7 @@ def parse_datetime(datetime_str: str) -> datetime:
 
     May throw a ValueError if it doesn't match the expected format.
     """
-    return datetime.strptime(datetime_str, _DATETIME_FORMAT).astimezone(timezone.utc)
+    return parse_assuming_utc(datetime_str, format=_DATETIME_FORMAT)
 
 
 @frozen

@@ -47,7 +47,15 @@ class CommitMetric:
     committer: Optional[str] = attr.field(default=None, kw_only=True)
     commit_hash: Optional[str] = attr.field(default=None, kw_only=True)
     commit_time: Optional[str] = attr.field(default=None, kw_only=True)
+    """
+    A human-readable timestamp.
+    In the future, this and commit_timestamp should be combined.
+    """
     commit_timestamp: Optional[float] = attr.field(default=None, kw_only=True)
+    """
+    The unix timestamp.
+    In the future, this and commit_time should be combined.
+    """
 
     build_name: Optional[str] = attr.field(default=None, kw_only=True)
     build_config_name: Optional[str] = attr.field(default=None, kw_only=True)

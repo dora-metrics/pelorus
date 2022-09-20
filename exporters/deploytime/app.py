@@ -37,6 +37,8 @@ class DeployTimeCollector:
             return []
 
         metrics = generate_metrics(namespaces, self.client)
+        # TODO: when merging 654, just ignore this whole section (overwrite with 654)
+        # all the code should be self-contained in the DeployTimeMetric anyway.
         for m in metrics:
             logging.info(
                 "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s"
@@ -44,13 +46,13 @@ class DeployTimeCollector:
                     m.namespace,
                     m.name,
                     m.image_sha,
-                    pelorus.convert_date_time_to_timestamp(m.deploy_time),
+                    m.deploy_time_timestamp,
                 )
             )
             metric.add_metric(
-                [m.namespace, m.name, m.image_sha, m.deploy_time],
-                pelorus.convert_date_time_to_timestamp(m.deploy_time),
-                timestamp=pelorus.convert_date_time_to_timestamp(m.deploy_time),
+                [m.namespace, m.name, m.image_sha],
+                m.deploy_time_timestamp,
+                timestamp=m.deploy_time_timestamp,
             )
             yield (metric)
 
