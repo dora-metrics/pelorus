@@ -120,10 +120,18 @@ class ImageCommitCollector(AbstractCommitCollector):
     def _set_commit_timestamp(self, metric, errors) -> CommitMetric:
         # Only convert when commit_time is in metric, previously should be
         # found from the Label with fallback to annotation
-        if metric.commit_time:
-            metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
-                metric.commit_time, self._timedate_format
+        try:
+            if metric.commit_time:
+                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
+                    metric.commit_time, self._timedate_format
+                )
+        except ValueError:
+            errors.append(
+                "COMMIT_DATE_FORMAT does not match annotation commit.date on the image\n"
             )
+            errors.append("Removing the offending timestamp")
+            metric.commit_timestamp = None
+
         return metric
 
     def get_commit_time(self, metric) -> Optional[CommitMetric]:

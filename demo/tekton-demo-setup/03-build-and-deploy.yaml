@@ -94,7 +94,8 @@ objects:
             set -ex
             find /workspace
             cd /workspace/debug 
-            git log -1 --format=%cd > "$(results.commit-time.path)"
+            epoch_time=`git log -1 --format=%ct`
+            TZ=UTC date -d @`echo $epoch_time` | tee "$(results.commit-time.path)"
         - name: debug-time-last-commit
           image: ubi9/toolbox
           script: |
