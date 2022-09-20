@@ -181,6 +181,15 @@ def test_generate_normal_case() -> None:
             labels={FOO_LABEL: FOO_LABEL_VALUE, APP_LABEL: FOO_APP},
             deploy_time=foo_rep.metadata.creationTimestamp,
             image_sha=FOO_POD_SHAS[0],
+            timestamp=True,
+        ),
+        DeployTimeMetric(
+            name=FOO_APP,
+            namespace=FOO_NS,
+            labels={FOO_LABEL: FOO_LABEL_VALUE, APP_LABEL: FOO_APP},
+            deploy_time=foo_rep.metadata.creationTimestamp,
+            image_sha=FOO_POD_SHAS[0],
+            timestamp=False,
         ),
         DeployTimeMetric(
             name=BAR_APP,
@@ -188,6 +197,15 @@ def test_generate_normal_case() -> None:
             labels={APP_LABEL: BAR_APP},
             deploy_time=bar_rep.metadata.creationTimestamp,
             image_sha=BAR_POD_SHAS[0],
+            timestamp=True,
+        ),
+        DeployTimeMetric(
+            name=BAR_APP,
+            namespace=BAR_NS,
+            labels={APP_LABEL: BAR_APP},
+            deploy_time=bar_rep.metadata.creationTimestamp,
+            image_sha=BAR_POD_SHAS[0],
+            timestamp=False,
         ),
         DeployTimeMetric(
             name=QUUX_APP,
@@ -195,6 +213,15 @@ def test_generate_normal_case() -> None:
             labels={APP_LABEL: QUUX_APP},
             deploy_time=quux_rep.metadata.creationTimestamp,
             image_sha=STATUS_CONTAINER_SHAS[0],
+            timestamp=True,
+        ),
+        DeployTimeMetric(
+            name=QUUX_APP,
+            namespace=QUUX_NS,
+            labels={APP_LABEL: QUUX_APP},
+            deploy_time=quux_rep.metadata.creationTimestamp,
+            image_sha=STATUS_CONTAINER_SHAS[0],
+            timestamp=False,
         ),
     }
 
@@ -237,6 +264,15 @@ def test_generate_reps_with_same_name() -> None:
             labels={FOO_LABEL: FOO_LABEL_VALUE, APP_LABEL: FOO_APP},
             deploy_time=foo_rep.metadata.creationTimestamp,
             image_sha=FOO_POD_SHAS[0],
+            timestamp=True,
+        ),
+        DeployTimeMetric(
+            name=FOO_APP,
+            namespace=FOO_NS,
+            labels={FOO_LABEL: FOO_LABEL_VALUE, APP_LABEL: FOO_APP},
+            deploy_time=foo_rep.metadata.creationTimestamp,
+            image_sha=FOO_POD_SHAS[0],
+            timestamp=False,
         ),
         DeployTimeMetric(
             name=BAR_APP,
@@ -244,6 +280,15 @@ def test_generate_reps_with_same_name() -> None:
             labels={APP_LABEL: BAR_APP},
             deploy_time=bar_rep.metadata.creationTimestamp,
             image_sha=BAR_POD_SHAS[0],
+            timestamp=True,
+        ),
+        DeployTimeMetric(
+            name=BAR_APP,
+            namespace=BAR_NS,
+            labels={APP_LABEL: BAR_APP},
+            deploy_time=bar_rep.metadata.creationTimestamp,
+            image_sha=BAR_POD_SHAS[0],
+            timestamp=False,
         ),
     ]
 

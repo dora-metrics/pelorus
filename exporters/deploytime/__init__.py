@@ -11,6 +11,7 @@ class DeployTimeMetric:
     labels: dict[str, str]
     deploy_time: Any
     image_sha: str
+    timestamp: bool
 
     def __hash__(self):
         return hash(
