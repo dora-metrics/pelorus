@@ -17,7 +17,7 @@ spec:
   source:
     contextDir: {{ .source_context_dir | default "exporters/" }}
     git:
-      ref: {{ .source_ref | default "v1.8.1" }}
+      ref: {{ .source_ref | default "v1.8.2" }}
       uri: {{ .source_url | default "https://github.com/konveyor/pelorus.git"}}
     type: Git
   strategy:
