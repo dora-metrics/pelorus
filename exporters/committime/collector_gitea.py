@@ -7,7 +7,7 @@ from pelorus.timeutil import parse_assuming_utc, second_precision
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
-_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 class GiteaCommitCollector(AbstractCommitCollector):

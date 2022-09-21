@@ -23,7 +23,7 @@ from jira.exceptions import JIRAError
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
-from pelorus.timeutil import parse_tz_aware
+from pelorus.timeutil import parse_tz_aware, second_precision
 
 # One query limit, exporter will query multiple times.
 # Do not exceed 100 as JIRA won't return more.
@@ -121,7 +121,8 @@ class JiraFailureCollector(AbstractFailureCollector):
                     )
                 )
                 # Create the JiraFailureMetric
-                created_ts = parse_tz_aware(issue.fields.created, _DATETIME_FORMAT)
+                created_tz = parse_tz_aware(issue.fields.created, _DATETIME_FORMAT)
+                created_ts = second_precision(created_tz).timestamp()
                 resolution_ts = self._get_resolved_timestamp(
                     issue, self.jira_resolved_statuses
                 )
@@ -148,6 +149,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         to the status that is within resolved_statuses comma separated list.
         """
         resolution_ts = None
+        resolution_tz = None
         if resolved_statuses:
             statuses = [
                 status.strip().lower() for status in resolved_statuses.split(",")
@@ -161,9 +163,9 @@ class JiraFailureCollector(AbstractFailureCollector):
                         issue.fields.summary,
                     )
                 )
-                resolution_ts = parse_tz_aware(
+                resolution_tz = parse_tz_aware(
                     issue.fields.statuscategorychangedate, _DATETIME_FORMAT
-                ).timestamp()
+                )
         else:
             if issue.fields.resolutiondate:
                 logging.debug(
@@ -173,9 +175,11 @@ class JiraFailureCollector(AbstractFailureCollector):
                         issue.fields.summary,
                     )
                 )
-                resolution_ts = parse_tz_aware(
+                resolution_tz = parse_tz_aware(
                     issue.fields.resolutiondate, _DATETIME_FORMAT
-                ).timestamp()
+                )
+        if resolution_tz:
+            resolution_ts = second_precision(resolution_tz).timestamp()
 
         return resolution_ts
 

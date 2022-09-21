@@ -108,9 +108,8 @@ class ImageCommitCollector(AbstractCommitCollector):
             metric = self._set_commit_time_from_annotations(metric, errors)
 
         if not metric.commit_hash:
-            # We ignore all the errors by passing [], because commit hash isn't required.
-            metric = self._set_commit_hash_from_annotations(metric, [])
-
+            # We ignore all the errors by passing "None" as a string, because commit hash isn't required.
+            metric.commit_hash = "None"
         metric = self._set_commit_timestamp(metric, errors)
 
         if not metric.namespace:
