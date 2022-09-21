@@ -72,11 +72,6 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
         # This will be tracker specific
         pass
 
-    @abstractmethod
-    def convert_timestamp(self, date_time):
-        # This will format timestamp based on tracker specific data
-        pass
-
 
 class TrackerIssue:
     def __init__(self, issue_number, creationdate, resolutiondate, app):

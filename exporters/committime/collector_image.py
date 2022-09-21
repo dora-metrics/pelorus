@@ -20,6 +20,7 @@ from typing import Iterable, Optional
 
 import pelorus
 from committime import CommitMetric
+from pelorus.timeutil import parse_guessing_timezone_DYNAMIC
 from pelorus.utils import collect_bad_attribute_path_error, get_env_var, get_nested
 
 from .collector_base import COMMIT_DATE_ANNOTATION_ENV, AbstractCommitCollector
@@ -107,9 +108,8 @@ class ImageCommitCollector(AbstractCommitCollector):
             metric = self._set_commit_time_from_annotations(metric, errors)
 
         if not metric.commit_hash:
-            # We ignore all the errors by passing [], because commit hash isn't required.
-            metric = self._set_commit_hash_from_annotations(metric, [])
-
+            # We ignore all the errors by passing "None" as a string, because commit hash isn't required.
+            metric.commit_hash = "None"
         metric = self._set_commit_timestamp(metric, errors)
 
         if not metric.namespace:
@@ -117,13 +117,13 @@ class ImageCommitCollector(AbstractCommitCollector):
 
         return metric
 
-    def _set_commit_timestamp(self, metric, errors) -> CommitMetric:
+    def _set_commit_timestamp(self, metric: CommitMetric, errors) -> CommitMetric:
         # Only convert when commit_time is in metric, previously should be
         # found from the Label with fallback to annotation
         if metric.commit_time:
-            metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
-                metric.commit_time, self._timedate_format
-            )
+            metric.commit_timestamp = parse_guessing_timezone_DYNAMIC(
+                metric.commit_time, format=self._timedate_format
+            ).timestamp()
         return metric
 
     def get_commit_time(self, metric) -> Optional[CommitMetric]:

@@ -1,18 +1,19 @@
 import logging
-from datetime import datetime
 
-import pytz
 import requests
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
 from pelorus.certificates import set_up_requests_certs
+from pelorus.timeutil import parse_assuming_utc
 
 SN_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 SN_QUERY = "/api/now/table/incident?sysparm_fields={0}%2C{1}%2Cstate%2Cnumber%2C{2} \
             &sysparm_display_value=true&sysparm_limit={3}&sysparm_offset={4}"
 SN_OPENED_FIELD = "opened_at"
 SN_RESOLVED_FIELD = "resolved_at"
+
+_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 class ServiceNowFailureCollector(AbstractFailureCollector):
@@ -56,7 +57,9 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                     issue.get(SN_RESOLVED_FIELD),
                 )
                 # Create the FailureMetric
-                created_ts = self.convert_timestamp(issue[SN_OPENED_FIELD])
+                created_ts = parse_assuming_utc(
+                    issue[SN_OPENED_FIELD], _DATETIME_FORMAT
+                )
                 resolution_ts = None
                 if issue[SN_RESOLVED_FIELD]:
                     logging.info(
@@ -65,7 +68,9 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                         issue.get("number"),
                         issue.get(SN_OPENED_FIELD),
                     )
-                    resolution_ts = self.convert_timestamp(issue.get(SN_RESOLVED_FIELD))
+                    resolution_ts = parse_assuming_utc(
+                        issue.get(SN_RESOLVED_FIELD), _DATETIME_FORMAT
+                    )
                 tracker_issue = TrackerIssue(
                     issue.get("number"),
                     created_ts,
@@ -111,12 +116,3 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
             app_label = issue.get(self.app_name_field)
             return app_label
         return pelorus.DEFAULT_TRACKER_APP_LABEL
-
-    def convert_timestamp(self, date_time):
-        """Convert a Jira datetime with TZ to UTC"""
-        # The time retunred by Jira has a TZ, so convert to UTC
-        utc = datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S").astimezone(pytz.utc)
-        # Change the datetime to a string
-        utc_string = utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-        # convert to timestamp
-        return pelorus.convert_date_time_to_timestamp(utc_string)

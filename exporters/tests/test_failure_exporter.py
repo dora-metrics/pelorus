@@ -161,15 +161,6 @@ def test_github_connection():
     )
 
 
-@pytest.mark.parametrize(
-    "date_time",
-    [("2022-05-11T21:50:08Z")],
-)
-def test_github_timestamp(date_time):
-    test_time = GithubFailureCollector.convert_timestamp(date_time)
-    assert float("1652305808.0") == test_time
-
-
 def test_github_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     def mock_search_issues(self):
         return []
@@ -366,7 +357,7 @@ def test_custom_resolved_timestamp(server, username, apikey):
         test_issue, "Done, Resolved, Other"
     )
 
-    assert resolution_timestamp == 1652395843.0
+    assert int(resolution_timestamp) == 1652395843
 
 
 @pytest.mark.parametrize(
@@ -400,4 +391,4 @@ def test_resolutiondate_timestamp(server, username, apikey):
 
     resolution_timestamp = collector._get_resolved_timestamp(test_issue)
 
-    assert resolution_timestamp == 1649803843.0
+    assert int(resolution_timestamp) == 1649803843

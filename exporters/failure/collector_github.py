@@ -16,16 +16,15 @@
 #
 
 import logging
-from datetime import datetime
 from typing import Any, Optional, Union, cast
 
-import pytz
 import requests
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
 from pelorus.certificates import set_up_requests_certs
 from pelorus.utils import TokenAuth
+from provider_common.github import parse_datetime
 
 # One query limit, exporter will query multiple times.
 # Do not exceed 100 results
@@ -137,7 +136,7 @@ class GithubFailureCollector(AbstractFailureCollector):
                 )
 
                 # Create the GithubFailureMetric
-                created_ts = self.convert_timestamp(issue["created_at"])
+                created_ts = parse_datetime(issue["created_at"]).timestamp()
                 resolution_ts = None
                 if is_bug:
                     app_label = pelorus.get_app_label()
@@ -152,7 +151,9 @@ class GithubFailureCollector(AbstractFailureCollector):
                                 )
                             )
 
-                            resolution_ts = self.convert_timestamp(issue["closed_at"])
+                            resolution_ts = parse_datetime(
+                                issue["closed_at"]
+                            ).timestamp()
                         tracker_issue = TrackerIssue(
                             str(issue["number"]),
                             created_ts,
@@ -162,18 +163,6 @@ class GithubFailureCollector(AbstractFailureCollector):
 
                         critical_issues.append(tracker_issue)
         return critical_issues
-
-    @classmethod
-    def convert_timestamp(cls, date_time):
-        """Convert a Github datetime with TZ to UTC"""
-        # Change the datetime to a string
-        utc = datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%S%z").astimezone(pytz.utc)
-        # Change the datetime to a string
-        utc_string = utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-        # convert to timestamp
-        this_date = pelorus.convert_date_time_to_timestamp(utc_string)
-        # this_date is a float
-        return this_date
 
     def get_app_name(self, issue, label: Optional[dict[str, Any]]):
         if label:

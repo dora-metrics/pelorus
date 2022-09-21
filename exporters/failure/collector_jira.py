@@ -16,15 +16,14 @@
 #
 
 import logging
-from datetime import datetime
 from typing import Any, Optional
 
-import pytz
 from jira import JIRA
 from jira.exceptions import JIRAError
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from pelorus.timeutil import parse_tz_aware, second_precision
 
 # One query limit, exporter will query multiple times.
 # Do not exceed 100 as JIRA won't return more.
@@ -36,6 +35,9 @@ DEFAULT_JQL_SEARCH_QUERY = 'type in ("Bug") AND priority in ("Highest")'
 JQL_SEARCH_QUERY_ENV = "JIRA_JQL_SEARCH_QUERY"
 # User specified JIRA comma separated statuses for resolved issue
 RESOLVED_STATUS_ENV = "JIRA_RESOLVED_STATUS"
+
+
+_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
 class JiraFailureCollector(AbstractFailureCollector):
@@ -119,7 +121,8 @@ class JiraFailureCollector(AbstractFailureCollector):
                     )
                 )
                 # Create the JiraFailureMetric
-                created_ts = self.convert_timestamp(issue.fields.created)
+                created_tz = parse_tz_aware(issue.fields.created, _DATETIME_FORMAT)
+                created_ts = second_precision(created_tz).timestamp()
                 resolution_ts = self._get_resolved_timestamp(
                     issue, self.jira_resolved_statuses
                 )
@@ -146,6 +149,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         to the status that is within resolved_statuses comma separated list.
         """
         resolution_ts = None
+        resolution_tz = None
         if resolved_statuses:
             statuses = [
                 status.strip().lower() for status in resolved_statuses.split(",")
@@ -159,8 +163,8 @@ class JiraFailureCollector(AbstractFailureCollector):
                         issue.fields.summary,
                     )
                 )
-                resolution_ts = self.convert_timestamp(
-                    issue.fields.statuscategorychangedate
+                resolution_tz = parse_tz_aware(
+                    issue.fields.statuscategorychangedate, _DATETIME_FORMAT
                 )
         else:
             if issue.fields.resolutiondate:
@@ -171,20 +175,13 @@ class JiraFailureCollector(AbstractFailureCollector):
                         issue.fields.summary,
                     )
                 )
-                resolution_ts = self.convert_timestamp(issue.fields.resolutiondate)
+                resolution_tz = parse_tz_aware(
+                    issue.fields.resolutiondate, _DATETIME_FORMAT
+                )
+        if resolution_tz:
+            resolution_ts = second_precision(resolution_tz).timestamp()
 
         return resolution_ts
-
-    def convert_timestamp(self, date_time):
-        """Convert a Jira datetime with TZ to UTC"""
-        # The time retunred by Jira has a TZ, so convert to UTC
-        utc = datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%S.%f%z").astimezone(
-            pytz.utc
-        )
-        # Change the datetime to a string
-        utc_string = utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-        # convert to timestamp
-        return pelorus.convert_date_time_to_timestamp(utc_string)
 
     def get_app_name(self, issue):
         app_label = pelorus.get_app_label()

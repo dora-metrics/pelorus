@@ -3,8 +3,8 @@ from typing import Optional
 
 import requests
 
-import pelorus
 from pelorus.certificates import set_up_requests_certs
+from provider_common.github import parse_datetime
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
@@ -84,9 +84,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
             commit = response.json()
             try:
                 metric.commit_time = commit["commit"]["committer"]["date"]
-                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
-                    metric.commit_time, self._timedate_format
-                )
+                metric.commit_timestamp = parse_datetime(metric.commit_time).timestamp()
             except Exception:
                 logging.error(
                     "Failed processing commit time for build %s" % metric.build_name,

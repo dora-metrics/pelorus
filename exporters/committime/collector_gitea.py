@@ -2,13 +2,12 @@ import logging
 
 import requests
 
-import pelorus
 from pelorus.certificates import set_up_requests_certs
+from pelorus.timeutil import parse_assuming_utc, second_precision
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
-# import urllib3
-# urllib3.disable_warnings()
+_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 class GiteaCommitCollector(AbstractCommitCollector):
@@ -26,7 +25,7 @@ class GiteaCommitCollector(AbstractCommitCollector):
             namespaces,
             apps,
             "Gitea",
-            "%Y-%m-%dT%H:%M:%S",
+            _DATETIME_FORMAT,
             git_api,
         )
         if git_api is not None and len(git_api) > 0:
@@ -78,12 +77,16 @@ class GiteaCommitCollector(AbstractCommitCollector):
         else:
             commit = response.json()
             try:
-                metric.commit_time = commit["commit"]["committer"]["date"]
-                logging.debug("metric.commit_time %s" % (str(metric.commit_time)[:19]))
-                logging.debug("self._timedate_format %s" % (self._timedate_format))
-                metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
-                    (str(metric.commit_time)[:19]), self._timedate_format
+                commit_time_str: str = commit["commit"]["committer"]["date"]
+                metric.commit_time = commit_time_str
+
+                commit_time = parse_assuming_utc(
+                    commit_time_str, format=_DATETIME_FORMAT
                 )
+                commit_time = second_precision(commit_time)
+
+                logging.debug("metric.commit_time %s", commit_time)
+                metric.commit_timestamp = commit_time.timestamp()
             except Exception:
                 logging.error(
                     "Failed processing commit time for build %s" % metric.build_name,

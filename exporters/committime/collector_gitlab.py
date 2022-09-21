@@ -20,10 +20,13 @@ import logging
 import gitlab
 import requests
 
-import pelorus
+from committime import CommitMetric
 from pelorus.certificates import set_up_requests_certs
+from pelorus.timeutil import parse_tz_aware
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
+
+_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
 class GitLabCommitCollector(AbstractCommitCollector):
@@ -31,13 +34,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
 
     def __init__(self, kube_client, username, token, namespaces, apps):
         super().__init__(
-            kube_client,
-            username,
-            token,
-            namespaces,
-            apps,
-            "GitLab",
-            "%Y-%m-%dT%H:%M:%S.%f%z",
+            kube_client, username, token, namespaces, apps, "GitLab", _DATETIME_FORMAT
         )
         self.session = requests.Session()
         self.session.verify = set_up_requests_certs()
@@ -69,7 +66,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
         return gitlab_client
 
     # base class impl
-    def get_commit_time(self, metric):
+    def get_commit_time(self, metric: CommitMetric):
         """Method called to collect data and send to Prometheus"""
 
         git_server = metric.git_server
@@ -110,12 +107,14 @@ class GitLabCommitCollector(AbstractCommitCollector):
             # get the commit from the project using the hash
             short_hash = metric.commit_hash[:8]
             commit = project.commits.get(short_hash)
-            # get the commit date/time
-            metric.commit_time = commit.committed_date
-            # set the timestamp after conversion
-            metric.commit_timestamp = pelorus.convert_date_time_to_timestamp(
-                metric.commit_time, self._timedate_format
-            )
+
+            commit_time_str: str = (
+                commit.committed_date
+            )  # assumed based on `__getattr__` in RESTObject
+            metric.commit_time = commit_time_str
+            metric.commit_timestamp = parse_tz_aware(
+                commit_time_str, format=_DATETIME_FORMAT
+            ).timestamp()
         except Exception:
             logging.error(
                 "Failed processing commit time for build %s" % metric.build_name,
