@@ -62,6 +62,24 @@ def parse_guessing_timezone_DYNAMIC(timestring: str, format: str) -> datetime:
         return parsed.replace(tzinfo=timezone.utc)
 
 
+def to_epoch_from_string(timestring: str) -> datetime:
+    """
+    It's really EPOCH to EPOCH conversion with datetime return object.
+
+    If timestring matches expected EPOCH format a proper datetime object is returned,
+    otherwise raises ValueError and consumer of this function probably want's to use
+    other format of timestamp.
+    """
+    epoch_date_time = timestring.split(".")[0]
+    # Try to convert to an EPOCH, but only if it's 10 digit
+    if len(epoch_date_time) != 10:
+        raise ValueError(
+            f"Tried to get epoch from not allowed string length: {timestring}"
+        )
+    else:
+        return datetime.fromtimestamp(int(epoch_date_time))
+
+
 def second_precision(dt: datetime) -> datetime:
     """
     Change the datetime to have second precision (removing microseconds).

@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 import provider_common.github as github
 from pelorus.timeutil import (
     parse_assuming_utc,
     parse_guessing_timezone_DYNAMIC,
     parse_tz_aware,
+    to_epoch_from_string,
 )
 
 
@@ -102,3 +105,29 @@ def test_github():
     actual_unix = github.parse_datetime(TIMESTRING).timestamp()
 
     assert actual_unix == EXPECTED_UNIX
+
+
+@pytest.mark.parametrize(
+    "timestamps, expected",
+    [
+        ("1652305808.000", "1652305808.0"),
+        ("1652305808.122", "1652305808.0"),
+        ("1652305808", "1652305808.0"),
+        ("1652305808.0", "1652305808.0"),
+    ],
+)
+def test_to_epoch_from_string(timestamps, expected):
+    epoch_from_str = to_epoch_from_string(timestamps)
+    assert str(epoch_from_str.timestamp()) == expected
+
+
+@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.parametrize("timestamps", ["1652305803822.0", "1652305", "112322142321"])
+def test_to_epoch_from_string_bad_value(timestamps):
+    to_epoch_from_string(timestamps)
+
+
+@pytest.mark.xfail(raises=AttributeError)
+@pytest.mark.parametrize("timestamps", [1652305808, None])
+def test_to_epoch_from_string_bad_arg(timestamps):
+    to_epoch_from_string(timestamps)

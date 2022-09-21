@@ -477,7 +477,7 @@ Example image metadata with `io.openshift.build.commit.date` Docker Labels and `
 ```
 IMAGE_SHA=588fb67a63ccbadf245b6d30747c404d809a851551b67c615a18217bf443a78e
 
-$ oc describe "sha256:${IMAGE_SHA}"
+$ oc describe image "sha256:${IMAGE_SHA}"
 
 Docker Image:	image-registry.openshift-image-registry.svc:5000/mongo-persistent/todolist-mongo-go@sha256:588fb67a63ccbadf245b6d30747c404d809a851551b67c615a18217bf443a78e
 Name:		    sha256:588fb67a63ccbadf245b6d30747c404d809a851551b67c615a18217bf443a78e
@@ -520,6 +520,21 @@ $ oc annotate image "sha256:${IMAGE_SHA}" --overwrite \
     io.openshift.build.commit.date="Mon Aug 8 13:13:58 2022 -0600"
 
 > image.image.openshift.io/sha256:588fb67a63ccbadf245b6d30747c404d809a851551b67c615a18217bf443a78e annotated
+```
+
+The Image may be also annotated with 10 digit EPOCH timestamp. Allowed format is one, where milliseconds are ignored:
+
+```
+$ EPOCH_TIMESTAMP=`git log -1 --format=%ct`
+$ echo ${EPOCH_TIMESTAMP}
+1663770655
+
+$ NAME=my-application
+$ IMAGE_SHA=588fb67a63ccbadf245b6d30747c404d809a851551b67c615a18217bf443a78e
+$ oc label image "sha256:${IMAGE_SHA}" "app.kubernetes.io/name=${NAME}"
+
+$ oc annotate image "sha256:${IMAGE_SHA}" --overwrite \
+     io.openshift.build.commit.date="${EPOCH_TIMESTAMP}"
 ```
 
 ### Configuring JIRA workflow(s)
