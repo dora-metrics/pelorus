@@ -24,6 +24,8 @@ Help:
 | buildConfig | supported     | requires exporter committime-exporter               |
 | s2i         | supported     | requires exporter committime-image-exporter with provider=image    |   
 
+An example values.yaml file for the tekton-demo.sh is here: tekton-demo-setup/tekton_demo_values.yaml
+
 ## demo.sh
 
 See the [demo docs in the official pelorus documentation.](https://pelorus.readthedocs.io/en/latest/Demo/)

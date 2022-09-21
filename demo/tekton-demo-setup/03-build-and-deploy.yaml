@@ -93,8 +93,13 @@ objects:
           script: |
             set -ex
             find /workspace
-            cd /workspace/debug 
-            git log -1 --format=%cd > "$(results.commit-time.path)"
+            cd /workspace/debug
+            printf "epoch timestamps are recommended: git log -1 --format=%ct"
+            epoch=`git log -1 --format=%ct`
+            human=`date -d @$epoch`
+            printf "epoch time: " + $epoch
+            printf "human readable time: " + $human
+            echo $epoch > "$(results.commit-time.path)"
         - name: debug-time-last-commit
           image: ubi9/toolbox
           script: |
