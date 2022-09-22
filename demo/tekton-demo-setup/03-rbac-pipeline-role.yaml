@@ -1,0 +1,19 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipeline-role
+rules:
+- apiGroups:
+  - image.openshift.io
+  resources:
+  - "images"
+  verbs:
+  - "get"
+  - "patch"
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - "routes"
+  verbs:
+  - "get"
