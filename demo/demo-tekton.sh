@@ -2,6 +2,9 @@
 #Assumes User is logged in to cluster
 set -euo pipefail
 
+app_name="basic-python-tekton"
+app_namespace="basic-python-tekton"
+
 Help()
 {
    # Display Help
@@ -9,13 +12,14 @@ Help()
    echo
    echo "Syntax: scriptTemplate [-h|g|b|n]"
    echo "options:"
+   echo "a     application name, default ${app_name}"
+   echo "n     namespace to be used, default ${app_namespace}"
    echo "g     the git url"
    echo "r     git branch reference, use this for Pull Requests. e.g. refs/pull/587/head"
    echo "h     Print this Help."
    echo "b     build type [buildconfig, binary, s2i]"
-   echo "n     If set then no human interaction is required for subsequent deployments"
-   echo "t     Time in seconds to sleep between subsequent deployments, default 300 (no human only)"
-   echo "c     Number of deployments, default 1 (no human only)"
+   echo "t     Time in seconds to sleep between subsequent deployments, default 300 (enables non-interaction mode)"
+   echo "c     Number of deployments, default 1 (enables non-interaction mode)"
    echo
 }
 
@@ -29,7 +33,7 @@ sleep_between=300
 no_deployments=1
 
 # Get the options
-while getopts ":hg:b:r:nt:c:" option; do
+while getopts ":hg:b:r:n:t:c:a:" option; do
    case $option in
       h) # display Help
          Help
@@ -40,12 +44,16 @@ while getopts ":hg:b:r:nt:c:" option; do
          current_branch=$OPTARG;;
       b) # Enter the build type 
          build_type=$OPTARG;;
-      n) # No human interaction
-         NO_HUMAN=true;;
       t) # Sleep between subsequent deployments
-         sleep_between=$OPTARG;;
+         sleep_between=$OPTARG && \
+         NO_HUMAN=true;;
       c) # Number of subsequent deployments
-         no_deployments=$OPTARG;;
+         no_deployments=$OPTARG && \
+         NO_HUMAN=true;;
+      a) # Application name
+         app_name=$OPTARG;;
+      n) # Application namespace
+         app_namespace=$OPTARG;;
 \?) # Invalid option
          echo "Error: Invalid option"
          exit;;
@@ -59,12 +67,19 @@ if [[ $(git status --porcelain --untracked-files=no) ]]; then
 fi
 
 echo "============================"
-echo "Executing the basic-python-tekton demo for Pelorus..."
+echo "Executing the ${app_name} demo for Pelorus..."
 echo ""
 echo "*** Current Options used ***"
+echo "App name: ${app_name}"
+echo "Used namespace: ${app_namespace}"
 echo "Git URL: $url"
 echo "Git ref: $current_branch"
 echo "Build Type: $build_type"
+echo "No interaction mode: ${NO_HUMAN}"
+if [ "${NO_HUMAN}" == true ]; then
+    echo "Number of deployments: ${no_deployments}"
+    echo "Time between deployments: ${sleep_between}[s]"
+fi
 echo "============================"
 echo ""
 
@@ -77,57 +92,57 @@ for cmd in oc tkn; do
 done
 if ! [[ $all_cmds_found ]]; then exit 1; fi
 
-
 tekton_setup_dir="$(dirname "${BASH_SOURCE[0]}")/tekton-demo-setup"
 python_example_txt="$(dirname "${BASH_SOURCE[0]}")/python-example/response.txt"
 
-echo "Switch to the basic-python-tekton namespace"
-oc get ns basic-python-tekton || oc create ns basic-python-tekton
-oc project basic-python-tekton
+# Create namespace if one doesn't exist
+if oc get namespace "${app_namespace}" >/dev/null 2>&1 ; then
+    echo "1. Namespace '${app_namespace}' already exists"
+else
+    echo "1. Create namespace: ${app_namespace}"
+    oc process -f "$tekton_setup_dir/01-new-project-request_template.yaml" -p PROJECT_NAME="${app_namespace}" | oc create -f -
+fi
 
 echo "Clean up resources prior to execution:"
 # cleaning resources vs. deleting the namespace to preserve pipeline run history
 # resources are cleaned to ensure that the new running artifact is from the latest build
-oc delete --all imagestream -n basic-python-tekton &> /dev/null || true
-oc scale dc/basic-python-tekton --replicas=0 &> /dev/null || true
-oc delete dc/basic-python-tekton -n basic-python-tekton &> /dev/null || true
-oc delete buildConfig basic-python-tekton &> /dev/null || true
-oc delete buildconfig.build.openshift.io/basic-python-tekton &> /dev/null || true
-oc delete -all pods -n basic-python-tekton  &> /dev/null || true
-oc delete --all replicationcontroller -n basic-python-tekton &> /dev/null || true
+oc delete --all imagestream -n "${app_namespace}" &> /dev/null || true
+oc scale "dc/${app_name}" --replicas=0 -n "${app_namespace}" &> /dev/null || true
+oc delete "dc/${app_name}" -n "${app_namespace}" &> /dev/null || true
+oc delete buildConfig "${app_name}" -n "${app_namespace}" &> /dev/null || true
+oc delete "buildconfig.build.openshift.io/${app_name}" -n "${app_namespace}" &> /dev/null || true
+oc delete --all pods -n "${app_namespace}"  &> /dev/null || true
+oc delete --all replicationcontroller -n "${app_namespace}" &> /dev/null || true
+oc delete --all template.template.openshift.io -n "${app_namespace}" &> /dev/null || true
+oc delete "clusterrolebinding.rbac.authorization.k8s.io/pipeline-role-binding-${app_namespace}" &> /dev/null || true
 
 echo "Setting up resources:"
 
-echo "1. Installing tekton operator"
-oc apply -f "$tekton_setup_dir/01-tekton-operator.yaml"
+echo "2. Installing tekton operator"
+oc apply -f "$tekton_setup_dir/02-tekton-operator.yaml"
 
-echo "2. Setting up python tekton project"
-if ! project_setup_output="$(oc apply -f "$tekton_setup_dir/02-project.yaml" 2>&1)"; then
-   if echo "$project_setup_output" | grep -q "AlreadyExists"; then
-      echo "Project already exists"
-   else
-      echo "$project_setup_output" >&2
-      exit 1
-   fi
-else
-   echo "$project_setup_output"
-fi
+echo "3. Creating pipeline-role ClusterRole"
+oc apply -f "$tekton_setup_dir/03-rbac-pipeline-role.yaml"
 
+echo "4. Creating ClusterRoleBinding with ServiceAccount"
+oc process -f "$tekton_setup_dir/04-service-account_template.yaml" -p PROJECT_NAMESPACE="${app_namespace}" -n default | oc create -f -
 
-echo "3. Setting up build and deployment information"
-oc process -f "$tekton_setup_dir/03-build-and-deploy.yaml" > /tmp/03-build-and-deploy.yaml.out 2>/tmp/03-build-and-deploy.yaml.err
-oc apply -f /tmp/03-build-and-deploy.yaml.out
+echo "5. Setting up build and deployment information"
+oc process -f "$tekton_setup_dir/05-build-and-deploy.yaml" -p NAMESPACE="${app_namespace}" -p APPLICATION_NAME="${app_name}" -n default > /tmp/05-build-and-deploy.yaml.out 2>/tmp/05-build-and-deploy.yaml.err
+oc apply -n "${app_namespace}" -f /tmp/05-build-and-deploy.yaml.out
 
-route="$(oc get -n basic-python-tekton route/basic-python-tekton --output=go-template='http://{{.spec.host}}')"
+route=$(oc get -n "${app_namespace}" "route/${app_name}" --output=go-template='http://{{.spec.host}}')
 
 counter=1
 
 function run_pipeline {
-   tkn pipeline start -n basic-python-tekton --showlog basic-python-tekton-pipeline \
-      -w name=repo,claimName=basic-python-tekton-build-pvc \
+    set -x
+    tkn pipeline start -n "${app_namespace}" --showlog "${app_name}-pipeline" \
+      -w name=repo,claimName="${app_name}-build-pvc" \
       -p git-url="$url" -p git-revision="$current_branch" \
-      -l app.kubernetes.io/name=basic-python-tekton \
+      -l app.kubernetes.io/name="${app_name}" \
       -p BUILD_TYPE="$build_type"
+    set +x
 }
 
 echo -e "\nRunning pipeline\n"
