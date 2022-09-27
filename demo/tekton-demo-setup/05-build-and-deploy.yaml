@@ -22,8 +22,8 @@ objects:
       source:
         type: Git
         git:
-          uri: https://github.com/konveyor/pelorus
-          ref: master
+          uri: ${url}
+          ref: refs/heads/${APPLICATION_NAME}
         contextDir: "demo/python-example"
       strategy:
         sourceStrategy:
