@@ -134,12 +134,12 @@ parser.add_argument(
     metavar="executable",
     type=str,
     help="The executable to retrieve the URL for.",
-    choices=ExecutableToTool._member_names_,
+    choices={name.replace("_", "-") for name in ExecutableToTool._member_names_},
 )
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    software: str = args.software
+    software: str = args.software.replace("-", "_")
 
     tool = ExecutableToTool[software].tool
 
