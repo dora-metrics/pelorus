@@ -345,3 +345,13 @@ if should_cli_be_installed "noobaa" "${cli_tools_arr[@]}" && \
       chmod +x "${VENV}/bin/noobaa"
 fi
 
+if should_cli_be_installed "operator-sdk" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/operator-sdk")" ]; then
+      OPERATOR_SDK_URL=$("${SCRIPT_DIR}/get_github_dl_url.py" operator-sdk) \
+                    || cleanup_and_exit 2
+      echo "$OPERATOR_SDK_URL"
+      download_file_from_url "${OPERATOR_SDK_URL}" "${DWN_DIR}"
+      ls -alR $DWN_DIR
+      mv "${DWN_DIR}"/operator-sdk_* "${VENV}/bin/operator-sdk"
+      chmod +x "${VENV}/bin/operator-sdk"
+fi
