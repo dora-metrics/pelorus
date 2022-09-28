@@ -9,6 +9,12 @@ parameters:
   - name: NAMESPACE
     description: The namespace the various objects will be deployed in.
     value: basic-python-tekton
+  - name: PROJECT_URI
+    description: "Project URI with the python-demo"
+    value: https://github.com/konveyor/pelorus
+  - name: PROJECT_REF
+    description: "Project ref with the python-demo"
+    value: master
 objects:
   # Build
   - kind: BuildConfig
@@ -22,8 +28,8 @@ objects:
       source:
         type: Git
         git:
-          uri: https://github.com/konveyor/pelorus
-          ref: master
+          uri: ${PROJECT_URI}
+          ref: ${PROJECT_REF}
         contextDir: "demo/python-example"
       strategy:
         sourceStrategy:
@@ -121,10 +127,13 @@ objects:
       params:
         - name: git-url
           type: string
-          default: https://github.com/konveyor/pelorus
+          default: ${PROJECT_URI}
         - name: git-revision
           type: string
-          default: master
+          default: ${PROJECT_REF}
+        - name: build-no
+          type: string
+          default: "1"
         - name: BUILD_TYPE
           default: "buildconfig"
           description: "what type of build to run. One of buildconfig, binary, or s2i"
@@ -228,23 +237,28 @@ objects:
           params:
             - name: SCRIPT
               value: |
-                oc delete buildConfig ${APPLICATION_NAME} || true
-                #ls -la $(workspaces.manifest-dir.path)
+                if [ $(params.build-no) == "1" ]; then
+                  oc delete buildConfig ${APPLICATION_NAME} || true
+                fi
                 cd $(workspaces.manifest-dir.path)
                 pwd
                 # create build
-                echo "oc new-build python --name=${APPLICATION_NAME} --binary=true"
-                oc new-build python --name=${APPLICATION_NAME} --binary=true
-                # label build name
-                echo "oc label bc ${APPLICATION_NAME} app.kubernetes.io/name=${APPLICATION_NAME}"
-                oc label bc ${APPLICATION_NAME} app.kubernetes.io/name=${APPLICATION_NAME}
+                oc get bc "${APPLICATION_NAME}"
+                retVal=$?
+                if [ $retVal -ne 0 ]; then
+                  echo "oc new-build python --name=${APPLICATION_NAME} --binary=true"
+                  oc new-build python --name=${APPLICATION_NAME} --binary=true
+                  # label build name
+                  echo "oc label bc ${APPLICATION_NAME} app.kubernetes.io/name=${APPLICATION_NAME}"
+                  oc label bc ${APPLICATION_NAME} app.kubernetes.io/name=${APPLICATION_NAME}
+                fi
                 # start build
-                oc start-build bc/${APPLICATION_NAME} --from-dir=$(workspaces.manifest-dir.path)/demo/python-example --wait
+                oc start-build bc/${APPLICATION_NAME} --from-dir=$(workspaces.manifest-dir.path)/demo/python-example --wait || exit 2
                 # annotate build
-                echo "annotate binary build with git data: "
+                echo "annotate binary build no $(params.build-no) with git data: "
                 echo "git-url: $(params.git-url)"
                 echo "commit.id: $(tasks.checkout.results.commit)"
-                oc annotate build ${APPLICATION_NAME}-1 --overwrite \
+                oc annotate build "${APPLICATION_NAME}-$(params.build-no)" --overwrite \
                 io.openshift.build.commit.id="$(tasks.checkout.results.commit)" \
                 io.openshift.build.source-location="$(params.git-url)"
             - name: VERSION
@@ -267,15 +281,15 @@ objects:
                 printf "Build Type is $(params.BUILD_TYPE)\n"
                 if [[ "$(params.BUILD_TYPE)" == "buildconfig" ]]; then
                   printf "test buildconfig: requires exporter named committime-exporter \n"
-                  curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)" 
+                  curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)" || exit 2
                 fi
                 if [[ "$(params.BUILD_TYPE)" == "binary" ]]; then
                   printf "test binary: requires exporter named committime-exporter \n"
-                  curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)" 
+                  curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)" || exit 2
                 fi
                 if [[ "$(params.BUILD_TYPE)" == "s2i" ]]; then
                   printf "test s2i:  requires exporter named committime-image-exporter with variable PROVIDER=image \n"
-                  curl $(oc get route -n pelorus committime-image-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)"
+                  curl $(oc get route -n pelorus committime-image-exporter -o=template='http://{{.spec.host | printf "%s\n"}}') | grep "$(tasks.checkout.results.commit)" || exit 2
                 fi
           timeout: 2m
           retries: 3
