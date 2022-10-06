@@ -67,6 +67,15 @@ class CommitMetric:
 
     @property
     def repo_url(self):
+        """
+        The full URL for the repo, obtained from build metadata, Image annotations, etc.
+
+        Setting this will parse it and enable using the following fields:
+
+        repo_{protocol,group,name,project}
+
+        git_{server,fqdn}
+        """
         return self.__repo_url
 
     @repo_url.setter
