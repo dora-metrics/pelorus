@@ -230,7 +230,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             json_body = response.json()
 
             if not isinstance(json_body, dict):
-                raise requests.exceptions.JSONDecodeError
+                raise requests.exceptions.JSONDecodeError("JSON was not an object")
 
             logging.debug(
                 (
@@ -280,7 +280,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
     def get_api_version(self, server: str) -> Optional[APIVersion]:
         """
         Get the API version for the server from the cache.
-        If absent, test API urls to see which version is correct.
+        If absent, test API urls to see which version is correct,
+        updating the cache.
         """
         api_version = self.__cached_server_api_versions.get(server)
 
@@ -301,8 +302,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
     def check_api_verison(self, git_server: str, api_version: APIVersion) -> bool:
         """
         Check if the git_server supports a given ApiVersion.
-        Will return True if so, False if there's some non-successful response,
-        or re-raise the requests.HTTPError if the response was 401 UNAUTHORIZED
+        Will return True if so, False if there's some non-successful response.
+        Non-successes will be logged.
         """
         url = api_version.test_url(git_server)
 
