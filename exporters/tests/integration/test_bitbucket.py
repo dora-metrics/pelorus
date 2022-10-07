@@ -19,7 +19,8 @@ def bitbucket_collector(openshift_client: DynamicClient):
 
 @pytest.mark.mockoon
 @pytest.mark.skip(
-    reason="Must improve mockoon automation first. The script only works with one environment for now, and doesn't work on macOS."
+    reason="Must improve mockoon automation first-- "
+    "only works with one environment, and not on macOS."
 )
 def test_time_retrieval(bitbucket_collector: BitbucketCommitCollector):
     metric = CommitMetric("fake_app")
