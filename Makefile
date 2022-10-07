@@ -266,6 +266,14 @@ pre-commit-all: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	pre-commit run --all-files
 
+# Documentation
+## doc-update: updates documentation to be up to date with README file
+doc-update:
+	./scripts/update_doc_index.py
+## doc-check: checks if documentation is up to date with README file
+doc-check:
+	./scripts/update_doc_index.py --check
+
 # Cleanup
 
 ## clean-dev-env: remove the virtual environment and clean up all .pyc files
