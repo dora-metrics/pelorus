@@ -18,6 +18,9 @@ def bitbucket_collector(openshift_client: DynamicClient):
 
 
 @pytest.mark.mockoon
+@pytest.mark.skip(
+    reason="Must improve mockoon automation first. The script only works with one environment for now, and doesn't work on macOS."
+)
 def test_time_retrieval(bitbucket_collector: BitbucketCommitCollector):
     metric = CommitMetric("fake_app")
     metric.repo_url = "http://127.0.0.1:3001/kgranger-rh2/bitbucket-committime-test"
