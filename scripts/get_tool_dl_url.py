@@ -41,7 +41,7 @@ ARCH = cast(Literal["x86_64", "arm64", "amd64"], _arch)
 class StandardTool:
     "The URL pattern for most tools we use."
 
-    TAR_GZ_PATTERN = re.compile(r"https://.*\.tar\.gz")
+    TAR_GZ_PATTERN = re.compile(r"https://.*\.tar\.[gx]z")
     KERNEL_PATTERN = re.compile(OS, re.IGNORECASE)
 
     if OS == "Darwin":
@@ -108,6 +108,7 @@ class Tool(enum.Enum):
     ct = "helm/chart-testing", StandardTool.url_matches
     conftest = "open-policy-agent/conftest", StandardTool.url_matches
     promtool = "prometheus/prometheus", StandardTool.url_matches
+    shellcheck = "koalaman/shellcheck", StandardTool.url_matches
 
     noobaa = Nooba.repo, Nooba.url_matches
 

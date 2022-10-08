@@ -23,3 +23,5 @@ pyright
 # Required by `ct lint` command
 yamale
 yamllint
+
+pre-commit
