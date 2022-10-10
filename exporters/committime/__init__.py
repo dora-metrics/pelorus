@@ -43,6 +43,7 @@ class CommitMetric:
     __repo_group = attr.field(default=None, init=False)
     __repo_name = attr.field(default=None, init=False)
     __repo_project = attr.field(default=None, init=False)
+    __repo_port = attr.field(default=None, init=False)
 
     committer: Optional[str] = attr.field(default=None, kw_only=True)
     commit_hash: Optional[str] = attr.field(default=None, kw_only=True)
@@ -67,6 +68,15 @@ class CommitMetric:
 
     @property
     def repo_url(self):
+        """
+        The full URL for the repo, obtained from build metadata, Image annotations, etc.
+
+        Setting this will parse it and enable using the following fields:
+
+        repo_{protocol,group,name,project}
+
+        git_{server,fqdn}
+        """
         return self.__repo_url
 
     @repo_url.setter
@@ -103,7 +113,12 @@ class CommitMetric:
     @property
     def git_server(self):
         """Returns the Git server FQDN with the protocol"""
-        return str(self.__repo_protocol + "://" + self.__repo_fqdn)
+        url = f"{self.__repo_protocol}://{self.__repo_fqdn}"
+
+        if self.__repo_port:
+            url += f":{self.__repo_port}"
+
+        return url
 
     def __parse_repourl(self):
         """Parse the repo_url into individual pieces"""
@@ -125,6 +140,7 @@ class CommitMetric:
         self.__repo_group = parsed.owner
         self.__repo_name = parsed.name
         self.__repo_project = parsed.name
+        self.__repo_port = parsed.port
 
     # maps attributes to their location in a `Build`.
     #

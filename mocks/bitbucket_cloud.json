@@ -1,0 +1,293 @@
+{
+  "uuid": "1f804567-37ae-4a94-adfe-14ee33f645d9",
+  "lastMigration": 22,
+  "name": "Bitbucket cloud",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3001,
+  "hostname": "127.0.0.1",
+  "routes": [
+    {
+      "uuid": "bb61e5a1-78d3-47f9-80c6-bf7aa6263ad4",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/2.0/repositories/kgranger-rh2/bitbucket-committime-test/commit/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4",
+      "responses": [
+        {
+          "uuid": "45811bb4-8e9b-4424-83b6-c19aa1b42017",
+          "body": "{\"type\": \"commit\", \"hash\": \"1766a75de2be5cf7fc6bf1fb8424b6a9100485e4\", \"date\": \"2022-10-06T23:47:52+00:00\", \"author\": {\"type\": \"author\", \"raw\": \"Kevin M Granger <kgranger@redhat.com>\", \"user\": {\"display_name\": \"Kevin Granger\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7Bcd42219b-b870-4f44-a40f-543d5ce738fa%7D\"}, \"avatar\": {\"href\": \"https://secure.gravatar.com/avatar/23b7991db687039547304c1c45e02822?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FKG-3.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7Bcd42219b-b870-4f44-a40f-543d5ce738fa%7D/\"}}, \"type\": \"user\", \"uuid\": \"{cd42219b-b870-4f44-a40f-543d5ce738fa}\", \"account_id\": \"5cbfd1d496f23e0e77176320\", \"nickname\": \"kgranger\"}}, \"message\": \"Add back bitbucket API version 1.0 support.\\n\\nAdds it back in a refactored way to separate version-specific behavior.\\n\\nSigned-off-by: Kevin M Granger <kgranger@redhat.com>\\n\", \"summary\": {\"type\": \"rendered\", \"raw\": \"Add back bitbucket API version 1.0 support.\\n\\nAdds it back in a refactored way to separate version-specific behavior.\\n\\nSigned-off-by: Kevin M Granger <kgranger@redhat.com>\\n\", \"markup\": \"markdown\", \"html\": \"<p>Add back bitbucket API version 1.0 support.</p>\\n<p>Adds it back in a refactored way to separate version-specific behavior.</p>\\n<p>Signed-off-by: Kevin M Granger <a href=\\\"/kgranger-rh2/bitbucket-committime-test/src/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4/&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#107;&#103;&#114;&#97;&#110;&#103;&#101;&#114;&#64;&#114;&#101;&#100;&#104;&#97;&#116;&#46;&#99;&#111;&#109;\\\">&#107;&#103;&#114;&#97;&#110;&#103;&#101;&#114;&#64;&#114;&#101;&#100;&#104;&#97;&#116;&#46;&#99;&#111;&#109;</a></p>\"}, \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/kgranger-rh2/bitbucket-committime-test/commit/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4\"}, \"html\": {\"href\": \"https://bitbucket.org/kgranger-rh2/bitbucket-committime-test/commits/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4\"}, \"diff\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/kgranger-rh2/bitbucket-committime-test/diff/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4\"}, \"approve\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/kgranger-rh2/bitbucket-committime-test/commit/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4/approve\"}, \"comments\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/kgranger-rh2/bitbucket-committime-test/commit/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4/comments\"}, \"statuses\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/kgranger-rh2/bitbucket-committime-test/commit/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4/statuses\"}, \"patch\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/kgranger-rh2/bitbucket-committime-test/patch/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4\"}}, \"parents\": [{\"type\": \"commit\", \"hash\": \"49bf2d58cb22749e35d7088d64f7d510d4e67811\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/kgranger-rh2/bitbucket-committime-test/commit/49bf2d58cb22749e35d7088d64f7d510d4e67811\"}, \"html\": {\"href\": \"https://bitbucket.org/kgranger-rh2/bitbucket-committime-test/commits/49bf2d58cb22749e35d7088d64f7d510d4e67811\"}}}], \"rendered\": {\"message\": {\"type\": \"rendered\", \"raw\": \"Add back bitbucket API version 1.0 support.\\n\\nAdds it back in a refactored way to separate version-specific behavior.\\n\\nSigned-off-by: Kevin M Granger <kgranger@redhat.com>\\n\", \"markup\": \"markdown\", \"html\": \"<p>Add back bitbucket API version 1.0 support.</p>\\n<p>Adds it back in a refactored way to separate version-specific behavior.</p>\\n<p>Signed-off-by: Kevin M Granger <a href=\\\"/kgranger-rh2/bitbucket-committime-test/src/1766a75de2be5cf7fc6bf1fb8424b6a9100485e4/&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#107;&#103;&#114;&#97;&#110;&#103;&#101;&#114;&#64;&#114;&#101;&#100;&#104;&#97;&#116;&#46;&#99;&#111;&#109;\\\">&#107;&#103;&#114;&#97;&#110;&#103;&#101;&#114;&#64;&#114;&#101;&#100;&#104;&#97;&#116;&#46;&#99;&#111;&#109;</a></p>\"}}, \"repository\": {\"type\": \"repository\", \"full_name\": \"kgranger-rh2/bitbucket-committime-test\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/kgranger-rh2/bitbucket-committime-test\"}, \"html\": {\"href\": \"https://bitbucket.org/kgranger-rh2/bitbucket-committime-test\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7B0c795381-29c3-41b3-94f7-45b27935b2f3%7D?ts=default\"}}, \"name\": \"bitbucket-committime-test\", \"uuid\": \"{0c795381-29c3-41b3-94f7-45b27935b2f3}\"}, \"participants\": []}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [
+            {
+              "key": "accept-ranges",
+              "value": "bytes"
+            },
+            {
+              "key": "cache-control",
+              "value": "max-age=900"
+            },
+            {
+              "key": "connection",
+              "value": "close"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "date",
+              "value": "Fri, 07 Oct 2022 17:52:38 GMT"
+            },
+            {
+              "key": "etag",
+              "value": "\"gz[cset:1:bf7c05f3d8053a2315c517728ad778942885629b]\""
+            },
+            {
+              "key": "last-modified",
+              "value": "Fri, 07 Oct 2022 16:24:52 GMT"
+            },
+            {
+              "key": "server",
+              "value": "nginx"
+            },
+            {
+              "key": "strict-transport-security",
+              "value": "max-age=31536000; includeSubDomains; preload"
+            },
+            {
+              "key": "vary",
+              "value": "Authorization, Origin, Accept-Encoding"
+            },
+            {
+              "key": "x-accepted-oauth-scopes",
+              "value": "repository"
+            },
+            {
+              "key": "x-b3-traceid",
+              "value": "3299202aa1afb96f"
+            },
+            {
+              "key": "x-cache-info",
+              "value": "caching"
+            },
+            {
+              "key": "x-dc-location",
+              "value": "Micros-3"
+            },
+            {
+              "key": "x-frame-options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "x-render-time",
+              "value": "0.09130144119262695"
+            },
+            {
+              "key": "x-request-count",
+              "value": "3495"
+            },
+            {
+              "key": "x-served-by",
+              "value": "b6984ccb23aa"
+            },
+            {
+              "key": "x-static-version",
+              "value": "dcd19e3ce525"
+            },
+            {
+              "key": "x-usage-input-ops",
+              "value": "0"
+            },
+            {
+              "key": "x-usage-output-ops",
+              "value": "0"
+            },
+            {
+              "key": "x-usage-system-time",
+              "value": "0.001832"
+            },
+            {
+              "key": "x-usage-user-time",
+              "value": "0.057125"
+            },
+            {
+              "key": "x-version",
+              "value": "dcd19e3ce525"
+            },
+            {
+              "key": "x-view-name",
+              "value": "bitbucket.apps.repo2.api.v20.commit.CommitHandler"
+            },
+            {
+              "key": "content-length",
+              "value": "4496"
+            }
+          ],
+          "filePath": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false
+        }
+      ],
+      "enabled": true,
+      "responseMode": null
+    },
+    {
+      "uuid": "2cbd1e5c-9280-49ef-9da9-bb8de864a8fe",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/2.0/repositories",
+      "responses": [
+        {
+          "uuid": "9e652ac8-d72f-4413-8339-53c852dac6fb",
+          "body": "{\"values\": [{\"type\": \"repository\", \"full_name\": \"jwalton/opup\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/opup\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7B7e35bde1-67e7-4d8f-ae29-05dd10424072%7D?ts=java\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/jwalton/opup.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:jwalton/opup.git\"}], \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/opup/hooks\"}}, \"name\": \"opup\", \"slug\": \"opup\", \"description\": \"\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Joseph Walton\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7Bc040300f-f69e-4a65-87a6-5a8f3ef1bbf1%7D\"}, \"avatar\": {\"href\": \"https://secure.gravatar.com/avatar/cbed2f56195ed90bdebd4feec31ac054?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJW-1.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7Bc040300f-f69e-4a65-87a6-5a8f3ef1bbf1%7D/\"}}, \"type\": \"user\", \"uuid\": \"{c040300f-f69e-4a65-87a6-5a8f3ef1bbf1}\", \"account_id\": \"557058:8679ff30-e82d-47b5-90f0-94127260782a\", \"nickname\": \"jwalton\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{c040300f-f69e-4a65-87a6-5a8f3ef1bbf1}\", \"name\": \"Joseph Walton\", \"slug\": \"jwalton\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/jwalton/avatar/?ts=1543459298\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/jwalton\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{6eed76e0-e831-48d0-83ac-cbbd8ee04173}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/jwalton/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/jwalton/projects/PROJ/avatar/32?ts=1543459298\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-06-16T09:16:27.957216+00:00\", \"updated_on\": \"2018-02-06T04:36:52.369420+00:00\", \"size\": 1529686, \"language\": \"java\", \"has_issues\": false, \"has_wiki\": false, \"uuid\": \"{7e35bde1-67e7-4d8f-ae29-05dd10424072}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"jwalton/git-scripts\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/git-scripts\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7B9a355a32-dad9-4efd-9828-ccce80dd3109%7D?ts=default\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/jwalton/git-scripts.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:jwalton/git-scripts.git\"}], \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/git-scripts/hooks\"}}, \"name\": \"git-scripts\", \"slug\": \"git-scripts\", \"description\": \"\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Joseph Walton\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7Bc040300f-f69e-4a65-87a6-5a8f3ef1bbf1%7D\"}, \"avatar\": {\"href\": \"https://secure.gravatar.com/avatar/cbed2f56195ed90bdebd4feec31ac054?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJW-1.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7Bc040300f-f69e-4a65-87a6-5a8f3ef1bbf1%7D/\"}}, \"type\": \"user\", \"uuid\": \"{c040300f-f69e-4a65-87a6-5a8f3ef1bbf1}\", \"account_id\": \"557058:8679ff30-e82d-47b5-90f0-94127260782a\", \"nickname\": \"jwalton\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{c040300f-f69e-4a65-87a6-5a8f3ef1bbf1}\", \"name\": \"Joseph Walton\", \"slug\": \"jwalton\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/jwalton/avatar/?ts=1543459298\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/jwalton\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{6eed76e0-e831-48d0-83ac-cbbd8ee04173}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/jwalton/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/jwalton/projects/PROJ/avatar/32?ts=1543459298\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-07-08T08:59:53.298617+00:00\", \"updated_on\": \"2017-03-19T16:09:30.336053+00:00\", \"size\": 394778, \"language\": \"shell\", \"has_issues\": false, \"has_wiki\": false, \"uuid\": \"{9a355a32-dad9-4efd-9828-ccce80dd3109}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"evzijst/git-tests\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests\"}, \"html\": {\"href\": \"https://bitbucket.org/evzijst/git-tests\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7B08725752-2ec2-41f8-ba6f-a7e4a9a55d07%7D?ts=default\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/evzijst/git-tests.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:evzijst/git-tests.git\"}], \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git-tests/hooks\"}}, \"name\": \"git-tests\", \"slug\": \"git-tests\", \"description\": \"Git repo used for testing with pull requests and difficult merge scenarios.\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Erik van Zijst\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7Ba288a0ab-e13b-43f0-a689-c4ef0a249875%7D\"}, \"avatar\": {\"href\": \"https://secure.gravatar.com/avatar/f6bcbb4e3f665e74455bd8c0b4b3afba?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FEZ-4.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7Ba288a0ab-e13b-43f0-a689-c4ef0a249875%7D/\"}}, \"type\": \"user\", \"uuid\": \"{a288a0ab-e13b-43f0-a689-c4ef0a249875}\", \"account_id\": \"557058:c0b72ad0-1cb5-4018-9cdc-0cde8492c443\", \"nickname\": \"evzijst\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{a288a0ab-e13b-43f0-a689-c4ef0a249875}\", \"name\": \"Erik van Zijst\", \"slug\": \"evzijst\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/evzijst/avatar/?ts=1543458574\"}, \"html\": {\"href\": \"https://bitbucket.org/evzijst/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/evzijst\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{920e7a86-80d7-4310-828e-2ef2a486ba92}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/evzijst/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/evzijst/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/evzijst/projects/PROJ/avatar/32?ts=1543458574\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-08-10T00:42:35.509559+00:00\", \"updated_on\": \"2015-10-15T17:35:06.978690+00:00\", \"size\": 324796, \"language\": \"\", \"has_issues\": false, \"has_wiki\": false, \"uuid\": \"{08725752-2ec2-41f8-ba6f-a7e4a9a55d07}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"evzijst/git\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git\"}, \"html\": {\"href\": \"https://bitbucket.org/evzijst/git\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7Be2c4ca61-b444-4af5-892a-da8afa64671d%7D?ts=default\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/evzijst/git.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:evzijst/git.git\"}], \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/evzijst/git/hooks\"}}, \"name\": \"git\", \"slug\": \"git\", \"description\": \"\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Erik van Zijst\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7Ba288a0ab-e13b-43f0-a689-c4ef0a249875%7D\"}, \"avatar\": {\"href\": \"https://secure.gravatar.com/avatar/f6bcbb4e3f665e74455bd8c0b4b3afba?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FEZ-4.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7Ba288a0ab-e13b-43f0-a689-c4ef0a249875%7D/\"}}, \"type\": \"user\", \"uuid\": \"{a288a0ab-e13b-43f0-a689-c4ef0a249875}\", \"account_id\": \"557058:c0b72ad0-1cb5-4018-9cdc-0cde8492c443\", \"nickname\": \"evzijst\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{a288a0ab-e13b-43f0-a689-c4ef0a249875}\", \"name\": \"Erik van Zijst\", \"slug\": \"evzijst\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/evzijst/avatar/?ts=1543458574\"}, \"html\": {\"href\": \"https://bitbucket.org/evzijst/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/evzijst\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{920e7a86-80d7-4310-828e-2ef2a486ba92}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/evzijst/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/evzijst/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/evzijst/projects/PROJ/avatar/32?ts=1543458574\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-08-15T05:19:11.022316+00:00\", \"updated_on\": \"2013-10-10T23:43:15.183665+00:00\", \"size\": 36467762, \"language\": \"\", \"has_issues\": false, \"has_wiki\": false, \"uuid\": \"{e2c4ca61-b444-4af5-892a-da8afa64671d}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"atlassian_tutorial/streams-jira-delete-issue-plugin\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin\"}, \"html\": {\"href\": \"https://bitbucket.org/atlassian_tutorial/streams-jira-delete-issue-plugin\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7Be1ff0acd-5fe0-4722-8d6f-0d9e7bb69436%7D?ts=java\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/atlassian_tutorial/streams-jira-delete-issue-plugin.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:atlassian_tutorial/streams-jira-delete-issue-plugin.git\"}], \"issues\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/issues\"}, \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/atlassian_tutorial/streams-jira-delete-issue-plugin/hooks\"}}, \"name\": \"streams-jira-delete-issue-plugin\", \"slug\": \"streams-jira-delete-issue-plugin\", \"description\": \"\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Atlassian Tutorials\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/%7B38d7ea9c-d213-4366-bd21-3417324c520f%7D\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/atlassian_tutorial/avatar/\"}, \"html\": {\"href\": \"https://bitbucket.org/%7B38d7ea9c-d213-4366-bd21-3417324c520f%7D/\"}}, \"type\": \"team\", \"uuid\": \"{38d7ea9c-d213-4366-bd21-3417324c520f}\", \"username\": \"atlassian_tutorial\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{38d7ea9c-d213-4366-bd21-3417324c520f}\", \"name\": \"Atlassian Tutorials\", \"slug\": \"atlassian_tutorial\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/atlassian_tutorial/avatar/?ts=1543462696\"}, \"html\": {\"href\": \"https://bitbucket.org/atlassian_tutorial/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/atlassian_tutorial\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{1605e801-929d-4a5a-8653-835b5778c315}\", \"name\": \"Tutorials\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/atlassian_tutorial/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/atlassian_tutorial/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/atlassian_tutorial/projects/PROJ/avatar/32?ts=1568941536\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-08-18T00:17:00.862842+00:00\", \"updated_on\": \"2013-06-12T22:42:52.654728+00:00\", \"size\": 37629, \"language\": \"java\", \"has_issues\": true, \"has_wiki\": true, \"uuid\": \"{e1ff0acd-5fe0-4722-8d6f-0d9e7bb69436}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"mrdon/jira4-compat\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat\"}, \"html\": {\"href\": \"https://bitbucket.org/mrdon/jira4-compat\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7Bd6ad0a37-2f18-4955-954b-2c0e6661835c%7D?ts=java\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/mrdon/jira4-compat.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:mrdon/jira4-compat.git\"}], \"issues\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/issues\"}, \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/mrdon/jira4-compat/hooks\"}}, \"name\": \"jira4-compat\", \"slug\": \"jira4-compat\", \"description\": \"JIRA 4 compatibility library for JIRA 5 plugins\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Don Brown\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7B3940bad8-4dcb-48ae-b572-55ecaf8062f5%7D\"}, \"avatar\": {\"href\": \"https://secure.gravatar.com/avatar/6c5774a17f0fae7933adfe0293ee59f3?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FDB-1.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7B3940bad8-4dcb-48ae-b572-55ecaf8062f5%7D/\"}}, \"type\": \"user\", \"uuid\": \"{3940bad8-4dcb-48ae-b572-55ecaf8062f5}\", \"account_id\": \"557058:b66df88b-2eb7-424d-bdcc-3dc8146aa912\", \"nickname\": \"DonB\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{3940bad8-4dcb-48ae-b572-55ecaf8062f5}\", \"name\": \"Don Brown\", \"slug\": \"mrdon\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/mrdon/avatar/?ts=1543457728\"}, \"html\": {\"href\": \"https://bitbucket.org/mrdon/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/mrdon\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{54e3a19b-e02f-48bc-aa2d-53ef96b22c82}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/mrdon/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/mrdon/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/mrdon/projects/PROJ/avatar/32?ts=1543457728\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-09-08T01:43:21.182004+00:00\", \"updated_on\": \"2012-07-24T08:11:00.229299+00:00\", \"size\": 105939, \"language\": \"java\", \"has_issues\": true, \"has_wiki\": false, \"uuid\": \"{d6ad0a37-2f18-4955-954b-2c0e6661835c}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"rmanalan/chrome-confluence-activity-stream\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream\"}, \"html\": {\"href\": \"https://bitbucket.org/rmanalan/chrome-confluence-activity-stream\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7B8ae1cf3a-39d2-417b-a8aa-59b2cc900e3d%7D?ts=default\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/rmanalan/chrome-confluence-activity-stream.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:rmanalan/chrome-confluence-activity-stream.git\"}], \"issues\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/issues\"}, \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/rmanalan/chrome-confluence-activity-stream/hooks\"}}, \"name\": \"chrome-confluence-activity-stream\", \"slug\": \"chrome-confluence-activity-stream\", \"description\": \"\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Rich Manalang\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7Bc3949920-0338-4246-9490-340d6d745453%7D\"}, \"avatar\": {\"href\": \"https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/557057:38d257e4-6518-42be-82f3-6a84c5ebc401/03a0a30b-dc6f-4ab4-a8f6-17fc2ef7e0d0/128\"}, \"html\": {\"href\": \"https://bitbucket.org/%7Bc3949920-0338-4246-9490-340d6d745453%7D/\"}}, \"type\": \"user\", \"uuid\": \"{c3949920-0338-4246-9490-340d6d745453}\", \"account_id\": \"557057:38d257e4-6518-42be-82f3-6a84c5ebc401\", \"nickname\": \"rich\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{c3949920-0338-4246-9490-340d6d745453}\", \"name\": \"Rich Manalang\", \"slug\": \"rmanalan\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/rmanalan/avatar/?ts=1543460685\"}, \"html\": {\"href\": \"https://bitbucket.org/rmanalan/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/rmanalan\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{c66db885-b332-4f6e-a703-4be585dd3645}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/rmanalan/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/rmanalan/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/rmanalan/projects/PROJ/avatar/32?ts=1543460685\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-09-12T20:21:47.109184+00:00\", \"updated_on\": \"2019-03-29T16:07:35.214957+00:00\", \"size\": 6917673, \"language\": \"\", \"has_issues\": true, \"has_wiki\": false, \"uuid\": \"{8ae1cf3a-39d2-417b-a8aa-59b2cc900e3d}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"tarkasteve/anode\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode\"}, \"html\": {\"href\": \"https://bitbucket.org/tarkasteve/anode\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7B0592fd99-a469-426d-b411-ec50ab10d639%7D?ts=java\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/tarkasteve/anode.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:tarkasteve/anode.git\"}], \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/tarkasteve/anode/hooks\"}}, \"name\": \"Anode\", \"slug\": \"anode\", \"description\": \"\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Steve Smith\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7B1f211896-eaee-4c86-88b6-ca6f0a720e99%7D\"}, \"avatar\": {\"href\": \"https://secure.gravatar.com/avatar/e3f9820e2a9443704337362e5a62e21d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FSS-0.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7B1f211896-eaee-4c86-88b6-ca6f0a720e99%7D/\"}}, \"type\": \"user\", \"uuid\": \"{1f211896-eaee-4c86-88b6-ca6f0a720e99}\", \"account_id\": \"557058:d0aeddad-6813-40ba-904f-f4597a3438f2\", \"nickname\": \"tarkasteve\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{1f211896-eaee-4c86-88b6-ca6f0a720e99}\", \"name\": \"Steve Smith\", \"slug\": \"tarkasteve\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/tarkasteve/avatar/?ts=1543458826\"}, \"html\": {\"href\": \"https://bitbucket.org/tarkasteve/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/tarkasteve\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{58aaed64-7c0f-4f6b-9c74-5d3fa65b4cc1}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/tarkasteve/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/tarkasteve/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/tarkasteve/projects/PROJ/avatar/32?ts=1543458826\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-09-14T05:21:02.811713+00:00\", \"updated_on\": \"2014-03-31T14:30:43.850637+00:00\", \"size\": 177584, \"language\": \"java\", \"has_issues\": false, \"has_wiki\": false, \"uuid\": \"{0592fd99-a469-426d-b411-ec50ab10d639}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"jschumacher/pac-release-plugin\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin\"}, \"html\": {\"href\": \"https://bitbucket.org/jschumacher/pac-release-plugin\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7Bfb9015b8-3f6c-4a6a-aac4-efe02fe61f1f%7D?ts=java\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/jschumacher/pac-release-plugin.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:jschumacher/pac-release-plugin.git\"}], \"issues\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/issues\"}, \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jschumacher/pac-release-plugin/hooks\"}}, \"name\": \"PAC Release Plugin\", \"slug\": \"pac-release-plugin\", \"description\": \"\", \"scm\": \"git\", \"website\": \"\", \"owner\": {\"display_name\": \"Jens Schumacher\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7B4631c5be-6e86-4ead-802c-6f4e5dac9d66%7D\"}, \"avatar\": {\"href\": \"https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/initials/JS-4.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7B4631c5be-6e86-4ead-802c-6f4e5dac9d66%7D/\"}}, \"type\": \"user\", \"uuid\": \"{4631c5be-6e86-4ead-802c-6f4e5dac9d66}\", \"account_id\": \"557057:cf3ea0a5-c4e9-41c4-8550-31484ae612f5\", \"nickname\": \"jens\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{4631c5be-6e86-4ead-802c-6f4e5dac9d66}\", \"name\": \"Jens Schumacher\", \"slug\": \"jschumacher\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/jschumacher/avatar/?ts=1543458036\"}, \"html\": {\"href\": \"https://bitbucket.org/jschumacher/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/jschumacher\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{f68d2f35-53a9-4f19-a2ba-e22c8937ab91}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/jschumacher/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/jschumacher/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/jschumacher/projects/PROJ/avatar/32?ts=1543458036\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-09-20T04:27:56.852255+00:00\", \"updated_on\": \"2011-11-02T07:45:17.681629+00:00\", \"size\": 174138, \"language\": \"java\", \"has_issues\": true, \"has_wiki\": false, \"uuid\": \"{fb9015b8-3f6c-4a6a-aac4-efe02fe61f1f}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}, {\"type\": \"repository\", \"full_name\": \"jwalton/metadata-confluence-plugin\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/metadata-confluence-plugin\"}, \"avatar\": {\"href\": \"https://bytebucket.org/ravatar/%7Bec55378c-ac46-444a-a75b-1147cec8ff81%7D?ts=java\"}, \"pullrequests\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/pullrequests\"}, \"commits\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/commits\"}, \"forks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/forks\"}, \"watchers\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/watchers\"}, \"branches\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/refs/branches\"}, \"tags\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/refs/tags\"}, \"downloads\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/downloads\"}, \"source\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/src\"}, \"clone\": [{\"name\": \"https\", \"href\": \"https://bitbucket.org/jwalton/metadata-confluence-plugin.git\"}, {\"name\": \"ssh\", \"href\": \"git@bitbucket.org:jwalton/metadata-confluence-plugin.git\"}], \"hooks\": {\"href\": \"https://bitbucket.org/!api/2.0/repositories/jwalton/metadata-confluence-plugin/hooks\"}}, \"name\": \"metadata-confluence-plugin\", \"slug\": \"metadata-confluence-plugin\", \"description\": \"\", \"scm\": \"git\", \"website\": \"https://studio.plugins.atlassian.com/browse/META\", \"owner\": {\"display_name\": \"Joseph Walton\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/users/%7Bc040300f-f69e-4a65-87a6-5a8f3ef1bbf1%7D\"}, \"avatar\": {\"href\": \"https://secure.gravatar.com/avatar/cbed2f56195ed90bdebd4feec31ac054?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJW-1.png\"}, \"html\": {\"href\": \"https://bitbucket.org/%7Bc040300f-f69e-4a65-87a6-5a8f3ef1bbf1%7D/\"}}, \"type\": \"user\", \"uuid\": \"{c040300f-f69e-4a65-87a6-5a8f3ef1bbf1}\", \"account_id\": \"557058:8679ff30-e82d-47b5-90f0-94127260782a\", \"nickname\": \"jwalton\"}, \"workspace\": {\"type\": \"workspace\", \"uuid\": \"{c040300f-f69e-4a65-87a6-5a8f3ef1bbf1}\", \"name\": \"Joseph Walton\", \"slug\": \"jwalton\", \"links\": {\"avatar\": {\"href\": \"https://bitbucket.org/workspaces/jwalton/avatar/?ts=1543459298\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/\"}, \"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/jwalton\"}}}, \"is_private\": false, \"project\": {\"type\": \"project\", \"key\": \"PROJ\", \"uuid\": \"{6eed76e0-e831-48d0-83ac-cbbd8ee04173}\", \"name\": \"Untitled project\", \"links\": {\"self\": {\"href\": \"https://bitbucket.org/!api/2.0/workspaces/jwalton/projects/PROJ\"}, \"html\": {\"href\": \"https://bitbucket.org/jwalton/workspace/projects/PROJ\"}, \"avatar\": {\"href\": \"https://bitbucket.org/account/user/jwalton/projects/PROJ/avatar/32?ts=1543459298\"}}}, \"fork_policy\": \"allow_forks\", \"created_on\": \"2011-09-21T00:05:50.970472+00:00\", \"updated_on\": \"2012-07-27T00:54:30.098265+00:00\", \"size\": 412692, \"language\": \"java\", \"has_issues\": false, \"has_wiki\": false, \"uuid\": \"{ec55378c-ac46-444a-a75b-1147cec8ff81}\", \"mainbranch\": {\"name\": \"master\", \"type\": \"branch\"}, \"override_settings\": {\"default_merge_strategy\": false, \"branching_model\": false}}], \"pagelen\": 10, \"next\": \"https://bitbucket.org/api/2.0/repositories?after=2011-09-21T22%3A05%3A29.955410%2B00%3A00\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [
+            {
+              "key": "accept-ranges",
+              "value": "bytes"
+            },
+            {
+              "key": "cache-control",
+              "value": "max-age=900"
+            },
+            {
+              "key": "connection",
+              "value": "close"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "date",
+              "value": "Fri, 07 Oct 2022 17:52:38 GMT"
+            },
+            {
+              "key": "etag",
+              "value": "\"gz[135f8eaa0fb553c6ff08750b757290c9]\""
+            },
+            {
+              "key": "server",
+              "value": "nginx"
+            },
+            {
+              "key": "strict-transport-security",
+              "value": "max-age=31536000; includeSubDomains; preload"
+            },
+            {
+              "key": "vary",
+              "value": "Authorization, Origin, Accept-Encoding"
+            },
+            {
+              "key": "x-accepted-oauth-scopes",
+              "value": "repository"
+            },
+            {
+              "key": "x-b3-traceid",
+              "value": "18971ae334814b7a"
+            },
+            {
+              "key": "x-cache-info",
+              "value": "caching"
+            },
+            {
+              "key": "x-dc-location",
+              "value": "Micros-3"
+            },
+            {
+              "key": "x-frame-options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "x-render-time",
+              "value": "0.340374231338501"
+            },
+            {
+              "key": "x-request-count",
+              "value": "378"
+            },
+            {
+              "key": "x-served-by",
+              "value": "099fe7457a34"
+            },
+            {
+              "key": "x-static-version",
+              "value": "dcd19e3ce525"
+            },
+            {
+              "key": "x-usage-input-ops",
+              "value": "0"
+            },
+            {
+              "key": "x-usage-output-ops",
+              "value": "0"
+            },
+            {
+              "key": "x-usage-system-time",
+              "value": "0.000000"
+            },
+            {
+              "key": "x-usage-user-time",
+              "value": "0.061822"
+            },
+            {
+              "key": "x-version",
+              "value": "dcd19e3ce525"
+            },
+            {
+              "key": "x-view-name",
+              "value": "bitbucket.apps.repo2.api.v20.repo.AllRepositoriesHandler"
+            },
+            {
+              "key": "content-length",
+              "value": "33459"
+            }
+          ],
+          "filePath": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false
+        }
+      ],
+      "enabled": true,
+      "responseMode": null
+    }
+  ],
+  "proxyMode": true,
+  "proxyHost": "https://bitbucket.org",
+  "proxyRemovePrefix": true,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [],
+  "proxyReqHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "proxyResHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ]
+}
