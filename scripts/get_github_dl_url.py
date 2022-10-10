@@ -16,7 +16,7 @@ GITHUB_RELEASE_TEMPLATE = "https://api.github.com/repos/{}/releases/latest"
 OS = platform.system()
 ARCH = platform.machine()
 
-X86_64_ARCH_NAMES = {"x86_64", "arm64"}
+X86_64_ARCH_NAMES = {"x86_64", "amd64"}
 
 # TOOLS:
 # these are ways to test the URLs of each release asset
@@ -58,7 +58,7 @@ class Nooba:
     "Nooba's URL pattern."
 
     repo = "noobaa/noobaa-operator"
-    arch = "mac" if ARCH == "Darwin" else ARCH
+    arch = "mac" if OS == "Darwin" else "linux"
     pattern = re.compile(f"https://(.*)-{arch}-(.*)[0-9]")
 
     @classmethod
