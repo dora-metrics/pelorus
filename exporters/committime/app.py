@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import logging
 import time
+from functools import partial
 
 import attrs.converters
 import attrs.validators
@@ -17,10 +18,24 @@ from committime.collector_gitea import GiteaCommitCollector
 from committime.collector_github import GitHubCommitCollector
 from committime.collector_gitlab import GitLabCommitCollector
 from committime.collector_image import ImageCommitCollector
-from pelorus.config import REDACT, env_vars, load_and_log, log, no_env_vars
-from pelorus.config.converters import comma_separated
+from pelorus.config import (
+    REDACT,
+    env_var_names,
+    env_vars,
+    load_and_log,
+    log,
+    no_env_vars,
+)
+from pelorus.config.converters import comma_separated, pass_through
+from pelorus.utils import Url
 
-GIT_PROVIDER_TYPES = {"github", "bitbucket", "gitea", "azure-devops", "gitlab"}
+PROVIDER_CLASSES_BY_NAME = {
+    "github": GitHubCommitCollector,
+    "bitbucket": BitbucketCommitCollector,
+    "gitea": GiteaCommitCollector,
+    "azure-devops": AzureDevOpsCommitCollector,
+    "gitlab": GitLabCommitCollector,
+}
 
 PROVIDER_TYPES = {"git", "image"}
 DEFAULT_PROVIDER = "git"
@@ -49,8 +64,6 @@ class ImageCommittimeConfig:
 
     def make_collector(self) -> AbstractCommitCollector:
 
-        apps = None  # not sure what this was meant to be?
-
         # Image provider is a special case, where commit time
         # metadata is stored within image.openshift.io/v1 object
         #
@@ -58,33 +71,36 @@ class ImageCommittimeConfig:
         #
         # In such case no Git API call is necessary
         #
-        return ImageCommitCollector(self.kube_client, apps, self.date_format)
+        return ImageCommitCollector(
+            kube_client=self.kube_client,
+            date_format=self.date_format,
+            username="",
+            token="",
+        )
 
 
 @define(kw_only=True)
 class GitCommittimeConfig:
     kube_client: DynamicClient = field(metadata=no_env_vars())
 
-    username: str = field(
-        default="", metadata=env_vars("API_USER", "GITHUB_USER", "GIT_USER")
-    )
+    username: str = field(default="", metadata=env_vars(*env_var_names.USERNAME))
     token: str = field(
-        default="",
-        metadata=env_vars("TOKEN", "GIT_TOKEN", "GITHUB_TOKEN") | log(REDACT),
+        default="", metadata=env_vars(*env_var_names.TOKEN) | log(REDACT), repr=False
     )
 
     namespaces: set[str] = field(factory=set, converter=comma_separated(set))
 
-    git_api: str = field(
-        default=pelorus.DEFAULT_GIT_API, metadata=env_vars("GIT_API", "GITHUB_API")
-    )
-
-    provider: str = field(
-        default=DEFAULT_PROVIDER, validator=attrs.validators.in_(PROVIDER_TYPES)
+    git_api: Url | None = field(
+        default=None,
+        converter=attrs.converters.optional(
+            pass_through(Url, partial(Url.parse, default_scheme="https"))
+        ),
+        metadata=env_vars(*env_var_names.GIT_API),
     )
 
     git_provider: str = field(
-        default=pelorus.DEFAULT_GIT, validator=attrs.validators.in_(GIT_PROVIDER_TYPES)
+        default=pelorus.DEFAULT_GIT,
+        validator=attrs.validators.in_(PROVIDER_CLASSES_BY_NAME.keys()),
     )
 
     tls_verify: bool = field(
@@ -106,48 +122,53 @@ class GitCommittimeConfig:
     def make_collector(self) -> AbstractCommitCollector:
         git_provider = self.git_provider
 
-        apps = None  # not sure what this was meant to be?
-
         if git_provider == "gitlab":
             return GitLabCommitCollector(
-                self.kube_client, self.username, self.token, self.namespaces, apps
+                kube_client=self.kube_client,
+                username=self.username,
+                token=self.token,
+                namespaces=self.namespaces,
             )
         if git_provider == "github":
+            if self.git_api:
+                api = dict(git_api=self.git_api)
+            else:
+                api = {}
             return GitHubCommitCollector(
-                self.kube_client,
-                self.username,
-                self.token,
-                self.namespaces,
-                apps,
-                self.git_api,
-                self.tls_verify,
+                kube_client=self.kube_client,
+                username=self.username,
+                token=self.token,
+                namespaces=self.namespaces,
+                tls_verify=self.tls_verify,
+                **api,
             )
         if git_provider == "bitbucket":
             return BitbucketCommitCollector(
-                self.kube_client,
-                self.username,
-                self.token,
-                self.namespaces,
-                apps,
+                kube_client=self.kube_client,
+                username=self.username,
+                token=self.token,
+                namespaces=self.namespaces,
                 tls_verify=self.tls_verify,
             )
         if git_provider == "gitea":
+            if self.git_api:
+                api = dict(git_api=self.git_api)
+            else:
+                api = {}
             return GiteaCommitCollector(
-                self.kube_client,
-                self.username,
-                self.token,
-                self.namespaces,
-                apps,
-                self.git_api,
+                kube_client=self.kube_client,
+                username=self.username,
+                token=self.token,
+                namespaces=self.namespaces,
+                **api,
             )
         if git_provider == "azure-devops":
             return AzureDevOpsCommitCollector(
-                self.kube_client,
-                self.username,
-                self.token,
-                self.namespaces,
-                apps,
-                self.git_api,
+                kube_client=self.kube_client,
+                username=self.username,
+                token=self.token,
+                namespaces=self.namespaces,
+                git_api=self.git_api,
             )
 
         raise ValueError(

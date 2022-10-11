@@ -15,73 +15,51 @@
 #    under the License.
 #
 
-import logging
 import time
 
+from attrs import field, frozen
+from attrs.validators import in_
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
-from failure.collector_base import AbstractFailureCollector
 from failure.collector_github import GithubFailureCollector
 from failure.collector_jira import JiraFailureCollector
 from failure.collector_servicenow import ServiceNowFailureCollector
+from pelorus.config import env_vars, load_and_log
 
-PROVIDER_TYPES = ["jira", "github", "servicenow"]
+PROVIDER_TYPES = {"jira", "github", "servicenow"}
 
 
-class TrackerFactory:
-    @staticmethod
-    def getCollector() -> AbstractFailureCollector:
-        username = pelorus.utils.get_env_var("API_USER")
-        token = pelorus.utils.get_env_var("TOKEN")
-        tracker_api = pelorus.utils.get_env_var("SERVER")
-        tracker_provider = pelorus.utils.get_env_var(
-            "PROVIDER", pelorus.DEFAULT_TRACKER
-        )
+@frozen
+class FailureCollectorConfig:
+    tracker_provider: str = field(
+        default=pelorus.DEFAULT_TRACKER,
+        metadata=env_vars("PROVIDER"),
+        validator=in_(PROVIDER_TYPES),
+    )
 
-        projects = pelorus.utils.get_env_var("PROJECTS") or ""
-        if projects:
-            logging.info("Querying issues from '%s' projects.", projects)
-            projects = projects.replace(" ", ",")
+    def create(self):
+        if self.tracker_provider == "jira":
+            return load_and_log(JiraFailureCollector)
+        elif self.tracker_provider == "servicenow":
+            return load_and_log(ServiceNowFailureCollector)
+        elif self.tracker_provider == "github":
+            return load_and_log(GithubFailureCollector)
         else:
-            logging.warning("No PROJECTS given")
-
-        if tracker_provider == "jira":
-            pelorus.utils.check_required_config(JiraFailureCollector.REQUIRED_CONFIG)
-            return JiraFailureCollector(
-                server=tracker_api,
-                user=username,
-                apikey=token,
-                projects=projects,
+            raise ValueError(
+                "unknown tracker {self.tracker_provider}, but should be unreachable because of attrs"
             )
-        elif tracker_provider == "servicenow":
-            pelorus.utils.check_required_config(
-                ServiceNowFailureCollector.REQUIRED_CONFIG
-            )
-            return ServiceNowFailureCollector(username, token, tracker_api)
-        elif tracker_provider == "github":
-            pelorus.utils.check_required_config(GithubFailureCollector.REQUIRED_CONFIG)
-            return GithubFailureCollector(
-                apikey=token, projects=projects, server=tracker_api
-            )
-
-        raise ValueError(f"Unknown provider type {tracker_provider}")
 
 
 if __name__ == "__main__":
     pelorus.setup_logging()
-    logging.info("===== Starting Failure Collector =====")
 
-    collector = TrackerFactory.getCollector()
-
-    logging.info("Server: " + collector.server)
-    logging.info(f"User: {collector.user}")
-    logging.info("APP_LABEL: " + pelorus.get_app_label())
-    start_http_server(8080)
+    config = load_and_log(FailureCollectorConfig)
+    collector = config.create()
 
     REGISTRY.register(collector)
+    start_http_server(8080)
 
     while True:
         time.sleep(1)
-    logging.info("===== Exit Failure Collector =====")

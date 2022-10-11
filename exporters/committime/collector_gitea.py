@@ -1,43 +1,45 @@
 import logging
+from functools import partial
 
+import attrs
 import requests
+from attrs import define, field
 
-from pelorus.certificates import set_up_requests_certs
+from committime import CommitMetric
+from pelorus.config.converters import pass_through
 from pelorus.timeutil import parse_assuming_utc, second_precision
+from pelorus.utils import Url, set_up_requests_session
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
+DEFAULT_GITEA_API = Url.parse("https://try.gitea.io")
 
+
+@define(kw_only=True)
 class GiteaCommitCollector(AbstractCommitCollector):
 
-    _prefix_pattern = "%s/api/v1/repos/"
-    _defaultapi = "https://try.gitea.io"
-    _prefix = _prefix_pattern % _defaultapi
-    _suffix = "/git/commits/"
+    session: requests.Session = field(factory=requests.Session, init=False)
 
-    def __init__(self, kube_client, username, token, namespaces, apps, git_api=None):
-        super().__init__(
-            kube_client,
-            username,
-            token,
-            namespaces,
-            apps,
-            "Gitea",
-            _DATETIME_FORMAT,
-            git_api,
+    # overrides with default
+    git_api: Url = field(
+        default=DEFAULT_GITEA_API,
+        converter=attrs.converters.optional(
+            pass_through(Url, partial(Url.parse, default_scheme="https"))
+        ),
+    )
+
+    _path_template = "{group}/{project}/git/commits/{hash}"
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        set_up_requests_session(
+            self.session, self.tls_verify, username=self.username, token=self.token
         )
-        if git_api is not None and len(git_api) > 0:
-            logging.info("Using non-default API: %s" % (git_api))
-        else:
-            self._git_api = self._defaultapi
-        self._prefix = self._prefix_pattern % self._git_api
-        self.session = requests.Session()
-        self.session.verify = set_up_requests_certs()
 
     # base class impl
-    def get_commit_time(self, metric):
+    def get_commit_time(self, metric: CommitMetric):
         """Method called to collect data and send to Prometheus"""
 
         git_server = metric.git_server
@@ -52,16 +54,14 @@ class GiteaCommitCollector(AbstractCommitCollector):
                 "Skipping non Gitea server, found %s" % (git_server)
             )
 
-        url = (
-            self._prefix
-            + metric.repo_group
-            + "/"
-            + metric.repo_project
-            + self._suffix
-            + metric.commit_hash
+        path = self._path_template.format(
+            group=metric.repo_group,
+            project=metric.repo_project,
+            hash=metric.commit_hash,
         )
+        url = self.git_api._replace(path=path).url
         logging.info("URL %s" % (url))
-        response = self.session.get(url, auth=(self._username, self._token))
+        response = self.session.get(url, auth=(self.username, self.token))
         logging.info("response %s", response)
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github

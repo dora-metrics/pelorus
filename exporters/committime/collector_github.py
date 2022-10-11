@@ -1,49 +1,38 @@
 import logging
-from typing import Optional
+from functools import partial
 
+import attrs
 import requests
+from attrs import define, field
 
-from pelorus.certificates import set_up_requests_certs
+from pelorus.config.converters import pass_through
+from pelorus.utils import Url, set_up_requests_session
 from provider_common.github import parse_datetime
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
+DEFAULT_GITHUB_API = Url.parse("api.github.com")
 
+
+@define(kw_only=True)
 class GitHubCommitCollector(AbstractCommitCollector):
-    _prefix_pattern = "https://%s/repos/"
-    _defaultapi = "api.github.com"
-    _prefix = _prefix_pattern % _defaultapi
-    _suffix = "/commits/"
+    session: requests.Session = field(factory=requests.Session, init=False)
 
-    def __init__(
-        self,
-        kube_client,
-        username: Optional[str],
-        token: Optional[str],
-        namespaces,
-        apps,
-        git_api=None,
-        tls_verify=None,
-    ):
-        super().__init__(
-            kube_client,
-            username,
-            token,
-            namespaces,
-            apps,
-            "GitHub",
-            "%Y-%m-%dT%H:%M:%SZ",
-            git_api,
-            tls_verify,
+    # overrides with default
+    git_api: Url = field(
+        default=DEFAULT_GITHUB_API,
+        converter=attrs.converters.optional(
+            pass_through(Url, partial(Url.parse, default_scheme="https"))
+        ),
+    )
+
+    _path_pattern = "/repos/{group}/{project}/commits/{hash}"
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        set_up_requests_session(
+            self.session, self.tls_verify, username=self.username, token=self.token
         )
-        if git_api is not None and len(git_api) > 0:
-            logging.info("Using non-default API: %s" % (git_api))
-        else:
-            self._git_api = self._defaultapi
-        self._prefix = self._prefix_pattern % self._git_api
-
-        self.session = requests.Session()
-        self.session.verify = set_up_requests_certs(tls_verify)
 
     def get_commit_time(self, metric):
         """Method called to collect data and send to Prometheus"""
@@ -59,16 +48,9 @@ class GitHubCommitCollector(AbstractCommitCollector):
                 "Skipping non GitHub server, found %s" % (git_server)
             )
 
-        url = (
-            self._prefix
-            + metric.repo_group
-            + "/"
-            + metric.repo_project
-            + self._suffix
-            + metric.commit_hash
-        )
-        auth = (self._username, self._token) if self._username and self._token else None
-        response = self.session.get(url, auth=auth)
+        path = self._path_pattern.format()
+        url = self.git_api._replace(path=path).url
+        response = self.session.get(url)
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github
             logging.warning(

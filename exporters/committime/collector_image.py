@@ -18,6 +18,8 @@
 import logging
 from typing import Iterable, Optional
 
+from attrs import define
+
 import pelorus
 from committime import CommitMetric
 from pelorus.timeutil import parse_guessing_timezone_DYNAMIC, to_epoch_from_string
@@ -26,7 +28,10 @@ from pelorus.utils import collect_bad_attribute_path_error, get_env_var, get_nes
 from .collector_base import COMMIT_DATE_ANNOTATION_ENV, AbstractCommitCollector
 
 
+@define(kw_only=True)
 class ImageCommitCollector(AbstractCommitCollector):
+
+    date_format: str
 
     # maps attributes to their location in a `image.openshift.io/v1`.
     # Similar to Build Mapping from committime.__init__.py
@@ -43,17 +48,6 @@ class ImageCommitCollector(AbstractCommitCollector):
         repo_url="io.openshift.build.source-location",
         committer="io.openshift.build.commit.author",
     )
-
-    def __init__(self, kube_client, apps, date_format):
-        super().__init__(
-            kube_client,
-            None,
-            None,
-            None,
-            apps,
-            "Image",
-            date_format,
-        )
 
     def commit_metric_from_image(self, app: str, image, errors: list) -> CommitMetric:
         """
@@ -131,7 +125,7 @@ class ImageCommitCollector(AbstractCommitCollector):
             except (ValueError, AttributeError):
                 # Do nothing here as we tried with EPOCH timestamp
                 metric.commit_timestamp = parse_guessing_timezone_DYNAMIC(
-                    metric.commit_time, format=self._timedate_format
+                    metric.commit_time, format=self.date_format
                 ).timestamp()
         return metric
 
@@ -170,7 +164,7 @@ class ImageCommitCollector(AbstractCommitCollector):
 
         logging.debug("Searching for images with label: %s" % app_label)
 
-        v1_images = self._kube_client.resources.get(
+        v1_images = self.kube_client.resources.get(
             api_version="image.openshift.io/v1", kind="Image"
         )
 

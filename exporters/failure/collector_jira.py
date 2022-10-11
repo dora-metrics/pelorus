@@ -18,11 +18,15 @@
 import logging
 from typing import Any, Optional
 
+from attrs import define, field
 from jira import JIRA
 from jira.exceptions import JIRAError
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from pelorus.config import env_var_names, env_vars
+from pelorus.config.converters import comma_or_whitespace_separated
+from pelorus.config.log import REDACT, log
 from pelorus.timeutil import parse_tz_aware, second_precision
 
 # One query limit, exporter will query multiple times.
@@ -40,29 +44,47 @@ RESOLVED_STATUS_ENV = "JIRA_RESOLVED_STATUS"
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
+@define(kw_only=True)
 class JiraFailureCollector(AbstractFailureCollector):
     """
     Jira implementation of a FailureCollector
     """
 
-    REQUIRED_CONFIG = ["API_USER", "TOKEN", "SERVER"]
+    app_label: str = field(default=pelorus.DEFAULT_APP_LABEL)
 
-    def __init__(self, user, apikey, server, projects):
-        super().__init__(server, user, apikey)
-        self.jql_query_string = pelorus.utils.get_env_var(
-            JQL_SEARCH_QUERY_ENV, DEFAULT_JQL_SEARCH_QUERY
-        )
-        self.jira_resolved_statuses = pelorus.utils.get_env_var(RESOLVED_STATUS_ENV)
+    username: str = field(default="", metadata=env_vars(*env_var_names.USERNAME))
 
-        self.query_result_fields_string = QUERY_RESULT_FIELDS
+    token: str = field(
+        default="",
+        metadata=env_vars(*env_var_names.TOKEN) | log(REDACT),
+        repr=False,
+    )
 
+    tracker_api: Optional[str] = field(
+        default="api.github.com", metadata=env_vars("SERVER")
+    )
+
+    projects: set[str] = field(
+        factory=set, converter=comma_or_whitespace_separated(set)
+    )
+
+    jql_query_string: str = field(
+        default=DEFAULT_JQL_SEARCH_QUERY, metadata=env_vars(JQL_SEARCH_QUERY_ENV)
+    )
+    jira_resolved_statuses: Optional[str] = field(
+        default=None, metadata=env_vars(RESOLVED_STATUS_ENV)
+    )
+
+    query_result_fields_string: str = field(default=QUERY_RESULT_FIELDS, init=False)
+
+    def __attrs_post_init__(self):
         # Do not mix projects with custom JQL query
         # Gather all fields and projects
         if self.jql_query_string != DEFAULT_JQL_SEARCH_QUERY:
             self.query_result_fields_string = ""
         else:
-            if projects is not None and len(projects) > 0:
-                projects_str = '","'.join(projects.split(","))
+            if self.projects:
+                projects_str = '","'.join(self.projects)
                 self.jql_query_string = (
                     self.jql_query_string
                     + ' AND project in ("{}")'.format(projects_str)
@@ -73,12 +95,11 @@ class JiraFailureCollector(AbstractFailureCollector):
         or self-hosted.
         """
         jira_client = None
-        server = self.server
-        email = self.user
-        api_key = self.apikey
 
         # Connect to Jira
-        jira_client = JIRA(options={"server": server}, basic_auth=(email, api_key))
+        jira_client = JIRA(
+            options={"server": self.tracker_api}, basic_auth=(self.username, self.token)
+        )
 
         # Ensure connection was performed
         try:

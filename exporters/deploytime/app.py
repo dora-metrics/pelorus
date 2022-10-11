@@ -3,6 +3,7 @@ import re
 import time
 from typing import Iterable, Optional
 
+from attrs import field, frozen
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from prometheus_client import start_http_server
@@ -10,19 +11,21 @@ from prometheus_client.core import REGISTRY, GaugeMetricFamily
 
 import pelorus
 from deploytime import DeployTimeMetric
+from pelorus.config import load_and_log, no_env_vars
+from pelorus.config.converters import comma_separated
 
 supported_replica_objects = {"ReplicaSet", "ReplicationController"}
 
 
-class DeployTimeCollector:
-    _namespaces: set[str]
+@frozen
+class DeployTimeCollector(pelorus.AbstractPelorusExporter):
+    client: DynamicClient = field(metadata=no_env_vars())
+    namespaces: set[str] = field(factory=set, converter=comma_separated(set))
+    prod_label: str = field(default=pelorus.DEFAULT_PROD_LABEL)
 
-    def __init__(
-        self, namespaces: Iterable[str], client: DynamicClient, prod_label: str
-    ):
-        self._namespaces = set(namespaces)
-        self.client = client
-        self.prod_label = prod_label
+    def __attrs_post_init__(self):
+        if self.namespaces and self.prod_label:
+            logging.warning("If NAMESPACES are given, PROD_LABEL is ignored.")
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
         logging.info("collect: start")
@@ -80,16 +83,16 @@ class DeployTimeCollector:
         2. The namespaces matched by PROD_LABEL
         3. If neither namespaces nor the PROD_LABEL is given, then implicitly matches all namespaces.
         """
-        if self._namespaces:
-            logging.info("Watching namespaces %s", self._namespaces)
-            return self._namespaces
+        if self.namespaces:
+            logging.info("Watching namespaces %s", self.namespaces)
+            return self.namespaces
 
         if self.prod_label:
             logging.info(
                 "No namespaces specified, watching all namespaces with given PROD_LABEL (%s)",
                 self.prod_label,
             )
-            query_args = dict(label_selector=prod_label)
+            query_args = dict(label_selector=self.prod_label)
         else:
             logging.info(
                 "No namespaces specified and no PROD_LABEL given, watching all namespaces."
@@ -229,17 +232,9 @@ if __name__ == "__main__":
     pelorus.setup_logging()
     dyn_client = pelorus.utils.get_k8s_client()
 
-    namespaces = {
-        stripped
-        for proj in pelorus.utils.get_env_var("NAMESPACES", "").split(",")
-        if (stripped := proj.strip())
-    }
-    prod_label = pelorus.get_prod_label()
-    if namespaces and prod_label:
-        logging.warning("If NAMESPACES are given, PROD_LABEL is ignored.")
-    elif not (namespaces or prod_label):
-        logging.info("No NAMESPACES or PROD_LABEL given, will watch all namespaces")
+    collector = load_and_log(DeployTimeCollector, other=dict(client=dyn_client))
+
+    REGISTRY.register(collector)
     start_http_server(8080)
-    REGISTRY.register(DeployTimeCollector(namespaces, dyn_client, prod_label))
     while True:
         time.sleep(1)

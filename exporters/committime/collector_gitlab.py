@@ -19,25 +19,26 @@ import logging
 
 import gitlab
 import requests
+from attrs import define, field
 
 from committime import CommitMetric
-from pelorus.certificates import set_up_requests_certs
 from pelorus.timeutil import parse_tz_aware
+from pelorus.utils import set_up_requests_session
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
+@define(kw_only=True)
 class GitLabCommitCollector(AbstractCommitCollector):
-    session: requests.Session
+    session: requests.Session = field(factory=requests.Session, init=False)
 
-    def __init__(self, kube_client, username, token, namespaces, apps):
-        super().__init__(
-            kube_client, username, token, namespaces, apps, "GitLab", _DATETIME_FORMAT
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        set_up_requests_session(
+            self.session, self.tls_verify, username=self.username, token=self.token
         )
-        self.session = requests.Session()
-        self.session.verify = set_up_requests_certs()
 
     def _connect_to_gitlab(self, metric) -> gitlab.Gitlab:
         """Method to connect to Gitlab instance."""
@@ -45,12 +46,12 @@ class GitLabCommitCollector(AbstractCommitCollector):
 
         gitlab_client = None
 
-        if self._token:
+        if self.token:
             # Private or personal token
             logging.debug("Connecting to GitLab server using token: %s" % (git_server))
             gitlab_client = gitlab.Gitlab(
                 git_server,
-                private_token=self._token,
+                private_token=self.token,
                 api_version=4,
                 session=self.session,
             )

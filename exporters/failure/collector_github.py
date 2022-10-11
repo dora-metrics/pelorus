@@ -19,11 +19,14 @@ import logging
 from typing import Any, Optional, Union, cast
 
 import requests
+from attrs import define, field
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
-from pelorus.certificates import set_up_requests_certs
-from pelorus.utils import TokenAuth
+from pelorus.config import env_var_names, env_vars
+from pelorus.config.converters import comma_or_whitespace_separated
+from pelorus.config.log import REDACT, log
+from pelorus.utils import TokenAuth, set_up_requests_session
 from provider_common.github import parse_datetime
 
 # One query limit, exporter will query multiple times.
@@ -44,31 +47,42 @@ class GithubAuthenticationError(Exception):
         super().__init__(message)
 
 
+@define(kw_only=True)
 class GithubFailureCollector(AbstractFailureCollector):
     """
     Github implementation of a FailureCollector
     """
 
-    REQUIRED_CONFIG = ["TOKEN"]
-    _defaultapi = "api.github.com"
+    app_label: str = field(default=pelorus.DEFAULT_APP_LABEL)
 
-    def __init__(
-        self, apikey: Optional[str], projects: str, server: Optional[str] = None
-    ):
-        super().__init__(server or self._defaultapi, None, apikey)
+    token: str = field(
+        default="",
+        metadata=env_vars(*env_var_names.TOKEN) | log(REDACT),
+        repr=False,
+    )
 
-        if projects:
-            self.projects = projects.split(",")
-        else:
-            logging.warning("No projects defined for github issues")
-            self.projects = []
+    tracker_api: Optional[str] = field(
+        default="api.github.com", metadata=env_vars("SERVER")
+    )
 
-        self.session = requests.Session()
+    projects: set[str] = field(
+        factory=set, converter=comma_or_whitespace_separated(set)
+    )
+
+    tls_verify: bool = field(default=True)
+
+    session: requests.Session = field(factory=requests.Session, init=False)
+    user: str = field(default="", init=False)
+
+    def __attrs_post_init__(self):
         # disable .netrc
         self.session.trust_env = False
-        self.session.verify = set_up_requests_certs()
-        if apikey:
-            self.session.auth = TokenAuth(apikey)
+
+        if self.token:
+            set_up_requests_session(
+                self.session, self.tls_verify, auth=TokenAuth(self.token)
+            )
+
         try:
             self.user = self._get_github_user()
         except Exception:
@@ -79,7 +93,7 @@ class GithubFailureCollector(AbstractFailureCollector):
     def _get_github_user(self) -> str:
         # login and get username
         # set the username / server to env for exporter consistency
-        url = "https://{}/user".format(self.server)
+        url = "https://{}/user".format(self.tracker_api)
         resp = cast(dict[str, Any], self._make_request(None, None, url))
         return resp["login"]
 
@@ -105,7 +119,7 @@ class GithubFailureCollector(AbstractFailureCollector):
         for proj in self.projects:
             logging.info("Getting issues from: %s", proj)
             # note: this is getting issues for each github project
-            url = "https://{}/repos/{}/issues".format(self.server, proj)
+            url = "https://{}/repos/{}/issues".format(self.tracker_api, proj)
             headers = {
                 "Accept": "application/vnd.github.v3+json",
             }
@@ -139,7 +153,7 @@ class GithubFailureCollector(AbstractFailureCollector):
                 created_ts = parse_datetime(issue["created_at"]).timestamp()
                 resolution_ts = None
                 if is_bug:
-                    app_label = pelorus.get_app_label()
+                    app_label = self.app_label
                     label = next(
                         (label for label in labels if app_label in label["name"]), None
                     )

@@ -20,14 +20,19 @@ from __future__ import annotations
 import logging
 import re
 from abc import abstractmethod
-from typing import Iterable, Optional
+from functools import partial
+from typing import ClassVar, Iterable, Optional
 
+import attrs
+from attrs import define, field
 from jsonpath_ng import parse
+from openshift.dynamic import DynamicClient
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
 from committime import CommitMetric, commit_metric_from_build
-from pelorus.utils import get_env_var, get_nested
+from pelorus.config.converters import comma_separated, pass_through
+from pelorus.utils import Url, get_env_var, get_nested
 
 # Custom annotations env for the Build
 # Default ones are in the CommitMetric._ANNOTATION_MAPPIG
@@ -46,36 +51,45 @@ class UnsupportedGITProvider(Exception):
         super().__init__(message)
 
 
+@define(kw_only=True)
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
     Base class for a CommitCollector.
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(
-        self,
-        kube_client,
-        username: str,
-        token: str,
-        namespaces: set[str],
-        apps,
-        collector_name,
-        timedate_format,
-        git_api=None,
-        tls_verify=None,
-    ):
-        """Constructor"""
-        self._kube_client = kube_client
-        self._username = username
-        self._token = token
-        self._namespaces = namespaces
-        self._apps = apps
-        self._git_api = git_api
-        self._tls_verify = tls_verify
-        self._commit_dict = {}
-        self._timedate_format = timedate_format
-        self._collector_name = collector_name
-        logging.info("=====Using %s Collector=====" % (self._collector_name))
+    collector_name: ClassVar[str]
+
+    kube_client: DynamicClient = field()
+
+    username: str = field()
+    token: str = field(repr=False)
+
+    namespaces: set[str] = field(factory=set, converter=comma_separated(set))
+
+    git_api: Optional[Url] = field(
+        default=None,
+        converter=attrs.converters.optional(
+            pass_through(Url, partial(Url.parse, default_scheme="https"))
+        ),
+    )
+
+    tls_verify: bool = field(default=True)
+
+    commit_dict: dict[str, Optional[float]] = field(factory=dict, init=False)
+
+    def __attrs_post_init__(self):
+        self.commit_dict = dict()
+        if not (self.username and self.token):
+            logging.warning(
+                "No API_USER and no TOKEN given. This is okay for public repositories only."
+            )
+        elif (self.username and not self.token) or (not self.username and self.token):
+            logging.warning(
+                "username and token must both be set, or neither should be set. Unsetting both."
+            )
+            self.username = ""
+            self.token = ""
 
     def collect(self):
         commit_metric = GaugeMetricFamily(
@@ -109,10 +123,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             yield commit_metric
 
     def _get_watched_namespaces(self) -> set[str]:
-        watched_namespaces = self._namespaces
+        watched_namespaces = self.namespaces
         if not watched_namespaces:
             logging.info("No namespaces specified, watching all namespaces")
-            v1_namespaces = self._kube_client.resources.get(
+            v1_namespaces = self.kube_client.resources.get(
                 api_version="v1", kind="Namespace"
             )
             watched_namespaces = {
@@ -166,7 +180,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 % (app_label, namespace)
             )
 
-            v1_builds = self._kube_client.resources.get(
+            v1_builds = self.kube_client.resources.get(
                 api_version="build.openshift.io/v1", kind="Build"
             )
             # only use builds that have the app label
@@ -363,7 +377,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         Check the cache for the commit_time.
         If absent, call the API implemented by the subclass.
         """
-        if metric.commit_hash and metric.commit_hash not in self._commit_dict:
+        if metric.commit_hash and metric.commit_hash not in self.commit_dict:
             logging.debug(
                 "sha: %s, commit_timestamp not found in cache, executing API call.",
                 metric.commit_hash,
@@ -423,7 +437,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         :param build: the Build resource
         :return: repo_url as a str or None if not found
         """
-        v1_build_configs = self._kube_client.resources.get(
+        v1_build_configs = self.kube_client.resources.get(
             api_version="build.openshift.io/v1", kind="BuildConfig"
         )
         build_config = v1_build_configs.get(

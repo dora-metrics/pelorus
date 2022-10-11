@@ -30,11 +30,13 @@ from typing import Any, Generator, Optional, Union, cast, overload
 
 import requests
 import requests.auth
+import urllib3
 from kubernetes import client, config
 from kubernetes.dynamic import Resource, ResourceInstance
 from openshift.dynamic import DynamicClient
 
 import pelorus
+from pelorus.certificates import set_up_requests_certs
 
 # sentinel value for the default kwarg to get_nested
 __GET_NESTED_NO_DEFAULT = object()
@@ -283,6 +285,42 @@ class TokenAuth(requests.auth.AuthBase):
         return r
 
 
+@overload
+def set_up_requests_session(
+    session: requests.Session,
+    verify: Optional[bool],
+    *,
+    auth: Optional[requests.auth.AuthBase] = None,
+):
+    ...
+
+
+@overload
+def set_up_requests_session(
+    session: requests.Session,
+    verify: Optional[bool],
+    *,
+    username: str,
+    token: str,
+):
+    ...
+
+
+def set_up_requests_session(
+    session: requests.Session, verify: Optional[bool], **kwargs
+):
+    "Configures a requests session for proper TLS handling and auth."
+    session.verify = set_up_requests_certs(verify)
+    if "auth" in kwargs:
+        auth: Optional[requests.auth.AuthBase] = kwargs["auth"]
+        session.auth = auth
+    elif "username" in kwargs and "token" in kwargs:
+        username = kwargs["username"]
+        token = kwargs["token"]
+        if username and token:
+            session.auth = (username, token)
+
+
 def join_url_path_components(*components: str) -> str:
     return "/".join(c.strip("/") for c in components)
 
@@ -307,3 +345,43 @@ def paginate_resource(
     while continue_token:
         list_ = client.get(resource, **query, limit=limit, _continue=continue_token)
         yield from list_.items
+
+
+class Url(urllib3.util.Url):
+    """
+    A URL.
+
+    A really tiny abstraction over a urllib3.util.Url to solve one small issue with its path handling:
+    if the path does not have a leading slash, it will not add one when converting to a string.
+
+    We use urllib3's url instead of the stdlib's `urllib.parse` because `urllib.parse` assumes
+    that a string without a scheme means a _path_, instead of a netloc/host.
+    That is almost never the behavior we want.
+    """
+
+    scheme: Optional[str]
+    auth: Optional[str]
+    host: Optional[str]
+    port: Optional[str]
+    path: Optional[str]
+    query: Optional[str]
+    fragment: Optional[str]
+
+    @classmethod
+    def parse(cls, url: str, default_scheme: Optional[str] = "https"):
+        parsed = urllib3.util.parse_url(url)
+        if parsed.scheme is None and default_scheme is not None:
+            parsed = parsed._replace(scheme=default_scheme)
+        return cls(*parsed)
+
+    @property
+    def url(self) -> str:
+        if self.path and not self.path.startswith("/"):
+            self = self._replace(path=f"/{self.path}")
+        return super(Url, self).url
+
+    def __bool__(self):
+        return any(self)
+
+    def __str__(self):
+        return self.url

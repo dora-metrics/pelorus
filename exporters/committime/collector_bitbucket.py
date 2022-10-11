@@ -5,12 +5,13 @@ from typing import Optional, cast
 
 import requests
 import requests.exceptions
+from attrs import define, field
 
 import pelorus
 from committime import CommitMetric
 from committime.collector_base import AbstractCommitCollector, UnsupportedGITProvider
-from pelorus.certificates import set_up_requests_certs
 from pelorus.timeutil import parse_tz_aware
+from pelorus.utils import set_up_requests_session
 
 
 class APIVersion(ABC):
@@ -136,28 +137,21 @@ _SUPPORTED_API_VERSIONS = (Version2(), Version1())
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 
 
+@define(kw_only=True)
 class BitbucketCommitCollector(AbstractCommitCollector):
     # Default http headers needed for API calls
     DEFAULT_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 
-    def __init__(
-        self, kube_client, username: str, token: str, namespaces, apps, tls_verify=True
-    ):
-        super().__init__(
-            kube_client,
-            username,
-            token,
-            namespaces,
-            apps,
-            "BitBucket",
-            _DATETIME_FORMAT,
+    cached_server_api_versions: dict[str, APIVersion] = field(factory=dict, init=False)
+
+    session: requests.Session = field(factory=requests.Session, init=False)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        set_up_requests_session(
+            self.session, self.tls_verify, username=self.username, token=self.token
         )
-        self.__cached_server_api_versions: dict[str, APIVersion] = {}
-        self.__session = requests.Session()
-        self.__session.verify = set_up_requests_certs(tls_verify)
-        self.__session.headers.update(self.DEFAULT_HEADERS)
-        if self._username and self._token:
-            self.__session.auth = (self._username, self._token)
+        self.session.headers.update(self.DEFAULT_HEADERS)
 
     def get_commit_time(self, metric: CommitMetric):
         git_server = metric.git_server
@@ -223,7 +217,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         try:
             url = api_version.commit_url(metric)
 
-            response = self.__session.get(url)
+            response = self.session.get(url)
             response.encoding = "utf-8"
             response.raise_for_status()
 
@@ -283,7 +277,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         If absent, test API urls to see which version is correct,
         updating the cache.
         """
-        api_version = self.__cached_server_api_versions.get(server)
+        api_version = self.cached_server_api_versions.get(server)
 
         if api_version is not None:
             return api_version
@@ -291,7 +285,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         for potential_api_version in _SUPPORTED_API_VERSIONS:
             if self.check_api_verison(server, potential_api_version):
                 api_version = potential_api_version
-                self.__cached_server_api_versions[server] = potential_api_version
+                self.cached_server_api_versions[server] = potential_api_version
                 break
 
         if api_version is None:
@@ -307,7 +301,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         """
         url = api_version.test_url(git_server)
 
-        response = self.__session.get(url)
+        response = self.session.get(url)
         try:
             response.raise_for_status()
             return True
