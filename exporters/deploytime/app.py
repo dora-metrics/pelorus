@@ -89,14 +89,14 @@ class DeployTimeCollector:
                 "No namespaces specified, watching all namespaces with given PROD_LABEL (%s)",
                 self.prod_label,
             )
-            query_args = dict(label_selector=prod_label)
+            query_args = dict(label_selector=self.prod_label)
         else:
             logging.info(
                 "No namespaces specified and no PROD_LABEL given, watching all namespaces."
             )
             query_args = dict()
 
-        all_namespaces = dyn_client.resources.get(api_version="v1", kind="Namespace")
+        all_namespaces = self.client.resources.get(api_version="v1", kind="Namespace")
         namespaces = {
             namespace.metadata.name
             for namespace in all_namespaces.get(**query_args).items

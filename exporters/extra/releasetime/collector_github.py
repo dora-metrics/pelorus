@@ -1,24 +1,27 @@
 """
-EXPERIMENTAL. Reports github releases as "deployments", using the tag's SHA as the image_sha.
+A metric collector that treats GitHub releases as "deployments".
+Meant for internal usage only, at least for now.
 """
 from __future__ import annotations
 
 import logging
-import urllib.parse
 from datetime import datetime
 from functools import partial
-from typing import Any, Iterable, NamedTuple, Optional, cast
+from typing import Any, Iterable, NamedTuple, Optional, TypeVar, cast
+from urllib.parse import parse_qs
 
-from attrs import field, frozen
+import requests
+from attrs import define, field
 from prometheus_client.core import GaugeMetricFamily
-from requests import Session
+from urllib3.util import Url
 
 from pelorus import AbstractPelorusExporter
-from pelorus.certificates import set_up_requests_certs
 from pelorus.config import REDACT, env_vars, load_and_log, log
 from pelorus.config.converters import comma_or_whitespace_separated
-from pelorus.utils import TokenAuth, join_url_path_components
-from provider_common.github import GitHubError, paginate_github, parse_datetime
+from pelorus.utils import CachedData, join_url_path_components
+from provider_common.github import GitHubError, paginate_items, parse_datetime
+from provider_common.github.errors import GitHubRateLimitError
+from provider_common.github.rate_limit import RateLimitingClient
 
 
 class Release(NamedTuple):
@@ -61,8 +64,11 @@ class ProjectSpec(NamedTuple):
         if isinstance(var, ProjectSpec):
             return var
 
-        url = urllib.parse.urlsplit(var)
-        parts = url.path.split("/")
+        # TODO: compare approaches. The below was from master.
+        # url = urllib.parse.urlsplit(var)
+        # parts = url.path.split("/")
+        path, _, query = var.partition("?")
+        parts = path.split("/")
 
         if len(parts) != 2:
             raise ValueError(
@@ -71,7 +77,7 @@ class ProjectSpec(NamedTuple):
 
         org, repo = parts
 
-        query_params = urllib.parse.parse_qs(url.query)
+        query_params = parse_qs(query)
 
         if "app" in query_params:
             app = query_params["app"][0]
@@ -91,24 +97,41 @@ class ProjectSpec(NamedTuple):
         return f"{self.organization}/{self.repo}"
 
 
-@frozen
+CachedReleases = CachedData[set[Release]]
+CachedTags = CachedData[dict[str, str]]
+
+T = TypeVar("T")
+
+
+@define
 class GitHubReleaseCollector(AbstractPelorusExporter):
     # TODO: regex to determine which releases are "prod"?
 
     projects: set[ProjectSpec] = field(converter=ProjectSpec.all_from_env_var)
-    host: str = field(default="api.github.com", metadata=env_vars("GIT_API"))
+    # TODO: url converter from other uses
+    host: Url = field(default="api.github.com", metadata=env_vars("GIT_API"))
     token: Optional[str] = field(default=None, metadata=log(REDACT))
+    tls_verify: bool = field(default=True)  # TODO: compare against other uses
 
-    _session: Session = field(factory=Session, init=False)
+    session: requests.Session = field(factory=requests.Session, init=False)
+    _client: RateLimitingClient = field(init=False)
+
+    _project_release_cache: dict[str, CachedReleases] = field(factory=dict, init=False)
+    "Maps project names to their `Last-Modified` header and their releases."
+
+    _project_tag_cache: dict[str, CachedTags] = field(factory=dict, init=False)
+    "Maps project names to their last-modified header and their tags (by name)."
 
     def __attrs_post_init__(self):
         if not self.projects:
             raise ValueError("No projects specified for GitHub deploytime collector")
 
-        self._session.verify = set_up_requests_certs()
+        # TODO: lives in other branch
+        # set_up_requests_session(
+        #     self.session, auth=TokenAuth(self.token) if self.token else None
+        # )
 
-        if self.token:
-            self._session.auth = TokenAuth(self.token)
+        self._client = RateLimitingClient(self.session)
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
         metric = GaugeMetricFamily(
@@ -152,24 +175,57 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
 
         yield metric
 
-    def _get_releases_for_project(self, project: ProjectSpec) -> Iterable[Release]:
+    def _get_releases_for_project(self, project: ProjectSpec) -> set[Release]:
         """
         Get all releases for a project.
 
-        If a release is missing necessary data, it won't be yielded, but will be logged.
+        Will make the request with the cache time if there is a cached response.
 
-        Will stop yielding if there is a GitHubError for any of the reasons outlined in paginate_github.
+        If a rate limit is hit, cached data will be returned if it exists,
+        or empty data if not. Both cases will be logged.
         """
 
+        path = join_url_path_components(
+            "repos", project.organization, project.repo, "releases"
+        )
+        url = self.host._replace(path=path)
+
+        cached = self._project_release_cache.get(str(project), None)
+        options = dict(headers=cached.if_modified_since) if cached is not None else {}
+
+        releases: set[Release] = set()
+
         try:
-            first_url = f"https://{self.host}/" + join_url_path_components(
-                "repos", project.organization, project.repo, "releases"
-            )
-            for release in paginate_github(self._session, first_url):
-                release = cast(dict[str, Any], release)
-                if release["draft"]:
-                    continue
-                yield Release.from_json(release)
+            request = requests.Request("GET", url.url, **options)
+            response = self._client.request(request)
+
+            if response.status_code == requests.codes["not modified"]:
+                return cast(CachedReleases, cached).data
+
+            last_modified = response.headers.get("Last-Modified")
+
+            for release in paginate_items(self._client, response):
+                if not release["draft"]:
+                    releases.add(Release.from_json(release))
+
+            if last_modified:
+                self._project_release_cache[str(project)] = CachedData(
+                    last_modified, releases
+                )
+        except GitHubRateLimitError:
+            # return stale data with the hopes we'll be un-limited soon.
+            # The rate limit itself is already logged, but let's inform
+            # that this is outdated data.
+            if cached and releases:
+                logging.info(
+                    "Got some info before rate limiting, augmenting with cache"
+                )
+                releases = cached.data | releases
+            elif cached:
+                logging.info("Returning cached data since we are rate limited")
+                releases = cached.data
+            else:
+                logging.info("Returning no data because we are rate limited")
         except GitHubError as e:
             logging.error(
                 "Error while getting GitHub response for project %s: %s",
@@ -177,6 +233,8 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
                 e,
                 exc_info=True,
             )
+
+        return releases
 
     def _get_each_tag_commit(
         self, project: ProjectSpec, tags: set[str]
@@ -195,17 +253,49 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
         Any GitHubError from talking to GitHub
         """
 
+        path = join_url_path_components(
+            "repos", project.organization, project.repo, "tags"
+        )
+        url = self.host._replace(path=path)
+
+        cached = self._project_tag_cache.get(str(project), None)
+        options = dict(headers=cached.if_modified_since) if cached is not None else {}
+
         tags_to_commits = {}
 
         try:
-            url = f"https://{self.host}/" + join_url_path_components(
-                "repos", project.organization, project.repo, "tags"
-            )
-            for tag in paginate_github(self._session, url):
+            request = requests.Request("GET", url.url, **options)
+            response = self._client.request(request)
+
+            if response.status_code == requests.codes["not modified"]:
+                return cast(CachedTags, cached).data
+
+            last_modified = response.headers.get("Last-Modified")
+
+            for tag in paginate_items(self._client, response):
                 tag_name = tag["name"]
 
                 if tag_name in tags:
                     tags_to_commits[tag_name] = tag["commit"]["sha"]
+
+            if last_modified:
+                self._project_tag_cache[str(project)] = CachedData(
+                    last_modified, tags_to_commits
+                )
+        except GitHubRateLimitError:
+            # return stale data with the hopes we'll be un-limited soon.
+            # The rate limit itself is already logged, but let's inform
+            # that this is outdated data.
+            if cached and tags_to_commits:
+                logging.info(
+                    "Got some info before rate limiting, augmenting with cache"
+                )
+                tags_to_commits = cached.data | tags_to_commits
+            elif cached:
+                logging.info("Returning cached data since we are rate limited")
+                tags_to_commits = cached.data
+            else:
+                logging.info("Returning no data because we are rate limited")
         except GitHubError as e:
             logging.error(
                 "Error talking to GitHub while getting tags for project %s: %s",
