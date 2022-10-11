@@ -7,16 +7,17 @@ from provider_common.openshift import convert_datetime
 
 @frozen
 class DeployTimeMetric:
+    """
+    While it is called image_sha for backwards compatibility,
+    it could also refer to the release hash for a github release.
+    """
+
     name: str
     namespace: str
     # WARNING: do not mutate the dict after hashing or things may break.
     labels: dict[str, str]
-    deploy_time: datetime = field(converter=convert_datetime)
+    deploy_time: object
     image_sha: str
-
-    @property
-    def deploy_time_timestamp(self) -> float:
-        return self.deploy_time.timestamp()
 
     def __hash__(self):
         return hash(
