@@ -1,8 +1,4 @@
-from datetime import datetime
-
-from attrs import field, frozen
-
-from provider_common.openshift import convert_datetime
+from attrs import frozen
 
 
 @frozen

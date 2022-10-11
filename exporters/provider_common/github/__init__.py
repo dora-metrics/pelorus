@@ -5,7 +5,9 @@ A small subset of a GitHub API client. Provides:
 - error types to handle errors from the API separately
 - a consistent way to parse their date format
 """
-from datetime import datetime, timezone
+from datetime import datetime
+
+from pelorus.timeutil import parse_assuming_utc
 
 from .errors import GitHubError, GitHubRateLimitError
 from .pagination import PageResponse, paginate, paginate_items
@@ -23,7 +25,7 @@ def parse_datetime(datetime_str: str) -> datetime:
 
     Will raise a ValueError if it doesn't match the expected format.
     """
-    return datetime.strptime(datetime_str, _DATETIME_FORMAT).astimezone(timezone.utc)
+    return parse_assuming_utc(datetime_str, format=_DATETIME_FORMAT)
 
 
 __all__ = [
