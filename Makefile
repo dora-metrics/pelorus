@@ -77,8 +77,9 @@ git-blame:
 
 ## cli_dev_tools: install all necessary CLI dev tools
 .PHONY: cli_dev_tools
-cli_dev_tools:
-	./scripts/install_dev_tools -v $(PELORUS_VENV)
+cli_dev_tools: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+		./scripts/install_dev_tools -v $(PELORUS_VENV)
 
 ## dev-env: set up everything needed for development (install tools, set up virtual environment, git configuration)
 dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
