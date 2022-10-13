@@ -1,9 +1,15 @@
 site_name: Pelorus Documentation
 site_url: https://pelorus.readthedocs.io/en/latest/
-theme: readthedocs
+theme:
+  name: material
 markdown_extensions:
   - def_list
   - tables
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
 nav:
   - Introduction:
     - Welcome to Pelorus: index.md
