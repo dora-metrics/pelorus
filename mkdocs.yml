@@ -1,7 +1,30 @@
-site_name: Pelorus Documentation
+site_name: Pelorus Docs
 site_url: https://pelorus.readthedocs.io/en/latest/
+repo_name: konveyor/pelorus
+repo_url: https://github.com/konveyor/pelorus
 theme:
   name: material
+  logo: img/icon-white.png
+  favicon: img/favicon.png
+  palette:
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: pelorus
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+  features:
+    - navigation.tracking
+extra_css:
+  - stylesheets/extra.css
 markdown_extensions:
   - def_list
   - tables
