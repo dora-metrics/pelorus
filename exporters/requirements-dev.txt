@@ -13,6 +13,8 @@ semver
 
 # Used manually, mentioned in the docs/Development.md
 mkdocs
+# Emoji & icon support
+pymdown-extensions
 
 # Makefile uses those in static code analysis - linting and formatting
 black
