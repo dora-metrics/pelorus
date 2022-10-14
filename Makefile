@@ -56,7 +56,8 @@ $(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt
 	. ${PELORUS_VENV}/bin/activate && \
 	       pip install -U pip && \
 	       pip install -r exporters/requirements.txt \
-	                   -r exporters/requirements-dev.txt
+	                   -r exporters/requirements-dev.txt \
+					   -r docs/requirements.txt
 	touch ${PELORUS_VENV}
 
 .PHONY: exporters
