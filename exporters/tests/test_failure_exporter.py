@@ -17,6 +17,7 @@
 
 import json
 import os
+from contextlib import nullcontext
 from typing import Optional
 from unittest import mock  # NOQA
 
@@ -30,6 +31,15 @@ from failure.collector_github import GithubAuthenticationError, GithubFailureCol
 from failure.collector_jira import JiraFailureCollector
 from pelorus.config import load_and_log
 
+JIRA_PARAMETERS = "server, username, apikey"
+JIRA_VALUES = [
+    (
+        "https://pelorustest.atlassian.net",
+        "fake@user.com",
+        "WIEds4uZHiCGnrtmgQPn9E7D",
+    )
+]
+
 
 def setup_jira_collector(server, username, apikey) -> JiraFailureCollector:
     return JiraFailureCollector(
@@ -39,16 +49,7 @@ def setup_jira_collector(server, username, apikey) -> JiraFailureCollector:
     )
 
 
-@pytest.mark.parametrize(
-    "server, username, apikey",
-    [
-        (
-            "https://pelorustest.atlassian.net",
-            "fake@user.com",
-            "WIEds4uZHiCGnrtmgQPn9E7D",
-        )
-    ],
-)
+@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
 @pytest.mark.integration
 def test_jira_connection(server, username, apikey):
     collector = setup_jira_collector(server, username, apikey)
@@ -61,7 +62,7 @@ def test_jira_connection(server, username, apikey):
 
 
 @pytest.mark.parametrize(
-    "server, username, apikey",
+    JIRA_PARAMETERS,
     [("https://pelorustest.atlassian.net", "fake@user.com", "fakepass")],
 )
 @pytest.mark.integration
@@ -72,16 +73,7 @@ def test_jira_pass_connection(server, username, apikey):
     assert "Basic authentication with passwords is deprecated" in str(context_ex.value)
 
 
-@pytest.mark.parametrize(
-    "server, username, apikey",
-    [
-        (
-            "https://pelorustest.atlassian.net",
-            "fake@user.com",
-            "WIEds4uZHiCGnrtmgQPn9E7D",
-        )
-    ],
-)
+@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
 def test_jira_prometheus_register(
     server, username, apikey, monkeypatch: pytest.MonkeyPatch
 ):
@@ -98,17 +90,10 @@ def test_jira_prometheus_register(
     REGISTRY.register(collector)  # type: ignore
 
 
-@pytest.mark.parametrize(
-    "server, username, apikey",
-    [
-        (
-            "https://pelorustest.atlassian.net",
-            "fake@user.com",
-            "WIEds4uZHiCGnrtmgQPn9E7D",
-        )
-    ],
-)
-def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
+def test_jira_exception_is_not_raised(
+    server, username, apikey, monkeypatch: pytest.MonkeyPatch
+):
     class FakeJira(object):
         def search_issues(self, issues, startAt=0, maxResults=50, fields=None):
             raise JIRAError(status_code=400, text="Fake search error")
@@ -123,7 +108,10 @@ def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatc
         token=apikey,
         tracker_api=server,
     )
-    collector.search_issues()
+    with nullcontext() as context:
+        collector.search_issues()
+
+    assert context is None
 
 
 # Github Issue failure exporter tests
@@ -226,16 +214,7 @@ def test_github_closed_issue_search_issues(monkeypatch: pytest.MonkeyPatch):
     assert critical_issues[0].resolutiondate == float(1653672080.0)
 
 
-@pytest.mark.parametrize(
-    "server, username, apikey",
-    [
-        (
-            "https://pelorustest.atlassian.net",
-            "fake@user.com",
-            "WIEds4uZHiCGnrtmgQPn9E7D",
-        )
-    ],
-)
+@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
 def test_default_jql_search_query(server, username, apikey):
     env = {collector_jira.JQL_SEARCH_QUERY_ENV: collector_jira.DEFAULT_JQL_SEARCH_QUERY}
     projects = {"custom", "projects"}
@@ -254,22 +233,15 @@ def test_default_jql_search_query(server, username, apikey):
 
     assert collector.query_result_fields_string == collector_jira.QUERY_RESULT_FIELDS
 
-    assert "AND project in" in collector.jql_query_string
+    assert "AND project in (" in collector.jql_query_string
+    assert '"custom"' in collector.jql_query_string
+    assert '"projects"' in collector.jql_query_string
 
     for project in projects:
         assert f'"{project}"' in collector.jql_query_string
 
 
-@pytest.mark.parametrize(
-    "server, username, apikey",
-    [
-        (
-            "https://pelorustest.atlassian.net",
-            "fake@user.com",
-            "WIEds4uZHiCGnrtmgQPn9E7D",
-        )
-    ],
-)
+@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
 def test_custom_jql_search_query(server, username, apikey):
 
     custom_jql_query = "custom JIRA JQL query"
@@ -293,16 +265,7 @@ def test_custom_jql_search_query(server, username, apikey):
     assert "AND project" not in collector.jql_query_string
 
 
-@pytest.mark.parametrize(
-    "server, username, apikey",
-    [
-        (
-            "https://pelorustest.atlassian.net",
-            "fake@user.com",
-            "WIEds4uZHiCGnrtmgQPn9E7D",
-        )
-    ],
-)
+@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
 def test_no_resolved_timestamp(server, username, apikey):
 
     collector = JiraFailureCollector(
@@ -324,16 +287,7 @@ def test_no_resolved_timestamp(server, username, apikey):
     assert resolution_timestamp is None
 
 
-@pytest.mark.parametrize(
-    "server, username, apikey",
-    [
-        (
-            "https://pelorustest.atlassian.net",
-            "fake@user.com",
-            "WIEds4uZHiCGnrtmgQPn9E7D",
-        )
-    ],
-)
+@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
 def test_custom_resolved_timestamp(server, username, apikey):
 
     collector = JiraFailureCollector(
@@ -362,16 +316,7 @@ def test_custom_resolved_timestamp(server, username, apikey):
     assert int(resolution_timestamp) == 1652395843  # type: ignore
 
 
-@pytest.mark.parametrize(
-    "server, username, apikey",
-    [
-        (
-            "https://pelorustest.atlassian.net",
-            "fake@user.com",
-            "WIEds4uZHiCGnrtmgQPn9E7D",
-        )
-    ],
-)
+@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
 def test_resolutiondate_timestamp(server, username, apikey):
 
     collector = JiraFailureCollector(
