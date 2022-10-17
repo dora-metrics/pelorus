@@ -51,12 +51,13 @@ help:
 
 # Environment setup
 
-$(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt
+$(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt docs/requirements.txt
 	test -d ${PELORUS_VENV} || ${PYTHON_BINARY} -m venv ${PELORUS_VENV}
 	. ${PELORUS_VENV}/bin/activate && \
 	       pip install -U pip && \
 	       pip install -r exporters/requirements.txt \
-	                   -r exporters/requirements-dev.txt
+	                   -r exporters/requirements-dev.txt \
+					   -r docs/requirements.txt
 	touch ${PELORUS_VENV}
 
 .PHONY: exporters
