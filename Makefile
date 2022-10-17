@@ -77,8 +77,15 @@ git-blame:
 
 ## cli_dev_tools: install all necessary CLI dev tools
 .PHONY: cli_dev_tools
-cli_dev_tools:
-	./scripts/install_dev_tools -v $(PELORUS_VENV)
+cli_dev_tools: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+		./scripts/install_dev_tools -v $(PELORUS_VENV)
+
+
+# for installing a single CLI dev tool
+$(PELORUS_VENV)/bin/%: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+		./scripts/install_dev_tools -v $(PELORUS_VENV) -c $(notdir $@)
 
 ## dev-env: set up everything needed for development (install tools, set up virtual environment, git configuration)
 dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
@@ -216,8 +223,7 @@ chart-check-bump: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/chart-check-and-bump
 
-chart-lint: $(PELORUS_VENV)
-	./scripts/install_dev_tools -v $(PELORUS_VENV) -c ct && \
+chart-lint: $(PELORUS_VENV) $(PELORUS_VENV)/bin/ct $(PELORUS_VENV)/bin/helm
 	. ${PELORUS_VENV}/bin/activate && \
 	ct lint --config ct.yaml
 
