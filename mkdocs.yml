@@ -51,5 +51,4 @@ nav:
   - Support:
     - Upstream Support: UpstreamSupport.md
 plugins:
-  - social:
-      cards_dir: img
+  - social
