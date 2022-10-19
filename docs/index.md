@@ -1,6 +1,11 @@
-# Welcome to Pelorus
-
-![Pelorus](img/Logo-Pelorus-A-Standard-RGB_smaller.png)
+---
+title: Welcome to Pelorus
+hide:
+  - toc
+  - navigation
+template: home.html
+---
+# About Pelorus
 
 ![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
 ![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)

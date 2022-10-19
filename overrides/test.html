@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block tabs %}
+  {{ super() }}
+  <!-- Additional styles for landing page -->
+  <style>
+
+    /* Application header should be static for the landing page */
+    .md-header {
+      position: initial;
+    }
+
+  </style>
+{% endblock %}
