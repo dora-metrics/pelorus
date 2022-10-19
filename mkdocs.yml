@@ -50,3 +50,5 @@ nav:
     - Dev Guide: Development.md
   - Support:
     - Upstream Support: UpstreamSupport.md
+plugins:
+  - social
