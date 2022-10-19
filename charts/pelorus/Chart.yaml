@@ -14,8 +14,12 @@ type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 2.0.1
+version: 2.0.2
 
 dependencies:
   - name: exporters
-    version: "v1.3.0"
+    version: "v2.0.2"
+    repository: file://./subcharts/exporters
+  - name: pelorus-core
+    version: "v2.0.2"
+    repository: file://./subcharts/pelorus-core

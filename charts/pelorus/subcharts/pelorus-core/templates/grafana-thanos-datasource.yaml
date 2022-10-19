@@ -1,3 +1,4 @@
+{{- if .Capabilities.APIVersions.Has "integreatly.org/v1alpha1/GrafanaDataSource" }}
 ---
 apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDataSource
@@ -22,3 +23,4 @@ spec:
       url: "https://prometheus-pelorus.{{ .Release.Namespace }}.svc:9091"
       {{- end }}
       version: 1
+{{- end }}

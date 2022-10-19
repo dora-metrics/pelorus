@@ -34,7 +34,9 @@
 PELORUS_API_URL="https://api.github.com/repos/konveyor/pelorus/releases/latest"
 BUILDCONFIG_PATH="charts/pelorus/charts/exporters/templates/_buildconfig.yaml"
 PELORUS_CHART="charts/pelorus/Chart.yaml"
-OPERATOR_CHART="charts/operators/Chart.yaml"
+PELORUS_CORE_CHART="charts/pelorus/subcharts/pelorus-core/Chart.yaml"
+PELORUS_EXPORTERS_CHART="charts/pelorus/subcharts/exporters/Chart.yaml"
+OPERATORS_CHART="charts/operators/Chart.yaml"
 
 INSTALL_DOC="docs/Install.md"
 
@@ -100,7 +102,10 @@ sed -i "/.source_ref | default/s/\"[^\"][^\"]*\"/\"$NEW_VER\"/" "$BUILDCONFIG_PA
 
 if [[ $UPDATE_CHART_VERSIONS == "$TRUE" ]]; then
   sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$PELORUS_CHART"
-  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$OPERATOR_CHART"
+  sed -i "s/^    version:.*/    version: \"v$V_MAJOR.$V_MINOR.$V_PATCH\"/g" "$PELORUS_CHART"
+  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$OPERATORS_CHART"
+  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$PELORUS_CORE_CHART"
+  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$PELORUS_EXPORTERS_CHART"
 else
   # Bump the "Z" in the pelorus Chart.yaml
   CHART_VER=$( grep ^version: "$PELORUS_CHART"|awk -F' ' '{ print $2 }' )

@@ -1,3 +1,4 @@
+{{- if .Capabilities.APIVersions.Has "integreatly.org/v1alpha1/Grafana" }}
 ---
 apiVersion: integreatly.org/v1alpha1
 kind: Grafana
@@ -79,3 +80,4 @@ spec:
   dashboardLabelSelector:
     - matchExpressions:
         - { key: "app", operator: In, values: ['grafana'] }
+{{- end }}
