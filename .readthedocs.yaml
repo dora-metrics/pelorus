@@ -6,7 +6,8 @@ build:
     python: "3.10"
   jobs:
     post_build:
-      - python -m mkdocs build --clean --site-dir _build/html --config-file mkdocs.yml -v
+      - find _build/html
+      - find .cache
 
 python:
   install:
