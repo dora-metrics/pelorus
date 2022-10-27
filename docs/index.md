@@ -21,7 +21,7 @@ Pelorus is a tool that helps IT organizations measure their impact on the overal
 - Product Quality and Sustainability
 - Customer experience
 
-To understand the motivation, see [Our Philosophy](Philosophy.md).
+To understand the motivation, see [Our Philosophy](philosophy/index.md).
 
 For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
 

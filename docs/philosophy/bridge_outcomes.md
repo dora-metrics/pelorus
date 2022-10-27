@@ -9,11 +9,11 @@ The term _Outcome_ refers to an measurable change in human, team, or organizatio
 
 !!! further-reading "Further Reading"
 
-    For more information about outcomes, read [Outcomes over Outputs](https://www.amazon.com/Outcomes-Over-Output-customer-behavior/dp/1091173265) by Josh Seiden.
+    For more information about outcomes, read [Outcomes over Outputs :octicons-link-external-24:](https://www.amazon.com/Outcomes-Over-Output-customer-behavior/dp/1091173265) by Josh Seiden.
 
-!!! abstract
+!!! further-reading "Further Reading"
     
-    For our definition of Business Results, read [Project to Product](https://projecttoproduct.org/the-book/) by Mik Kirsten.
+    For our definition of Business Results, read [Project to Product :octicons-link-external-24:](https://projecttoproduct.org/the-book/) by Mik Kirsten.
 
 ## Searching for communication gaps
 

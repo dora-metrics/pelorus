@@ -6,13 +6,9 @@ The goal is for everyone in an organization to be able to effectively communicat
 
 The concepts of Lean Thinking have been changing the way that businesses think about value and about the customer. Agile and Kanban frameworks have provided teams with ways to apply Lean principles to plan and manage their work in ways that are more visible and impactful to business. Still, measuring the evolution of an organization, especially when there are many teams, remains a very difficult challenge.
 
-This is the problem we want to solve.
-
-The true complexity of this problem becomes more obvious when we realize that not only do we have to master the flow of work across multiple teams, but often, we have to either aggregate or break down the work with the right context so that it makes sense to different audiences within IT--all of whom think in varying scopes of time. To talk about this, we leverage the 5 Elements model below.
-
 **This is the problem we want to help solve.**
 
-The true complexity of this problem becomes more obvious when we realize that not only do we have to master passing invisible work across multiple teams, but often, we have to either aggregate or break down the work so that it makes sense to different audiences within IT--all of whom think in varying scopes of time. To talk about this, we leverage the _5 Elements_ model below.
+The true complexity of this problem becomes more obvious when we realize that not only do we have to master the flow of work across multiple teams, but often, we have to either aggregate or break down the work with the right context so that it makes sense to different audiences within IT--all of whom think in varying scopes of time. To talk about this, we leverage the [_5 Elements model_](#the-5-elements-of-it) below.
 
 ## The 5 Elements of IT
 
@@ -25,5 +21,9 @@ The 5 Elements of IT is a conceptual model that hypothesizes that any given IT o
 | Product Management | Creates strategic requirements | Software does not support the need | 2-3 Months |
 | Development | Delivers the features | Software does not meet defined need requirements| 2-3 Weeks |
 | Operations  | Keeps the systems running | Ongoing outages and incidents | 1-5 Days |
+
+!!! further-reading "Further Reading"
+
+    For more background about the _5 Elements of IT_, we recommend reading [Digital transformation, the open source way :octicons-link-external-24:](https://www.redhat.com/en/resources/digital-transformation-the-open-source-way-ebook), an e-book by Red Hat.
 
 The Pelorus philosophy proposes that a common language of measurable outcomes can be used to bridge the gaps that often arise across these 5 elements. **We refer to these as _Bridge Outcomes_.**

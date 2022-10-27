@@ -1,4 +1,4 @@
-# How Pelorus can help?
+# How Pelorus Can Help
 
 Pelorus aims to provide a tooling framework that helps to automate the collection of KPIs related to these Bridge Outcomes and present them as a set of easily consumable [dashboards](Dashboards.md) to visualize trends.
 
@@ -6,7 +6,7 @@ Pelorus aims to provide a tooling framework that helps to automate the collectio
 
 The true value of Pelorus comes from the conversations that follow the data collection.  Continually look at trends to see how technology investments and work produced is affecting the Bridge Outcomes.
 
-![Value Delivery Cycle](img/deliver-value-cycle.png)
+![Value Delivery Cycle](../img/deliver-value-cycle.png)
 
 For each outcome, use the following to guide a series of conversations to:
 

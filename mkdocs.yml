@@ -35,8 +35,12 @@ extra_css:
   - stylesheets/extra.css
 markdown_extensions:
   - admonition
+  - attr_list
   - def_list
   - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
@@ -52,8 +56,9 @@ nav:
     - Overview: philosophy/index.md
     - The Problem Today: philosophy/problem.md
     - Finding the Right Bridge Outcomes: philosophy/bridge_outcomes.md
-    - How Can Pelorus Help: philosophy/pelorus.md
+    - philosophy/pelorus.md
     - Outcomes:
+      - philosophy/outcomes/index.md
       - Software Delivery Performance: philosophy/outcomes/SoftwareDeliveryPerformance.md
   - Configuration:
     - Architecture: Architecture.md
