@@ -29,33 +29,38 @@ theme:
     - navigation.tracking
     - navigation.tabs
     - navigation.top
+    - navigation.instant
   custom_dir: overrides
 extra_css:
   - stylesheets/extra.css
 markdown_extensions:
+  - admonition
   - def_list
-  - tables
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - tables
 nav:
-  - Intro:
-    - Pelorus: index.md
-    - Get Started: Demo.md
-    - Our Philosphy: Philosophy.md
-  - User Guide:
-    - Architecture: Architecture.md
+  - Home: index.md
+  - Getting Started:
+    - Quickstart Tutorial: Demo.md
     - Installation: Install.md
+  - Our Philosophy:
+    - Overview: philosophy/index.md
+    - The Problem Today: philosophy/problem.md
+    - Finding the Right Bridge Outcomes: philosophy/bridge_outcomes.md
+    - How Can Pelorus Help: philosophy/pelorus.md
+    - Outcomes:
+      - Software Delivery Performance: philosophy/outcomes/SoftwareDeliveryPerformance.md
+  - Configuration:
+    - Architecture: Architecture.md
     - Configuration: Configuration.md
     - NooBaa for Long Term Storage: Noobaa.md
-  - Dashboards:
-    - Dashboard Summary: Dashboards.md
-    - Software Delivery Performance: dashboards/SoftwareDeliveryPerformance.md
-  - Dev Guide:
+  - Contribution:
     - Dev Guide: Development.md
-  - Support:
     - Upstream Support: UpstreamSupport.md
 plugins:
   - social
