@@ -1,3 +1,4 @@
+/* custom color palette */
 :root > * {
     --md-primary-fg-color:        #0066ff;
     --md-primary-fg-color--light: #c7c8ca;
@@ -16,6 +17,14 @@
 
 [data-md-color-scheme="slate"] {
     --md-hue: 215;
+}
+
+.checked {
+  color:rgb(43, 155, 70);
+}
+
+.unchecked {
+  color: rgb(200, 200, 200);
 }
 
 /* custom admonition */
@@ -70,6 +79,16 @@
   margin: 0;
   padding: 0.8rem;
   transition: border .25s,box-shadow .25s;
+}
+
+.md-typeset .grid.cards>:is(ul,ol)>li:is(:focus-within,:hover), .md-typeset .grid>.card:is(:focus-within,:hover) {
+  border-color: transparent;
+  box-shadow: var(--md-shadow-z2);
+}
+
+.md-typeset .grid.cards>:-webkit-any(ul,ol)>li:-webkit-any(:focus-within,:hover), .md-typeset .grid>.card:-webkit-any(:focus-within,:hover) {
+  border-color: transparent;
+  box-shadow: var(--md-shadow-z2);
 }
 
 /* icon alignment */

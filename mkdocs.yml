@@ -59,7 +59,7 @@ nav:
     - Finding the Right Bridge Outcomes: philosophy/bridge_outcomes.md
     - philosophy/pelorus.md
     - Outcomes:
-      - philosophy/outcomes/index.md
+      - Overview: philosophy/outcomes/index.md
       - Software Delivery Performance: philosophy/outcomes/SoftwareDeliveryPerformance.md
   - Configuration:
     - Architecture: Architecture.md

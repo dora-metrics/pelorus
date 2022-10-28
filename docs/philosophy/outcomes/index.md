@@ -2,60 +2,122 @@
 
 The current implementation
 
-## :material-truck-delivery:{ .middle } **Software Delivery Performance**
+## :material-truck-delivery:{ .middle } Software Delivery Performance :material-check-circle:{ .checked .middle }
 
-- :material-truck-delivery: **Software Delivery Performance**
+Measures the ability of an organization to deliver value to its customers
 
-    Measures the ability of an organization to deliver value to its customers
+:material-ruler: Our _measures_ for Software Delivery Performance:
 
-    <div class="grid cards" markdown>
+<div class="grid cards" markdown>
 
-    -   :material-clock-fast:{ .middle } __Lead Time for Change__
+-   :material-clock-fast:{ .middle } __Lead Time for Change__
 
-        ---
+    ---
 
-        Time from code committed to deployed in production
+    Time from code committed to deployed in production
 
-    -   :material-rocket-launch: __Deployment Frequency__
+-   :material-rocket-launch: __Deployment Frequency__
 
-        ---
+    ---
 
-        How often does an app deploy to production
+    How often does an app deploy to production
 
-    -   :material-heart-plus: __Mean Time to Restore__
+-   :material-heart-plus: __Mean Time to Restore__
 
-        ---
+    ---
 
-        How long it takes systems to restore after a failure in production
+    How long it takes systems to restore after a failure in production
 
-    -   :material-brightness-percent: __Change Failure Rate__
+-   :material-brightness-percent: __Change Failure Rate__
 
-        ---
+    ---
 
-        Percentage of deployments requiring rollback and/or fixes 
+    Percentage of deployments requiring rollback and/or fixes 
 
-    </div>
+</div>
 
-    [:material-arrow-right: Learn more...](SoftwareDeliveryPerformance.md)
+[:material-arrow-right: Learn more...](SoftwareDeliveryPerformance.md)
 
-- :material-monitor-dashboard: **Availability**
+## :fontawesome-solid-person-circle-plus: Supported Technology Adoption :material-check-circle:{ .unchecked }
 
-    Measures an organization’s ability to ensure that customer facing systems are operational when needed
+Measures an organization’s ability to reduce waste by adopting common patterns, platforms and tools
 
-- :fontawesome-solid-person-circle-plus: **Supported Technology Adoption**
+<div class="grid cards" markdown>
 
-    Measures an organization’s ability to reduce waste by adopting common patterns, platforms and tools
+-   :fontawesome-solid-user-clock: __Adoption lead time__
 
-- :fontawesome-solid-money-bill-trend-up: **Value Flow**
+    ---
 
-    Effective productivity leads to value delivery that impacts the end customer
+    Measures a team’s ability to onboard into a new platform, tool or pattern and exposes constraints in the process
 
-- :material-account-heart: **Employee Satisfaction**
+-   :fontawesome-solid-arrow-trend-up: __Adoption rate__
 
-    Happy employees are more engaged and more likely to drive business success, reducing overall churn
+    ---
 
-- :material-emoticon-happy-outline: **Customer Experience**
+    Measures the ability of the platform or tool to scale to support multiple teams and products
 
-- :material-leaf: **Quality and Sustainability**
+-   :fontawesome-solid-people-roof: __Operational efficiency__
+
+    ---
+
+    Measures the number of people needed to support the platform as it scales and exposes technical debt
+
+-   :material-account-heart-outline: __Developer Satisfaction__
+
+    ---
+
+    Measures the extent to which the platform is meeting the needs and wants of development
+
+</div>
+
+## :fontawesome-solid-money-bill-trend-up: Value Flow :material-check-circle:{ .unchecked }
+
+Effective productivity leads to value delivery that impacts the end customer
+
+<div class="grid cards" markdown>
+
+-   __Flow velocity__
+
+    ---
+
+    Number of work items completed over a period of time (a.k.a _Throughput_)
+
+-   __Flow load__
+
+    ---
+
+    The number of work items currently in progress (a.k.a _Work In Progress_)
+
+-   __Flow Time__
+
+    ---
+
+    The time from “active” to “done” (a.k.a _Cycle Time_)
+
+-   __Flow efficiency__
+
+    ---
+
+    Ratio of active time vs wait time for a work item
+
+-   __Flow distribution__
+
+    ---
+
+    Break down by the types of work: feature, bug, debt, risk
+
+</div>
+
+## :material-monitor-dashboard: Availability :material-check-circle:{ .unchecked }
+
+Measures an organization’s ability to ensure that customer facing systems are operational when needed
+
+## :material-account-heart: Employee Satisfaction :material-check-circle:{ .unchecked }
+
+Happy employees are more engaged and more likely to drive business success, reducing overall churn
+
+## :material-emoticon-happy-outline: Customer Experience :material-check-circle:{ .unchecked }
+
+## :material-leaf: Quality and Sustainability :material-check-circle:{ .unchecked }
 
 

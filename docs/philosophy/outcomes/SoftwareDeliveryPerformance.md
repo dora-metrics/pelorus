@@ -6,10 +6,12 @@ _Software Delivery Performance_ is a measure of an organization's ability to eff
 
 The Pelorus _Software Delivery Performance_ dashboard tracks the four primary measures of software delivery:
 
-* [Lead Time for Change](#lead-time-for-change)
-* [Deployment Frequency](#deployment-frequency)
-* [Mean Time to Restore](#mean-time-to-restore)
-* [Change Failure Rate](#change-failure-rate)
+<div class="grid cards" markdown>
+* [:material-clock-fast: Lead Time for Change](#lead-time-for-change)
+* [:material-rocket-launch: Deployment Frequency](#deployment-frequency)
+* [:material-heart-plus: Mean Time to Restore](#mean-time-to-restore)
+* [:material-brightness-percent: Change Failure Rate](#change-failure-rate)
+</div>
 
 !!! further-reading "Further Reading"
 
@@ -19,7 +21,7 @@ The Pelorus _Software Delivery Performance_ dashboard tracks the four primary me
 
 ![Exporter relaionship diagram](../../img/exporter-relationship-diagram.png)
 
-### Lead Time for Change
+### :material-clock-fast: Lead Time for Change
 
 #### Description
 Product delivery lead time to change is the time it takes to go from code committed to code successfully running in production.  Shorter lead times enable faster feedback on what we are building, and encourages smaller batch sizes to increase flow.
@@ -43,7 +45,7 @@ The exporters are only responsible for gathering data about individual events. B
 
 The dashboard then displays these metrics over the given time ranges, and provides comparisons between the current and previous time range.
 
-### Deployment Frequency
+### :material-rocket-launch: Deployment Frequency
 
 #### Description
 
@@ -63,7 +65,7 @@ The following exporters are required to calculate _Deployment Frequency_:
 
 The dashboard then just tracks a `count_over_time()` of the individual `deploy_time` metrics for the time range selected in the dashboard. It also provides a comparison to the previous time range.
 
-### Mean Time to Restore
+### :material-heart-plus: Mean Time to Restore
 
 #### Description
 
@@ -88,7 +90,7 @@ The exporters are only responsible for gathering data about individual events. B
 
 The dashboard then displays this information for a given time range, and compares that number to the previous time range.
 
-### Change Failure Rate
+### :material-brightness-percent: Change Failure Rate
 
 #### Description
 
