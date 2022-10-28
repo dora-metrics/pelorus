@@ -11,7 +11,9 @@ The Pelorus _Software Delivery Performance_ dashboard tracks the four primary me
 * [Mean Time to Restore](#mean-time-to-restore)
 * [Change Failure Rate](#change-failure-rate)
 
-For more information about Software Delivery Performance, check out the book [Accelerate](https://itrevolution.com/book/accelerate/) by Forsgren, Kim and Humble.
+!!! further-reading "Further Reading"
+
+    For more information about Software Delivery Performance, check out the book [Accelerate](https://itrevolution.com/book/accelerate/) by Forsgren, Kim and Humble.
 
 ## Measures
 

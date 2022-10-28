@@ -36,3 +36,43 @@
     -webkit-mask-image: var(--md-admonition-icon--further-reading);
             mask-image: var(--md-admonition-icon--further-reading);
   }
+
+/* grids */
+.md-typeset .grid {
+  grid-gap: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(16rem,1fr));
+  margin: 1em 0;
+}
+
+.md-typeset .grid.cards>:-webkit-any(ul,ol) {
+  display: contents;
+}
+
+.md-typeset .grid.cards>:is(ul,ol) {
+  display: contents;
+}
+
+.md-typeset .grid.cards>:-webkit-any(ul,ol)>li, .md-typeset .grid>.card {
+  border: 0.05rem solid var(--md-default-fg-color--lightest);
+  border-radius: 0.1rem;
+  display: block;
+  margin: 0;
+  padding: 0.8rem;
+  -webkit-transition: border .25s,box-shadow .25s;
+  transition: border .25s,box-shadow .25s;
+}
+
+.md-typeset .grid.cards>:is(ul,ol)>li, .md-typeset .grid>.card {
+  border: 0.05rem solid var(--md-default-fg-color--lightest);
+  border-radius: 0.1rem;
+  display: block;
+  margin: 0;
+  padding: 0.8rem;
+  transition: border .25s,box-shadow .25s;
+}
+
+/* icon alignment */
+.md-typeset .middle {
+  vertical-align: middle;
+}
