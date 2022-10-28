@@ -2,10 +2,10 @@
 
 The term _Outcome_ refers to an measurable change in human, team, or organizational behavior that achieves a desired business result. A _business result_ typically falls into one of the following categories:
 
-* an Increase in Value (e.g. Revenue)
-* a Decrease in Cost
-* an Increase in Quality
-* an Increase in Happiness
+* an Increase in Value (e.g. Revenue) :material-arrow-up: :fontawesome-solid-money-bill:
+* a Decrease in Cost :material-arrow-down: :fontawesome-solid-sack-dollar:
+* an Increase in Quality :material-arrow-up: :material-leaf:
+* an Increase in Happiness :material-arrow-up: :material-account-heart:
 
 !!! further-reading "Further Reading"
 
@@ -25,10 +25,18 @@ While alignment may seem to call for major trade-offs between the five functions
 
 ## How we’ve picked our outcomes
 
-* Focus on Outcomes over Outputs
-* Aim to improve relationships between the five elements to prevent failures
-* Use systems-level thinking to improve as an organization, not individual departments
-* Making sure data analysis(?) is actionable (SMART)
+The outcomes that we've selected as our bridge outcomes have come from lots of reading, discussion and delivery by our community of contributors in the digital transformation and software delivery space. As much as possible, we'll try to leave breadcrumbs to our thought process through recommended reading.
+
+!!! further-reading "Further Reading"
+
+    Like this!
+
+Through discussion and healthy debate, we've come up with a small set of ever-evolving characteristics that seem to be common to all of our outomes.
+
+* A Focus on Outcomes over Outputs
+* Ability bridge communication gaps between the five elements
+* Use of systems-level thinking to improve as an organization, not individual departments
+* The _measures_ used are directional, meaning a change in the data can be interpretted as "better" or "worse".
 
 ## Exploring Bridge Outcomes
 

@@ -33,15 +33,15 @@
   }
   .md-typeset .admonition.further-reading,
   .md-typeset details.further-reading {
-    border-color: rgb(43, 155, 70);
+    border-color: rgb(246, 98, 78);
   }
   .md-typeset .further-reading > .admonition-title,
   .md-typeset .further-reading > summary {
-    background-color: rgba(43, 155, 70, 0.1);
+    background-color: rgba(246, 98, 78, 0.1);
   }
   .md-typeset .further-reading > .admonition-title::before,
   .md-typeset .further-reading > summary::before {
-    background-color: rgb(43, 155, 70);
+    background-color: rgb(246, 98, 78);
     -webkit-mask-image: var(--md-admonition-icon--further-reading);
             mask-image: var(--md-admonition-icon--further-reading);
   }

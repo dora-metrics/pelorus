@@ -15,11 +15,23 @@ template: home.html
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 ![Python versions](https://img.shields.io/badge/Python-3.9%20|%203.10-success)
 
-Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
+Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. 
 
-- Software Delivery Performance
-- Product Quality and Sustainability
-- Customer experience
+Some of the key outcomes we'd like Pelorus help us measure are:
+
+<div class="grid cards" markdown>
+
+-   :material-truck-delivery:{ .middle } Software Delivery Performance :material-check-circle:{ .checked .middle }
+-   :fontawesome-solid-person-circle-plus: Supported Technology Adoption :material-check-circle:{ .unchecked }
+-   :fontawesome-solid-money-bill-trend-up: Value Flow :material-check-circle:{ .unchecked }
+-   :material-monitor-dashboard: Availability :material-check-circle:{ .unchecked }
+-   :material-account-heart: Employee Satisfaction :material-check-circle:{ .unchecked }
+-   :material-emoticon-happy-outline: Customer Experience :material-check-circle:{ .unchecked }
+-   :material-leaf: Quality and Sustainability :material-check-circle:{ .unchecked }
+
+</div>
+
+[:material-arrow-right: Read more about our Outcomes](philosophy/outcomes/index.md)
 
 To understand the motivation, see [Our Philosophy](philosophy/index.md).
 
