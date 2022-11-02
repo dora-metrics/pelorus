@@ -389,9 +389,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 errors.append("Couldn't get commit time")
             else:
                 # Add the timestamp to the cache
-                self._commit_dict[metric.commit_hash] = metric.commit_timestamp
+                self.commit_dict[metric.commit_hash] = metric.commit_timestamp
         elif metric.commit_hash:
-            metric.commit_timestamp = self._commit_dict[metric.commit_hash]
+            metric.commit_timestamp = self.commit_dict[metric.commit_hash]
             logging.debug(
                 "Returning sha: %s, commit_timestamp: %s, from cache.",
                 metric.commit_hash,
