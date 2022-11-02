@@ -21,7 +21,6 @@ from typing import Any, Optional, Union, cast
 import requests
 from attrs import define, field
 
-import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
@@ -34,6 +33,8 @@ from provider_common.github import parse_datetime
 # TODO
 # GITHUB_SEARCH_RESULTS = 100
 # TODO Paginate results
+
+DEFAULT_GITHUB_ISSUE_LABEL = "bug"
 
 
 class GithubAuthenticationError(Exception):
@@ -72,6 +73,10 @@ class GithubFailureCollector(AbstractFailureCollector):
     session: requests.Session = field(factory=requests.Session, init=False)
     user: str = field(default="", init=False)
 
+    issue_label: str = field(
+        default=DEFAULT_GITHUB_ISSUE_LABEL, metadata=env_vars("GITHUB_ISSUE_LABEL")
+    )
+
     def __attrs_post_init__(self):
         # disable .netrc
         self.session.trust_env = False
@@ -86,7 +91,6 @@ class GithubFailureCollector(AbstractFailureCollector):
         except Exception:
             logging.warning("github username not found")
             raise
-        logging.info("Bug Label: " + pelorus.get_github_issue_label())
 
     def _get_github_user(self) -> str:
         # login and get username
@@ -137,9 +141,7 @@ class GithubFailureCollector(AbstractFailureCollector):
                 is_bug = False
                 labels = issue["labels"]
                 is_bug = any(
-                    label
-                    for label in labels
-                    if pelorus.get_github_issue_label() in label["name"]
+                    label for label in labels if self.issue_label in label["name"]
                 )
                 logging.debug(
                     "Found issue opened: {}, {}: {}".format(

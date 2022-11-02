@@ -19,7 +19,6 @@ DEFAULT_TLS_VERIFY = True
 DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = "unknown"
 DEFAULT_TRACKER_APP_FIELD = "u_application"
-DEFAULT_GITHUB_ISSUE_LABEL = "bug"
 
 
 def _print_version():
@@ -76,10 +75,6 @@ def setup_logging():
 # A NamespaceSpec lists namespaces to restrict the search to.
 # Use None or an empty list to include all namespaces.
 NamespaceSpec = Optional[Sequence[str]]
-
-
-def get_github_issue_label():
-    return utils.get_env_var("GITHUB_ISSUE_LABEL", DEFAULT_GITHUB_ISSUE_LABEL)
 
 
 def url_joiner(base: str, *parts: str):
