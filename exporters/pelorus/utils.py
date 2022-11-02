@@ -387,3 +387,6 @@ class Url(urllib3.util.Url):
 
     def __str__(self):
         return self.url
+
+    def __contains__(self, needle: str):
+        return needle in self.url
