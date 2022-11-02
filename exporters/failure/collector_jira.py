@@ -60,9 +60,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         repr=False,
     )
 
-    tracker_api: Optional[str] = field(
-        default="api.github.com", metadata=env_vars("SERVER")
-    )
+    tracker_api: str = field(metadata=env_vars("SERVER"))
 
     projects: set[str] = field(
         factory=set, converter=comma_or_whitespace_separated(set)
