@@ -1,6 +1,13 @@
 # Pelorus Bridge Outcomes
 
-The current implementation
+Here you'll find the set of _bridge outcomes_ that we have developed in the Pelorus community. 
+
+:material-check-circle:{ .checked } = Dashboard available in Pelorus
+
+:material-check-circle:{ .unchecked } = Dashboard on the roadmap
+
+:material-progress-helper:{ .unchecked } = Outcome still needs definition
+
 
 ## :material-truck-delivery:{ .middle } Software Delivery Performance :material-check-circle:{ .checked .middle }
 
@@ -108,16 +115,16 @@ Effective productivity leads to value delivery that impacts the end customer
 
 </div>
 
-## :material-monitor-dashboard: Availability :material-check-circle:{ .unchecked }
+## :material-monitor-dashboard: Availability :material-progress-helper:{ .unchecked }
 
 Measures an organization’s ability to ensure that customer facing systems are operational when needed
 
-## :material-account-heart: Employee Satisfaction :material-check-circle:{ .unchecked }
+## :material-account-heart: Employee Satisfaction :material-progress-helper:{ .unchecked }
 
 Happy employees are more engaged and more likely to drive business success, reducing overall churn
 
-## :material-emoticon-happy-outline: Customer Experience :material-check-circle:{ .unchecked }
+## :material-emoticon-happy-outline: Customer Experience :material-progress-helper:{ .unchecked }
 
-## :material-leaf: Quality and Sustainability :material-check-circle:{ .unchecked }
+## :material-leaf: Quality and Sustainability :material-progress-helper:{ .unchecked }
 
 
