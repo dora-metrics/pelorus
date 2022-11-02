@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import logging
 import time
+from typing import Optional
 
 import attrs.converters
 import attrs.validators
@@ -98,7 +99,7 @@ class GitCommittimeConfig:
 
     namespaces: set[str] = field(factory=set, converter=comma_separated(set))
 
-    git_api: Url | None = field(
+    git_api: Optional[Url] = field(
         default=None,
         converter=attrs.converters.optional(pass_through(Url, Url.parse)),
         metadata=env_vars(*env_var_names.GIT_API),
