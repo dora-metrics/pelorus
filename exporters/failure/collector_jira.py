@@ -16,10 +16,11 @@
 #
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from attrs import define, field
 from jira import JIRA
+from jira.client import ResultList
 from jira.exceptions import JIRAError
 
 import pelorus
@@ -80,13 +81,11 @@ class JiraFailureCollector(AbstractFailureCollector):
         # Gather all fields and projects
         if self.jql_query_string != DEFAULT_JQL_SEARCH_QUERY:
             self.query_result_fields_string = ""
-        else:
-            if self.projects:
-                projects_str = '","'.join(self.projects)
-                self.jql_query_string = (
-                    self.jql_query_string
-                    + ' AND project in ("{}")'.format(projects_str)
-                )
+        elif self.projects:
+            projects_str = '","'.join(self.projects)
+            self.jql_query_string = (
+                self.jql_query_string + ' AND project in ("{}")'.format(projects_str)
+            )
 
     def _connect_to_jira(self) -> JIRA:
         """Method to connect to JIRA instance which may be cloud based
@@ -111,7 +110,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         return jira_client
 
     def search_issues(self):
-        jira = self._connect_to_jira()
+        jira_client = self._connect_to_jira()
 
         critical_issues = []
 
@@ -120,13 +119,16 @@ class JiraFailureCollector(AbstractFailureCollector):
             jira_issues = []
             start_at = 0
             while True:
-                jira_search_results = jira.search_issues(
-                    self.jql_query_string,
-                    startAt=start_at,
-                    maxResults=JIRA_SEARCH_RESULTS,
-                    fields=self.query_result_fields_string,
+                jira_search_results = cast(
+                    ResultList,
+                    jira_client.search_issues(
+                        self.jql_query_string,
+                        startAt=start_at,
+                        maxResults=JIRA_SEARCH_RESULTS,
+                        fields=self.query_result_fields_string,
+                    ),
                 )
-                jira_issues += jira_search_results.iterable
+                jira_issues += jira_search_results.iterable  # type: ignore
                 start_at += JIRA_SEARCH_RESULTS
                 logging.info("Getting jira results: %s" % start_at)
                 if start_at >= jira_search_results.total:
