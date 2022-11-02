@@ -78,10 +78,6 @@ def setup_logging():
 NamespaceSpec = Optional[Sequence[str]]
 
 
-def get_prod_label():
-    return utils.get_env_var("PROD_LABEL", DEFAULT_PROD_LABEL)
-
-
 def get_github_issue_label():
     return utils.get_env_var("GITHUB_ISSUE_LABEL", DEFAULT_GITHUB_ISSUE_LABEL)
 
