@@ -23,7 +23,6 @@ from jira import JIRA
 from jira.client import ResultList
 from jira.exceptions import JIRAError
 
-import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
@@ -50,8 +49,6 @@ class JiraFailureCollector(AbstractFailureCollector):
     """
     Jira implementation of a FailureCollector
     """
-
-    app_label: str = field(default=pelorus.DEFAULT_APP_LABEL)
 
     username: str = field(default="", metadata=env_vars(*env_var_names.USERNAME))
 
@@ -205,7 +202,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         return resolution_ts
 
     def get_app_name(self, issue):
-        app_label = pelorus.get_app_label()
+        app_label = self.app_label
         for label in issue.fields.labels:
             if label.startswith("%s=" % app_label):
                 return label.replace("%s=" % app_label, "")

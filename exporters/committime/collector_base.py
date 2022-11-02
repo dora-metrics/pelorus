@@ -30,8 +30,9 @@ from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
 from committime import CommitMetric, commit_metric_from_build
+from pelorus.config import env_vars
 from pelorus.config.converters import comma_separated, pass_through
-from pelorus.utils import Url, get_env_var, get_nested
+from pelorus.utils import Url, get_nested
 
 # Custom annotations env for the Build
 # Default ones are in the CommitMetric._ANNOTATION_MAPPIG
@@ -74,6 +75,16 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     tls_verify: bool = field(default=True)
 
     commit_dict: dict[str, Optional[float]] = field(factory=dict, init=False)
+
+    hash_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
+    )
+
+    repo_url_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
+        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
+    )
 
     def __attrs_post_init__(self):
         self.commit_dict = dict()
@@ -132,9 +143,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         logging.info("Watching namespaces: %s" % (watched_namespaces))
         return watched_namespaces
 
-    def _get_openshift_obj_by_app(
-        self, openshift_obj: str, app_label: str
-    ) -> Optional[dict]:
+    def _get_openshift_obj_by_app(self, openshift_obj: str) -> Optional[dict]:
+        app_label = self.app_label
 
         # use a jsonpath expression to find all values for the app label
         jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
@@ -171,7 +181,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # Initialized variables
             builds = []
             builds_by_app = {}
-            app_label = pelorus.get_app_label()
+            app_label = self.app_label
             logging.debug(
                 "Searching for builds with label: %s in namespace: %s"
                 % (app_label, namespace)
@@ -183,7 +193,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
-            builds_by_app = self._get_openshift_obj_by_app(builds, app_label)
+            builds_by_app = self._get_openshift_obj_by_app(builds)
 
             if builds_by_app:
                 metrics += self.get_metrics_from_apps(builds_by_app, namespace)
@@ -219,14 +229,14 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             for build in code_builds:
                 try:
                     metric = self.get_metric_from_build(build, app, namespace, repo_url)
+                    if metric:
+                        logging.debug("Adding metric for app %s" % app)
+                        metrics.append(metric)
                 except Exception:
                     logging.error(
                         "Cannot collect metrics from build: %s" % (build.metadata.name)
                     )
 
-                if metric:
-                    logging.debug("Adding metric for app %s" % app)
-                    metrics.append(metric)
         return metrics
 
     def get_metric_from_build(self, build, app, namespace, repo_url):
@@ -277,17 +287,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self, metric: CommitMetric, errors: list
     ) -> CommitMetric:
         if not metric.commit_hash:
-            commit_hash_annotation = get_env_var(
-                COMMIT_HASH_ANNOTATION_ENV,
-                CommitMetric._ANNOTATION_MAPPIG.get("commit_hash"),
-            )
-            commit_hash = metric.annotations.get(commit_hash_annotation)
+            commit_hash = metric.annotations.get(self.hash_annotation_name)
             if commit_hash:
                 metric.commit_hash = commit_hash
                 logging.debug(
-                    "Commit hash for build %s provided by '%s' annotation: %s",
+                    "Commit hash for build %s provided by '%s'",
                     metric.build_name,
-                    commit_hash_annotation,
                     metric.commit_hash,
                 )
             else:
@@ -307,23 +312,19 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             logging.debug(
                 "Repo URL for build %s provided by '%s': %s",
                 metric.build_name,
-                CommitMetric._BUILD_MAPPING.get("repo_url")[0],
+                CommitMetric._BUILD_MAPPING["repo_url"][0],
                 metric.repo_url,
             )
         elif repo_url:
             metric.repo_url = repo_url
         else:
-            repo_url_annotation = get_env_var(
-                COMMIT_REPO_URL_ANNOTATION_ENV,
-                CommitMetric._ANNOTATION_MAPPIG.get("repo_url"),
-            )
-            repo_from_annotation = metric.annotations.get(repo_url_annotation)
+
+            repo_from_annotation = metric.annotations.get(self.repo_url_annotation_name)
             if repo_from_annotation:
                 metric.repo_url = repo_from_annotation
                 logging.debug(
-                    "Repo URL for build %s provided by '%s' annotation: %s",
+                    "Repo URL for build %s provided by '%s'",
                     metric.build_name,
-                    repo_url_annotation,
                     metric.repo_url,
                 )
             else:
@@ -369,7 +370,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     # TODO: be specific about the API modifying in place or returning a new metric.
     # Right now, it appears to do both.
-    def _set_commit_timestamp(self, metric: CommitMetric, errors: list) -> CommitMetric:
+    def _set_commit_timestamp(
+        self, metric: CommitMetric, errors: list
+    ) -> Optional[CommitMetric]:
         """
         Check the cache for the commit_time.
         If absent, call the API implemented by the subclass.

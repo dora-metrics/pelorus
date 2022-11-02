@@ -10,8 +10,12 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
+from committime import CommitMetric
 from committime.collector_azure_devops import AzureDevOpsCommitCollector
-from committime.collector_base import AbstractCommitCollector
+from committime.collector_base import (
+    COMMIT_DATE_ANNOTATION_ENV,
+    AbstractCommitCollector,
+)
 from committime.collector_bitbucket import BitbucketCommitCollector
 from committime.collector_gitea import GiteaCommitCollector
 from committime.collector_github import GitHubCommitCollector
@@ -59,6 +63,11 @@ class ImageCommittimeConfig:
     # or annotation for the Image
     date_format: str = field(
         default=DEFAULT_COMMIT_DATE_FORMAT, metadata=env_vars("COMMIT_DATE_FORMAT")
+    )
+
+    date_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_time"],
+        metadata=env_vars(COMMIT_DATE_ANNOTATION_ENV),
     )
 
     def make_collector(self) -> AbstractCommitCollector:

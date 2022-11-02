@@ -3,6 +3,7 @@ import pathlib
 from abc import ABC
 from typing import Optional, Sequence
 
+from attrs import define
 from prometheus_client.registry import Collector
 
 from . import utils
@@ -77,10 +78,6 @@ def setup_logging():
 NamespaceSpec = Optional[Sequence[str]]
 
 
-def get_app_label():
-    return utils.get_env_var("APP_LABEL", DEFAULT_APP_LABEL)
-
-
 def get_prod_label():
     return utils.get_env_var("PROD_LABEL", DEFAULT_PROD_LABEL)
 
@@ -97,7 +94,10 @@ def url_joiner(base: str, *parts: str):
     return base.strip("/") + "/" + "/".join(s.strip("/") for s in parts)
 
 
+@define(kw_only=True)
 class AbstractPelorusExporter(Collector, ABC):
+    app_label: str = DEFAULT_APP_LABEL
+
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 

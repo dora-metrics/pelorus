@@ -53,8 +53,6 @@ class GithubFailureCollector(AbstractFailureCollector):
     Github implementation of a FailureCollector
     """
 
-    app_label: str = field(default=pelorus.DEFAULT_APP_LABEL)
-
     token: str = field(
         default="",
         metadata=env_vars(*env_var_names.TOKEN) | log(REDACT),

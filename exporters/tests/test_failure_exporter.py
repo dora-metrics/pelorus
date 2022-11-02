@@ -168,7 +168,7 @@ def test_github_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     REGISTRY.register(collector)  # type: ignore
 
 
-# has label bug and pelorus.get_app_label()
+# has label bug and app_label
 def test_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
@@ -184,7 +184,7 @@ def test_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     assert critical_issues[0].resolutiondate is None
 
 
-# has label fug ( not bug ) and pelorus.get_app_label()
+# has label fug ( not bug ) and app_label
 def test_negative_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
@@ -197,7 +197,7 @@ def test_negative_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     assert critical_issues == []
 
 
-# has label bug and NOT pelorus.get_app_label()
+# has label bug and NOT app_label
 def test_negative_label_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()

@@ -20,18 +20,19 @@ from typing import Iterable, Optional
 
 from attrs import define
 
-import pelorus
 from committime import CommitMetric
 from pelorus.timeutil import parse_guessing_timezone_DYNAMIC, to_epoch_from_string
-from pelorus.utils import collect_bad_attribute_path_error, get_env_var, get_nested
+from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
-from .collector_base import COMMIT_DATE_ANNOTATION_ENV, AbstractCommitCollector
+from .collector_base import AbstractCommitCollector
 
 
 @define(kw_only=True)
 class ImageCommitCollector(AbstractCommitCollector):
 
     date_format: str
+
+    date_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["commit_time"]
 
     # maps attributes to their location in a `image.openshift.io/v1`.
     # Similar to Build Mapping from committime.__init__.py
@@ -136,17 +137,12 @@ class ImageCommitCollector(AbstractCommitCollector):
         self, metric: CommitMetric, errors: list
     ) -> CommitMetric:
         if not metric.commit_time:
-            commit_time_annotation = get_env_var(
-                COMMIT_DATE_ANNOTATION_ENV,
-                CommitMetric._ANNOTATION_MAPPIG.get("commit_time"),
-            )
-            commit_time = metric.annotations.get(commit_time_annotation)
+            commit_time = metric.annotations.get(self.date_annotation_name)
             if commit_time:
                 metric.commit_time = commit_time.strip()
                 logging.debug(
-                    "Commit time for image %s provided by '%s' annotation: %s",
+                    "Commit time for image %s provided by '%s'",
                     metric.image_hash,
-                    commit_time_annotation,
                     metric.commit_time,
                 )
             else:
@@ -160,7 +156,7 @@ class ImageCommitCollector(AbstractCommitCollector):
 
         # Initialize metrics list
         metrics = []
-        app_label = pelorus.get_app_label()
+        app_label = self.app_label
 
         logging.debug("Searching for images with label: %s" % app_label)
 
@@ -170,7 +166,7 @@ class ImageCommitCollector(AbstractCommitCollector):
 
         images = v1_images.get(label_selector=app_label)
 
-        images_by_app = self._get_openshift_obj_by_app(images, app_label)
+        images_by_app = self._get_openshift_obj_by_app(images)
 
         if images_by_app:
             metrics += self._get_metrics_by_apps_from_images(images_by_app)
