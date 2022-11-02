@@ -20,7 +20,6 @@ from __future__ import annotations
 import logging
 import re
 from abc import abstractmethod
-from functools import partial
 from typing import ClassVar, Iterable, Optional
 
 import attrs
@@ -69,9 +68,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     git_api: Optional[Url] = field(
         default=None,
-        converter=attrs.converters.optional(
-            pass_through(Url, partial(Url.parse, default_scheme="https"))
-        ),
+        converter=attrs.converters.optional(pass_through(Url, Url.parse)),
     )
 
     tls_verify: bool = field(default=True)

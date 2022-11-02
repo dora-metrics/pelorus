@@ -26,7 +26,7 @@ import dataclasses
 import logging
 import os
 import sys
-from typing import Any, Generator, Optional, Union, cast, overload
+from typing import Any, ClassVar, Generator, Optional, Union, cast, overload
 
 import requests
 import requests.auth
@@ -359,6 +359,8 @@ class Url(urllib3.util.Url):
     That is almost never the behavior we want.
     """
 
+    VALID_SCHEMES: ClassVar[set[str]] = {"https", "http"}
+
     scheme: Optional[str]
     auth: Optional[str]
     host: Optional[str]
@@ -368,10 +370,18 @@ class Url(urllib3.util.Url):
     fragment: Optional[str]
 
     @classmethod
-    def parse(cls, url: str, default_scheme: Optional[str] = "https"):
+    def parse(cls, url: str):
+
         parsed = urllib3.util.parse_url(url)
-        if parsed.scheme is None and default_scheme is not None:
-            parsed = parsed._replace(scheme=default_scheme)
+
+        if parsed.scheme is None:
+            parsed = parsed._replace(scheme="https")
+        elif parsed.scheme not in cls.VALID_SCHEMES:
+            # edge case: a non-qualified hostname with a port specified
+            # will parse as a scheme.
+            # If that's the case, redo it with a scheme attached.
+            parsed = urllib3.util.parse_url("https://" + url)
+
         return cls(*parsed)
 
     @property

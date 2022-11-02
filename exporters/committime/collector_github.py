@@ -1,10 +1,10 @@
 import logging
-from functools import partial
 
 import attrs
 import requests
 from attrs import define, field
 
+from committime import CommitMetric
 from pelorus.config.converters import pass_through
 from pelorus.utils import Url, set_up_requests_session
 from provider_common.github import parse_datetime
@@ -21,9 +21,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
     # overrides with default
     git_api: Url = field(
         default=DEFAULT_GITHUB_API,
-        converter=attrs.converters.optional(
-            pass_through(Url, partial(Url.parse, default_scheme="https"))
-        ),
+        converter=attrs.converters.optional(pass_through(Url, Url.parse)),
     )
 
     _path_pattern = "/repos/{group}/{project}/commits/{hash}"
@@ -34,7 +32,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
             self.session, self.tls_verify, username=self.username, token=self.token
         )
 
-    def get_commit_time(self, metric):
+    def get_commit_time(self, metric: CommitMetric):
         """Method called to collect data and send to Prometheus"""
         git_server = metric.git_fqdn
         # check for gitlab or bitbucket
@@ -48,7 +46,11 @@ class GitHubCommitCollector(AbstractCommitCollector):
                 "Skipping non GitHub server, found %s" % (git_server)
             )
 
-        path = self._path_pattern.format()
+        path = self._path_pattern.format(
+            group=metric.repo_group,
+            project=metric.repo_project,
+            hash=metric.commit_hash,
+        )
         url = self.git_api._replace(path=path).url
         response = self.session.get(url)
         if response.status_code != 200:
@@ -58,7 +60,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
                 % (
                     metric.build_name,
                     metric.commit_hash,
-                    metric.repo_fqdn,
+                    metric.git_fqdn,
                     str(response.status_code),
                 )
             )

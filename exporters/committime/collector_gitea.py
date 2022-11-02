@@ -1,5 +1,4 @@
 import logging
-from functools import partial
 
 import attrs
 import requests
@@ -25,9 +24,7 @@ class GiteaCommitCollector(AbstractCommitCollector):
     # overrides with default
     git_api: Url = field(
         default=DEFAULT_GITEA_API,
-        converter=attrs.converters.optional(
-            pass_through(Url, partial(Url.parse, default_scheme="https"))
-        ),
+        converter=attrs.converters.optional(pass_through(Url, Url.parse)),
     )
 
     _path_template = "{group}/{project}/git/commits/{hash}"

@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import logging
 import time
-from functools import partial
 
 import attrs.converters
 import attrs.validators
@@ -92,9 +91,7 @@ class GitCommittimeConfig:
 
     git_api: Url | None = field(
         default=None,
-        converter=attrs.converters.optional(
-            pass_through(Url, partial(Url.parse, default_scheme="https"))
-        ),
+        converter=attrs.converters.optional(pass_through(Url, Url.parse)),
         metadata=env_vars(*env_var_names.GIT_API),
     )
 
