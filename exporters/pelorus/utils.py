@@ -25,7 +25,6 @@ import contextlib
 import dataclasses
 import logging
 import os
-import sys
 from typing import Any, ClassVar, Generator, Optional, Union, cast, overload
 
 import requests
@@ -35,7 +34,6 @@ from kubernetes import client, config
 from kubernetes.dynamic import Resource, ResourceInstance
 from openshift.dynamic import DynamicClient
 
-import pelorus
 from pelorus.certificates import set_up_requests_certs
 
 # sentinel value for the default kwarg to get_nested
@@ -264,12 +262,6 @@ def get_k8s_client():
         k8s_client = DynamicClient(client.ApiClient(k8sconfig))
 
     return k8s_client
-
-
-def check_required_config(config):
-    if pelorus.missing_configs(config):
-        print("This program will exit.")
-        sys.exit(1)
 
 
 class TokenAuth(requests.auth.AuthBase):

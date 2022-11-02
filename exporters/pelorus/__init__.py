@@ -1,5 +1,4 @@
 import logging
-import os
 import pathlib
 from abc import ABC
 from typing import Optional, Sequence
@@ -88,37 +87,6 @@ def get_prod_label():
 
 def get_github_issue_label():
     return utils.get_env_var("GITHUB_ISSUE_LABEL", DEFAULT_GITHUB_ISSUE_LABEL)
-
-
-def missing_configs(vars):
-    missing_configs = False
-    for var in vars:
-        if utils.get_env_var(var) is None:
-            logging.error("Missing required environment variable '%s'." % var)
-            missing_configs = True
-
-    return missing_configs
-
-
-def upgrade_legacy_vars():
-    github_token = utils.get_env_var("GITHUB_TOKEN")
-    git_token = utils.get_env_var("GIT_TOKEN")
-    api = utils.get_env_var("GITHUB_API", DEFAULT_GIT_API)
-
-    api_user = utils.get_env_var("API_USER")
-    github_user = utils.get_env_var("GITHUB_USER")
-    git_username = utils.get_env_var("GIT_USER")
-
-    assigned_user = api_user or git_username or github_user
-
-    if assigned_user:
-        os.environ["API_USER"] = assigned_user
-
-    if not utils.get_env_var("TOKEN"):
-        if git_token or github_token:
-            os.environ["TOKEN"] = git_token or github_token
-    if api and not utils.get_env_var("GIT_API"):
-        os.environ["GIT_API"] = api
 
 
 def url_joiner(base: str, *parts: str):
