@@ -1,3 +1,7 @@
 # Required by mkdocs material theme
 pymdown-extensions
 mkdocs-material
+
+# Social cards
+pillow
+cairosvg
