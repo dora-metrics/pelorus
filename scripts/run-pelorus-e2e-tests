@@ -63,8 +63,7 @@ function cleanup_and_exit() {
           PELORUS_TMP_DIR=$(basename "${DWN_DIR}")
           if [[ "${PELORUS_TMP_DIR}" =~ "${TMP_DIR_PREFIX}"* ]]; then
               echo "Cleaning up temporary files"
-              eval rm -f "${DWN_DIR}/*"
-              rmdir "${DWN_DIR}"
+              rm -rf "${DWN_DIR}"
           fi
       fi
     fi
@@ -536,7 +535,7 @@ if [ "${ENABLE_THANOS}" == true ]; then
 fi
 
 # update exporter values and helm upgrade
-eval helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml" "${THANOS_HELM_FLAG}"
+helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml" "${THANOS_HELM_FLAG}"
 
 retry 10m 5s owpr deploytime
 retry 10m 5s owpr committime
