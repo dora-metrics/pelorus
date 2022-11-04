@@ -546,14 +546,27 @@ retry 2m 5s oc wait pod --for=condition=Ready -n mongo-persistent -l app=mongo
 retry 10m 10s oc wait pod --for=condition=Ready -n mongo-persistent -l app=todolist
 
 # Test all deployed exporters
+any_exporter_failed=""
 exporters=$(oc get route -n "${PELORUS_NAMESPACE}"|grep "-exporter")
 echo "$exporters"
 for exporter_route in $(echo "$exporters" | awk '{print $2}');
 do
-    echo "$exporter_route"
-    curl "$exporter_route"
-    curl "$exporter_route" 2>&1 | grep todolist || exit 2
+    echo "␝$exporter_route"
+    route_output="$(curl "$exporter_route")"
+    curl_result=$?
+    echo "$route_output"
+    if [[ $curl_result -ne 0 ]]; then
+        echo "Error curling $exporter_route"
+        any_exporter_failed=true
+    elif ! { echo "$route_output" | grep todolist; }; then
+        echo "todolist not found in $exporter_route"
+        any_exporter_failed=true
+    fi
 done
+
+if [[ "$any_exporter_failed" = "true" ]]; then
+    exit 2
+fi
 
 if oc get pods -n pelorus | grep -q Crash ; then
     echo "Some pods are not functioning properly"
