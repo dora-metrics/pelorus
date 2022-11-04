@@ -60,6 +60,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                 created_ts = parse_assuming_utc(
                     issue[SN_OPENED_FIELD], _DATETIME_FORMAT
                 )
+                created_ts = created_ts.strftime('%s')
                 resolution_ts = None
                 if issue[SN_RESOLVED_FIELD]:
                     logging.info(
@@ -71,6 +72,8 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                     resolution_ts = parse_assuming_utc(
                         issue.get(SN_RESOLVED_FIELD), _DATETIME_FORMAT
                     )
+                    resolution_ts = resolution_ts.strftime('%s')
+
                 tracker_issue = TrackerIssue(
                     issue.get("number"),
                     created_ts,
