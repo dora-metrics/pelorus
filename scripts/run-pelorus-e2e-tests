@@ -95,7 +95,7 @@ function retry() {
 }
 
 function print_help() {
-    printf "\nUsage: %s [OPTION]... -d [DIR]\n\n" % "$0"
+    printf "\nUsage: %s [OPTION]... -d [DIR]\n\n" "$0"
     printf "\tStartup:\n"
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
