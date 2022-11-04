@@ -54,6 +54,7 @@ function download_file_from_url() {
 # Function to safely remove temporary files and temporary download dir
 # Argument is optional exit value to propagate it after cleanup
 function cleanup_and_exit() {
+    echo "␜Cleaning up and exiting"
     local exit_val=$1
     if [ -z "${DWN_DIR}" ]; then
         echo "cleanup_and_exit(): Temp download dir not provided !" >&2
@@ -67,11 +68,11 @@ function cleanup_and_exit() {
           fi
       fi
     fi
-    # Show logs from pods which are in CrashLoopBackOff state
-    for failing_pod in $(oc get pods -n "${PELORUS_NAMESPACE}" | grep -i crash | cut -d ' ' -f1);
-    do
-        echo "Logs from crashed pod: ${failing_pod}"
-        oc logs -n "${PELORUS_NAMESPACE}" "${failing_pod}"
+    # Show logs from all pods.
+    echo "␜Pod Logs:"
+    for pod in $(oc get pods -n "${PELORUS_NAMESPACE}" -o name); do
+        echo "␝Logs from ${pod}"
+        oc logs -n "${PELORUS_NAMESPACE}" --all-containers "${pod}"
     done
 
     # Cleanup binary builds
