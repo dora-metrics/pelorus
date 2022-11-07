@@ -26,10 +26,12 @@ import dataclasses
 import logging
 import os
 import sys
-from typing import Any, Generator, Optional, Union, cast, overload
+from typing import Any, Generator, Generic, Optional, TypeVar, Union, cast, overload
 
 import requests
 import requests.auth
+import urllib3.util
+from attrs import define
 from kubernetes import client, config
 from kubernetes.dynamic import Resource, ResourceInstance
 from openshift.dynamic import DynamicClient
@@ -284,7 +286,9 @@ class TokenAuth(requests.auth.AuthBase):
 
 
 def join_url_path_components(*components: str) -> str:
+    # TODO: which impl is right
     return "/".join(c.strip("/") for c in components)
+    return "/" + "/".join(c.strip("/") for c in components)
 
 
 def paginate_resource(
@@ -307,3 +311,52 @@ def paginate_resource(
     while continue_token:
         list_ = client.get(resource, **query, limit=limit, _continue=continue_token)
         yield from list_.items
+
+
+R = TypeVar("R")
+
+
+@define
+class CachedData(Generic[R]):
+    """
+    Data cached from some remote resource.
+
+    Does not have to be a singular response--
+    could be a collection of data from multiple paginated responses.
+    """
+
+    last_modified: str
+    data: R
+
+    @property
+    def if_modified_since(self):
+        return {"If-Modified-Since": self.last_modified}
+
+
+class Url(urllib3.util.Url):
+    """
+    A URL.
+
+    A really tiny abstraction over a urllib3.util.Url to solve one small issue with its path handling.
+    """
+
+    scheme: Optional[str]
+    auth: Optional[str]
+    host: Optional[str]
+    port: Optional[str]
+    path: Optional[str]
+    query: Optional[str]
+    fragment: Optional[str]
+
+    @classmethod
+    def parse(cls, url: str):
+        return cls(*urllib3.util.parse_url(url))
+
+    @property
+    def url(self) -> str:
+        if self.path and not self.path.startswith("/"):
+            self = self._replace(path=f"/{self.path}")
+        return super(Url, self).url
+
+    def __str__(self):
+        return self.url
