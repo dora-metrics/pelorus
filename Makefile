@@ -207,7 +207,7 @@ isort-check: $(PELORUS_VENV)
 
 # Linting
 
-.PHONY: lint python-lint pylava chart-lint chart-lint-optional shellcheck shellcheck-optional chart-check-bump
+.PHONY: lint python-lint pylava chart-lint chart-lint-optional shellcheck shellcheck-optional chart-check-bump typecheck
 ## lint: lint python code, shell scripts, and helm charts
 lint: python-lint chart-lint-optional shellcheck-optional
 
@@ -220,7 +220,7 @@ python-lint: $(PELORUS_VENV)
 pylava: python-lint
 
 typecheck:
-	mypy
+	pyright
 
 # chart-lint allows us to fail properly when run from CI,
 # while chart-lint-optional allows graceful degrading when

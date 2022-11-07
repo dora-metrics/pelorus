@@ -18,6 +18,7 @@ mkdocs
 black
 isort
 pylama[toml] >= 8.4.0
+pyright
 
 # # Issue #584
 # pyflakes <= 2.4.0

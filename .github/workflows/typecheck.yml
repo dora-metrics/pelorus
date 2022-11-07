@@ -1,0 +1,42 @@
+name: Type Check
+on:
+  push:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
+      - '.github/workflows/typecheck.yml'
+      - 'Makefile'
+
+  pull_request:
+    paths:
+      - 'exporters/**'
+      - 'pyproject.toml'
+      - '.github/workflows/typecheck.yml'
+      - 'Makefile'
+  
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: make dev-env
+      
+      - name: Install node
+        run: sudo apt install node
+
+      - name: Type Check
+        # we are not treating type checking errors as fatal for now.
+        continue-on-error: true
+        run: make typecheck
