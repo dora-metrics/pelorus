@@ -54,7 +54,7 @@ function download_file_from_url() {
 # Function to safely remove temporary files and temporary download dir
 # Argument is optional exit value to propagate it after cleanup
 function cleanup_and_exit() {
-    echo "␜Cleaning up and exiting"
+    echo "===== Cleaning up and exiting ====="
     local exit_val=$1
     if [ -z "${DWN_DIR}" ]; then
         echo "cleanup_and_exit(): Temp download dir not provided !" >&2
@@ -69,9 +69,9 @@ function cleanup_and_exit() {
       fi
     fi
     # Show logs from all pods.
-    echo "␜Pod Logs:"
+    echo "===== Pod Logs ====="
     for pod in $(oc get pods -n "${PELORUS_NAMESPACE}" -o name); do
-        echo "␝Logs from ${pod}"
+        echo "----- Logs from ${pod} -----"
         oc logs -n "${PELORUS_NAMESPACE}" --all-containers "${pod}"
     done
 
@@ -191,6 +191,9 @@ fi
 
 
 ### MAIN
+
+echo "===== 1. Set up deployment ====="
+
 # Create download directory
 DWN_DIR=$(TMPDIR="${VENV}" mktemp -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
 
@@ -479,6 +482,8 @@ if [ "${ENABLE_JIRA_CUSTOM_FAIL_EXP}" == true ]; then
     fi
 fi
 
+echo "===== 2. Set up OpenShift resources ====="
+
 # We do check for the exit status, as we are not really interested in the
 # current state, e.g. Active of that namespace before deleting resources.
 if oc get namespace mongo-persistent 2>/dev/null; then
@@ -547,20 +552,23 @@ retry 2m 5s oc wait pod --for=condition=Ready -n mongo-persistent -l app=mongo
 retry 10m 10s oc wait pod --for=condition=Ready -n mongo-persistent -l app=todolist
 
 # Test all deployed exporters
+
+echo "===== 3. Test Exporters ====="
+
 any_exporter_failed=""
 exporters=$(oc get route -n "${PELORUS_NAMESPACE}"|grep "-exporter")
 echo "$exporters"
 for exporter_route in $(echo "$exporters" | awk '{print $2}');
 do
-    echo "␝$exporter_route"
+    echo "$exporter_route"
     route_output="$(curl "$exporter_route")"
     curl_result=$?
     echo "$route_output"
     if [[ $curl_result -ne 0 ]]; then
-        echo "Error curling $exporter_route"
+        echo "Error curling $exporter_route" 1>&2
         any_exporter_failed=true
     elif ! { echo "$route_output" | grep todolist; }; then
-        echo "todolist not found in $exporter_route"
+        echo "todolist not found in $exporter_route" 1>&2
         any_exporter_failed=true
     fi
 done
