@@ -54,6 +54,7 @@ function download_file_from_url() {
 # Function to safely remove temporary files and temporary download dir
 # Argument is optional exit value to propagate it after cleanup
 function cleanup_and_exit() {
+    echo "===== Cleaning up and exiting ====="
     local exit_val=$1
     if [ -z "${DWN_DIR}" ]; then
         echo "cleanup_and_exit(): Temp download dir not provided !" >&2
@@ -63,16 +64,15 @@ function cleanup_and_exit() {
           PELORUS_TMP_DIR=$(basename "${DWN_DIR}")
           if [[ "${PELORUS_TMP_DIR}" =~ "${TMP_DIR_PREFIX}"* ]]; then
               echo "Cleaning up temporary files"
-              eval rm -f "${DWN_DIR}/*"
-              rmdir "${DWN_DIR}"
+              rm -rf "${DWN_DIR}"
           fi
       fi
     fi
-    # Show logs from pods which are in CrashLoopBackOff state
-    for failing_pod in $(oc get pods -n "${PELORUS_NAMESPACE}" | grep -i crash | cut -d ' ' -f1);
-    do
-        echo "Logs from crashed pod: ${failing_pod}"
-        oc logs -n "${PELORUS_NAMESPACE}" "${failing_pod}"
+    # Show logs from all pods.
+    echo "===== Pod Logs ====="
+    for pod in $(oc get pods -n "${PELORUS_NAMESPACE}" -o name); do
+        echo "----- Logs from ${pod} -----"
+        oc logs -n "${PELORUS_NAMESPACE}" --all-containers "${pod}"
     done
 
     # Cleanup binary builds
@@ -96,7 +96,7 @@ function retry() {
 }
 
 function print_help() {
-    printf "\nUsage: %s [OPTION]... -d [DIR]\n\n" % "$0"
+    printf "\nUsage: %s [OPTION]... -d [DIR]\n\n" "$0"
     printf "\tStartup:\n"
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
@@ -191,6 +191,9 @@ fi
 
 
 ### MAIN
+
+echo "===== 1. Set up deployment ====="
+
 # Create download directory
 DWN_DIR=$(TMPDIR="${VENV}" mktemp -d -t "${TMP_DIR_PREFIX}XXXXX") || exit 2
 
@@ -479,6 +482,8 @@ if [ "${ENABLE_JIRA_CUSTOM_FAIL_EXP}" == true ]; then
     fi
 fi
 
+echo "===== 2. Set up OpenShift resources ====="
+
 # We do check for the exit status, as we are not really interested in the
 # current state, e.g. Active of that namespace before deleting resources.
 if oc get namespace mongo-persistent 2>/dev/null; then
@@ -527,16 +532,16 @@ retry 5m 5s ogns prometheus-pelorus
 cat "${DWN_DIR}/ci_values.yaml"
 
 # Thanos and s3 support
-THANOS_HELM_FLAG=""
+THANOS_HELM_FLAG=() # an array so expanding it later will be 0 words if empty
 if [ "${ENABLE_THANOS}" == true ]; then
     echo "Enabling Thanos support"
     thanos_config_file=$(create_s3_thanos_config  s3_host s3_bucket s3_access_key s3_secret_key)
-    THANOS_HELM_FLAG=" --values ${thanos_config_file}"
-    echo "${THANOS_HELM_FLAG}"
+    THANOS_HELM_FLAG=("--values" "${thanos_config_file}")
 fi
 
 # update exporter values and helm upgrade
-eval helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml" "${THANOS_HELM_FLAG}"
+echo helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml" "${THANOS_HELM_FLAG[@]}"
+helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml" "${THANOS_HELM_FLAG[@]}"
 
 retry 10m 5s owpr deploytime
 retry 10m 5s owpr committime
@@ -547,14 +552,30 @@ retry 2m 5s oc wait pod --for=condition=Ready -n mongo-persistent -l app=mongo
 retry 10m 10s oc wait pod --for=condition=Ready -n mongo-persistent -l app=todolist
 
 # Test all deployed exporters
+
+echo "===== 3. Test Exporters ====="
+
+any_exporter_failed=""
 exporters=$(oc get route -n "${PELORUS_NAMESPACE}"|grep "-exporter")
 echo "$exporters"
 for exporter_route in $(echo "$exporters" | awk '{print $2}');
 do
     echo "$exporter_route"
-    curl "$exporter_route"
-    curl "$exporter_route" 2>&1 | grep todolist || exit 2
+    route_output="$(curl "$exporter_route")"
+    curl_result=$?
+    echo "$route_output"
+    if [[ $curl_result -ne 0 ]]; then
+        echo "Error curling $exporter_route" 1>&2
+        any_exporter_failed=true
+    elif ! { echo "$route_output" | grep todolist; }; then
+        echo "todolist not found in $exporter_route" 1>&2
+        any_exporter_failed=true
+    fi
 done
+
+if [[ "$any_exporter_failed" = "true" ]]; then
+    exit 2
+fi
 
 if oc get pods -n pelorus | grep -q Crash ; then
     echo "Some pods are not functioning properly"
