@@ -38,7 +38,7 @@ jobs:
         run: make dev-env
       
       - name: Install node
-        run: sudo apt install nodejs
+        run: sudo apt-get install nodejs
 
       - name: Type Check
         # we are not treating type checking errors as fatal for now.

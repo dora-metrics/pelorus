@@ -219,7 +219,8 @@ python-lint: $(PELORUS_VENV)
 
 pylava: python-lint
 
-typecheck:
+typecheck: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
 	pyright
 
 # chart-lint allows us to fail properly when run from CI,
