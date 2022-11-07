@@ -27,7 +27,7 @@ class GiteaCommitCollector(AbstractCommitCollector):
         converter=attrs.converters.optional(pass_through(Url, Url.parse)),
     )
 
-    _path_template = "{group}/{project}/git/commits/{hash}"
+    _path_template = "/api/v1/repos/{group}/{project}/git/commits/{hash}"
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
