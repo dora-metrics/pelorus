@@ -536,11 +536,11 @@ THANOS_HELM_FLAG=() # an array so expanding it later will be 0 words if empty
 if [ "${ENABLE_THANOS}" == true ]; then
     echo "Enabling Thanos support"
     thanos_config_file=$(create_s3_thanos_config  s3_host s3_bucket s3_access_key s3_secret_key)
-    THANOS_HELM_FLAG=(" --values ${thanos_config_file}")
-    echo "${THANOS_HELM_FLAG[@]}"
+    THANOS_HELM_FLAG=("--values" "${thanos_config_file}")
 fi
 
 # update exporter values and helm upgrade
+echo helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml" "${THANOS_HELM_FLAG[@]}"
 helm upgrade pelorus charts/pelorus --namespace pelorus --values "${DWN_DIR}/ci_values.yaml" "${THANOS_HELM_FLAG[@]}"
 
 retry 10m 5s owpr deploytime
