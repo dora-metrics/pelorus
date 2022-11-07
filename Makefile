@@ -88,9 +88,19 @@ $(PELORUS_VENV)/bin/%: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 		./scripts/install_dev_tools -v $(PELORUS_VENV) -c $(notdir $@)
 
+# system-level doc requirements
+ifeq (Darwin, $(shell uname -s))
+/opt/homebrew/Cellar/%:
+	brew install $(notdir $@)
+
+system-doc-deps: /opt/homebrew/Cellar/libffi /opt/homebrew/Cellar/cairo
+else
+system-doc-deps:
+endif
+
 ## dev-env: set up everything needed for development (install tools, set up virtual environment, git configuration)
 dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
-         .git/hooks/pre-commit
+         .git/hooks/pre-commit system-doc-deps
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
 
