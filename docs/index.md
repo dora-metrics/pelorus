@@ -3,6 +3,12 @@
 ![Pelorus](img/Logo-Pelorus-A-Standard-RGB_smaller.png)
 
 ![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
+![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)
+![](https://github.com/redhat-cop/pelorus/workflows/Conftest/badge.svg)
+![](https://github.com/redhat-cop/pelorus/workflows/Chart%20Lint/badge.svg)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
+![Python versions](https://img.shields.io/badge/Python-3.9%20|%203.10-success)
 
 Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 
@@ -12,18 +18,17 @@ Pelorus is a tool that helps IT organizations measure their impact on the overal
 
 To understand the motivation, see [Our Philosophy](Philosophy.md).
 
-For more background on the project you can read @trevorquinn's blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
+For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
 
 ## Software Delivery Performance as an outcome
 
-Currently, Pelorus can capture proven metrics that measure Software Delivery Performance -- a significant outcome that IT organizations aim to deliver.
+Currently, Pelorus functionality can capture proven metrics that measure Software Delivery Performance -- a significant outcome that IT organizations aim to deliver.
 
 Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides an organizational-level view of the [four critical measures of software delivery performance](https://blog.openshift.com/exploring-a-metrics-driven-approach-to-transformation/).
 
 ![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
 
-A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg),
-and you can learn more about each individual dashboard in the [dashboards documentation](Dashboards.md).
+A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg), and you can learn more about each individual dashboard in the [dashboards documentation](Dashboards.md).
 
 ## Prior Knowledge
 
