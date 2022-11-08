@@ -20,14 +20,19 @@ from __future__ import annotations
 import logging
 import re
 from abc import abstractmethod
-from typing import Iterable, Optional
+from typing import ClassVar, Iterable, Optional
 
+import attrs
+from attrs import define, field
 from jsonpath_ng import parse
+from openshift.dynamic import DynamicClient
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
 from committime import CommitMetric, commit_metric_from_build
-from pelorus.utils import get_env_var, get_nested
+from pelorus.config import env_vars
+from pelorus.config.converters import comma_separated, pass_through
+from pelorus.utils import Url, get_nested
 
 # Custom annotations env for the Build
 # Default ones are in the CommitMetric._ANNOTATION_MAPPIG
@@ -46,36 +51,53 @@ class UnsupportedGITProvider(Exception):
         super().__init__(message)
 
 
+@define(kw_only=True)
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     """
     Base class for a CommitCollector.
     This class should be extended for the system which contains the commit information.
     """
 
-    def __init__(
-        self,
-        kube_client,
-        username: str,
-        token: str,
-        namespaces: set[str],
-        apps,
-        collector_name,
-        timedate_format,
-        git_api=None,
-        tls_verify=None,
-    ):
-        """Constructor"""
-        self._kube_client = kube_client
-        self._username = username
-        self._token = token
-        self._namespaces = namespaces
-        self._apps = apps
-        self._git_api = git_api
-        self._tls_verify = tls_verify
-        self._commit_dict = {}
-        self._timedate_format = timedate_format
-        self._collector_name = collector_name
-        logging.info("=====Using %s Collector=====" % (self._collector_name))
+    collector_name: ClassVar[str]
+
+    kube_client: DynamicClient = field()
+
+    username: str = field()
+    token: str = field(repr=False)
+
+    namespaces: set[str] = field(factory=set, converter=comma_separated(set))
+
+    git_api: Optional[Url] = field(
+        default=None,
+        converter=attrs.converters.optional(pass_through(Url, Url.parse)),
+    )
+
+    tls_verify: bool = field(default=True)
+
+    commit_dict: dict[str, Optional[float]] = field(factory=dict, init=False)
+
+    hash_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
+    )
+
+    repo_url_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
+        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
+    )
+
+    def __attrs_post_init__(self):
+        self.commit_dict = dict()
+        if not (self.username and self.token):
+            logging.warning(
+                "No API_USER and no TOKEN given. This is okay for public repositories only."
+            )
+        elif (self.username and not self.token) or (not self.username and self.token):
+            logging.warning(
+                "username and token must both be set, or neither should be set. Unsetting both."
+            )
+            self.username = ""
+            self.token = ""
 
     def collect(self):
         commit_metric = GaugeMetricFamily(
@@ -109,10 +131,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             yield commit_metric
 
     def _get_watched_namespaces(self) -> set[str]:
-        watched_namespaces = self._namespaces
+        watched_namespaces = self.namespaces
         if not watched_namespaces:
             logging.info("No namespaces specified, watching all namespaces")
-            v1_namespaces = self._kube_client.resources.get(
+            v1_namespaces = self.kube_client.resources.get(
                 api_version="v1", kind="Namespace"
             )
             watched_namespaces = {
@@ -121,9 +143,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         logging.info("Watching namespaces: %s" % (watched_namespaces))
         return watched_namespaces
 
-    def _get_openshift_obj_by_app(
-        self, openshift_obj: str, app_label: str
-    ) -> Optional[dict]:
+    def _get_openshift_obj_by_app(self, openshift_obj: str) -> Optional[dict]:
+        app_label = self.app_label
 
         # use a jsonpath expression to find all values for the app label
         jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
@@ -160,19 +181,19 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # Initialized variables
             builds = []
             builds_by_app = {}
-            app_label = pelorus.get_app_label()
+            app_label = self.app_label
             logging.debug(
                 "Searching for builds with label: %s in namespace: %s"
                 % (app_label, namespace)
             )
 
-            v1_builds = self._kube_client.resources.get(
+            v1_builds = self.kube_client.resources.get(
                 api_version="build.openshift.io/v1", kind="Build"
             )
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
-            builds_by_app = self._get_openshift_obj_by_app(builds, app_label)
+            builds_by_app = self._get_openshift_obj_by_app(builds)
 
             if builds_by_app:
                 metrics += self.get_metrics_from_apps(builds_by_app, namespace)
@@ -208,14 +229,14 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             for build in code_builds:
                 try:
                     metric = self.get_metric_from_build(build, app, namespace, repo_url)
+                    if metric:
+                        logging.debug("Adding metric for app %s" % app)
+                        metrics.append(metric)
                 except Exception:
                     logging.error(
                         "Cannot collect metrics from build: %s" % (build.metadata.name)
                     )
 
-                if metric:
-                    logging.debug("Adding metric for app %s" % app)
-                    metrics.append(metric)
         return metrics
 
     def get_metric_from_build(self, build, app, namespace, repo_url):
@@ -266,17 +287,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         self, metric: CommitMetric, errors: list
     ) -> CommitMetric:
         if not metric.commit_hash:
-            commit_hash_annotation = get_env_var(
-                COMMIT_HASH_ANNOTATION_ENV,
-                CommitMetric._ANNOTATION_MAPPIG.get("commit_hash"),
-            )
-            commit_hash = metric.annotations.get(commit_hash_annotation)
+            commit_hash = metric.annotations.get(self.hash_annotation_name)
             if commit_hash:
                 metric.commit_hash = commit_hash
                 logging.debug(
-                    "Commit hash for build %s provided by '%s' annotation: %s",
+                    "Commit hash for build %s provided by '%s'",
                     metric.build_name,
-                    commit_hash_annotation,
                     metric.commit_hash,
                 )
             else:
@@ -296,23 +312,19 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             logging.debug(
                 "Repo URL for build %s provided by '%s': %s",
                 metric.build_name,
-                CommitMetric._BUILD_MAPPING.get("repo_url")[0],
+                CommitMetric._BUILD_MAPPING["repo_url"][0],
                 metric.repo_url,
             )
         elif repo_url:
             metric.repo_url = repo_url
         else:
-            repo_url_annotation = get_env_var(
-                COMMIT_REPO_URL_ANNOTATION_ENV,
-                CommitMetric._ANNOTATION_MAPPIG.get("repo_url"),
-            )
-            repo_from_annotation = metric.annotations.get(repo_url_annotation)
+
+            repo_from_annotation = metric.annotations.get(self.repo_url_annotation_name)
             if repo_from_annotation:
                 metric.repo_url = repo_from_annotation
                 logging.debug(
-                    "Repo URL for build %s provided by '%s' annotation: %s",
+                    "Repo URL for build %s provided by '%s'",
                     metric.build_name,
-                    repo_url_annotation,
                     metric.repo_url,
                 )
             else:
@@ -358,12 +370,14 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     # TODO: be specific about the API modifying in place or returning a new metric.
     # Right now, it appears to do both.
-    def _set_commit_timestamp(self, metric: CommitMetric, errors: list) -> CommitMetric:
+    def _set_commit_timestamp(
+        self, metric: CommitMetric, errors: list
+    ) -> Optional[CommitMetric]:
         """
         Check the cache for the commit_time.
         If absent, call the API implemented by the subclass.
         """
-        if metric.commit_hash and metric.commit_hash not in self._commit_dict:
+        if metric.commit_hash and metric.commit_hash not in self.commit_dict:
             logging.debug(
                 "sha: %s, commit_timestamp not found in cache, executing API call.",
                 metric.commit_hash,
@@ -378,9 +392,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 errors.append("Couldn't get commit time")
             else:
                 # Add the timestamp to the cache
-                self._commit_dict[metric.commit_hash] = metric.commit_timestamp
+                self.commit_dict[metric.commit_hash] = metric.commit_timestamp
         elif metric.commit_hash:
-            metric.commit_timestamp = self._commit_dict[metric.commit_hash]
+            metric.commit_timestamp = self.commit_dict[metric.commit_hash]
             logging.debug(
                 "Returning sha: %s, commit_timestamp: %s, from cache.",
                 metric.commit_hash,
@@ -423,7 +437,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         :param build: the Build resource
         :return: repo_url as a str or None if not found
         """
-        v1_build_configs = self._kube_client.resources.get(
+        v1_build_configs = self.kube_client.resources.get(
             api_version="build.openshift.io/v1", kind="BuildConfig"
         )
         build_config = v1_build_configs.get(

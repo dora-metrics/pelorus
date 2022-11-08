@@ -97,7 +97,7 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
 
     projects: set[ProjectSpec] = field(converter=ProjectSpec.all_from_env_var)
     host: str = field(default="api.github.com", metadata=env_vars("GIT_API"))
-    token: Optional[str] = field(default=None, metadata=log(REDACT))
+    token: Optional[str] = field(default=None, metadata=log(REDACT), repr=False)
 
     _session: Session = field(factory=Session, init=False)
 

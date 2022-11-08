@@ -25,6 +25,10 @@ import giturlparse
 
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
+DEFAULT_PROVIDER = "git"
+PROVIDER_TYPES = {"git", "image"}
+GIT_PROVIDER_TYPES = {"github", "bitbucket", "gitea", "azure-devops", "gitlab"}
+
 SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 
 

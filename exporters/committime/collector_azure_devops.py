@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+from attrs import define
 from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 
@@ -9,23 +10,14 @@ from committime import CommitMetric
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
 
 
+@define(kw_only=True)
 class AzureDevOpsCommitCollector(AbstractCommitCollector):
-    def __init__(self, kube_client, username, token, namespaces, apps, git_api):
-        super().__init__(
-            kube_client,
-            username,
-            token,
-            namespaces,
-            apps,
-            "Azure-DevOps",
-            "%Y-%m-%dT%H:%M:%S",
-            git_api,
-        )
+    collector_name = "Azure-DevOps"
 
     # base class impl
     def get_commit_time(self, metric: CommitMetric):
         """Method called to collect data and send to Prometheus"""
-        git_server = self._git_api
+        git_server = metric.git_fqdn
 
         if (
             "github" in git_server
@@ -38,12 +30,12 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
             )
 
         logging.debug("metric.repo_project %s" % (metric.repo_project))
-        logging.debug("metric.git_api %s" % (self._git_api))
+        logging.debug("metric.git_api %s" % (self.git_api))  # TODO: metric, not self
 
         # Private or personal token
         # Fill in with your personal access token and org URL
-        personal_access_token = self._token
-        organization_url = self._git_api
+        personal_access_token = self.token
+        organization_url = self.git_api
 
         # Create a connection to the org
         credentials = BasicAuthentication("", personal_access_token)

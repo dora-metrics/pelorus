@@ -28,14 +28,14 @@ from prometheus_client.core import REGISTRY
 from failure import collector_jira
 from failure.collector_github import GithubAuthenticationError, GithubFailureCollector
 from failure.collector_jira import JiraFailureCollector
+from pelorus.config import load_and_log
 
 
 def setup_jira_collector(server, username, apikey) -> JiraFailureCollector:
     return JiraFailureCollector(
-        server=server,
-        user=username,
-        apikey=apikey,
-        projects=None,
+        tracker_api=server,
+        username=username,
+        token=apikey,
     )
 
 
@@ -90,10 +90,9 @@ def test_jira_prometheus_register(
 
     monkeypatch.setattr(JiraFailureCollector, "search_issues", mock_search_issues)
     collector = JiraFailureCollector(
-        user=username,
-        apikey=apikey,
-        server=server,
-        projects=None,
+        username=username,
+        token=apikey,
+        tracker_api=server,
     )
 
     REGISTRY.register(collector)  # type: ignore
@@ -120,10 +119,9 @@ def test_jira_exception(server, username, apikey, monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(JiraFailureCollector, "_connect_to_jira", mock_jira_connect)
 
     collector = JiraFailureCollector(
-        user=username,
-        apikey=apikey,
-        server=server,
-        projects=None,
+        username=username,
+        token=apikey,
+        tracker_api=server,
     )
     collector.search_issues()
 
@@ -141,7 +139,7 @@ def setup_github_collector(
 
         monkeypatch.setattr(GithubFailureCollector, "_get_github_user", _no_github_user)
 
-    return GithubFailureCollector("WIEds4uZHiCGnrtmgQPn9E7D", None)
+    return GithubFailureCollector(token="WIEds4uZHiCGnrtmgQPn9E7D")
 
 
 def get_test_data(file="/exporters/tests/data/github_issue.json"):
@@ -170,7 +168,7 @@ def test_github_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     REGISTRY.register(collector)  # type: ignore
 
 
-# has label bug and pelorus.get_app_label()
+# has label bug and app_label
 def test_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
@@ -186,7 +184,7 @@ def test_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     assert critical_issues[0].resolutiondate is None
 
 
-# has label fug ( not bug ) and pelorus.get_app_label()
+# has label fug ( not bug ) and app_label
 def test_negative_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
@@ -199,7 +197,7 @@ def test_negative_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     assert critical_issues == []
 
 
-# has label bug and NOT pelorus.get_app_label()
+# has label bug and NOT app_label
 def test_negative_label_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
@@ -239,23 +237,27 @@ def test_github_closed_issue_search_issues(monkeypatch: pytest.MonkeyPatch):
     ],
 )
 def test_default_jql_search_query(server, username, apikey):
-    os.environ[
-        collector_jira.JQL_SEARCH_QUERY_ENV
-    ] = collector_jira.DEFAULT_JQL_SEARCH_QUERY
+    env = {collector_jira.JQL_SEARCH_QUERY_ENV: collector_jira.DEFAULT_JQL_SEARCH_QUERY}
+    projects = {"custom", "projects"}
 
-    collector = JiraFailureCollector(
-        user=username,
-        apikey=apikey,
-        server=server,
-        projects="custom,projects",
+    collector = load_and_log(
+        JiraFailureCollector,
+        env=env,
+        other=dict(
+            username=username,
+            token=apikey,
+            tracker_api=server,
+            projects=projects,
+        ),
     )
     assert collector_jira.DEFAULT_JQL_SEARCH_QUERY in collector.jql_query_string
 
     assert collector.query_result_fields_string == collector_jira.QUERY_RESULT_FIELDS
 
-    assert 'AND project in ("custom","projects")' in collector.jql_query_string
+    assert "AND project in" in collector.jql_query_string
 
-    del os.environ[collector_jira.JQL_SEARCH_QUERY_ENV]
+    for project in projects:
+        assert f'"{project}"' in collector.jql_query_string
 
 
 @pytest.mark.parametrize(
@@ -272,21 +274,23 @@ def test_custom_jql_search_query(server, username, apikey):
 
     custom_jql_query = "custom JIRA JQL query"
 
-    os.environ[collector_jira.JQL_SEARCH_QUERY_ENV] = custom_jql_query
+    env = {collector_jira.JQL_SEARCH_QUERY_ENV: custom_jql_query}
 
-    collector = JiraFailureCollector(
-        user=username,
-        apikey=apikey,
-        server=server,
-        projects="custom,projects",
+    collector = load_and_log(
+        JiraFailureCollector,
+        env=env,
+        other=dict(
+            username=username,
+            token=apikey,
+            tracker_api=server,
+            projects={"custom", "projects"},
+        ),
     )
     assert collector.jql_query_string == custom_jql_query
 
     assert collector.query_result_fields_string == ""
 
     assert "AND project" not in collector.jql_query_string
-
-    del os.environ[collector_jira.JQL_SEARCH_QUERY_ENV]
 
 
 @pytest.mark.parametrize(
@@ -302,10 +306,9 @@ def test_custom_jql_search_query(server, username, apikey):
 def test_no_resolved_timestamp(server, username, apikey):
 
     collector = JiraFailureCollector(
-        user=username,
-        apikey=apikey,
-        server=server,
-        projects=None,
+        username=username,
+        token=apikey,
+        tracker_api=server,
     )
 
     issue_fields = {
@@ -315,7 +318,7 @@ def test_no_resolved_timestamp(server, username, apikey):
             "resolutiondate": None,
         },
     }
-    test_issue = Issue(None, None, issue_fields)
+    test_issue = Issue(None, None, issue_fields)  # type: ignore
     resolution_timestamp = collector._get_resolved_timestamp(test_issue)
 
     assert resolution_timestamp is None
@@ -334,10 +337,9 @@ def test_no_resolved_timestamp(server, username, apikey):
 def test_custom_resolved_timestamp(server, username, apikey):
 
     collector = JiraFailureCollector(
-        user=username,
-        apikey=apikey,
-        server=server,
-        projects=None,
+        username=username,
+        token=apikey,
+        tracker_api=server,
     )
 
     issue_fields = {
@@ -351,13 +353,13 @@ def test_custom_resolved_timestamp(server, username, apikey):
             },
         },
     }
-    test_issue = Issue(None, None, issue_fields)
+    test_issue = Issue(None, None, issue_fields)  # type: ignore
 
     resolution_timestamp = collector._get_resolved_timestamp(
         test_issue, "Done, Resolved, Other"
     )
 
-    assert int(resolution_timestamp) == 1652395843
+    assert int(resolution_timestamp) == 1652395843  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -373,10 +375,9 @@ def test_custom_resolved_timestamp(server, username, apikey):
 def test_resolutiondate_timestamp(server, username, apikey):
 
     collector = JiraFailureCollector(
-        user=username,
-        apikey=apikey,
-        server=server,
-        projects=None,
+        username=username,
+        token=apikey,
+        tracker_api=server,
     )
 
     issue_fields = {
@@ -387,8 +388,8 @@ def test_resolutiondate_timestamp(server, username, apikey):
             "status": {},
         },
     }
-    test_issue = Issue(None, None, issue_fields)
+    test_issue = Issue(None, None, issue_fields)  # type: ignore
 
     resolution_timestamp = collector._get_resolved_timestamp(test_issue)
 
-    assert int(resolution_timestamp) == 1649803843
+    assert int(resolution_timestamp) == 1649803843  # type: ignore

@@ -203,7 +203,7 @@ from requests import Session
 @define
 class RequestsUser:
     api_user: str
-    token: str
+    token: str = field(repr=False)
 
     _session: Session = field(factory=Session, init=False)
 
