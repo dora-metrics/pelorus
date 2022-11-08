@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import abstractmethod
-from typing import Collection, Iterable
+from typing import Collection, Iterable, Union
 
 from prometheus_client.core import GaugeMetricFamily
 
@@ -73,7 +73,13 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
 
 
 class TrackerIssue:
-    def __init__(self, issue_number, creationdate, resolutiondate, app):
+    def __init__(
+        self,
+        issue_number,
+        creationdate: Union[str, float, int],
+        resolutiondate: Union[str, float, int],
+        app,
+    ):
         self.creationdate = creationdate
         self.resolutiondate = resolutiondate
         self.issue_number = issue_number
@@ -81,7 +87,9 @@ class TrackerIssue:
 
 
 class FailureMetric:
-    def __init__(self, time_stamp, is_resolution=False, labels=[]):
+    def __init__(
+        self, time_stamp: Union[str, float, int], is_resolution=False, labels=[]
+    ):
         self.time_stamp = time_stamp
         self.is_resolution = is_resolution
         self.labels = labels

@@ -6,7 +6,7 @@ from attrs import define, field
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
 from pelorus.config import REDACT, env_var_names, env_vars, log
-from pelorus.timeutil import parse_assuming_utc
+from pelorus.timeutil import parse_assuming_utc, second_precision
 from pelorus.utils import set_up_requests_session
 
 SN_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -74,6 +74,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                 created_ts = parse_assuming_utc(
                     issue[SN_OPENED_FIELD], _DATETIME_FORMAT
                 )
+                created_ts = second_precision(created_ts).timestamp()
                 resolution_ts = None
                 if issue[SN_RESOLVED_FIELD]:
                     logging.info(
@@ -85,6 +86,8 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                     resolution_ts = parse_assuming_utc(
                         issue.get(SN_RESOLVED_FIELD), _DATETIME_FORMAT
                     )
+                    resolution_ts = second_precision(resolution_ts).timestamp()
+
                 tracker_issue = TrackerIssue(
                     issue.get("number"),
                     created_ts,
