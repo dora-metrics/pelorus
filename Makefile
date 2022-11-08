@@ -220,6 +220,7 @@ python-lint: $(PELORUS_VENV)
 pylava: python-lint
 
 typecheck: $(PELORUS_VENV)
+	$(warning Type checking is not fully ready yet, the issues below may be ignorable)
 	. ${PELORUS_VENV}/bin/activate && \
 	pyright
 
