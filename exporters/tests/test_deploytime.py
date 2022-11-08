@@ -1,8 +1,10 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 from random import randrange
+from typing import Optional
 from unittest.mock import NonCallableMock
 
+import attrs
 import pytest
 from openshift.dynamic import DynamicClient  # type: ignore
 from openshift.dynamic.discovery import Discoverer  # type: ignore
@@ -10,7 +12,17 @@ from openshift.dynamic.discovery import Discoverer  # type: ignore
 import pelorus
 from deploytime import DeployTimeMetric
 from deploytime.app import DeployTimeCollector, image_sha
-from tests.openshift_mocks import *
+from tests.openshift_mocks import (
+    Container,
+    ContainerStatus,
+    Metadata,
+    OwnerRef,
+    Pod,
+    PodSpec,
+    PodStatus,
+    Replicator,
+    ResourceGetResponse,
+)
 
 # pylava:ignore=W0401
 
@@ -61,7 +73,7 @@ QUUX_POD_SHAS = [
 # region mock data creation helpers
 
 
-@attr.define(slots=False)
+@attrs.define(slots=False)
 class DynClientMockData:
     pods: list[Pod]
     replicators: list[Replicator]
