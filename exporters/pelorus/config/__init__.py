@@ -61,7 +61,7 @@ class _LoggingLoader(Generic[ConfigClass]):
     errors: list[MissingDataError] = attrs.field(factory=list, init=False)
 
     def _load(self):
-        for field in attrs.fields(self.cls):
+        for field in attrs.fields(self.cls):  # type: ignore
             if not field.init:
                 # field does not get set during instance creation,
                 # so don't load it.
@@ -115,7 +115,7 @@ class _LoggingLoader(Generic[ConfigClass]):
 
         kwargs = dict(_prepare_kwargs(self.results))
 
-        return self.cls(**kwargs)
+        return self.cls(**kwargs)  # type: ignore
 
 
 def load_and_log(

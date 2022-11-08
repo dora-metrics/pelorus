@@ -34,7 +34,6 @@ def test_commitmetric_initial(appname):
 def test_commitmetric_repos(url, repo_protocol, fqdn, project_name):
     test_name = "pytest"
     metric = CommitMetric(test_name)
-    metric.name == test_name
     assert metric.repo_url is None
     assert metric.repo_protocol is None
     assert metric.git_fqdn is None

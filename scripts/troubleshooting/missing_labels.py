@@ -12,6 +12,7 @@ from kubernetes.dynamic.exceptions import ResourceNotFoundError
 from openshift.dynamic import DynamicClient
 
 import pelorus
+import pelorus.config
 import pelorus.utils
 from pelorus.utils import paginate_resource
 
@@ -68,7 +69,13 @@ BuildId = NewType("BuildId", ResourceIdentifier)
 
 # endregion
 
-APP_LABEL = pelorus.get_app_label()
+
+@frozen
+class TroubleshootingConfig:
+    app_label: str = pelorus.DEFAULT_APP_LABEL
+
+
+APP_LABEL = pelorus.config.load_and_log(TroubleshootingConfig).app_label
 
 
 @define
