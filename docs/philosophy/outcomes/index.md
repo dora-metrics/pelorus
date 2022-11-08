@@ -51,7 +51,7 @@ Measures an organization’s ability to reduce waste by adopting common patterns
 
 <div class="grid cards" markdown>
 
--   :fontawesome-solid-user-clock: __Adoption lead time__
+-   :material-account-clock: __Adoption lead time__
 
     ---
 
@@ -62,6 +62,12 @@ Measures an organization’s ability to reduce waste by adopting common patterns
     ---
 
     Measures the ability of the platform or tool to scale to support multiple teams and products
+
+-   :material-account-arrow-down: __Retention Rate__
+
+    ---
+
+    Measures the sustainability of the platform and whether it continues to be used beyond initial onboarding
 
 -   :fontawesome-solid-people-roof: __Operational efficiency__
 

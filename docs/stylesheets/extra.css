@@ -95,3 +95,27 @@
 .md-typeset .middle {
   vertical-align: middle;
 }
+
+/* flex grid for logos */
+.md-typeset .flex ul {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 20px;
+}
+
+.md-typeset .flex ul li {
+  flex-grow: 1;
+  list-style-type: none;
+}
+
+.md-typeset .grid.popout {
+  border: var(--md-primary-fg-color--light) 1px solid;
+  border-radius: 10px;
+  margin: 0 -0.8rem -1.2rem;
+  padding: 1rem;
+  box-shadow: var(--md-shadow-z2);
+}
+
+.md-typeset .grid.popout h2 {
+  margin: 0 0 2rem 0;
+}

@@ -5,7 +5,7 @@ hide:
   - navigation
 template: home.html
 ---
-# About Pelorus
+# Measure things that matter
 
 ![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
 ![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)
@@ -36,6 +36,30 @@ Some of the key outcomes we'd like Pelorus help us measure are:
 To understand the motivation, see [Our Philosophy](philosophy/index.md).
 
 For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
+
+<div class="grid popout" markdown>
+
+<div markdown>
+
+## Pull metrics from your existing tools
+
+Pelorus works by integrating with your application platforms, developer tools, and ticketing systems to track the flow of work across your value streams.
+
+</div>
+
+<div class="flex cards" markdown>
+
+-   # :simple-kubernetes:
+-   # :simple-redhatopenshift:
+-   # :simple-github:
+-   # :simple-gitlab:
+-   # :simple-bitbucket:
+-   # :simple-jirasoftware:
+-   # :fontawesome-brands-servicestack:
+-   # :simple-trello:
+
+</div>
+</div>
 
 ## Software Delivery Performance as an outcome
 
