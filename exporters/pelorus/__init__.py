@@ -1,9 +1,9 @@
 import logging
-import os
 import pathlib
 from abc import ABC
 from typing import Optional, Sequence
 
+from attrs import define
 from prometheus_client.registry import Collector
 
 from . import utils
@@ -19,7 +19,6 @@ DEFAULT_TLS_VERIFY = True
 DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = "unknown"
 DEFAULT_TRACKER_APP_FIELD = "u_application"
-DEFAULT_GITHUB_ISSUE_LABEL = "bug"
 
 
 def _print_version():
@@ -78,49 +77,6 @@ def setup_logging():
 NamespaceSpec = Optional[Sequence[str]]
 
 
-def get_app_label():
-    return utils.get_env_var("APP_LABEL", DEFAULT_APP_LABEL)
-
-
-def get_prod_label():
-    return utils.get_env_var("PROD_LABEL", DEFAULT_PROD_LABEL)
-
-
-def get_github_issue_label():
-    return utils.get_env_var("GITHUB_ISSUE_LABEL", DEFAULT_GITHUB_ISSUE_LABEL)
-
-
-def missing_configs(vars):
-    missing_configs = False
-    for var in vars:
-        if utils.get_env_var(var) is None:
-            logging.error("Missing required environment variable '%s'." % var)
-            missing_configs = True
-
-    return missing_configs
-
-
-def upgrade_legacy_vars():
-    github_token = utils.get_env_var("GITHUB_TOKEN")
-    git_token = utils.get_env_var("GIT_TOKEN")
-    api = utils.get_env_var("GITHUB_API", DEFAULT_GIT_API)
-
-    api_user = utils.get_env_var("API_USER")
-    github_user = utils.get_env_var("GITHUB_USER")
-    git_username = utils.get_env_var("GIT_USER")
-
-    assigned_user = api_user or git_username or github_user
-
-    if assigned_user:
-        os.environ["API_USER"] = assigned_user
-
-    if not utils.get_env_var("TOKEN"):
-        if git_token or github_token:
-            os.environ["TOKEN"] = git_token or github_token
-    if api and not utils.get_env_var("GIT_API"):
-        os.environ["GIT_API"] = api
-
-
 def url_joiner(base: str, *parts: str):
     """
     Joins each part together (including the base url) with a slash, stripping any leading or trailing slashes.
@@ -129,7 +85,10 @@ def url_joiner(base: str, *parts: str):
     return base.strip("/") + "/" + "/".join(s.strip("/") for s in parts)
 
 
+@define(kw_only=True)
 class AbstractPelorusExporter(Collector, ABC):
+    app_label: str = DEFAULT_APP_LABEL
+
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 

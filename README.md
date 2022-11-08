@@ -4,6 +4,8 @@
 ![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)
 ![](https://github.com/redhat-cop/pelorus/workflows/Conftest/badge.svg)
 ![](https://github.com/redhat-cop/pelorus/workflows/Chart%20Lint/badge.svg)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 
@@ -11,9 +13,9 @@ Pelorus is a tool that helps IT organizations measure their impact on the overal
 - Product Quality and Sustainability
 - Customer experience
 
-For more background on the project you can read @trevorquinn's blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation)
+For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
 
-### Software Delivery Performance as an outcome
+## Software Delivery Performance as an outcome
 
 Currently, Pelorus functionality can capture proven metrics that measure Software Delivery Performance -- a significant outcome that IT organizations aim to deliver.
 
@@ -31,10 +33,13 @@ Pelorus documentation is available at [pelorus.readthedocs.io](https://pelorus.r
 
 If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found in the [contribution guide](./CONTRIBUTING.md)
 
-
 ## Statement of Support
 
 Our support policy can be found in the [Upstream Support statement](docs/UpstreamSupport.md)
 
 ## Code of Conduct
 Refer to Konveyor's Code of Conduct [here](https://github.com/konveyor/community/blob/main/CODE_OF_CONDUCT.md).
+
+## License
+
+This repository is licensed under the terms of [Apache-2.0 License](LICENSE).

@@ -81,7 +81,7 @@ target/
 #Pipfile.lock
 
 # Python virtualenv
-.venv
+/.venv*
 
 # celery beat schedule file
 celerybeat-schedule

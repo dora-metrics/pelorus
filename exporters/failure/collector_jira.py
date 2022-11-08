@@ -16,13 +16,17 @@
 #
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
+from attrs import define, field
 from jira import JIRA
+from jira.client import ResultList
 from jira.exceptions import JIRAError
 
-import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from pelorus.config import env_var_names, env_vars
+from pelorus.config.converters import comma_or_whitespace_separated
+from pelorus.config.log import REDACT, log
 from pelorus.timeutil import parse_tz_aware, second_precision
 
 # One query limit, exporter will query multiple times.
@@ -40,45 +44,56 @@ RESOLVED_STATUS_ENV = "JIRA_RESOLVED_STATUS"
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
+@define(kw_only=True)
 class JiraFailureCollector(AbstractFailureCollector):
     """
     Jira implementation of a FailureCollector
     """
 
-    REQUIRED_CONFIG = ["API_USER", "TOKEN", "SERVER"]
+    username: str = field(default="", metadata=env_vars(*env_var_names.USERNAME))
 
-    def __init__(self, user, apikey, server, projects):
-        super().__init__(server, user, apikey)
-        self.jql_query_string = pelorus.utils.get_env_var(
-            JQL_SEARCH_QUERY_ENV, DEFAULT_JQL_SEARCH_QUERY
-        )
-        self.jira_resolved_statuses = pelorus.utils.get_env_var(RESOLVED_STATUS_ENV)
+    token: str = field(
+        default="",
+        metadata=env_vars(*env_var_names.TOKEN) | log(REDACT),
+        repr=False,
+    )
 
-        self.query_result_fields_string = QUERY_RESULT_FIELDS
+    tracker_api: str = field(metadata=env_vars("SERVER"))
 
+    projects: set[str] = field(
+        factory=set, converter=comma_or_whitespace_separated(set)
+    )
+
+    jql_query_string: str = field(
+        default=DEFAULT_JQL_SEARCH_QUERY, metadata=env_vars(JQL_SEARCH_QUERY_ENV)
+    )
+    jira_resolved_statuses: Optional[str] = field(
+        default=None, metadata=env_vars(RESOLVED_STATUS_ENV)
+    )
+
+    query_result_fields_string: str = field(default=QUERY_RESULT_FIELDS, init=False)
+
+    def __attrs_post_init__(self):
         # Do not mix projects with custom JQL query
         # Gather all fields and projects
         if self.jql_query_string != DEFAULT_JQL_SEARCH_QUERY:
             self.query_result_fields_string = ""
-        else:
-            if projects is not None and len(projects) > 0:
-                projects_str = '","'.join(projects.split(","))
-                self.jql_query_string = (
-                    self.jql_query_string
-                    + ' AND project in ("{}")'.format(projects_str)
-                )
+        elif self.projects:
+            projects_str = '","'.join(self.projects)
+            self.jql_query_string = (
+                self.jql_query_string + ' AND project in ("{}")'.format(projects_str)
+            )
 
     def _connect_to_jira(self) -> JIRA:
         """Method to connect to JIRA instance which may be cloud based
         or self-hosted.
         """
         jira_client = None
-        server = self.server
-        email = self.user
-        api_key = self.apikey
 
         # Connect to Jira
-        jira_client = JIRA(options={"server": server}, basic_auth=(email, api_key))
+        jira_client = JIRA(
+            options={"server": self.tracker_api}, basic_auth=(self.username, self.token)
+        )
 
         # Ensure connection was performed
         try:
@@ -92,7 +107,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         return jira_client
 
     def search_issues(self):
-        jira = self._connect_to_jira()
+        jira_client = self._connect_to_jira()
 
         critical_issues = []
 
@@ -101,13 +116,16 @@ class JiraFailureCollector(AbstractFailureCollector):
             jira_issues = []
             start_at = 0
             while True:
-                jira_search_results = jira.search_issues(
-                    self.jql_query_string,
-                    startAt=start_at,
-                    maxResults=JIRA_SEARCH_RESULTS,
-                    fields=self.query_result_fields_string,
+                jira_search_results = cast(
+                    ResultList,
+                    jira_client.search_issues(
+                        self.jql_query_string,
+                        startAt=start_at,
+                        maxResults=JIRA_SEARCH_RESULTS,
+                        fields=self.query_result_fields_string,
+                    ),
                 )
-                jira_issues += jira_search_results.iterable
+                jira_issues += jira_search_results.iterable  # type: ignore
                 start_at += JIRA_SEARCH_RESULTS
                 logging.info("Getting jira results: %s" % start_at)
                 if start_at >= jira_search_results.total:
@@ -184,7 +202,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         return resolution_ts
 
     def get_app_name(self, issue):
-        app_label = pelorus.get_app_label()
+        app_label = self.app_label
         for label in issue.fields.labels:
             if label.startswith("%s=" % app_label):
                 return label.replace("%s=" % app_label, "")

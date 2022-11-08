@@ -1,11 +1,13 @@
 import logging
 
 import requests
+from attrs import define, field
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
-from pelorus.certificates import set_up_requests_certs
+from pelorus.config import REDACT, env_var_names, env_vars, log
 from pelorus.timeutil import parse_assuming_utc, second_precision
+from pelorus.utils import set_up_requests_session
 
 SN_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 SN_QUERY = "/api/now/table/incident?sysparm_fields={0}%2C{1}%2Cstate%2Cnumber%2C{2} \
@@ -15,27 +17,39 @@ SN_RESOLVED_FIELD = "resolved_at"
 
 _DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+PAGE_SIZE = 100
 
+
+@define(kw_only=True)
 class ServiceNowFailureCollector(AbstractFailureCollector):
     """
     Service Now implementation of a FailureCollector
     """
 
-    REQUIRED_CONFIG = ["API_USER", "TOKEN", "SERVER"]
+    username: str = field(default="", metadata=env_vars(*env_var_names.USERNAME))
 
-    def __init__(self, user, apikey, server):
-        if not pelorus.utils.get_env_var("APP_FIELD"):
-            logging.warn(
-                "Missing Application Name Field Parameter defaulting to '%s'",
-                pelorus.DEFAULT_TRACKER_APP_FIELD,
-            )
-            self.app_name_field = pelorus.DEFAULT_TRACKER_APP_FIELD
-        else:
-            self.app_name_field = pelorus.utils.get_env_var("APP_FIELD")
-        self.page_size = 100
-        super().__init__(server, user, apikey)
-        self.session = requests.Session()
-        self.session.verify = set_up_requests_certs()
+    token: str = field(
+        default="",
+        metadata=env_vars(*env_var_names.TOKEN) | log(REDACT),
+        repr=False,
+    )
+
+    server: str = field(metadata=env_vars("SERVER"))
+
+    app_name_field: str = field(
+        default=pelorus.DEFAULT_TRACKER_APP_FIELD, metadata=env_vars("APP_FIELD")
+    )
+
+    tls_verify: bool = field(default=True)
+    session: requests.Session = field(factory=requests.Session, init=False)
+
+    offset: int = field(default=0, init=False)
+
+    def __attrs_post_init__(self):
+        set_up_requests_session(
+            self.session, self.tls_verify, username=self.username, token=self.token
+        )
+        self.session.headers.update(SN_HEADERS)
 
     def search_issues(self):
         # Connect to ServiceNow
@@ -89,15 +103,13 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
             SN_OPENED_FIELD,
             SN_RESOLVED_FIELD,
             self.app_name_field,
-            self.page_size,
+            PAGE_SIZE,
             self.offset,
         )
         tracker_url = self.server + self.tracker_query
 
         # Do the HTTP request
-        response = self.session.get(
-            tracker_url, auth=(self.user, self.apikey), headers=SN_HEADERS
-        )
+        response = self.session.get(tracker_url)
         # Check for HTTP codes other than 200
 
         if response.status_code != 200:
@@ -111,7 +123,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         # Decode the JSON response into a dictionary and use the data
         data = response.json()
         logging.debug(data.get("result"))
-        self.offset = self.offset + self.page_size
+        self.offset = self.offset + PAGE_SIZE
         return data
 
     def get_app_name(self, issue):

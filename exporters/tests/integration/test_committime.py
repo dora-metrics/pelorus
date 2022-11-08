@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 import attr
 import pytest
@@ -26,17 +26,6 @@ GIT_API = "localhost:3000"
 NAMESPACES = "basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod"
 
 
-def setup_collector():
-    dyn_client = _make_dyn_client()
-
-    namespaces = NAMESPACES.split(",")
-    apps = None
-    tls_verify = False
-    return GitHubCommitCollector(
-        dyn_client, USERNAME, TOKEN, namespaces, apps, GIT_API, tls_verify
-    )
-
-
 def setup_collector_from_env_loading():
     env = dict(
         API_USER=USERNAME,
@@ -55,7 +44,7 @@ def setup_collector_from_env_loading():
         env=env,
     )
 
-    return config.make_collector()
+    return cast(GitHubCommitCollector, config.make_collector())
 
 
 def expected_commits() -> list[CommitMetricEssentials]:
@@ -107,9 +96,8 @@ class CommitMetricEssentials:
 
 
 @pytest.mark.mockoon
-@pytest.mark.parametrize("setup", (setup_collector, setup_collector_from_env_loading))
-def test_github_provider(setup):
-    collector = setup()
+def test_github_provider():
+    collector = setup_collector_from_env_loading()
 
     actual = [
         CommitMetricEssentials.from_commit_metric(cm)

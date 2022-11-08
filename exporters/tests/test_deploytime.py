@@ -10,13 +10,13 @@ from openshift.dynamic.discovery import Discoverer  # type: ignore
 
 import pelorus
 from deploytime import DeployTimeMetric
-from deploytime.app import generate_metrics, image_sha
+from deploytime.app import DeployTimeCollector, image_sha
 from tests.openshift_mocks import *
 
 # pylava:ignore=W0401
 
 # region test constants
-APP_LABEL = pelorus.get_app_label()
+APP_LABEL = pelorus.DEFAULT_APP_LABEL
 
 FOO_NS = "foo_ns"
 BAR_NS = "bar_ns"
@@ -174,6 +174,10 @@ def test_generate_normal_case() -> None:
 
     data = DynClientMockData(pods=pods, replicators=[foo_rep, bar_rep, quux_rep])
 
+    collector = DeployTimeCollector(
+        client=data.mock_client, namespaces={FOO_NS, BAR_NS, QUUX_NS}
+    )
+
     expected = {
         DeployTimeMetric(
             name=FOO_APP,
@@ -198,11 +202,7 @@ def test_generate_normal_case() -> None:
         ),
     }
 
-    actual = set(
-        generate_metrics(
-            namespaces={FOO_NS, BAR_NS, QUUX_NS}, dyn_client=data.mock_client
-        )
-    )
+    actual = set(collector.generate_metrics())
 
     assert actual == expected
 
@@ -247,9 +247,11 @@ def test_generate_reps_with_same_name() -> None:
         ),
     ]
 
-    actual = list(
-        generate_metrics(namespaces=[FOO_NS, BAR_NS], dyn_client=data.mock_client)
+    collector = DeployTimeCollector(
+        namespaces={FOO_NS, BAR_NS}, client=data.mock_client
     )
+
+    actual = list(collector.generate_metrics())
 
     assert actual == expected
 

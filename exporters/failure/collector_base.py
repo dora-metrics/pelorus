@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 from abc import abstractmethod
-from typing import Union
+from typing import Collection, Iterable, Union
 
 from prometheus_client.core import GaugeMetricFamily
 
@@ -12,12 +14,6 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
     Base class for a FailureCollector.
     This class should be extended for the system which contains the failure records.
     """
-
-    def __init__(self, server, user, apikey):
-        """Constructor"""
-        self.server = server
-        self.user = user
-        self.apikey = apikey
 
     def collect(self):
         creation_metric = GaugeMetricFamily(
@@ -33,7 +29,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
 
         critical_issues = self.search_issues()
 
-        if len(critical_issues) > 0:
+        if critical_issues:
             metrics = self.generate_metrics(critical_issues)
             for m in metrics:
                 if not m.is_resolution:
@@ -51,7 +47,9 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
             yield (creation_metric)
             yield (failure_metric)
 
-    def generate_metrics(self, issues):
+    def generate_metrics(
+        self, issues: Iterable[TrackerIssue]
+    ) -> Iterable[FailureMetric]:
         metrics = []
         for issue in issues:
             # Create the FailureMetric
@@ -69,7 +67,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
         return metrics
 
     @abstractmethod
-    def search_issues(self):
+    def search_issues(self) -> Collection[TrackerIssue]:
         # This will be tracker specific
         pass
 
