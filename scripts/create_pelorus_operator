@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
+OPERATOR_PROJECT_NAME=pelorus-operator
+OPERATOR_ORG_NAME=migtools
+OPERATOR_PROJECT_DOMAIN=pelorus.konveyor.io
+
+# Get the full absolute path to the script. Needed while calling the script
+# via various partial paths or sourcing the file from shell
+# BASH_SOURCE[0] is safer then $0 when sourcing.
+# We enter the dirname of the invoked script and then get the current
+# path of the script using pwd
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+DEFAULT_PELORUS_CHARTS_DIR="${SCRIPT_DIR}/../charts/pelorus/"
+DEFAULT_PELORUS_OPERATOR_DIR="${SCRIPT_DIR}/../pelorus-operator/"
+DEFAULT_PELORUS_OPERATOR_PATCHES_DIR="${SCRIPT_DIR}/pelorus-operator-patches/"
+
+function print_help() {
+    printf "\nUsage: %s [OPTION]\n\n" "$0"
+    printf "\tStartup:\n"
+    printf "\t  -h\tprint this help\n"
+    printf "\n\tOptions:\n"
+    printf "\t  -s\tpath to source pelorus helm charts folder, default: %s\n" "${DEFAULT_PELORUS_CHARTS_DIR}"
+    printf "\t  -d\tpath to EMPTY destination folder, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_DIR}"
+    printf "\t  -p\tpath to DIR with operator patches to be applied, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_PATCHES_DIR}"
+    exit 0
+}
+
+### Options
+OPTIND=1
+while getopts "s:d:p:h?" option; do
+    case "$option" in
+    h|\?) print_help;;
+    s)    source_dir=$OPTARG;;
+    d)    destination_dir=$OPTARG;;
+    p)    patches_dir=$OPTARG;;
+    esac
+done
+
+if [ -z ${source_dir+x} ]; then
+    source_dir="${DEFAULT_PELORUS_CHARTS_DIR}"
+fi
+if [ -z ${destination_dir+x} ]; then
+    destination_dir="${DEFAULT_PELORUS_OPERATOR_DIR}"
+fi
+if [ -z ${patches_dir+x} ]; then
+    patches_dir="${DEFAULT_PELORUS_OPERATOR_PATCHES_DIR}"
+fi
+
+echo "INFO: Source directory: ${source_dir}"
+echo "INFO: Destination directory: ${destination_dir}"
+echo "INFO: Patches directory: ${patches_dir}"
+
+if ! [ -x "$(command -v "operator-sdk")" ]; then
+    echo "ERROR: operator-sdk CLI not found. Please activate Pelorus venv!"
+    exit 2
+else
+    echo "INFO: $(operator-sdk version)"
+fi
+
+# Check if source directory exists
+if [ ! -d "${source_dir}" ]; then
+	echo "ERROR: Source directory ${source_dir} does not exists."
+    exit 2
+fi
+
+# Check if destination directory is empty and exists
+if [ -d "${destination_dir}" ]; then
+	if [ "$(ls -A "${destination_dir}")" ]; then
+        echo "ERROR: Destination directory ${destination_dir} is not empty, can not continue."
+        exit 2
+	fi
+else
+	echo "ERROR: Destination directory ${destination_dir} do not exists, please create one and re-run script."
+    exit 2
+fi
+
+pushd "${destination_dir}" || exit 2
+    echo "INFO: Creating operator init files"
+    operator-sdk init --plugins=helm --domain "${OPERATOR_PROJECT_DOMAIN}" --project-name "${OPERATOR_PROJECT_NAME}" || exit 2
+    echo "INFO: Creating api"
+    operator-sdk create api --helm-chart="${source_dir}" || exit 2
+
+    # Correct operator version, to be latest +1
+    OPERATOR_VERSION=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq .tags[].name | head -1 | sed -e 's|\"||g')
+    echo "INFO: Current operator version: ${OPERATOR_VERSION}"
+    NEW_OPERATOR_VERSION=$(echo ${OPERATOR_VERSION} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+    echo "INFO: New operator version: ${NEW_OPERATOR_VERSION}"
+    sed -i "s/VERSION ?= 0.0.1/VERSION ?= ${NEW_OPERATOR_VERSION}/g" Makefile || exit 2
+
+    # Correct IMAGE_TAG_BASE
+    IMAGE_TAG_BASE="quay.io/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}"
+    echo "INFO: Setting IMAGE_TAG_BASE to ${IMAGE_TAG_BASE}"
+    sed -i "s#IMAGE_TAG_BASE ?=.*#IMAGE_TAG_BASE ?= ${IMAGE_TAG_BASE}#g" Makefile || exit 2
+popd || exit 2
+
+# Check if patches directory exists
+if [ ! -d "${patches_dir}" ]; then
+	echo "WARNING: Patches directory ${patches_dir} do not exists, patches will not be applied."
+elif [ "$(ls -A "${patches_dir}"/*.diff 2>/dev/null)" ]; then
+        echo "INFO: Found patches in ${patches_dir}."
+        for patch_file in "${patches_dir}"/*.diff; do
+            echo "INFO: Applying patch ${patch_file}"
+            patch -d "${destination_dir}" -p0 < "${patch_file}"
+        done
+fi
+
+# Correct operator version, to be latest +1
+OPERATOR_VERSION=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq .tags[].name | head -1 | sed -e 's|\"||g')
+echo "INFO: Current operator version: ${OPERATOR_VERSION}"
+NEW_OPERATOR_VERSION=$(echo ${OPERATOR_VERSION} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+echo "INFO: New operator version: ${NEW_OPERATOR_VERSION}"
+
+echo "INFO: Operator crated and available at: ${destination_dir}"
+echo "To build and push to the quay use from the operator folder:"
+echo "  # podman login -u="migtools+pelorus" -p=\"\$QUAY_TOKEN\" quay.io"
+echo "  # make podman-build podman-push"
+echo "  # # Log in to your cluster or export KUBECONFIG"
+echo "  # make deploy"
+
+
