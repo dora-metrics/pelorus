@@ -7,16 +7,30 @@ import enum
 import platform
 import re
 import sys
-from typing import Callable, Iterable, NamedTuple
+from typing import Callable, Iterable, Literal, NamedTuple, cast
 
 import requests
 
 GITHUB_RELEASE_TEMPLATE = "https://api.github.com/repos/{}/releases/latest"
 
-OS = platform.system()
-ARCH = platform.machine()
+
+SUPPORTED_SYSTEMS = {"Linux", "Darwin"}
+
+_os = platform.system()
+if _os not in SUPPORTED_SYSTEMS:
+    sys.exit(f"Unsupported OS {_os}")
+
+OS = cast(Literal["Linux", "Darwin"], _os)
 
 X86_64_ARCH_NAMES = {"x86_64", "amd64"}
+SUPPORTED_ARCHES = X86_64_ARCH_NAMES | {"arm64"}
+
+_arch = platform.machine()
+if _arch not in SUPPORTED_ARCHES:
+    sys.exit(f"Unsupported architecture {_arch}")
+
+ARCH = cast(Literal["x86_64", "arm64", "amd64"], _arch)
+
 
 # TOOLS:
 # these are ways to test the URLs of each release asset
@@ -39,7 +53,7 @@ class StandardTool:
             ARCH_PATTERN = re.compile("all|arm64")
         else:
             sys.exit(f"Unsupported architecture {ARCH}")
-    elif OS == "Linux":
+    elif OS == "Linux" and ARCH in X86_64_ARCH_NAMES:
         if ARCH in X86_64_ARCH_NAMES:
             ARCH_PATTERN = re.compile("|".join(X86_64_ARCH_NAMES))
         else:
@@ -116,6 +130,27 @@ class ReleaseAsset(NamedTuple):
         return cls(name, url)
 
 
+def oc_url():
+    "Get the URL to download the OpenShift client (`oc`)"
+    if OS == "Darwin":
+        # there's currently a bug with how go handles certificates on macOS (https://github.com/golang/go/issues/52010),
+        # and thus affects `oc`` >= 4.11 (https://bugzilla.redhat.com/show_bug.cgi?id=2097830).
+        # The workaround is to install a 4.10 client.
+        version = "4.10.40"
+
+        if ARCH == "arm64":
+            filename_suffix = "mac-arm64"
+        else:
+            filename_suffix = "mac"
+    else:
+        filename_suffix = "linux"
+        version = "stable"
+
+    # I can't say for sure why arm64 bins are available under x86_64, but this isn't a typo.
+    BASE_URL = "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp"
+    return f"{BASE_URL}/{version}/openshift-client-{filename_suffix}.tar.gz"
+
+
 def get_latest_assets(repo: str) -> Iterable[ReleaseAsset]:
     "Get the release assets for the latest release."
     url = GITHUB_RELEASE_TEMPLATE.format(repo)
@@ -129,7 +164,7 @@ def get_latest_assets(repo: str) -> Iterable[ReleaseAsset]:
         yield ReleaseAsset.from_json(asset)
 
 
-CLI_NAMES = {name.replace("_", "-") for name in Tool._member_names_}
+CLI_NAMES = {name.replace("_", "-") for name in Tool._member_names_} | {"oc"}
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -143,6 +178,10 @@ parser.add_argument(
 if __name__ == "__main__":
     args = parser.parse_args()
     software: str = args.software.replace("-", "_")
+
+    if software == "oc":
+        print(oc_url())
+        sys.exit()
 
     tool = Tool[software]
 
