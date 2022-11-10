@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pelorus
+spec:
+  groups:
+  - name: software-delivery-performance
+    rules:
+    - record: sdp:applications
+      expr: >
+        sdp:lead_time:by_app or count by (app) (deploy_timestamp) or sdp:time_to_restore:by_app or sdp:change_failure_rate:by_app
+    - record: sdp:lead_time:by_commit
+      expr: >
+        min by (app, commit) (deploy_timestamp - on(app,image_sha) group_left(commit) commit_timestamp)
+    - record: sdp:lead_time:by_app
+      expr: >
+        avg by (app) (sdp:lead_time:by_commit)
+    - record: sdp:lead_time:global
+      expr: >
+        avg(sdp:lead_time:by_app)
+    - record: sdp:time_to_restore:by_issue
+      expr: >
+        failure_resolution_timestamp{app!="unknown"} - failure_creation_timestamp{app!="unknown"}
+    - record: sdp:time_to_restore:by_app
+      expr: >
+        avg by (app) (sdp:time_to_restore:by_issue)
+    - record: sdp:time_to_restore:global
+      expr: >
+        avg (sdp:time_to_restore:by_app)
+    - record: sdp:change_failure_rate:by_app
+      expr: >
+        (count by (app) (failure_creation_timestamp{app!="unknown"}) or sdp:lead_time:by_app * 0) / count by (app) (sdp:lead_time:by_commit)
+    - record: sdp:change_failure_rate:global
+      expr: >
+        avg(sdp:change_failure_rate:by_app)

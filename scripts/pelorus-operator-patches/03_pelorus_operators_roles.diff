@@ -1,4 +1,4 @@
---- config/rbac/kustomization.yaml
+--- config/rbac/kustomization.yaml.original
 +++ config/rbac/kustomization.yaml
 @@ -7,6 +7,8 @@ resources:
  - service_account.yaml
@@ -9,9 +9,9 @@
  - leader_election_role.yaml
  - leader_election_role_binding.yaml
  # Comment the following 4 lines if you want to disable
---- /dev/null
-+++ config/rbac/pelorus_manager_role.yaml
-@@ -0,0 +1,67 @@
+--- /dev/null	2022-10-24 10:19:28.874279599 +0200
++++ config/rbac/pelorus_manager_role.yaml	2022-11-25 14:01:11.286892725 +0100
+@@ -0,0 +1,81 @@
 +apiVersion: rbac.authorization.k8s.io/v1
 +kind: ClusterRole
 +metadata:
@@ -79,6 +79,20 @@
 +  verbs:
 +  - delete
 +  - list
++# Required by the Grafana and Prometheus operators
++- apiGroups:
++  - "integreatly.org"
++  resources:
++  - "grafanas"
++  - "grafanadashboards"
++  - "grafanadatasources"
++  - "grafananotificationchannels"
++  verbs:
++  - list
++  - get
++  - watch
++  - create
++  - delete
 --- /dev/null
 +++ config/rbac/pelorus_role_binding.yaml
 @@ -0,0 +1,12 @@

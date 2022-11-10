@@ -1,0 +1,24 @@
+# permissions for end users to edit pelorus.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pelorus-editor-role
+rules:
+- apiGroups:
+  - charts.pelorus.konveyor.io
+  resources:
+  - pelorus
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - charts.pelorus.konveyor.io
+  resources:
+  - pelorus/status
+  verbs:
+  - get

@@ -1,0 +1,66 @@
+{{- if .Values.bucket_access_point }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+  {{- if .Values.deployment }}
+  {{- with .Values.deployment.labels }}
+{{ toYaml . | indent 4 }}
+  {{- end }}
+  {{- end }}
+  {{- if not .Values.deployment }}
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/name: pelorus
+    app.kubernetes.io/version: v0.33.0
+  {{- end }}
+  name: {{ .Release.Namespace }}-pelorus-thanos
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pelorus-thanos
+subjects:
+- kind: ServiceAccount
+  name: pelorus-thanos
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+  {{- if .Values.deployment }}
+  {{- with .Values.deployment.labels }}
+{{ toYaml . | indent 4 }}
+  {{- end }}
+  {{- end }}
+  {{- if not .Values.deployment }}
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/name: pelorus
+    app.kubernetes.io/version: v0.33.0
+  {{- end }}
+  name: pelorus-thanos
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - services/finalizers
+  - endpoints
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - 'create'
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - 'create'
+{{- end }}

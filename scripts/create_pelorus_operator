@@ -26,9 +26,13 @@ OPERATOR_PROJECT_DOMAIN=pelorus.konveyor.io
 # path of the script using pwd
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-DEFAULT_PELORUS_CHARTS_DIR="${SCRIPT_DIR}/../charts/pelorus/"
+DEFAULT_PELORUS_CHARTS_SUBDIR="../charts/pelorus"
+DEFAULT_PELORUS_CHARTS_DIR="${SCRIPT_DIR}/${DEFAULT_PELORUS_CHARTS_SUBDIR}/"
 DEFAULT_PELORUS_OPERATOR_DIR="${SCRIPT_DIR}/../pelorus-operator/"
 DEFAULT_PELORUS_OPERATOR_PATCHES_DIR="${SCRIPT_DIR}/pelorus-operator-patches/"
+
+# Needed for symlink inside pelorus-operator folder
+DEFAULT_OPERATOR_HELM_CHART_SUBDIR="helm-charts/pelorus"
 
 function print_help() {
     printf "\nUsage: %s [OPTION]\n\n" "$0"
@@ -96,6 +100,18 @@ pushd "${destination_dir}" || exit 2
     echo "INFO: Creating api"
     operator-sdk create api --helm-chart="${source_dir}" || exit 2
 
+# TBD: The symlink is not working. Manager do not contain any charts if they are symlinked
+    # We do want to have symlink to original helm-charts instead of direct copy, 
+    # but ONLY when the pelorus-operator is within pelorus git repository, otherwise leave the copied version
+    # The check assumes the git pelorus charts are one level up from the pelorus-operator folder
+#    if git remote -v | grep \/pelorus.git; then
+#        [ -d "${DEFAULT_OPERATOR_HELM_CHART_SUBDIR}" ] && [ -d "../charts/pelorus" ] && echo "Removing ${DEFAULT_OPERATOR_HELM_CHART_SUBDIR} directory" && rm -rf "${DEFAULT_OPERATOR_HELM_CHART_SUBDIR}"
+#        pushd helm-charts || exit 2
+#            echo "Creating symlink from helm-charts/pelorus to  directory"
+#            ln -s ../"${DEFAULT_PELORUS_CHARTS_SUBDIR}" ./pelorus
+#        popd || exit 2
+#    fi
+
     # Correct operator version, to be latest +1
     OPERATOR_VERSION=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq .tags[].name | head -1 | sed -e 's|\"||g')
     echo "INFO: Current operator version: ${OPERATOR_VERSION}"
@@ -107,6 +123,11 @@ pushd "${destination_dir}" || exit 2
     IMAGE_TAG_BASE="quay.io/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}"
     echo "INFO: Setting IMAGE_TAG_BASE to ${IMAGE_TAG_BASE}"
     sed -i "s#IMAGE_TAG_BASE ?=.*#IMAGE_TAG_BASE ?= ${IMAGE_TAG_BASE}#g" Makefile || exit 2
+    
+    # Generate kustomize files. This is similar to the first command from
+    # Make bundle, except we do want to have non-interactive version
+    echo "INFO: Generating kustomize manifests files"
+    operator-sdk generate kustomize manifests -q --interactive=false
 popd || exit 2
 
 # Check if patches directory exists
@@ -116,6 +137,23 @@ elif [ "$(ls -A "${patches_dir}"/*.diff 2>/dev/null)" ]; then
         echo "INFO: Found patches in ${patches_dir}."
         for patch_file in "${patches_dir}"/*.diff; do
             echo "INFO: Applying patch ${patch_file}"
+            patch -d "${destination_dir}" -p0 < "${patch_file}"
+        done
+fi
+
+pushd "${destination_dir}" || exit 2
+    echo "INFO: Executing make bundle"
+    make bundle
+popd || exit 2
+
+# Check if patches directory exists
+# The bundle patches can be applied after generating bundle
+if [ ! -d "${patches_dir}/bundle-patches" ]; then
+	echo "WARNING: Bundle patches directory ${patches_dir}/bundle-patches do not exists, bundle patches will not be applied."
+elif [ "$(ls -A "${patches_dir}/bundle-patches"/*.diff 2>/dev/null)" ]; then
+        echo "INFO: Found bundle patches in ${patches_dir}/bundle-patches."
+        for patch_file in "${patches_dir}"/bundle-patches/*.diff; do
+            echo "INFO: Applying bundle patch ${patch_file}"
             patch -d "${destination_dir}" -p0 < "${patch_file}"
         done
 fi

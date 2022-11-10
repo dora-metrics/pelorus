@@ -151,3 +151,7 @@ _test/prometheus/rules.yaml
 # Helm
 charts/pelorus/Chart.lock
 charts/pelorus/subcharts/*.tgz
+
+# Operator
+pelorus-operator/Makefile.orig
+*.tgz
