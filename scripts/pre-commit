@@ -18,6 +18,12 @@ if ! make -k lint; then
     failed=1
 fi
 
+# echo "📋 Type Checking, expect failures for now"
+# if ! make -k typecheck; then
+#     printf "\n\n"
+#     echo "Type checking failed, although this is to be expected for now." >&2
+# fi
+
 printf "\n\n"
 
 if [[ failed -ne 0 ]]; then
