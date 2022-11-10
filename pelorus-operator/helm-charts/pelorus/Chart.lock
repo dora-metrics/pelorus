@@ -1,0 +1,12 @@
+dependencies:
+- name: pelorus-operators
+  repository: file://./subcharts/pelorus-operators
+  version: 2.0.2
+- name: exporters
+  repository: file://./subcharts/exporters
+  version: 2.0.2
+- name: pelorus-core
+  repository: file://./subcharts/pelorus-core
+  version: 2.0.2
+digest: sha256:e9829df2a1a67f0813d83e230e2d00026ae4a704169441e172ef3bee6f1222a8
+generated: "2022-11-10T19:06:18.613047716+01:00"

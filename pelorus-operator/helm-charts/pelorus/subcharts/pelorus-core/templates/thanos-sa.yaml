@@ -1,0 +1,8 @@
+{{- if .Values.bucket_access_point }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    serviceaccounts.openshift.io/oauth-redirectreference.pelorus-thanos: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"thanos-pelorus"}}'
+  name: pelorus-thanos
+{{- end }}

@@ -1,0 +1,67 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pelorus-manager-role
+rules:
+# Needed to create or delete Prometheus and Grafana subscriptions
+- apiGroups:
+  - "operators.coreos.com"
+  resources:
+  - "operatorgroups"
+  - "subscriptions"
+  verbs:
+  - get
+  - create
+  - delete
+  - list
+  - watch
+- apiGroups:
+  - "batch"
+  resources:
+  - "jobs"
+  - "cronjobs"
+  verbs:
+  - list
+  - create
+  - get
+  - watch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - "serviceaccounts"
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+# Pelorus require new role to allow installplan approval job
+- apiGroups:
+  - "rbac.authorization.k8s.io"
+  resources:
+  - "roles"
+  - "rolebindings"
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - delete
+# Required to grand permissions to the installplan-approver user
+- apiGroups:
+  - "operators.coreos.com"
+  resources:
+  - "installplans"
+  - "subscriptions"
+  verbs:
+  - get
+  - list
+  - patch
+# Required to grand permissions to the csv-deleter / attempting to grant RBAC permissions not currently held
+- apiGroups:
+  - "operators.coreos.com"
+  resources:
+  - "clusterserviceversions"
+  verbs:
+  - delete
+  - list

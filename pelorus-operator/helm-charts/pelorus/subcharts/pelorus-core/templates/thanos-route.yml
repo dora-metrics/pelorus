@@ -1,0 +1,21 @@
+{{- if .Values.bucket_access_point }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    openshift.io/host.generated: "true"
+  creationTimestamp: null
+  name: thanos-pelorus
+spec:
+  port:
+    targetPort: web-tls
+  subdomain: ""
+  tls:
+    termination: passthrough
+  to:
+    kind: Service
+    name: thanos-pelorus
+    weight: 100
+  wildcardPolicy: None
+{{- end }}
