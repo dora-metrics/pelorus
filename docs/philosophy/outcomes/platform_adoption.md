@@ -26,17 +26,29 @@ This struggle has given birth to new practices like [Platform Engineering](https
 
 In order to acheive this, it is important to track the health of these common assets by measuring whether they are being well adopted. This is how we get the outcome of _Platform Adoption_.
 
+## Defining the _user_ and the _adoption event_
+
+Before we get into the measures that make up the Tech Adoption outcome, we have a decision to make. We need to define an entity that will call our _user_. Typically we would think of a user as an individual person. However, depending on the platform or tool we are trying to measure we may want to define a user differently. A user might be a team, and application, product, or service. 
+
+__A good way to figure out what your user should be for a given system is to think about what sorts of observable actions in that systems translate most directly to value.__ For instance, if you're measuring adoption of a learning platform, then your _adoption event_ might be an employee completing a course. In this case the _user_ would be an individual employee. However, if you're measuring adoption of an application hosting platform or deployment tool, then your _adoption event_ would likely be an application getting deployed into a certain environment, or passing a particular stage of a pipeline. In this case it makes more sense to track either the application itself or the team that owns the application.
+
+Varying systems will likely have different definitions of users and adoption events, and that's okay. What's important is to make sure that we're using the same definitions for user and adoption event across the different measures for the same system.
+
 ## :material-ruler: Measures
 
-### :material-account-clock: __Adoption lead time__
+Here we break down the 5 _measures_ of the Tech Adoption in detail. We'll cover the raw data points that we'll need to collect from our various systems, and then the formulas we'll need in order to calculate each measure.
 
-Measures a team’s ability to onboard into a new platform, tool or pattern and exposes constraints in the process
+### :material-account-clock: Adoption lead time
 
-#### Variables
+_Adoption lead time_ measures the speed at which a new user or team is able to onboard into a new platform, tool or pattern. By tracking lead time to adopt an internal product, we gain insight into the quality of the user experience for new users as well as indications of constraints in the process. 
 
-`Adoption Lead Time (aLT)`
+It's important with this measurement to capture, not only the time it takes to get access to a given product, but the total time it takes from when a user shows intent to use the product (usually by capturing at some sort of request submission) to the moment when that user has been able to use the product to do something valuable.
 
-`Adoption start event(aS)`
+#### Data Points
+
+The following data points must be gathered from the systems we are aiming to measure.
+
+_Adoption start events ( $a_{S}$ )_
 
 :   Developer/application/team requests access
 
@@ -48,50 +60,138 @@ Measures a team’s ability to onboard into a new platform, tool or pattern and 
 
     Expressed as a _timestamp_
 
-`Adoption end event(aE)`
+_Adoption end events ( $a_{E}$ )_
 
-:   Developer/application/team does something meaningful using the tool
+:   Developer/application/team does something valuable using the tool
 
     For example:
 
-    - Application deployed in X environment
-    - Code committed to X branch
-    - Workspace spun up
+    - Deploys an application to a specific environment
+    - Completes a story
+    - Commits some code to a specific branch
+    - Logs a certain number of hours of active use
 
     Expressed as a _timestamp_
 
 #### Formulas
 
-`aLT = aE - aS`
+_Adoption Lead Time ( $LT$ )_
 
-### :fontawesome-solid-arrow-trend-up: __Adoption rate__
+:   For any individual adoption event, the adoption lead time $a_{LT}$ can be calculated as follows:
 
-Measures the ability of the platform or tool to scale to support multiple teams and products
+    $$
+    LT = a_{E} - a_{S}
+    $$
 
-#### Variables
+_Average Adoption Lead Time ( $\overline{x}LT$ )_
 
-`Adoption end event(aE)`
+:   Given a collection of $N$ individual adoption lead times ( $LT_{1}..LT_{N}$ ), the _average adoption lead time_ $\overline{x}LT$ can be calculated as follows:
 
-`Adoptions at Time T1` (At<sub>1</sub>)
+    $$
+    \overline{x}LT = \frac{sum(LT_{1}..LT_{N})}{N}
+    $$
 
-`Adoptions at Time T2` (At<sub>2</sub>)
+### :fontawesome-solid-arrow-trend-up: Adoption rate
+
+Adoption Rate ($AR$) measures the ability of the platform or tool to scale to support multiple teams and products. 
+
+#### Data Points
+
+The following data points must be gathered from the systems we are aiming to measure.
+
+_Adoption end events ( $a_{E}$ )_
+
+:   Developer/application/team does something valuable using the tool
+
+    For example:
+
+    - Deploys an application to a specific environment
+    - Completes a story
+    - Commits some code to a specific branch
+    - Logs a certain number of hours of active use
+
+    Expressed as a _timestamp_
 
 #### Formulas
 
-At<sub>1</sub> = count(aE)[t<sub>1</sub>]
+_Adoptions at Time $t_{1}$ ( $a^{t_{1}}$ )_
 
-At<sub>2</sub> = count(aE)[t<sub>2</sub>]
+:   The number of Adoption end events $a_{E}$ that have taken place as of timestamp $t_{1}$. Calculated as follows:
 
-AR = (At<sub>1</sub> - At<sub>2</sub> - 1) * 100
+    $$
+    a^{t_{1}} = count(aE)[t_{1}]
+    $$
+
+_Adoptions at Time $t_{2}$ ( $a^{t_{2}}$)_
+
+:   The number of adoption end events $a_{E}$ that have taken place as of timestamp $t_{2}$ where $t_{2} > t_{1}$. Calculated as follows:
+
+    $$
+    a^{t_{2}} = count(aE)[t_{2}]
+    $$
+
+_Adoption Rate $AR$_
+
+$$
+AR = (a^{t_{2}} - a^{t_{2}} - 1) * 100
+$$
 
 ### :material-account-arrow-down: __Retention Rate__
 
-Measures the sustainability of the platform and whether it continues to be used beyond initial onboarding
+So we've got a platform up and running, onboarding is really fast and we've been able to attract a bunch of new users. Now we need to ask a new set of questions. Is the platform meeting the needs of its users? Are people continually using it? Measuring _retention rate_ tells us whether users that have adopted our platform continue to use it over time to do valuable work. It is the yin to _adoption rate's_ yang.
+
+Use time since last adoption on a varying time scale to determine active users.
+
+To determine your retention rate, first identify the time frame you want to study
+Next, collect the number of existing customers at the start of the time period ($u_{S}$)
+Then find the number of total customers at the end of the time period ($u_{E}$)
+Finally, determine the number of new customers added within the time period ($u_{N}$)
+
+#### Data Points
+
+_Time range ( $T$ )_
+
+:   The range of time in which you want to evaluate retention. For example:
+
+    * The past month
+    * The past quarter
+    * The past 6 months
+
+_Adoption events by user ( $a_{E}\{u\}$ )_
+
+:   The set of all adoption events for each user
+
+#### Formulas
+
+_Latest adoption event by user ( $la_{E}\{u\}$ )_
+
+:   Given the set of all adoption events $a_{E}\{u\}$ for a given user, we simply select the latest timestamp
+
+    $$
+    la_{E}\{u\} = max(a_{E}\{u\})
+    $$
+
+$$
+RR = \left(\frac{u_{E} - u_{N}}{u_{S}}\right) * 100
+$$
 
 ### :fontawesome-solid-people-roof: __Operational efficiency__
 
-Measures the number of people needed to support the platform as it scales and exposes technical debt
+As our platforms get adopted and we start seeing success from a user perspective, it becomes important to monitor the financial sustainability of maintaining and evolving the platforms as they grow. This helps ensure that we are actually getting a _return on investment_ as the platform scales. To track this, we measure _operational efficiency_ -- the ratio of effort required to maintain and evolve the platform to level of active adoption of the platform.
+
+The simplest way to calculate _operational efficiency_ is by comparing the number of people maintaining the platform to the number of active _users_ the platform has.
 
 ### :material-account-heart-outline: __Developer Satisfaction__
 
 Measures the extent to which the platform is meeting the needs and wants of development
+
+## What does "good" look like?
+
+As with most of our [outcomes](index.md), there is no universal definition of "good" and "bad" tech adoption metrics. The expectation is simply that:
+
+a. We are measuring them consistently for our platforms
+b. The metrics improve over time
+
+### Emerging vs Established Tech
+
+In the spirit of lean, these bridge outcomes are all about helping organizations in the pursuit of perfectiuon, knowling full well that we'll likely never acheive it. With that, we believe that adoption and reuse of technology can always be improved. However, as certain tools and platforms mature, the areas that are easiest to improve will likely shift. At the beginning of the product lifecycle, it will be all about driving adoption of new users. That means that _adoption lead time_ and _adoption rate_ will be where we are likely to focus. However, as these products mature and we succeed in driving adoption, we may hit plateaus in lead times and adoption rates, as we might eventually capture the entire target audience, and improve the onboarding experience as much as we reasonably can. At that point, it might be time to focus on retaining those users, making sure that they are happy, and then driving extra value out of the platform through maintenance efficiency.
