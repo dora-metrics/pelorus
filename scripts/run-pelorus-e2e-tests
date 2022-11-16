@@ -510,21 +510,53 @@ pushd "${SCRIPT_DIR}/../"
 # disable for now, as it's divergent from the install instructions.
 # oc apply -f "charts/pelorus/configmaps"
 
-helm install operators charts/operators --namespace pelorus --debug --wait --wait-for-jobs
+echo "+++++++++GET OLD CRDS"
+date
+oc get crd --all-namespaces
+
+make dev-env
+pushd pelorus-operator
+echo "+++++++++Deploy"
+make deploy
+
+sleep 200
+
+echo "+++++++++Create"
+oc apply -f config/samples/charts_v1alpha1_pelorus.yaml -n pelorus
+
+
+#### helm install operators charts/operators --namespace pelorus --debug --wait --wait-for-jobs
 
 # Wait for grafana and prometheus deployments to be rolled out
-retry 5m 1s ornds prometheus-operator
-retry 5m 1s ornds grafana-operator-controller-manager
+###retry 5m 1s ornds prometheus-operator
+###retry 5m 1s ornds grafana-operator-controller-manager
+sleep 200
 
-helm install pelorus charts/pelorus --namespace pelorus --debug --wait --wait-for-jobs
+echo "+++++++++GET NEW CRDS"
+date
+oc get crd --all-namespaces
+
+####helm install pelorus charts/pelorus --namespace pelorus --debug --wait --wait-for-jobs
 
 # check final deployment
-retry 5m 5s ogns grafana-service
-retry 5m 5s ogns prometheus-operated
-retry 5m 5s ogns prometheus-pelorus
+###retry 5m 5s ogns grafana-service
+###retry 5m 5s ogns prometheus-operated
+###retry 5m 5s ogns prometheus-pelorus
 
 # Print ci_values.yaml for easy debug
 cat "${DWN_DIR}/ci_values.yaml"
+
+sleep 300
+echo "+++++++++Get resources from ns"
+oc get all -n pelorus
+echo "+++++++++Get ns"
+oc get ns
+
+echo "+++++++++Get all from pelorus-operator-system"
+oc get all -n pelorus-operator-system
+
+echo "+++++++++EXIT"
+exit 0
 
 # Thanos and s3 support
 THANOS_HELM_FLAG=""
