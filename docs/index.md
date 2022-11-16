@@ -69,7 +69,7 @@ Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift clust
 
 ![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
 
-A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg), and you can learn more about each individual dashboard in the [dashboards documentation](Dashboards.md).
+You can see [a short video describing each of these metrics](https://www.youtube.com/watch?v=7-iB_KhUaQg), and you can learn more about each dashboard per the [outcomes](philosophy/outcomes/) they represent.
 
 ## Prior Knowledge
 

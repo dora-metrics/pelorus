@@ -147,7 +147,7 @@ exporters:
 
 #### Pre-built custom images
 
-This method can be used to deploy Pelorus with the user built images or pre-built images mirrored in other than [quay.io](quay.io) registry.
+You can deploy Pelorus with user built images, or with pre-built images in any image registry.
 
 In such case the exporter instance configuration needs to include `image_name` that is in a format of full path to the image including image `:tag` or just image path without the `:tag` part. Not including image `:tag` results to use default `stable` tag unless `image_tag` configuration option is specified.
 

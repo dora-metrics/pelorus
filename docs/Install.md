@@ -36,7 +36,7 @@ In a few seconds, you will see a number of resourced get created. The above comm
     * A `Grafana` instance
     * A `ServiceMonitor` instance for scraping the Pelorus exporters.
     * A `GrafanaDatasource` pointing to Prometheus.
-    * A set of `GrafanaDashboards`. See the [dashboards documentation](Dashboards.md) for more details.
+    * A set of `GrafanaDashboards`. See the [Outcomes (Dashboards) documentation](philosophy/outcomes/index.md) for more details.
 * The following exporters:
     * Deploy Time
 

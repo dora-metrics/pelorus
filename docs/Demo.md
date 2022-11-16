@@ -22,7 +22,7 @@ Understand that Pelorus should be used as a conversation tool to read the trends
 
 ![dora_lead_deployment](img/dora_metrics1.png)
 
-> **Note:** More information about the four key DORA metrics can be found at the [Software Delivery Performance section](Dashboards.md) 
+> **Note:** More information about the four key DORA metrics can be found in our [Outcomes documentation](./philosophy/outcomes/index.md).
 
 ## Workflow - Install
 - install and configure Pelorus
@@ -272,7 +272,7 @@ An "idle" state could resemble:
 
 ![dora_fail_recover](img/dora_metrics2.png)
 
-> **Note:** More information about the four key DORA metrics can be found at the [Software Delivery Performance section](Dashboards.md) 
+> **Note:** More information about the four key DORA metrics can be found in our [Outcomes documentation](./philosophy/outcomes/index.md).
 
 ### Assumptions
 - Github issues are enabled in https://github.com/your_org/mig-demo-apps/settings
