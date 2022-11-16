@@ -119,3 +119,9 @@
 .md-typeset .grid.popout h2 {
   margin: 0 0 2rem 0;
 }
+
+/*
+.md-typeset div.arithmatex>mjx-container {
+  margin-left: 0!important;
+  margin-right: 0!important;
+}*/
