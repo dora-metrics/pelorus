@@ -1,11 +1,15 @@
 site_name: Pelorus Docs
 site_url: https://pelorus.readthedocs.io/en/latest/
+site_description: Metrics that matter
 repo_name: konveyor/pelorus
 repo_url: https://github.com/konveyor/pelorus
 theme:
   name: material
   logo: img/icon-white.png
   favicon: img/favicon.png
+  font:
+    text: Red Hat Text
+    code: Red Hat Monospace
   palette:
 
     # Palette toggle for light mode
@@ -23,32 +27,48 @@ theme:
         name: Switch to light mode
   features:
     - navigation.tracking
+    - navigation.tabs
+    - navigation.top
+    - navigation.instant
+  custom_dir: overrides
 extra_css:
   - stylesheets/extra.css
 markdown_extensions:
+  - admonition
+  - attr_list
   - def_list
-  - tables
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - tables
 nav:
-  - Introduction:
-    - Welcome to Pelorus: index.md
-    - Our Philosphy: Philosophy.md
-  - Using Pelorus:
-    - Architecture: Architecture.md
+  - Home: index.md
+  - Getting Started:
+    - Quickstart Tutorial: Demo.md
     - Installation: Install.md
-    - Demo: Demo.md
+  - Our Philosophy:
+    - Overview: philosophy/index.md
+    - The Problem Today: philosophy/problem.md
+    - Finding the Right Bridge Outcomes: philosophy/bridge_outcomes.md
+    - Outcomes:
+      - Overview: philosophy/outcomes/index.md
+      - Software Delivery Performance: philosophy/outcomes/SoftwareDeliveryPerformance.md
+    - philosophy/pelorus.md
+  - Configuration:
+    - Architecture: Architecture.md
     - Configuration: Configuration.md
     - NooBaa for Long Term Storage: Noobaa.md
-  - Dashboards:
-    - Dashboard Summary: Dashboards.md
-    - Software Delivery Performance: dashboards/SoftwareDeliveryPerformance.md
-  - Pelorus Development:
+  - Contribution:
     - Dev Guide: Development.md
-  - Support:
     - Upstream Support: UpstreamSupport.md
 plugins:
   - social
+watch:
+- overrides

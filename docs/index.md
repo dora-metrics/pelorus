@@ -1,6 +1,11 @@
-# Welcome to Pelorus
-
-![Pelorus](img/Logo-Pelorus-A-Standard-RGB_smaller.png)
+---
+title: Welcome to Pelorus
+hide:
+  - toc
+  - navigation
+template: home.html
+---
+# Measure things that matter
 
 ![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
 ![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)
@@ -10,15 +15,51 @@
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 ![Python versions](https://img.shields.io/badge/Python-3.9%20|%203.10-success)
 
-Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
+Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. 
 
-- Software Delivery Performance
-- Product Quality and Sustainability
-- Customer experience
+Some of the key outcomes we'd like Pelorus help us measure are:
 
-To understand the motivation, see [Our Philosophy](Philosophy.md).
+<div class="grid cards" markdown>
+
+-   :material-truck-delivery:{ .middle } Software Delivery Performance :material-check-circle:{ .checked .middle }
+-   :fontawesome-solid-person-circle-plus: Supported Technology Adoption :material-check-circle:{ .unchecked }
+-   :fontawesome-solid-money-bill-trend-up: Value Flow :material-check-circle:{ .unchecked }
+-   :material-monitor-dashboard: Availability :material-check-circle:{ .unchecked }
+-   :material-account-heart: Employee Satisfaction :material-check-circle:{ .unchecked }
+-   :material-emoticon-happy-outline: Customer Experience :material-check-circle:{ .unchecked }
+-   :material-leaf: Quality and Sustainability :material-check-circle:{ .unchecked }
+
+</div>
+
+[:material-arrow-right: Read more about our Outcomes](philosophy/outcomes/index.md)
+
+To understand the motivation, see [Our Philosophy](philosophy/index.md).
 
 For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
+
+<div class="grid popout" markdown>
+
+<div markdown>
+
+## Pull metrics from your existing tools
+
+Pelorus works by integrating with your application platforms, developer tools, and ticketing systems to track the flow of work across your value streams.
+
+</div>
+
+<div class="flex cards" markdown>
+
+-   # :simple-kubernetes:
+-   # :simple-redhatopenshift:
+-   # :simple-github:
+-   # :simple-gitlab:
+-   # :simple-bitbucket:
+-   # :simple-jirasoftware:
+-   # :fontawesome-brands-servicestack:
+-   # :simple-trello:
+
+</div>
+</div>
 
 ## Software Delivery Performance as an outcome
 

@@ -2,22 +2,26 @@
 
 _Software Delivery Performance_ is a measure of an organization's ability to effectively deliver software-based products they have built to their customers. It is comprised of 4 _measures_ that provide a balanced perspective, taking both speed to market and stability measures into account. Tracking _Software Delivery Performance_ over time provides IT organizations with data they can use to make smarter investments in their internal tools and processes to optimize their delivery processes based on the types of products they are delivering. This outcomes provides a bridge between development, operations and leadership, allowing them to better communicate about whether proposed work on infrastructure imrovements or process developments are in line with the overall vision and financial goals of the organization at large.
 
-![Software Delivery Performance dashboard](../img/sdp-dashboard.png)
+![Software Delivery Performance dashboard](../../img/sdp-dashboard.png)
 
 The Pelorus _Software Delivery Performance_ dashboard tracks the four primary measures of software delivery:
 
-* [Lead Time for Change](#lead-time-for-change)
-* [Deployment Frequency](#deployment-frequency)
-* [Mean Time to Restore](#mean-time-to-restore)
-* [Change Failure Rate](#change-failure-rate)
+<div class="grid cards" markdown>
+* [:material-clock-fast: Lead Time for Change](#lead-time-for-change)
+* [:material-rocket-launch: Deployment Frequency](#deployment-frequency)
+* [:material-heart-plus: Mean Time to Restore](#mean-time-to-restore)
+* [:material-brightness-percent: Change Failure Rate](#change-failure-rate)
+</div>
 
-For more information about Software Delivery Performance, check out the book [Accelerate](https://itrevolution.com/book/accelerate/) by Forsgren, Kim and Humble.
+!!! further-reading "Further Reading"
+
+    For more information about Software Delivery Performance, check out the book [Accelerate](https://itrevolution.com/book/accelerate/) by Forsgren, Kim and Humble.
 
 ## Measures
 
-![Exporter relaionship diagram](../img/exporter-relationship-diagram.png)
+![Exporter relaionship diagram](../../img/exporter-relationship-diagram.png)
 
-### Lead Time for Change
+### :material-clock-fast: Lead Time for Change
 
 #### Description
 Product delivery lead time to change is the time it takes to go from code committed to code successfully running in production.  Shorter lead times enable faster feedback on what we are building, and encourages smaller batch sizes to increase flow.
@@ -41,7 +45,7 @@ The exporters are only responsible for gathering data about individual events. B
 
 The dashboard then displays these metrics over the given time ranges, and provides comparisons between the current and previous time range.
 
-### Deployment Frequency
+### :material-rocket-launch: Deployment Frequency
 
 #### Description
 
@@ -61,7 +65,7 @@ The following exporters are required to calculate _Deployment Frequency_:
 
 The dashboard then just tracks a `count_over_time()` of the individual `deploy_time` metrics for the time range selected in the dashboard. It also provides a comparison to the previous time range.
 
-### Mean Time to Restore
+### :material-heart-plus: Mean Time to Restore
 
 #### Description
 
@@ -86,7 +90,7 @@ The exporters are only responsible for gathering data about individual events. B
 
 The dashboard then displays this information for a given time range, and compares that number to the previous time range.
 
-### Change Failure Rate
+### :material-brightness-percent: Change Failure Rate
 
 #### Description
 
