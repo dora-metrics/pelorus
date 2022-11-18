@@ -28,14 +28,16 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
             raise UnsupportedGITProvider(
                 "Skipping non Azure DevOps server, found %s" % (git_server)
             )
-
         logging.debug("metric.repo_project %s" % (metric.repo_project))
-        logging.debug("metric.git_api %s" % (self.git_api))  # TODO: metric, not self
+        logging.debug(
+            "metric.git_api %s" % (str(self.git_api))
+        )  # TODO: metric, not self
 
-        # Private or personal token
         # Fill in with your personal access token and org URL
+        # personal_access_token = 'YOURPAT'
+        # organization_url = 'https://dev.azure.com/YOURORG'
         personal_access_token = self.token
-        organization_url = self.git_api
+        organization_url = str(self.git_api)
 
         # Create a connection to the org
         credentials = BasicAuthentication("", personal_access_token)
