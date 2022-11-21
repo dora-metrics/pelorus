@@ -29,9 +29,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
                 "Skipping non Azure DevOps server, found %s" % (git_server)
             )
         logging.debug("metric.repo_project %s" % (metric.repo_project))
-        logging.debug(
-            "metric.git_api %s" % (str(self.git_api))
-        )  # TODO: metric, not self
+        logging.debug("metric.git_api %s", self.git_api)  # TODO: metric, not self
 
         # Fill in with your personal access token and org URL
         # personal_access_token = 'YOURPAT'
