@@ -1,9 +1,10 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 from random import randrange
-from typing import Sequence
+from typing import Optional
 from unittest.mock import NonCallableMock
 
+import attrs
 import pytest
 from openshift.dynamic import DynamicClient  # type: ignore
 from openshift.dynamic.discovery import Discoverer  # type: ignore
@@ -11,7 +12,17 @@ from openshift.dynamic.discovery import Discoverer  # type: ignore
 import pelorus
 from deploytime import DeployTimeMetric
 from deploytime.app import DeployTimeCollector, image_sha
-from tests.openshift_mocks import *
+from tests.openshift_mocks import (
+    Container,
+    ContainerStatus,
+    Metadata,
+    OwnerRef,
+    Pod,
+    PodSpec,
+    PodStatus,
+    Replicator,
+    ResourceGetResponse,
+)
 
 # pylava:ignore=W0401
 
@@ -62,10 +73,10 @@ QUUX_POD_SHAS = [
 # region mock data creation helpers
 
 
-@attr.define(slots=False)
+@attrs.define(slots=False)
 class DynClientMockData:
-    pods: Sequence[Pod]
-    replicators: Sequence[Replicator]
+    pods: list[Pod]
+    replicators: list[Replicator]
 
     def __attrs_post_init__(self):
         self.mock_client = NonCallableMock(DynamicClient)
@@ -78,7 +89,7 @@ class DynClientMockData:
         for rep in self.replicators:
             mock = self.replicators_by_kind[rep.kind]
             if not isinstance(mock.get.return_value, ResourceGetResponse):
-                mock.get.return_value = ResourceGetResponse([])
+                mock.get.return_value = ResourceGetResponse()
             mock.get.return_value.items.append(rep)
 
     def get_resource(self, *, kind: str, **_kwargs):
@@ -101,7 +112,7 @@ def rc(
     namespace: str,
     app_label: str,
     creationTimestamp: datetime,
-    labels: dict[str, str] = None,
+    labels: Optional[dict[str, str]] = None,
 ) -> Replicator:
     """create a Replicator with appropriate metadata"""
     labels = labels or {}
@@ -131,7 +142,9 @@ def pod(
         status_image_shas = container_image_shas
 
     return Pod(
-        metadata=Metadata(namespace=namespace, ownerReferences=owner_refs),
+        metadata=Metadata(
+            name="unnamed", namespace=namespace, ownerReferences=owner_refs
+        ),
         spec=PodSpec(containers=[Container(x) for x in container_image_shas]),
         status=PodStatus(
             containerStatuses=[ContainerStatus(x) for x in status_image_shas]

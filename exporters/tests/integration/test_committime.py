@@ -71,7 +71,7 @@ def expected_commits() -> list[CommitMetricEssentials]:
             image_hash="sha256:71309995e6da43b76079a649b00e0aa8378443e72f1fccc76af0d73d67a7f644",
         ),
     ]
-    metrics.sort(key=lambda commit: commit.commit_timestamp)
+    metrics.sort(key=lambda commit: commit.commit_timestamp)  # type: ignore
     return metrics
 
 
@@ -104,6 +104,6 @@ def test_github_provider():
         for cm in collector.generate_metrics()
     ]
 
-    actual.sort(key=lambda commit: commit.commit_timestamp)
+    actual.sort(key=lambda commit: commit.commit_timestamp)  # type: ignore
 
     assert actual == expected_commits()

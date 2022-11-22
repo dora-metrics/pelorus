@@ -8,11 +8,10 @@ from committime.collector_bitbucket import BitbucketCommitCollector
 @pytest.fixture
 def bitbucket_collector(openshift_client: DynamicClient):
     return BitbucketCommitCollector(
-        openshift_client,
+        kube_client=openshift_client,
         username="",
         token="",
-        namespaces=[],
-        apps=[],
+        namespaces=set(),
         tls_verify=False,
     )
 

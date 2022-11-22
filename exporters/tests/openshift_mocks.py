@@ -1,4 +1,4 @@
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from typing import Any, Generic, Optional, TypeVar
 
 import attr
 
@@ -11,7 +11,7 @@ class OwnerRef:
 
 @attr.define
 class Metadata:
-    name: Optional[str] = None
+    name: str
     namespace: Optional[str] = None
     ownerReferences: list[OwnerRef] = attr.Factory(list)
     labels: dict[str, str] = attr.Factory(dict)
@@ -60,9 +60,9 @@ Item = TypeVar("Item")
 
 @attr.define
 class ResourceGetResponse(Generic[Item]):
-    items: Sequence[Item] = attr.Factory(list)
+    items: list[Item] = attr.Factory(list)
 
     @classmethod
     def of(cls, *items: Item):
         """Puts all arguments into the items list"""
-        return cls(items)
+        return cls(list(items))
