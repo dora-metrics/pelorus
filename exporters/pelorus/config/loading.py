@@ -3,9 +3,9 @@ from typing import Any, Collection, Literal, Mapping, Optional, Sequence, Union
 import attrs
 from attrs import Attribute, frozen
 
-from pelorus.config._attrs_compat import NOTHING, Factory
 from pelorus.config.common import Metadata
 from pelorus.config.log import SKIP, Log, _get_log_meta, _should_log
+from pelorus.utils._attrs_compat import NOTHING, Factory
 
 _ENV_LOOKUPS_KEY = "__pelorus_config_env_vars"
 
