@@ -53,3 +53,10 @@ for the commit time exporter using mocked data from mockoon server.
 Used by the makefile to setup pre-commit hook for local lint tests that are
 
 invoked before commit is prepared.
+
+## scripts/pelorus-operator-patches
+
+Used to create Pelorus helm based operator from the helm charts.
+
+Ensures modification to the operator files can be cleanly applied and allows
+to recreate operator easily.

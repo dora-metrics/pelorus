@@ -1,0 +1,11 @@
+--- Makefile.orig	2022-11-09 11:56:41.174650219 +0100
++++ Makefile	2022-11-09 11:57:05.604748059 +0100
+@@ -47,7 +47,7 @@
+ endif
+ 
+ # Image URL to use all building/pushing image targets
+-IMG ?= controller:latest
++IMG ?= $(IMAGE_TAG_BASE):$(VERSION)
+ 
+ .PHONY: all
+ all: podman-build
