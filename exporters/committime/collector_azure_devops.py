@@ -1,18 +1,28 @@
 import logging
 from datetime import datetime
 
-from attrs import define
+from attrs import converters, define, field
 from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 
 from committime import CommitMetric
+from pelorus.config.converters import pass_through
+from pelorus.utils import Url
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
+
+DEFAULT_AZURE_API = Url.parse("https://dev.azure.com")
 
 
 @define(kw_only=True)
 class AzureDevOpsCommitCollector(AbstractCommitCollector):
     collector_name = "Azure-DevOps"
+
+    # overrides with default
+    git_api: Url = field(
+        default=DEFAULT_AZURE_API,
+        converter=converters.optional(pass_through(Url, Url.parse)),
+    )
 
     # base class impl
     def get_commit_time(self, metric: CommitMetric):
@@ -35,7 +45,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         # personal_access_token = 'YOURPAT'
         # organization_url = 'https://dev.azure.com/YOURORG'
         personal_access_token = self.token
-        organization_url = str(self.git_api)
+        organization_url = self.git_api
 
         # Create a connection to the org
         credentials = BasicAuthentication("", personal_access_token)
