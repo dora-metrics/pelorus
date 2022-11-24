@@ -217,3 +217,45 @@ def test_optionals_error():
     assert len(other_err_with_default.exceptions) == 1
 
     assert others is None
+
+
+def test_top_level_dict():
+    x = deserialize(dict(str_="str!"), dict[str, str])
+    assert x["str_"] == "str!"
+
+
+def test_embedded_dict():
+    @define
+    class Inner:
+        int_: int
+
+    @define
+    class DictHolder:
+        dict_: dict[str, Inner]
+
+    inner = dict(int_=2)
+    dict_ = dict(foo=inner)
+    holder = dict(dict_=dict_)
+
+    x = deserialize(holder, DictHolder)
+
+    assert x.dict_["foo"].int_ == 2
+
+
+def test_top_level_list():
+    x = deserialize([1, 2, 3], list[int])
+    assert x == [1, 2, 3]
+
+
+def test_embedded_list():
+    @define
+    class Inner:
+        int_: int
+
+    @define
+    class ListHolder:
+        list_: list[Inner]
+
+    x = deserialize(dict(list_=[dict(int_=2)]), ListHolder)
+
+    assert x.list_[0].int_ == 2
