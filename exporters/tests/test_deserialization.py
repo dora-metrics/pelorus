@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 import pytest
 from attrs import define, field
@@ -259,3 +259,8 @@ def test_embedded_list():
     x = deserialize(dict(list_=[dict(int_=2)]), ListHolder)
 
     assert x.list_[0].int_ == 2
+
+
+def test_any():
+    x = deserialize([1, "2"], list[Any])
+    assert x == [1, "2"]
