@@ -14,16 +14,44 @@
 #
 
 """
-Declarative structuring and typechecking.
+Declarative conversion from unstructured data to structured, type-checked data.
 
 Useful for checking that all necessary aspects of a structure from OpenShift are present and correct.
 
-Supported types:
-- some primitives (int, float, str, bool)
-- attrs classes (with nested supported types)
-- dicts (with nested supported value types)
-- lists (with nested supported types)
-- optionals of the above
+# Supported types / conversions
+
+S means any structured type, and U means any unstructured data that can
+be converted to S.
+
+| structured            | unstructured        |
+|-----------------------|---------------------|
+| attrs class¹          | Mapping[str], Any]¹ |
+| list[S]               | Iterable[U]         |
+| dict[str, S]          | Mapping[str, U]     |
+| Any                   | Any                 |
+| int, float, str, bool | themselves          |
+| Optional[S]           | Optional[U]         |
+
+¹ attrs field values may be any S type, the dict values any U type.
+
+Attrs fields may specify a nested path using the `nested()` metadata
+helper. Its semantics are the same as `pelorus.utils.get_nested`.
+
+# Errors
+
+For lists, dicts, and classes, errors are collected in parallel--
+An error deserializing one field will not block the processing of the others.
+Each error will have the name of the field it was associated with,
+and also the name of the unstructured field.
+
+Special errors exist for missing fields and failed type checks.
+
+See the `pelorus.deserialization.errors` module for the list of error types.
+
+# Architecture
+
+See `README.md` in this directory.
+
 """
 from __future__ import annotations
 
@@ -43,10 +71,7 @@ from typing import (
 import attr
 import attrs
 
-from pelorus.utils import BadAttributePathError, get_nested
-from pelorus.utils._attrs_compat import NOTHING
-
-from .errors import (
+from pelorus.deserialization.errors import (
     DeserializationErrors,
     FieldError,
     FieldTypeCheckError,
@@ -54,6 +79,8 @@ from .errors import (
     MissingFieldError,
     TypeCheckError,
 )
+from pelorus.utils import BadAttributePathError, get_nested
+from pelorus.utils._attrs_compat import NOTHING
 
 # metadata
 _NESTED_PATH_KEY = "__pelorus_structure_nested_path"
@@ -87,11 +114,13 @@ def _is_attrs_class(cls: type) -> Optional[type["attr.AttrsInstance"]]:
 # in the future, these should be made into `typing.TypeGuard`s.
 
 
-def _is_dict_type(type_: type) -> Optional[tuple[type, type]]:
+def _extract_dict_types(type_: type) -> Optional[tuple[type, type]]:
     """
-    If this type annotation is a dictionary-like,
-    extract its key and value types.
+    If this type annotation is a dictionary-like, extract its key and value types.
     Otherwise return None.
+
+    >>> assert _extract_dict_types(dict[str, int]) == (str, int)
+    >>> assert _extract_dict_types(list[int]) is None
     """
     origin, args = typing.get_origin(type_), typing.get_args(type_)
     if origin is None:
@@ -103,11 +132,13 @@ def _is_dict_type(type_: type) -> Optional[tuple[type, type]]:
     return args[0], args[1]
 
 
-def _is_list_type(type_: type) -> Optional[type]:
+def _extract_list_type(type_: type) -> Optional[type]:
     """
-    If this type annotation is a list-like,
-    extract its value type.
+    If this type annotation is a list-like, extract its value type.
     Otherwise return None.
+
+    >>> assert _extract_list_type(list[int]) == int
+    >>> assert _extract_list_type(dict[str, str]) is None
     """
     origin, args = typing.get_origin(type_), typing.get_args(type_)
     if origin is None:
@@ -119,13 +150,18 @@ def _is_list_type(type_: type) -> Optional[type]:
     return args[0]
 
 
-def _is_optional(type_: type) -> Optional[type]:
+def _extract_optional_type(type_: type) -> Optional[type]:
     """
     If this type annotation is Optional[T], then returns the type T.
     Otherwise, returns None.
+
+    >>> assert _extract_optional_type(Optional[int]) == int
+    >>> assert _extract_optional_type(int) is None
     """
     # this is weird because Optional is just an alias for Union,
     # where the other entry is NoneType.
+    # and in 3.10, unions with `Type1 | Type2` are a different type!
+    # we'll have to handle that when adding 3.10 support.
 
     # it's unclear if order is guaranteed so we have to check both.
     if typing.get_origin(type_) is not typing.Union:
@@ -153,7 +189,18 @@ def _is_optional(type_: type) -> Optional[type]:
 class _Deserializer:
     """
     A deserializer that will collect errors in parallel.
+
+    See module docs for more details.
     """
+
+    # The deserializer uses a simple "dispatch" pattern.
+    # The target type is checked to see if it is any of the supported primitive types.
+    # If it is an attrs class, it will deserialize each field by their type,
+    # supporting the "nested" pattern from `get_nested`.
+
+    # Because of nested fields, dicts, and lists, deserialization is recursive.
+    # The "path" is kept track of for error messages.
+    # See `README.md` for more details.
 
     unstructured_data_path: list[str] = attrs.field(factory=list, init=False)
     "Where we are within the unstructured data."
@@ -201,7 +248,7 @@ class _Deserializer:
             return src
 
         # must test "non-classes" first, because they're not regarded as "types".
-        if (optional_alt := _is_optional(target_type)) is not None:
+        if (optional_alt := _extract_optional_type(target_type)) is not None:
             return self._deserialize_optional(src, optional_alt)
 
         if issubclass(target_type, PRIMITIVE_TYPES):
@@ -214,14 +261,14 @@ class _Deserializer:
             else:
                 raise TypeCheckError(Mapping, src)
 
-        if (dict_types := _is_dict_type(target_type)) is not None:
+        if (dict_types := _extract_dict_types(target_type)) is not None:
             if isinstance(src, Mapping):
                 # assuming it has str key types.
                 return self._deserialize_dict(src, dict_types[1])
             else:
                 raise TypeCheckError(Mapping, src)
 
-        if (list_member_type := _is_list_type(target_type)) is not None:
+        if (list_member_type := _extract_list_type(target_type)) is not None:
             if isinstance(src, Iterable):
                 return self._deserialize_list(src, list_member_type)
             else:
