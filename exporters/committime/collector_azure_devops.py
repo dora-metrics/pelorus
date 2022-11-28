@@ -45,7 +45,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         # personal_access_token = 'YOURPAT'
         # organization_url = 'https://dev.azure.com/YOURORG'
         personal_access_token = self.token
-        organization_url = self.git_api
+        organization_url = self.git_api.url
 
         # Create a connection to the org
         credentials = BasicAuthentication("", personal_access_token)
