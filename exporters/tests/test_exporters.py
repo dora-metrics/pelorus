@@ -23,6 +23,7 @@ def test_commitmetric_initial(appname):
         ("http://noabank.git.foo/chase/git.git", "http", "noabank.git.foo", "git"),
         ("ssh://git.moos.foo/maverick/tootsie.git", "ssh", "git.moos.foo", "tootsie"),
         ("git@github.com:konveyor/pelorus.git", "ssh", "github.com", "pelorus"),
+        ("https://dev.azure.com/azuretest", "https", "dev.azure.com", "azuretest"),
         (
             "https://gitlab.com/firstgroup/secondgroup/myrepo.git",
             "https",
@@ -44,7 +45,10 @@ def test_commitmetric_repos(url, repo_protocol, fqdn, project_name):
     assert metric.repo_url == url
     assert metric.repo_protocol == repo_protocol
     assert metric.git_fqdn is not None
-    assert metric.repo_group is not None
+    if metric.repo_url != "https://dev.azure.com/azuretest":
+        assert metric.repo_group is not None
+    else:
+        assert metric.repo_group is None
     assert metric.repo_project is not None
     assert metric.git_fqdn == fqdn
     #    assert metric.git_server == str(protocol + '://' + fqdn)
