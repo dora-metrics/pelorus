@@ -40,6 +40,8 @@ COMMIT_HASH_ANNOTATION_ENV = "COMMIT_HASH_ANNOTATION"
 COMMIT_REPO_URL_ANNOTATION_ENV = "COMMIT_REPO_URL_ANNOTATION"
 COMMIT_DATE_ANNOTATION_ENV = "COMMIT_DATE_ANNOTATION"
 
+CODE_BUILD_STRATEGY_TYPES = {"Source", "Binary", "Docker", "JenkinsPipeline"}
+
 
 class UnsupportedGITProvider(Exception):
     """
@@ -216,7 +218,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             )
             code_builds = list(
                 filter(
-                    lambda b: b.spec.strategy.type in ["Source", "Binary", "Docker"],
+                    lambda b: b.spec.strategy.type in CODE_BUILD_STRATEGY_TYPES,
                     builds,
                 )
             )
