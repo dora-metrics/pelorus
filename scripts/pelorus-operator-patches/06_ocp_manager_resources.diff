@@ -1,0 +1,14 @@
+--- config/default/manager_auth_proxy_patch.yaml.original	2022-11-27 15:30:36.807768486 +0100
++++ config/default/manager_auth_proxy_patch.yaml	2022-11-27 15:30:52.728823695 +0100
+@@ -31,3 +31,10 @@ spec:
+         - "--metrics-bind-address=127.0.0.1:8080"
+         - "--leader-elect"
+         - "--leader-election-id=pelorus-operator"
++        resources:
++          limits:
++            cpu: 1000m
++            memory: 256Mi
++          requests:
++            cpu: 10m
++            memory: 128Mi
+

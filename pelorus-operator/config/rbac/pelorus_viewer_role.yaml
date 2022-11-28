@@ -1,0 +1,20 @@
+# permissions for end users to view pelorus.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pelorus-viewer-role
+rules:
+- apiGroups:
+  - charts.pelorus.konveyor.io
+  resources:
+  - pelorus
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - charts.pelorus.konveyor.io
+  resources:
+  - pelorus/status
+  verbs:
+  - get

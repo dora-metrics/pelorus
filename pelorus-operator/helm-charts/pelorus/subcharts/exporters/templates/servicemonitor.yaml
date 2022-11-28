@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: k8s-apps-http
+  labels:
+    k8s-apps: http
+spec:
+  jobLabel: k8s-app
+  selector:
+    matchExpressions:
+    - {key: k8s-app, operator: Exists}
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  endpoints:
+  - port: http
+    interval: {{ .Values.scrapeInterval }}

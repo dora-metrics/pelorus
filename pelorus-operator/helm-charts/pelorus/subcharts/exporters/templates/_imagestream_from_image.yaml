@@ -1,0 +1,33 @@
+{{- define "exporters.imagestream_from_image" }}
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .app_name }}
+    app: {{ .app_name }}
+  name: {{ .app_name }}
+spec:
+  lookupPolicy:
+    local: true
+  tags:
+  - from:
+      kind: DockerImage
+{{- if .image_name }}
+    # .image_name is provided with :tag, .image_tag is ignored here
+    # .image_tag can be specified to tag internal to registry image
+    {{- if contains ":" .image_name }}
+      name: {{ .image_name }}
+    # .image_name is provided without tag
+    {{- else }}
+      name: {{ .image_name }}:{{ .image_tag | default "stable" }}
+    {{- end }}
+{{- else }}
+      name: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "stable" }}
+# .image_name
+{{- end }}
+    name: {{ .image_tag | default "stable" }}
+    referencePolicy:
+      type: Local
+# define
+{{- end }}

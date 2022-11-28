@@ -1,0 +1,13 @@
+--- /dev/null	2022-10-24 10:19:28.874279599 +0200
++++ bundle/metadata/properties.yaml	2022-11-18 15:34:45.056155489 +0100
+@@ -0,0 +1,9 @@
++dependencies:
++- type: olm.package
++  value:
++    packageName: prometheus
++    version: "0.47.0"
++- type: olm.package
++  value:
++    packageName: grafana-operator
++    version: "4.6.0"
+
