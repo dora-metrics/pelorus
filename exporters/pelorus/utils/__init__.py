@@ -22,11 +22,23 @@ They are mainly to help with type information and to deal with data structures
 in kubernetes that are not so idiomatic to deal with.
 """
 import contextlib
-import dataclasses
+import enum
 import logging
 import os
-from typing import Any, ClassVar, Generator, Optional, Union, cast, overload
+from typing import (
+    Any,
+    ClassVar,
+    Generator,
+    Literal,
+    Mapping,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
+import attrs
 import requests
 import requests.auth
 import urllib3
@@ -36,47 +48,53 @@ from openshift.dynamic import DynamicClient
 
 from pelorus.certificates import set_up_requests_certs
 
+T = TypeVar("T")
+U = TypeVar("U")
+
+
 # sentinel value for the default kwarg to get_nested
-__GET_NESTED_NO_DEFAULT = object()
+class NoDefault(enum.Enum):
+    NO_DEFAULT = enum.auto()
+
 
 DEFAULT_VAR_KEYWORD = "default"
 
 
 @overload
 def get_nested(
-    root: Any,
-    path: Union[list[Any], str],
+    root: Mapping[str, T],
+    path: Union[list[str], str],
     *,
     name: Optional[str] = None,
-) -> Any:
+) -> T:
     ...
 
 
 @overload
 def get_nested(
-    root: Any,
-    path: Union[list[Any], str],
+    root: Mapping[str, T],
+    path: Union[list[str], str],
     *,
-    default: Any,
+    default: U,
     name: Optional[str] = None,
-) -> Any:
+) -> Union[T, U]:
     ...
 
 
 def get_nested(
-    root: Any,
+    root: Mapping[str, T],
     path: Union[list[Any], str],
     *,
-    default: Any = __GET_NESTED_NO_DEFAULT,
+    default: Union[U, Literal[NoDefault.NO_DEFAULT]] = NoDefault.NO_DEFAULT,
     name: Optional[str] = None,
-) -> Any:
+) -> Union[T, U]:
     """
     `get_nested` helps you safely traverse a deeply nested object that is indexable.
     If `TypeError`, `KeyError`, or `IndexError` are thrown, then `default` will be returned.
     If `default` is not given, a `MissingAttributeError` will be thrown,
     which includes information about where in the path things went wrong, and a human-readable name (if included).
 
-    You may specify the path as either an iterable of keys / indexes, or a single string.
+    You may specify the path as either a list of keys, or a single string.
     The string will be split on '.' so you can emulate the nested attribute lookup `ResourceField`
     would offer.
 
@@ -98,9 +116,9 @@ def get_nested(
         path = [part for part in path.split(".") if part]
     for i, key in enumerate(path):
         try:
-            item = item[key]
+            item = item[key]  # type: ignore
         except (TypeError, IndexError, KeyError) as e:
-            if default is not __GET_NESTED_NO_DEFAULT:
+            if default is not NoDefault.NO_DEFAULT:
                 return default
 
             raise BadAttributePathError(
@@ -114,7 +132,7 @@ def get_nested(
     return item
 
 
-@dataclasses.dataclass
+@attrs.frozen
 class BadAttributePathError(Exception):
     """
     An error representing a nested lookup that went wrong.
@@ -133,12 +151,18 @@ class BadAttributePathError(Exception):
     root_name: Optional[str] = None
 
     @property
-    def message(self):
-        return (
-            f"{self.root_name + ' is missing' if self.root_name else 'Missing'}"
-            f" {'.'.join(self.path)} because "
-            f"{'.'.join(self.path[self.path_slice])} was {self.value}"
-        )
+    def message(self) -> str:
+        msg = f"{self.root_name + ' is missing' if self.root_name else 'Missing'} {'.'.join(self.path)}"
+
+        # keep message simple if there's only one child we tried to access,
+        # but otherwise add detail
+        if len(self.path) > 1:
+            msg += (
+                f" {'.'.join(self.path)} because "
+                f"{'.'.join(self.path[self.path_slice])} was {self.value}"
+            )
+
+        return msg
 
     def __str__(self):
         return self.message
@@ -155,22 +179,6 @@ def collect_bad_attribute_path_error(error_list: list, append: bool = True):
     except BadAttributePathError as e:
         if append:
             error_list.append(e)
-
-
-@dataclasses.dataclass
-class BadAttributesError(Exception):
-    """
-    An error representing some number of missing attributes.
-    """
-
-    missing_attributes: list[BadAttributePathError]
-
-    @property
-    def message(self):
-        return ". ".join(str(x) for x in self.missing_attributes)
-
-    def __str__(self):
-        return self.message
 
 
 class SpecializeDebugFormatter(logging.Formatter):
