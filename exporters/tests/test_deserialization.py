@@ -58,6 +58,16 @@ def test_nested_field_positive():
     assert actual.nested_int == 2
 
 
+def test_multi_nested():
+    @define
+    class NestedNested:
+        nested_int: int = field(metadata=nested(["foo", "com.example.int"]))
+
+    actual = deserialize({"foo": {"com.example.int": 2}}, NestedNested)
+
+    assert actual.nested_int == 2
+
+
 def test_nested_field_type_err():
     @define
     class Nested:

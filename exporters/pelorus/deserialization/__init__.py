@@ -63,7 +63,9 @@ from typing import (
     MutableMapping,
     MutableSequence,
     Optional,
+    Sequence,
     TypeVar,
+    Union,
     cast,
     overload,
 )
@@ -79,7 +81,7 @@ from pelorus.deserialization.errors import (
     MissingFieldError,
     TypeCheckError,
 )
-from pelorus.utils import BadAttributePathError, get_nested
+from pelorus.utils import BadAttributePathError, format_path, get_nested, split_path
 from pelorus.utils._attrs_compat import NOTHING
 
 # metadata
@@ -90,9 +92,12 @@ T = TypeVar("T")
 PRIMITIVE_TYPES: tuple[type, ...] = (int, float, str, bool)
 
 
-def nested(path: str) -> dict[str, Any]:
-    "Put the nested data path in a metadata dict."
-    return {_NESTED_PATH_KEY: path}
+def nested(path: Union[str, Sequence[str]]) -> dict[str, Sequence[str]]:
+    """
+    Put the nested data path in a metadata dict.
+    Like get_nested, use a list if a path segment has a dot in it.
+    """
+    return {_NESTED_PATH_KEY: split_path(path)}
 
 
 def _is_attrs_class(cls: type) -> Optional[type["attr.AttrsInstance"]]:
@@ -202,8 +207,14 @@ class _Deserializer:
     # The "path" is kept track of for error messages.
     # See `README.md` for more details.
 
-    unstructured_data_path: list[str] = attrs.field(factory=list, init=False)
-    "Where we are within the unstructured data."
+    unstructured_data_path: list[Union[str, Sequence[str]]] = attrs.field(
+        factory=list, init=False
+    )
+    """
+    Where we are within the unstructured data.
+    If the name is a sequence, this means that there was a `get_nested` path that had dots in it,
+    so the path must be separated to differentiate the dots.
+    """
     structured_field_name_path: list[str] = attrs.field(factory=list, init=False)
     "Where we are within the structured data."
 
@@ -290,14 +301,14 @@ class _Deserializer:
         """
         assert field.type is not None, f"{field.name} is missing a type"
 
-        nested: Optional[str] = field.metadata.get(_NESTED_PATH_KEY)
+        nested: Optional[Sequence[str]] = field.metadata.get(_NESTED_PATH_KEY)
 
-        path = nested if nested else field.name
+        path = nested if nested else (field.name,)
 
         self.structured_field_name_path.append(field.name)
         self.unstructured_data_path.append(path)
         try:
-            value = get_nested(src, path, name=self.unstructured_data_path[-1])
+            value = get_nested(src, path)
             return self._deserialize(value, field.type)
         except BadAttributePathError:
             # the value itself is missing.
@@ -340,10 +351,16 @@ class _Deserializer:
         if not field_errors:
             return cls(**class_kwargs)  # type: ignore
         else:
+            unstructured_src = self.unstructured_data_path[-1]
+            src_name = (
+                unstructured_src
+                if isinstance(unstructured_src, str)
+                else format_path(unstructured_src)
+            )
             raise DeserializationErrors(
                 field_errors,
                 target_name=self.structured_field_name_path[-1],
-                src_name=self.unstructured_data_path[-1],
+                src_name=src_name,
             )
 
     def _deserialize_dict(
@@ -376,9 +393,15 @@ class _Deserializer:
         if not errors:
             return dict_
         else:
+            unstructured_src = self.unstructured_data_path[-1]
+            src_name = (
+                unstructured_src
+                if isinstance(unstructured_src, str)
+                else format_path(unstructured_src)
+            )
             raise DeserializationErrors(
                 errors,
-                src_name=self.unstructured_data_path[-1],
+                src_name=src_name,
                 target_name=self.structured_field_name_path[-1],
             )
 
@@ -414,9 +437,15 @@ class _Deserializer:
         if not errors:
             return list_
         else:
+            unstructured_src = self.unstructured_data_path[-1]
+            src_name = (
+                unstructured_src
+                if isinstance(unstructured_src, str)
+                else format_path(unstructured_src)
+            )
             raise DeserializationErrors(
                 errors,
-                src_name=self.unstructured_data_path[-1],
+                src_name=src_name,
                 target_name=self.structured_field_name_path[-1],
             )
 

@@ -13,7 +13,7 @@ class DeserializationError(Exception):
     pass
 
 
-Exc = TypeVar("Exc", bound=Exception)
+Exc = TypeVar("Exc", bound=Optional[Exception])
 
 
 class FieldError(DeserializationError, Generic[Exc]):
@@ -24,16 +24,31 @@ class FieldError(DeserializationError, Generic[Exc]):
         self.field_name = field_name
         self.__cause__ = cause
         if self.__cause__ is not None:
-            msg = f"{self.field_name}: {self.__cause__}"
+            self.message = f"{self.field_name}: {self.__cause__}"
         else:
-            msg = f"{self.field_name} error"
+            self.message = f"{self.field_name} error"
 
-        super().__init__(msg)
+        super().__init__(self.message)
 
 
-class MissingFieldError(FieldError[BadAttributePathError]):
+class MissingFieldError(FieldError[Optional[BadAttributePathError]]):
     "A field that is missing."
     pass
+
+
+class MissingFieldWithMultipleSourcesError(MissingFieldError):
+    "A field that was missing, that was not present multiple alternative sources."
+
+    # TODO: kind of an exception group in its own right, but do we care?
+    # because each fallback could have its own cause, etc...
+
+    def __init__(self, field_name: str, sources: Sequence[str]):
+        # overriding FieldError's init a bit for better message handling.
+        self.field_name = field_name
+        self.__cause__ = None
+        self.sources = sources
+
+        self.message = f"{self.field_name} was not present in any of the following sources: {', '.join(self.sources)}"
 
 
 class TypeCheckError(TypeError):
