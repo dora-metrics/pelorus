@@ -6,8 +6,8 @@ from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 
 from committime import CommitInfo
-from pelorus.timeutil import second_precision
 from pelorus.config.converters import pass_through
+from pelorus.timeutil import second_precision
 from pelorus.utils import Url
 
 from .collector_base import AbstractGitCommitCollector, UnsupportedGITProvider
