@@ -20,19 +20,21 @@ from __future__ import annotations
 import logging
 import re
 from abc import abstractmethod
-from typing import ClassVar, Iterable, Optional
+from datetime import datetime
+from typing import Any, Iterable, Optional
 
 import attrs
-from attrs import define, field
-from jsonpath_ng import parse
+from attrs import define, field, frozen
 from openshift.dynamic import DynamicClient
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
-from committime import CommitMetric, commit_metric_from_build
+from committime import CommitInfo, CommitMetric, GitRepo
 from pelorus.config import env_vars
 from pelorus.config.converters import comma_separated, pass_through
+from pelorus.deserialization import deserialize, nested, retain_source
 from pelorus.utils import Url, get_nested
+from pelorus.utils.openshift_utils import CommonResourceInstance, R
 
 # Custom annotations env for the Build
 # Default ones are in the CommitMetric._ANNOTATION_MAPPIG
@@ -58,46 +60,16 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     This class should be extended for the system which contains the commit information.
     """
 
-    collector_name: ClassVar[str]
-
     kube_client: DynamicClient = field()
-
-    username: str = field()
-    token: str = field(repr=False)
-
     namespaces: set[str] = field(factory=set, converter=comma_separated(set))
 
-    git_api: Optional[Url] = field(
-        default=None,
-        converter=attrs.converters.optional(pass_through(Url, Url.parse)),
-    )
-
-    tls_verify: bool = field(default=True)
-
-    commit_dict: dict[str, Optional[float]] = field(factory=dict, init=False)
-
     hash_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        default=CommitMetric._ANNOTATION_MAPPING["commit_hash"],
         metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
     )
 
-    repo_url_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
-        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
-    )
-
-    def __attrs_post_init__(self):
-        self.commit_dict = dict()
-        if not (self.username and self.token):
-            logging.warning(
-                "No API_USER and no TOKEN given. This is okay for public repositories only."
-            )
-        elif (self.username and not self.token) or (not self.username and self.token):
-            logging.warning(
-                "username and token must both be set, or neither should be set. Unsetting both."
-            )
-            self.username = ""
-            self.token = ""
+    committime_cache: dict[str, Optional[datetime]] = field(factory=dict, init=False)
+    "Caches the commit time per commit hash"
 
     def collect(self):
         commit_metric = GaugeMetricFamily(
@@ -110,14 +82,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
         for my_metric in commit_metrics:
             logging.info(
-                "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s"
-                % (
-                    my_metric.namespace,
-                    my_metric.name,
-                    my_metric.commit_hash,
-                    my_metric.image_hash,
-                    str(float(my_metric.commit_timestamp)),
-                )
+                "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s",
+                my_metric.namespace,
+                my_metric.name,
+                my_metric.commit_hash,
+                my_metric.image_hash,
+                my_metric.commit_timestamp,
             )
             commit_metric.add_metric(
                 [
@@ -126,9 +96,97 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     my_metric.commit_hash,
                     my_metric.image_hash,
                 ],
-                my_metric.commit_timestamp,
+                my_metric.commit_timestamp.timestamp(),
             )
-            yield commit_metric
+        yield commit_metric
+
+    @abstractmethod
+    def generate_metrics(self) -> Iterable[CommitMetric]:
+        "Create metrics based on whatever source makes sense for the implementation."
+        ...
+
+    def _get_openshift_obj_by_app(self, openshift_objs: list[R]) -> dict[str, list[R]]:
+        "Group openshift objects by their app label."
+        app_label = self.app_label
+
+        items_by_app: dict[str, list[R]] = {}
+
+        for item in openshift_objs:
+            app = item.metadata.labels.get(app_label)
+            if not app:
+                continue
+
+            app_item_list = items_by_app.setdefault(app, [])
+            app_item_list.append(item)
+
+        return items_by_app
+
+    def _get_commit_hash_from_annotations(
+        self, annotations: dict[str, str]
+    ) -> Optional[str]:
+        if commit_hash := annotations.get(self.hash_annotation_name):
+            logging.debug(
+                "Commit hash provided by annotation '%s': %s",
+                self.hash_annotation_name,
+                commit_hash,
+            )
+        return commit_hash
+
+
+@frozen
+class Build(CommonResourceInstance):
+    strategy: str = field(metadata=nested("spec.strategy.type"))
+    status: str = field(metadata=nested("status.phase"))
+
+    openshift_source: Any = field(metadata=retain_source())
+
+    image_hash: Optional[str] = field(
+        default=None, metadata=nested("status.output.to.imageDigest")
+    )
+    repo_url: Optional[str] = field(
+        default=None, metadata=nested("spec.source.git.uri")
+    )
+    commit_hash: Optional[str] = field(
+        default=None, metadata=nested("spec.revision.git.commit")
+    )
+    config_namespace: Optional[str] = field(
+        default=None, metadata=nested("status.config.namespace")
+    )
+    config_name: Optional[str] = field(
+        default=None, metadata=nested("status.config.name")
+    )
+
+
+@define(kw_only=True)
+class AbstractGitCommitCollector(AbstractCommitCollector):
+    "Base class for a git server based collector."
+
+    username: str = field()
+    token: str = field(repr=False)
+
+    git_api: Optional[Url] = field(
+        default=None,
+        converter=attrs.converters.optional(pass_through(Url, Url.parse)),
+    )
+
+    tls_verify: bool = field(default=True)
+
+    repo_url_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPING["repo_url"],
+        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
+    )
+
+    def __attrs_post_init__(self):
+        if not (self.username and self.token):
+            logging.warning(
+                "No API_USER and no TOKEN given. This is okay for public repositories only."
+            )
+        elif (self.username and not self.token) or (not self.username and self.token):
+            logging.warning(
+                "username and token must both be set, or neither should be set. Unsetting both."
+            )
+            self.username = ""
+            self.token = ""
 
     def _get_watched_namespaces(self) -> set[str]:
         watched_namespaces = self.namespaces
@@ -143,39 +201,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         logging.info("Watching namespaces: %s" % (watched_namespaces))
         return watched_namespaces
 
-    def _get_openshift_obj_by_app(self, openshift_obj: str) -> Optional[dict]:
-        app_label = self.app_label
-
-        # use a jsonpath expression to find all values for the app label
-        jsonpath_str = "$['items'][*]['metadata']['labels']['" + str(app_label) + "']"
-
-        jsonpath_expr = parse(jsonpath_str)
-
-        found = jsonpath_expr.find(openshift_obj)
-
-        apps = {match.value for match in found}
-
-        if not apps:
-            return None
-
-        items_by_app = {}
-
-        for app in apps:
-            items_by_app[app] = list(
-                filter(
-                    lambda b: b.metadata.labels[app_label] == app, openshift_obj.items
-                )
-            )
-
-        return items_by_app
-
     def generate_metrics(self) -> Iterable[CommitMetric]:
-        """Method called by the collect to create a list of metrics to publish"""
+        "Create metrics from all labeled builds."
         # This will loop and look at OCP builds (calls get_git_commit_time)
 
         watched_namespaces = self._get_watched_namespaces()
 
-        # Initialize metrics list
         metrics = []
         for namespace in watched_namespaces:
             # Initialized variables
@@ -193,6 +224,16 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
+            builds = [
+                deserialize(
+                    build,
+                    Build,
+                    src_name="OpenShift dynamic Build",
+                    target_name="build info",
+                )
+                for build in builds.items
+            ]
+
             builds_by_app = self._get_openshift_obj_by_app(builds)
 
             if builds_by_app:
@@ -201,30 +242,35 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return metrics
 
     @abstractmethod
-    def get_commit_time(self, metric) -> Optional[CommitMetric]:
+    def get_commit_time(self, commit_input: CommitInfo) -> Optional[datetime]:
         # This will perform the API calls and parse out the necessary fields into metrics
         pass
 
-    def get_metrics_from_apps(self, apps, namespace):
+    def get_metrics_from_apps(self, apps: dict[str, list[Build]], namespace: str):
         """Expects a sorted array of build data sorted by app label"""
         metrics = []
         for app in apps:
 
             builds = apps[app]
-            jenkins_builds = list(
-                filter(lambda b: b.spec.strategy.type == "JenkinsPipeline", builds)
-            )
-            code_builds = list(
-                filter(
-                    lambda b: b.spec.strategy.type in ["Source", "Binary", "Docker"],
-                    builds,
-                )
-            )
+            jenkins_builds = [
+                build for build in builds if build.strategy == "JenkinsPipeline"
+            ]
+            code_builds = [
+                build
+                for build in builds
+                if build.strategy in {"Source", "Binary", "Docker"}
+            ]
+
             # assume for now that there will only be one repo/branch per app
             # For jenkins pipelines, we need to grab the repo data
             # then find associated s2i/docker builds from which to pull commit & image data
-            repo_url = self.get_repo_from_jenkins(jenkins_builds)
-            logging.debug("Repo URL for app %s is currently %s" % (app, repo_url))
+            if jenkins_builds:
+                repo_url = self.get_repo_from_jenkins(
+                    jenkins_builds[0].openshift_source
+                )
+            else:
+                repo_url = None
+            logging.debug("Repo URL for app %s is currently %s", app, repo_url)
 
             for build in code_builds:
                 try:
@@ -239,103 +285,107 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
         return metrics
 
-    def get_metric_from_build(self, build, app, namespace, repo_url):
-        errors = []
+    def get_metric_from_build(
+        self,
+        build: Build,
+        app: str,
+        namespace: str,
+        repo_url: Optional[str],
+    ) -> Optional[CommitMetric]:
         try:
-            metric = commit_metric_from_build(app, build, errors)
-
-            if not self._is_metric_ready(namespace, metric, build):
+            if not self._is_build_ready(namespace, build):
                 return None
 
-            # Populate annotations and labels required by
-            # subsequent _set_ functions.
-            metric.annotations = vars(build.metadata.annotations)
-            metric.labels = vars(build.metadata.labels)
-
-            metric = self._set_repo_url(metric, repo_url, build, errors)
-
-            metric = self._set_commit_hash_from_annotations(metric, errors)
-
-            metric = self._set_commit_timestamp(metric, errors)
-
-            if errors:
-                msg = (
-                    f"Missing data for CommitTime metric from Build "
-                    f"{namespace}/{build.metadata.name} in app {app}: "
-                    f"{'.'.join(str(e) for e in errors)}"
+            if build.image_hash is None:
+                logging.warning(
+                    "Build %s/%s for app %s is missing an image hash, skipping",
+                    namespace,
+                    build.metadata.name,
+                    app,
                 )
-                logging.warning(msg)
                 return None
 
-            return metric
-        except AttributeError as e:
-            # TODO: have we removed all the spots where we could get an AttributeError?
-            logging.warning(
-                "Build %s/%s in app %s is missing required attributes to collect data. Skipping.",
-                namespace,
-                build.metadata.name,
-                app,
+            missing = []
+
+            if not (repo_url := self._get_repo_url(repo_url, build)):
+                missing.append("repo URL")
+
+            commit_hash = build.commit_hash or self._get_commit_hash_from_annotations(
+                build.metadata.annotations
             )
-            logging.debug(e, exc_info=True)
-            return None
-        except Exception as e:
-            logging.error("Error encountered while getting CommitMetric info:")
-            logging.error(e, exc_info=True)
-            return None
 
-    def _set_commit_hash_from_annotations(
-        self, metric: CommitMetric, errors: list
-    ) -> CommitMetric:
-        if not metric.commit_hash:
-            commit_hash = metric.annotations.get(self.hash_annotation_name)
-            if commit_hash:
-                metric.commit_hash = commit_hash
-                logging.debug(
-                    "Commit hash for build %s provided by '%s'",
-                    metric.build_name,
-                    metric.commit_hash,
+            if not commit_hash:
+                missing.append("commit hash")
+
+            if missing:
+                logging.warning(
+                    "Missing %s for build %s/%s for app %s",
+                    " and ".join(missing),
+                    namespace,
+                    build.metadata.name,
+                    app,
                 )
-            else:
-                errors.append("Couldn't get commit hash from annotations")
-        return metric
+                return None
 
-    def _set_repo_url(
-        self, metric: CommitMetric, repo_url: str, build, errors: list
-    ) -> CommitMetric:
+            assert repo_url and commit_hash
+
+            input_ = CommitInfo(GitRepo.from_url(repo_url), commit_hash)
+
+            timestamp = self._get_commit_timestamp(input_)
+
+            if not timestamp:
+                # already logged
+                return None
+
+            return CommitMetric(
+                app,
+                namespace=namespace,
+                commit_hash=commit_hash,
+                commit_timestamp=timestamp,
+                image_hash=build.image_hash,
+            )
+        except Exception:
+            logging.error(
+                "Error encountered while getting CommitMetric info.", exc_info=True
+            )
+            return None
+
+    def _get_repo_url(
+        self,
+        repo_url: Optional[str],  # TODO: will be removed with jenkins support
+        build: Build,
+    ) -> Optional[str]:
         # Logic to get repo_url, first conditon wins
         # 1. Gather repo_url from the build from spec.source.git.uri
         # 2. Check if repo_url was passed to the function and use it
         # 3. Get repo_url from annotations
         # 4. Get repo_url from parent BuildConfig
 
-        if metric.repo_url:
+        if build.repo_url:
+            logging.debug(
+                "Repo URL for build %s provided by 'spec.source.git.uri': %s",
+                build.metadata.name,
+                build.repo_url,
+            )
+            return build.repo_url
+        elif repo_url:
+            return repo_url
+        elif annotation := build.metadata.annotations.get(
+            self.repo_url_annotation_name
+        ):
             logging.debug(
                 "Repo URL for build %s provided by '%s': %s",
-                metric.build_name,
-                CommitMetric._BUILD_MAPPING["repo_url"][0],
-                metric.repo_url,
+                build.metadata.name,
+                self.repo_url_annotation_name,
+                annotation,
             )
-        elif repo_url:
-            metric.repo_url = repo_url
+            return annotation
+        elif repo_url := self._get_repo_from_build_config(build):
+            return repo_url
         else:
+            return None
 
-            repo_from_annotation = metric.annotations.get(self.repo_url_annotation_name)
-            if repo_from_annotation:
-                metric.repo_url = repo_from_annotation
-                logging.debug(
-                    "Repo URL for build %s provided by '%s'",
-                    metric.build_name,
-                    metric.repo_url,
-                )
-            else:
-                metric.repo_url = self._get_repo_from_build_config(build)
-
-        if not metric.repo_url:
-            errors.append("Couldn't get repo_url")
-
-        return metric
-
-    def _is_metric_ready(self, namespace: str, metric: CommitMetric, build) -> bool:
+    def _is_build_ready(self, namespace: str, build: Build) -> bool:
         """
         Determine if a build is ready to be examined.
 
@@ -345,22 +395,21 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         These are valid conditions and we shouldn't clog the logs warning about it.
         However, if it's new/pending/running and _does_ have an image, we might as well continue.
         """
-        build_status = get_nested(build, "status.phase", default=None)
-        if build_status in {"Failed", "Error", "Cancelled"}:
+        if build.status in {"Failed", "Error", "Cancelled"}:
             logging.debug(
                 "Build %s/%s had status %s, skipping",
                 namespace,
                 build.metadata.name,
-                build_status,
+                build.status,
             )
             return False
-        elif build_status in {"New, Pending", "Running"}:
-            if metric.image_hash is None:
+        elif build.status in {"New, Pending", "Running"}:
+            if build.image_hash is None:
                 logging.debug(
                     "Build %s/%s has status %s and doesn't have an image_hash yet, skipping",
                     namespace,
                     build.metadata.name,
-                    build_status,
+                    build.status,
                 )
                 return False
             else:
@@ -368,69 +417,68 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         else:
             return True
 
-    # TODO: be specific about the API modifying in place or returning a new metric.
-    # Right now, it appears to do both.
-    def _set_commit_timestamp(
-        self, metric: CommitMetric, errors: list
-    ) -> Optional[CommitMetric]:
+    # TODO: datetime
+    def _get_commit_timestamp(self, input_: CommitInfo) -> Optional[datetime]:
         """
         Check the cache for the commit_time.
         If absent, call the API implemented by the subclass.
         """
-        if metric.commit_hash and metric.commit_hash not in self.commit_dict:
-            logging.debug(
-                "sha: %s, commit_timestamp not found in cache, executing API call.",
-                metric.commit_hash,
-            )
-            try:
-                metric = self.get_commit_time(metric)
-            except UnsupportedGITProvider as ex:
-                errors.append(ex.message)
-                return None
-            # If commit time is None, then we could not get the value from the API
-            if metric.commit_time is None:
-                errors.append("Couldn't get commit time")
-            else:
-                # Add the timestamp to the cache
-                self.commit_dict[metric.commit_hash] = metric.commit_timestamp
-        elif metric.commit_hash:
-            metric.commit_timestamp = self.commit_dict[metric.commit_hash]
+        if timestamp := self.committime_cache.get(input_.commit_hash):
             logging.debug(
                 "Returning sha: %s, commit_timestamp: %s, from cache.",
-                metric.commit_hash,
-                metric.commit_timestamp,
+                input_.commit_hash,
+                timestamp,
             )
+            return timestamp
 
-        return metric
+        logging.debug(
+            "sha: %s, commit_timestamp not found in cache, executing API call.",
+            input_.commit_hash,
+        )
+        try:
+            timestamp = self.get_commit_time(input_)
+            if timestamp is None:
+                logging.warning(
+                    "Failed to get timestamp for commit %s at %s",
+                    input_.commit_hash,
+                    input_.repo_url,
+                )
+            else:
+                # Add the timestamp to the cache
+                self.committime_cache[input_.commit_hash] = timestamp
 
-    def get_repo_from_jenkins(self, jenkins_builds):
-        if jenkins_builds:
-            # First, check for cases where the source url is in pipeline params
-            git_repo_regex = re.compile(
-                r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+){0,1}/*(.*)"
-            )
-            for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
-                logging.debug("Searching %s=%s for git urls" % (env.name, env.value))
-                try:
-                    result = git_repo_regex.match(env.value)
-                except TypeError:
-                    result = None
+            return timestamp
+        except UnsupportedGITProvider as ex:
+            logging.warning(ex)
+            return None
+
+    def get_repo_from_jenkins(self, jenkins_build: Any) -> Optional[str]:
+        # First, check for cases where the source url is in pipeline params
+        git_repo_regex = re.compile(r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
+        for env in jenkins_build.spec.strategy.jenkinsPipelineStrategy.env:
+            logging.debug("Searching %s=%s for git urls" % (env.name, env.value))
+            try:
+                result = git_repo_regex.match(env.value)
                 if result:
                     logging.debug("Found result %s" % env.name)
                     return env.value
+            except TypeError:
+                # TODO: this is likely a holdover from either trying to
+                # use .value on None, or passing None to match.
+                # Should clean this up.
+                pass
 
-            try:
-                # Then default to the repo listed in '.spec.source.git'
-                return jenkins_builds[0].spec.source.git.uri
-            except AttributeError:
-                logging.debug(
-                    "JenkinsPipelineStrategy build %s has no git repo configured. "
-                    % jenkins_builds[0].metadata.name
-                    + "Will check for source URLs in params."
-                )
+        try:
+            # Then default to the repo listed in '.spec.source.git'
+            return jenkins_build.spec.source.git.uri
+        except AttributeError:
+            logging.debug(
+                "JenkinsPipelineStrategy build %s has no git repo configured. Will check for source URLs in params.",
+                jenkins_build.metadata.name,
+            )
         # If no repo is found, we will return None, which will be handled later on
 
-    def _get_repo_from_build_config(self, build):
+    def _get_repo_from_build_config(self, build: Build) -> Optional[str]:
         """
         Determines the repository url from the parent BuildConfig that created the Build resource in case
         the BuildConfig has the git uri but the Build does not
@@ -441,14 +489,22 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             api_version="build.openshift.io/v1", kind="BuildConfig"
         )
         build_config = v1_build_configs.get(
-            namespace=build.status.config.namespace, name=build.status.config.name
+            namespace=build.config_namespace, name=build.config_name
         )
-        if build_config:
-            if build_config.spec.source.git:
-                git_uri = str(build_config.spec.source.git.uri)
-                if git_uri.endswith(".git"):
-                    return git_uri
-                else:
-                    return git_uri + ".git"
+
+        if build_config and (
+            git_uri := get_nested(build_config, "spec.source.git.uri", default=None)
+        ):
+            git_uri = str(build_config.spec.source.git.uri)
+            if not git_uri.endswith(".git"):
+                git_uri += ".git"
+
+            logging.debug(
+                "Repo URL for build %s provided by BuildConfig '%s': %s",
+                build.metadata.name,
+                self.repo_url_annotation_name,
+                git_uri,
+            )
+            return git_uri
 
         return None
