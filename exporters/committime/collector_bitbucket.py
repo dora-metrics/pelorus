@@ -1,15 +1,15 @@
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Optional, cast
+from typing import Optional
 
 import requests
 import requests.exceptions
 from attrs import define, field
 
 import pelorus
-from committime import CommitMetric
-from committime.collector_base import AbstractCommitCollector, UnsupportedGITProvider
+from committime import CommitInfo, GitRepo
+from committime.collector_base import AbstractGitCommitCollector, UnsupportedGITProvider
 from pelorus.timeutil import parse_tz_aware
 from pelorus.utils import set_up_requests_session
 
@@ -23,13 +23,13 @@ class APIVersion(ABC):
         ...
 
     @abstractmethod
-    def commit_url(self, metric: CommitMetric) -> str:
+    def commit_url(self, info: CommitInfo) -> str:
         "Get the API URL for the given commit"
         ...
 
     @abstractmethod
-    def update_metric_from_api(self, metric: CommitMetric, api_response: dict):
-        "Update the metric's timestamp info from the API response."
+    def timestamp_from_api(self, info: CommitInfo, api_response: dict) -> datetime:
+        "Get timestamp from the API response."
         ...
 
     def __str__(self):
@@ -44,35 +44,29 @@ class Version1(APIVersion):
     def test_url(self, server: str) -> str:
         return pelorus.url_joiner(server, self.root, self.test_path)
 
-    def commit_url(self, metric: CommitMetric) -> str:
+    def commit_url(self, info: CommitInfo) -> str:
         "Handle the URL for v1 specially."
 
-        git_server = metric.git_server
-        sha = metric.commit_hash
+        original_repo, sha = info
 
-        # URL munging copied from original code.
-        # TODO: this is messy. We should investigate the parsing that CommitMetric is doing.
+        git_server = original_repo.server
+
+        # URL munging adapted from older code.
 
         # Due to the BB V1 git pattern differences, need remove '/scm' and parse again.
-        old_url = metric.repo_url
+        old_url = original_repo.url
         # Parse out the V1 /scm, for whatever reason why it is present.
         new_url = old_url.replace("/scm", "")
-        # set the new url, so the parsing will happen
-        metric.repo_url = new_url
-        # set the new project name
-        project_name = metric.repo_project
-        # set the new group
-        group = metric.repo_group
-        # set the URL back to the original
-        metric.repo_url = old_url
+        repo = GitRepo.from_url(new_url)
 
         return pelorus.url_joiner(
             git_server,
             self.root,
-            self.pattern.format(group=group, project=project_name, commit=sha),
+            self.pattern.format(group=repo.group, project=repo.project, commit=sha),
         )
 
-    def update_metric_from_api(self, metric: CommitMetric, api_response: dict):
+    def timestamp_from_api(self, info: CommitInfo, api_response: dict) -> datetime:
+        ...
         # API V1 uses unix time
         commit_timestamp = api_response["committerTimestamp"]
 
@@ -80,18 +74,19 @@ class Version1(APIVersion):
         converted_timestamp = commit_timestamp / 1000
 
         timestamp = datetime.fromtimestamp(converted_timestamp, tz=timezone.utc)
+        return timestamp
 
-        logging.debug(
-            "API v1 returned sha: %s, timestamp: %s (%s)",
-            metric.commit_hash,
-            timestamp,
-            converted_timestamp,
-        )
-        # set the timestamp in the metric
-        metric.commit_timestamp = converted_timestamp
+        # logging.debug(
+        #     "API v1 returned sha: %s, timestamp: %s (%s)",
+        #     metric.commit_hash,
+        #     timestamp,
+        #     converted_timestamp,
+        # )
+        # # set the timestamp in the metric
+        # metric.commit_timestamp = converted_timestamp
 
-        # convert the time stamp to datetime and set in metric
-        metric.commit_time = timestamp.isoformat()
+        # # convert the time stamp to datetime and set in metric
+        # metric.commit_time = timestamp.isoformat()
 
 
 class Version2(APIVersion):
@@ -102,34 +97,31 @@ class Version2(APIVersion):
     def test_url(self, server: str) -> str:
         return pelorus.url_joiner(server, self.root, self.test_path)
 
-    def commit_url(self, metric: CommitMetric) -> str:
-        server = metric.git_server
-
-        project = metric.repo_project
-        commit = cast(str, metric.commit_hash)
-        group = metric.repo_group
+    def commit_url(self, info: CommitInfo) -> str:
+        repo, commit = info
 
         return pelorus.url_joiner(
-            server,
+            repo.server,
             self.root,
-            self.pattern.format(group=group, project=project, commit=commit),
+            self.pattern.format(group=repo.group, project=repo.project, commit=commit),
         )
 
-    def update_metric_from_api(self, metric: CommitMetric, api_response: dict):
+    def timestamp_from_api(self, info: CommitInfo, api_response: dict) -> datetime:
         # API V2 has a human-readable time, which needs to be parsed.
         commit_time = api_response["date"]
         timestamp = parse_tz_aware(commit_time, _DATETIME_FORMAT)
+        return timestamp
 
-        logging.debug(
-            "API v2 returned sha: %s, timestamp: %s (%s)",
-            metric.commit_hash,
-            timestamp,
-            commit_time,
-        )
-        # set the commit time from the API
-        metric.commit_time = commit_time
-        # set the timestamp after conversion
-        metric.commit_timestamp = timestamp.timestamp()
+        # logging.debug(
+        #     "API v2 returned sha: %s, timestamp: %s (%s)",
+        #     metric.commit_hash,
+        #     timestamp,
+        #     commit_time,
+        # )
+        # # set the commit time from the API
+        # metric.commit_time = commit_time
+        # # set the timestamp after conversion
+        # metric.commit_timestamp = timestamp.timestamp()
 
 
 _SUPPORTED_API_VERSIONS = (Version2(), Version1())
@@ -138,7 +130,7 @@ _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 
 
 @define(kw_only=True)
-class BitbucketCommitCollector(AbstractCommitCollector):
+class BitbucketCommitCollector(AbstractGitCommitCollector):
     # Default http headers needed for API calls
     DEFAULT_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 
@@ -153,8 +145,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         )
         self.session.headers.update(self.DEFAULT_HEADERS)
 
-    def get_commit_time(self, metric: CommitMetric):
-        git_server = metric.git_server
+    def get_commit_time(self, info: CommitInfo):
+        git_server = info.repo.server
 
         # do a simple check for hosted Git services.
         if (
@@ -170,36 +162,29 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         try:
             api_version = self.get_api_version(git_server)
             if api_version is None:
-                return metric
+                return None
 
-            api_dict = self.get_commit_information(api_version, metric)
+            api_dict = self.get_commit_information(api_version, info)
 
             if api_dict is None:
                 return None
 
-            api_version.update_metric_from_api(metric, api_dict)
-
-            return metric
+            return api_version.timestamp_from_api(info, api_dict)
         except requests.exceptions.SSLError as e:
             logging.error(
-                "TLS error talking to %s for build %s: %s",
+                "TLS error talking to %s: %s",
                 git_server,
-                metric.build_name,
                 e,
             )
         except Exception:
             logging.error(
-                "Failed processing commit time for build %s",
-                metric.build_name,
+                "Failed processing commit time",
                 exc_info=True,
             )
             raise
-        return metric
 
     def get_commit_information(
-        self,
-        api_version: APIVersion,
-        metric: CommitMetric,
+        self, api_version: APIVersion, info: CommitInfo
     ) -> Optional[dict]:
         """
         Call the bitbucket API to get commit information.
@@ -215,7 +200,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         """
         api_response = None
         try:
-            url = api_version.commit_url(metric)
+            url = api_version.commit_url(info)
 
             response = self.session.get(url)
             response.encoding = "utf-8"
@@ -228,14 +213,13 @@ class BitbucketCommitCollector(AbstractCommitCollector):
 
             logging.debug(
                 (
-                    "For project %(project)s, repo %(repo)s, build %(build)s, "
+                    "For project %(project)s, repo %(repo)s, "
                     "commit %(commit)s BitBucket returned %(response)s"
                 ),
                 dict(
-                    project=metric.repo_name,
-                    repo=metric.repo_url,
-                    build=metric.build_name,
-                    commit=metric.commit_hash,
+                    project=info.repo.name,
+                    repo=info.repo_url,
+                    commit=info.commit_hash,
                     response=response.text,
                 ),
             )
@@ -244,28 +228,26 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         except requests.HTTPError as e:
             logging.error(
                 (
-                    "HTTP Error while searching for project %(project)s, repo %(repo)s, build %(build)s, "
+                    "HTTP Error while searching for project %(project)s, repo %(repo)s, "
                     "commit %(commit)s: %(http_err)s"
                 ),
                 dict(
-                    project=metric.repo_name,
-                    repo=metric.repo_url,
-                    build=metric.build_name,
-                    commit=metric.commit_hash,
+                    project=info.repo.name,
+                    repo=info.repo_url,
+                    commit=info.commit_hash,
                     http_err=e,
                 ),
             )
         except requests.exceptions.JSONDecodeError as e:
             logging.error(
                 (
-                    "Response for project %(project)s, repo %(repo)s, build %(build)s, "
+                    "Response for project %(project)s, repo %(repo)s, "
                     "commit %(commit)s was not valid JSON: %(json_err)s"
                 ),
                 dict(
-                    project=metric.repo_name,
-                    repo=metric.repo_url,
-                    build=metric.build_name,
-                    commit=metric.commit_hash,
+                    project=info.repo.name,
+                    repo=info.repo_url,
+                    commit=info.commit_hash,
                     json_err=e,
                 ),
             )

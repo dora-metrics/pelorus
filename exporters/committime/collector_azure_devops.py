@@ -5,17 +5,18 @@ from attrs import converters, define, field
 from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 
-from committime import CommitMetric
+from committime import CommitInfo
+from pelorus.timeutil import second_precision
 from pelorus.config.converters import pass_through
 from pelorus.utils import Url
 
-from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
+from .collector_base import AbstractGitCommitCollector, UnsupportedGITProvider
 
 DEFAULT_AZURE_API = Url.parse("https://dev.azure.com")
 
 
 @define(kw_only=True)
-class AzureDevOpsCommitCollector(AbstractCommitCollector):
+class AzureDevOpsCommitCollector(AbstractGitCommitCollector):
     collector_name = "Azure-DevOps"
 
     # overrides with default
@@ -24,10 +25,8 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         converter=converters.optional(pass_through(Url, Url.parse)),
     )
 
-    # base class impl
-    def get_commit_time(self, metric: CommitMetric):
-        """Method called to collect data and send to Prometheus"""
-        git_server = metric.git_fqdn
+    def get_commit_time(self, commit_input: CommitInfo):
+        git_server = commit_input.repo.fqdn
 
         if (
             "github" in git_server
@@ -38,8 +37,8 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
             raise UnsupportedGITProvider(
                 "Skipping non Azure DevOps server, found %s" % (git_server)
             )
-        logging.debug("metric.repo_project %s" % (metric.repo_project))
-        logging.debug("metric.git_api %s", self.git_api)  # TODO: metric, not self
+
+        logging.debug("metric.repo_project %s", commit_input.repo.project)
 
         # Fill in with your personal access token and org URL
         # personal_access_token = 'YOURPAT'
@@ -47,46 +46,26 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         personal_access_token = self.token
         organization_url = self.git_api.url
 
-        # Create a connection to the org
         credentials = BasicAuthentication("", personal_access_token)
         connection = Connection(base_url=organization_url, creds=credentials)
 
-        # Get a client (the "git" client provides access to commits)
         git_client = connection.clients.get_git_client()
 
         commit = git_client.get_commit(
-            commit_id=metric.commit_hash,
-            repository_id=metric.repo_project,
-            project=metric.repo_project,
+            commit_id=commit_input.commit_hash,
+            repository_id=commit_input.repo.project,
+            project=commit_input.repo.project,
         )
 
-        timestamp: datetime = commit.committer.date
-        timestamp = timestamp.replace(microsecond=0)  # second precision
-
-        logging.debug("Commit %s", timestamp)
         if hasattr(commit, "innerExepction"):
-            # This will occur when trying to make an API call to non-Github
             logging.warning(
-                "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s"
-                % (
-                    metric.build_name,
-                    metric.commit_hash,
-                    metric.repo_url,
-                    str(commit.message),
-                )
+                "Unable to retrieve commit time for hash: %s, url: %s. Got http code: %s",
+                commit_input.commit_hash,
+                commit_input.repo_url,
+                commit.message,
             )
-        else:
-            try:
-                metric.commit_time = timestamp.isoformat("T", "auto")
-                logging.info("metric.commit_time %s", timestamp)
-                metric.commit_timestamp = (
-                    timestamp.timestamp()
-                )  # hopefully they haven't provided a naive datetime
-            except Exception:
-                logging.error(
-                    "Failed processing commit time for build %s" % metric.build_name,
-                    exc_info=True,
-                )
-                logging.debug(commit)
-                raise
-        return metric
+            return None
+        timestamp: datetime = second_precision(commit.committer.date)
+
+        logging.debug("Commit %s:%s", commit_input.commit_hash, timestamp)
+        return timestamp  # hopefully they haven't provided a naive datetime

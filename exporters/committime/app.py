@@ -16,6 +16,7 @@ from committime.collector_azure_devops import AzureDevOpsCommitCollector
 from committime.collector_base import (
     COMMIT_DATE_ANNOTATION_ENV,
     AbstractCommitCollector,
+    AbstractGitCommitCollector,
 )
 from committime.collector_bitbucket import BitbucketCommitCollector
 from committime.collector_gitea import GiteaCommitCollector
@@ -67,7 +68,7 @@ class ImageCommittimeConfig:
     )
 
     date_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_time"],
+        default=CommitMetric._ANNOTATION_MAPPING["commit_time"],
         metadata=env_vars(COMMIT_DATE_ANNOTATION_ENV),
     )
 
@@ -83,8 +84,6 @@ class ImageCommittimeConfig:
         return ImageCommitCollector(
             kube_client=self.kube_client,
             date_format=self.date_format,
-            username="",
-            token="",
         )
 
 
@@ -126,7 +125,7 @@ class GitCommittimeConfig:
             self.username = ""
             self.token = ""
 
-    def make_collector(self) -> AbstractCommitCollector:
+    def make_collector(self) -> AbstractGitCommitCollector:
         git_provider = self.git_provider
 
         if git_provider == "gitlab":
