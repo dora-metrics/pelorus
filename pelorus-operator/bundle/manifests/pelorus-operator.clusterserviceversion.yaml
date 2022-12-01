@@ -30,7 +30,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.24.1
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
-  name: pelorus-operator.v0.0.55
+  name: pelorus-operator.v0.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -245,7 +245,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/migtools/pelorus-operator:0.0.55
+                image: quay.io/migtools/pelorus-operator:0.0.1
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -337,4 +337,4 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.55
+  version: 0.0.1
