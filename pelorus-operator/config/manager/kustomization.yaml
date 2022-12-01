@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/migtools/pelorus-operator
-  newTag: 0.0.55
+  newTag: 0.0.1
