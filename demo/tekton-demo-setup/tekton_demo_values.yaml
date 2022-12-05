@@ -56,4 +56,3 @@ exporters:
     - name: APP_LABEL
       value: production_issue/name
 
-snapshot_schedule: "@monthly"
