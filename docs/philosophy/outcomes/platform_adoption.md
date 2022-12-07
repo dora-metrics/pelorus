@@ -83,7 +83,7 @@ _Adoption Lead Time ( $LT$ )_
     LT = a_{E} - a_{S}
     $$
 
-_Average Adoption Lead Time ( $\overline{x}LT$ )_
+**_Average Adoption Lead Time ( $\overline{x}LT$ )_**
 
 :   Given a collection of $N$ individual adoption lead times ( $LT_{1}..LT_{N}$ ), the _average adoption lead time_ $\overline{x}LT$ can be calculated as follows:
 
@@ -130,7 +130,7 @@ _Adoptions at Time $t_{2}$ ( $a^{t_{2}}$)_
     a^{t_{2}} = count(aE)[t_{2}]
     $$
 
-_Adoption Rate $AR$_
+**_Adoption Rate $AR$_**
 
 $$
 AR = (a^{t_{2}} - a^{t_{2}} - 1) * 100
@@ -153,9 +153,15 @@ _Time range ( $T$ )_
 
 :   The range of time in which you want to evaluate retention. For example:
 
-    * The past month
-    * The past quarter
-    * The past 6 months
+    * One month
+    * 3 months
+    * 6 months
+
+    Using this time range, we also need to set three timestamps:
+
+    1. The end of the time period we are measuring; $T_{0}$ (typically $T_{0} = now()$)
+    2. The start time of the time period; $T_{1} = T_{0} - T$
+    3. The start time of the previous time period; $T_{2} = T_{0} - 2T$
 
 _Adoption events by user ( $a_{E}\{u\}$ )_
 
@@ -171,15 +177,59 @@ _Latest adoption event by user ( $la_{E}\{u\}$ )_
     la_{E}\{u\} = max(a_{E}\{u\})
     $$
 
-$$
-RR = \left(\frac{u_{E} - u_{N}}{u_{S}}\right) * 100
-$$
+_Active users_
+
+:   Given the set of all _latest adoption events by user ( $la_{E}\{u\}$ )_ above and the timestamp of the start of the time period we are measuring ( $T_{1}$ ), we then evaluate a binary expression to determine whether the user is "active":
+
+    $$
+    la_{E}\{u\} > T_{1}
+    $$
+
+    We can then count the total _existing active users_ based on the above filter:
+
+    $$
+    u_{E} = count(la_{E}\{u\} > T_{1})
+    $$
+
+**_Retention Rate_**
+
+:   Explain
+
+    $$
+    RR = \left(\frac{u_{E} - u_{N}}{u_{S}}\right) * 100
+    $$
 
 ### :fontawesome-solid-people-roof: __Operational efficiency__
 
 As our platforms get adopted and we start seeing success from a user perspective, it becomes important to monitor the financial sustainability of maintaining and evolving the platforms as they grow. This helps ensure that we are actually getting a _return on investment_ as the platform scales. To track this, we measure _operational efficiency_ -- the ratio of effort required to maintain and evolve the platform to level of active adoption of the platform.
 
 The simplest way to calculate _operational efficiency_ is by comparing the number of people maintaining the platform to the number of active _users_ the platform has.
+
+#### Data Points
+
+#### Formulas
+
+_Active users_
+
+:   Given the set of all _latest adoption events by user ( $la_{E}\{u\}$ )_ above and the timestamp of the start of the time period we are measuring ( $T_{1}$ ), we then evaluate a binary expression to determine whether the user is "active":
+
+    $$
+    la_{E}\{u\} > T_{1}
+    $$
+
+    We can then count the total _existing active users_ based on the above filter:
+
+    $$
+    u_{E} = count(la_{E}\{u\} > T_{1})
+    $$
+
+**_Operational Efficiency_**
+
+:   Given the number of currently active users ( $u_{E}$ ) and the number of full time employees ( $S_{fte}$ ) supporting the tech, we calculate operational efficiency ( $OR$ ) using a simple ratio:
+
+    $$
+    OR = \frac{S_{fte}}{u_{E}}
+    $$
 
 ### :material-account-heart-outline: __Developer Satisfaction__
 
