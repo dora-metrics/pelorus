@@ -12,6 +12,5 @@ spec:
   extra_prometheus_hosts: null
   openshift_prometheus_basic_auth_pass: changeme
   openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
-  snapshot_schedule: '@monthly'
   
   

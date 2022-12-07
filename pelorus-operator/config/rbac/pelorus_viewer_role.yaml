@@ -2,6 +2,13 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: pelorus-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: pelorus-operator
+    app.kubernetes.io/part-of: pelorus-operator
+    app.kubernetes.io/managed-by: kustomize
   name: pelorus-viewer-role
 rules:
 - apiGroups:
