@@ -55,8 +55,9 @@ Pelorus works by integrating with your application platforms, developer tools, a
 -   # :simple-gitlab:
 -   # :simple-bitbucket:
 -   # :simple-jirasoftware:
--   # :fontawesome-brands-servicestack:
+-   # :simple-azuredevops:
 -   # :simple-trello:
+-   # :simple-docker:
 
 </div>
 </div>
