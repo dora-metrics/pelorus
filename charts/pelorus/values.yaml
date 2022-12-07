@@ -66,5 +66,3 @@ exporters:
 #    extraEnv:
 #    - name: APP_FILE
 #      value: extra/releasetime/app.py
-
-snapshot_schedule: "@monthly"
