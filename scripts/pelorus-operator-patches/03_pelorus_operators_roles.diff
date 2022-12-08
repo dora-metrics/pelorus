@@ -11,7 +11,7 @@
  # Comment the following 4 lines if you want to disable
 --- /dev/null	2022-10-24 10:19:28.874279599 +0200
 +++ config/rbac/pelorus_manager_role.yaml	2022-11-25 14:01:11.286892725 +0100
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,92 @@
 +apiVersion: rbac.authorization.k8s.io/v1
 +kind: ClusterRole
 +metadata:
@@ -33,7 +33,6 @@
 +  - "batch"
 +  resources:
 +  - "jobs"
-+  - "cronjobs"
 +  verbs:
 +  - list
 +  - create
@@ -93,6 +92,18 @@
 +  - watch
 +  - create
 +  - delete
++# Required to build and deploy exporters from the source code
++- apiGroups:
++  - "build.openshift.io"
++  resources:
++  - "buildconfigs"
++  verbs:
++  - get
++  - create
++  - delete
++  - list
++  - watch
++  - patch
 --- /dev/null
 +++ config/rbac/pelorus_role_binding.yaml
 @@ -0,0 +1,12 @@

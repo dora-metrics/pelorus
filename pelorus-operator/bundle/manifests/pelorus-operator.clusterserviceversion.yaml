@@ -27,9 +27,9 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    operators.operatorframework.io/builder: operator-sdk-v1.25.2
+    operators.operatorframework.io/builder: operator-sdk-v1.25.3
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
-  name: pelorus-operator.v0.0.3
+  name: pelorus-operator.v0.0.5
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -88,27 +88,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - rolebindings
-          - roles
-          verbs:
-          - '*'
-        - apiGroups:
-          - apps.openshift.io
-          resources:
-          - deploymentconfigs
-          verbs:
-          - '*'
-        - apiGroups:
-          - integreatly.org
-          resources:
-          - grafanadashboards
-          - grafanadatasources
-          - grafanas
-          verbs:
-          - '*'
-        - apiGroups:
           - image.openshift.io
           resources:
           - imagestreams
@@ -138,6 +117,27 @@ spec:
           verbs:
           - '*'
         - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          - roles
+          verbs:
+          - '*'
+        - apiGroups:
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          verbs:
+          - '*'
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - grafanadashboards
+          - grafanadatasources
+          - grafanas
+          verbs:
+          - '*'
+        - apiGroups:
           - operators.coreos.com
           resources:
           - operatorgroups
@@ -152,7 +152,6 @@ spec:
           - batch
           resources:
           - jobs
-          - cronjobs
           verbs:
           - list
           - create
@@ -208,6 +207,17 @@ spec:
           - watch
           - create
           - delete
+        - apiGroups:
+          - build.openshift.io
+          resources:
+          - buildconfigs
+          verbs:
+          - get
+          - create
+          - delete
+          - list
+          - watch
+          - patch
         - apiGroups:
           - authentication.k8s.io
           resources:
@@ -266,7 +276,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/migtools/pelorus-operator:0.0.3
+                image: quay.io/migtools/pelorus-operator:0.0.5
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -358,4 +368,4 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.3
+  version: 0.0.5
