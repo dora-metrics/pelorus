@@ -19,7 +19,6 @@ rules:
   - "batch"
   resources:
   - "jobs"
-  - "cronjobs"
   verbs:
   - list
   - create
@@ -79,3 +78,15 @@ rules:
   - watch
   - create
   - delete
+# Required to build and deploy exporters from the source code
+- apiGroups:
+  - "build.openshift.io"
+  resources:
+  - "buildconfigs"
+  verbs:
+  - get
+  - create
+  - delete
+  - list
+  - watch
+  - patch
