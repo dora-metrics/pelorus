@@ -1,13 +1,15 @@
---- config/default/manager_auth_proxy_patch.yaml.original	2022-11-27 15:30:36.807768486 +0100
-+++ config/default/manager_auth_proxy_patch.yaml	2022-11-27 15:30:52.728823695 +0100
-@@ -31,3 +31,9 @@ spec:
-         - "--metrics-bind-address=127.0.0.1:8080"
-         - "--leader-elect"
-         - "--leader-election-id=pelorus-operator"
-+        resources:
-+          limits:
+--- config/manager/manager.yaml.original	2022-12-09 12:27:40.476668121 +0100
++++ config/manager/manager.yaml	2022-12-09 12:27:59.770764191 +0100
+@@ -92,10 +92,8 @@
+         # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+         resources:
+           limits:
+-            cpu: 500m
+-            memory: 128Mi
 +            memory: 512Mi
-+          requests:
-+            cpu: 40m
+           requests:
+-            cpu: 10m
+-            memory: 64Mi
 +            memory: 512Mi
-
+       serviceAccountName: controller-manager
+       terminationGracePeriodSeconds: 10
