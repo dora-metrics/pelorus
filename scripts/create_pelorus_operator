@@ -40,18 +40,20 @@ function print_help() {
     printf "\t  -d\tpath to EMPTY destination folder, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_DIR}"
     printf "\t  -p\tpath to DIR with operator patches to be applied, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_PATCHES_DIR}"
     printf "\t  -v\toperator version to be used in a format x.y.z. If not set z+1 is used.\n"
+    printf "\t  -n\tdo NOT update version (just for development) %s\n"
     exit 0
 }
 
 ### Options
 OPTIND=1
-while getopts "s:d:p:h?v:" option; do
+while getopts "s:d:p:n?:h?v" option; do
     case "$option" in
     h|\?) print_help;;
     s)    source_dir=$OPTARG;;
     d)    destination_dir=$OPTARG;;
     p)    patches_dir=$OPTARG;;
     v)    operator_ver=$OPTARG;;
+    n)    no_update=true;;
     esac
 done
 
@@ -85,8 +87,12 @@ fi
 # Check if destination directory is empty and exists
 if [ -d "${destination_dir}" ]; then
 	if [ "$(ls -A "${destination_dir}")" ]; then
-        echo "ERROR: Destination directory ${destination_dir} is not empty, can not continue."
-        exit 2
+        # echo "ERROR: Destination directory ${destination_dir} is not empty, can not continue."
+        # exit 2
+        file_version=$(cat ${destination_dir}/Makefile | grep "VERSION ?= ")
+        file_version=${file_version:11}
+        echo "WARNING: Destination directory ${destination_dir} is not empty, deleting files."
+        rm -rf ${destination_dir} && mkdir ${destination_dir}
 	fi
 else
 	echo "ERROR: Destination directory ${destination_dir} do not exists, please create one and re-run script."
@@ -99,21 +105,32 @@ pushd "${destination_dir}" || exit 2
     echo "INFO: Creating api"
     operator-sdk create api --helm-chart="${source_dir}" || exit 2
 
+# TBD: The symlink is not working. Manager do not contain any charts if they are symlinked
+    # We do want to have symlink to original helm-charts instead of direct copy,
+    # but ONLY when the pelorus-operator is within pelorus git repository, otherwise leave the copied version
+    # The check assumes the git pelorus charts are one level up from the pelorus-operator folder
+#    if git remote -v | grep \/pelorus.git; then
+#        [ -d "${DEFAULT_OPERATOR_HELM_CHART_SUBDIR}" ] && [ -d "../charts/pelorus" ] && echo "Removing ${DEFAULT_OPERATOR_HELM_CHART_SUBDIR} directory" && rm -rf "${DEFAULT_OPERATOR_HELM_CHART_SUBDIR}"
+#        pushd helm-charts || exit 2
+#            echo "Creating symlink from helm-charts/pelorus to  directory"
+#            ln -s ../"${DEFAULT_PELORUS_CHARTS_SUBDIR}" ./pelorus
+#        popd || exit 2
+#    fi
+
     # Correct operator version, to be latest +1
     OPERATOR_VERSIONS=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq ".tags[] | select(.end_ts == null) | .name" | sed -e 's|\"||g' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' -o | sort --reverse)
     OPERATOR_VERSION=$(echo "$OPERATOR_VERSIONS" | head -1 )
     echo "INFO: Current operator version: ${OPERATOR_VERSION}"
-
-    if [ -z ${operator_ver+x} ]; then
-        NEW_OPERATOR_VERSION=$(echo "${OPERATOR_VERSION}" | awk -F. -v OFS=. '{$NF += 1 ; print}')
-        # Case where operator was never in the repo
-        if [ "$NEW_OPERATOR_VERSION" -eq "1" ]; then
-          NEW_OPERATOR_VERSION=0.0.1
-        fi
-    else
-        NEW_OPERATOR_VERSION="${operator_ver}"
+    if [ ! -z ${file_version} ] && [ ${file_version} != ${OPERATOR_VERSION} ]; then
+        echo "ERROR: file version ${file_version} does not match released version ${OPERATOR_VERSION}."
+        exit 2
     fi
-
+    if $no_update; then
+        NEW_OPERATOR_VERSION=${OPERATOR_VERSION}
+    else
+        NEW_OPERATOR_VERSION=$(echo ${OPERATOR_VERSION} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+    fi
+    echo "INFO: New operator version: ${NEW_OPERATOR_VERSION}"
     sed -i "s/VERSION ?= 0.0.1/VERSION ?= ${NEW_OPERATOR_VERSION}/g" Makefile || exit 2
 
     # Correct IMAGE_TAG_BASE

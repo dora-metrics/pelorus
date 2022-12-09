@@ -272,3 +272,9 @@ pre-commit-all: $(PELORUS_VENV)
 clean-dev-env:
 	rm -rf ${PELORUS_VENV}
 	find . -iname "*.pyc" -delete
+
+## check-bump-pelorus-operator: check if there are available bumps for pelorus operator versions
+check-bump-pelorus-operator: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/install_dev_tools -v $(PELORUS_VENV) && \
+	scripts/create_pelorus_operator -n

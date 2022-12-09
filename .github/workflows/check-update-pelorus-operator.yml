@@ -1,0 +1,25 @@
+name: Check for updates for pelorus operator
+
+on:
+  schedule:
+    - cron:  '0 0 * * 1' # Every Monday at 00:00 UTC
+
+jobs:
+  project-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            **/requirements*.txt
+            pyproject.toml
+
+      - name: Check if Pelorus operator was bumped
+        run: |
+          make check-bump-pelorus-operator
+          git restore pelorus-operator/helm-charts/pelorus/Chart.lock
+          test -z "$(git status --short)"
