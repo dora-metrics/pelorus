@@ -32,7 +32,7 @@ import pelorus
 from committime import CommitInfo, CommitMetric, GitRepo
 from pelorus.config import env_vars
 from pelorus.config.converters import comma_separated, pass_through
-from pelorus.deserialization import deserialize, nested
+from pelorus.deserialization import deserialize, nested, retain_source
 from pelorus.utils import Url, get_nested
 from pelorus.utils.openshift_utils import CommonResourceInstance, R
 
@@ -137,6 +137,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 class Build(CommonResourceInstance):
     strategy: str = field(metadata=nested("spec.strategy.type"))
     status: str = field(metadata=nested("status.phase"))
+
+    openshift_source: Any = field(metadata=retain_source())
+
     image_hash: Optional[str] = field(
         default=None, metadata=nested("status.output.to.imageDigest")
     )
@@ -228,7 +231,7 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
                     src_name="OpenShift dynamic Build",
                     target_name="build info",
                 )
-                for build in builds
+                for build in builds.items
             ]
 
             builds_by_app = self._get_openshift_obj_by_app(builds)
@@ -261,8 +264,13 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
             # assume for now that there will only be one repo/branch per app
             # For jenkins pipelines, we need to grab the repo data
             # then find associated s2i/docker builds from which to pull commit & image data
-            repo_url = self.get_repo_from_jenkins(jenkins_builds)  # type: ignore # removing jenkins support soon
-            logging.debug("Repo URL for app %s is currently %s" % (app, repo_url))
+            if jenkins_builds:
+                repo_url = self.get_repo_from_jenkins(
+                    jenkins_builds[0].openshift_source
+                )
+            else:
+                repo_url = None
+            logging.debug("Repo URL for app %s is currently %s", app, repo_url)
 
             for build in code_builds:
                 try:
@@ -443,12 +451,10 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
             logging.warning(ex)
             return None
 
-    def get_repo_from_jenkins(self, jenkins_builds: list[Any]) -> Optional[str]:
-        if not jenkins_builds:
-            return None
+    def get_repo_from_jenkins(self, jenkins_build: Any) -> Optional[str]:
         # First, check for cases where the source url is in pipeline params
         git_repo_regex = re.compile(r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
-        for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
+        for env in jenkins_build.spec.strategy.jenkinsPipelineStrategy.env:
             logging.debug("Searching %s=%s for git urls" % (env.name, env.value))
             try:
                 result = git_repo_regex.match(env.value)
@@ -463,12 +469,11 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
 
         try:
             # Then default to the repo listed in '.spec.source.git'
-            return jenkins_builds[0].spec.source.git.uri
+            return jenkins_build.spec.source.git.uri
         except AttributeError:
             logging.debug(
-                "JenkinsPipelineStrategy build %s has no git repo configured. "
-                % jenkins_builds[0].metadata.name
-                + "Will check for source URLs in params."
+                "JenkinsPipelineStrategy build %s has no git repo configured. Will check for source URLs in params.",
+                jenkins_build.metadata.name,
             )
         # If no repo is found, we will return None, which will be handled later on
 
