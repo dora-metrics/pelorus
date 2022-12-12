@@ -90,3 +90,15 @@ rules:
   - list
   - watch
   - patch
+# Required to deploy Thanos
+- apiGroups:
+  - "apps"
+  resources:
+  - "deployments"
+  verbs:
+  - get
+  - create
+  - delete
+  - list
+  - watch
+

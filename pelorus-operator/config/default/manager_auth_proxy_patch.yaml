@@ -31,9 +31,3 @@ spec:
         - "--metrics-bind-address=127.0.0.1:8080"
         - "--leader-elect"
         - "--leader-election-id=pelorus-operator"
-        resources:
-          limits:
-            memory: 512Mi
-          requests:
-            cpu: 40m
-            memory: 512Mi
