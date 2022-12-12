@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from io import StringIO
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from typing import Any, Generic, Optional, Sequence, TypeVar, Union
 
 from exceptiongroup import ExceptionGroup
 
@@ -54,11 +54,22 @@ class MissingFieldWithMultipleSourcesError(MissingFieldError):
 class TypeCheckError(TypeError):
     "A value that failed a type check."
 
-    def __init__(self, expected_type: type, actual_value: Any):
+    def __init__(self, expected_type: Union[type, str], actual_value: Any):
         self.expected_type = expected_type
         self.actual_value = actual_value
+        # "real" types (like a dict) / classes have a __name__.
+        # things like typing.Mapping have a _name instead for some reason.
+        # funnily enough, collections.abc.Mapping has a __name__. Weird!
+        if isinstance(expected_type, str):
+            expected_name = expected_type
+        else:
+            expected_name = (
+                getattr(expected_type, "__name__", None)
+                or getattr(expected_type, "_name", None)
+                or str(expected_type)  # fallback just in case of true weirdness.
+            )
         msg = (
-            f"needed a {self.expected_type.__name__},"
+            f"needed a {expected_name},"
             f" but got an instance of <{self.actual_type.__name__}>: {self.actual_value}"
         )
         super().__init__(msg)

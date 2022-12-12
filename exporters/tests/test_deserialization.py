@@ -2,6 +2,7 @@ from typing import Any, Optional
 
 import pytest
 from attrs import define, field
+from kubernetes.dynamic.resource import ResourceField
 
 from pelorus.deserialization import (
     DeserializationErrors,
@@ -10,6 +11,7 @@ from pelorus.deserialization import (
     MissingFieldError,
     deserialize,
     nested,
+    retain_source,
 )
 
 
@@ -274,3 +276,29 @@ def test_embedded_list():
 def test_any():
     x = deserialize([1, "2"], list[Any])
     assert x == [1, "2"]
+
+
+def test_resource_field():
+    some_kube_resource = ResourceField(dict(foo="bar"))
+
+    @define
+    class FooHolder:
+        foo: str
+
+    x = deserialize(some_kube_resource, FooHolder)
+
+    assert x.foo == "bar"
+
+
+def test_keeping_source():
+    src = dict(foo="bar")
+
+    @define
+    class WithSource:
+        foo: str
+        source: Any = field(metadata=retain_source())
+
+    x = deserialize(src, WithSource)
+
+    assert x.foo == "bar"
+    assert x.source is src

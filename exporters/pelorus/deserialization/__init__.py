@@ -59,19 +59,21 @@ import typing
 from typing import (
     Any,
     Iterable,
+    Literal,
     Mapping,
-    MutableMapping,
     MutableSequence,
+    NamedTuple,
     Optional,
     Sequence,
     TypeVar,
     Union,
-    cast,
+    get_type_hints,
     overload,
 )
 
 import attr
 import attrs
+from typing_extensions import TypeGuard
 
 from pelorus.deserialization.errors import (
     DeserializationErrors,
@@ -86,6 +88,7 @@ from pelorus.utils._attrs_compat import NOTHING
 
 # metadata
 _NESTED_PATH_KEY = "__pelorus_structure_nested_path"
+_RETAIN_SOURCE_KEY = "__pelorus_structure_retain_source"
 
 T = TypeVar("T")
 
@@ -100,14 +103,73 @@ def nested(path: Union[str, Sequence[str]]) -> dict[str, Sequence[str]]:
     return {_NESTED_PATH_KEY: split_path(path)}
 
 
-def _is_attrs_class(cls: type) -> Optional[type["attr.AttrsInstance"]]:
+def retain_source(retain: bool = True) -> dict[str, bool]:
+    """
+    Retain the source of the deserialization in this field.
+    """
+    return {_RETAIN_SOURCE_KEY: retain}
+
+
+# python has some magic to make classes work with `issubclass` and instances work with `isinstance`,
+# even if they don't actually inherit from them. Some so-called "abstract base classes" just check
+# for the presence of certain methods. Cool!
+# However, some of them don't support that, for reasons outlined in their docs (see the first section):
+# https://docs.python.org/3.11/library/collections.abc.html
+
+# thus, we need to make our own checks. These have the same downsides as in the docs,
+# but they're "good enough". "Practicality beats purity".
+
+# we need this for mappings specifically, because a kubernetes.dynamic.resource.ResourceField has
+# __getitem__, which is actually all we care about.
+
+
+def _type_has_getitem(type_: type) -> bool:
+    "See if this type has a getitem method (supports item[key])"
+    return hasattr(type_, "__getitem__")
+
+
+# region: attrs fixes
+
+# type annotations can be represented as the types themselves, or as strings.
+# attrs seems to use strings for fields in inherited classes, which can break
+# things for us. This may be a bug that has to be fixed for them.
+# Until then, here's a small alternative.
+
+
+def _is_attrs_class(cls: type) -> TypeGuard[type["attr.AttrsInstance"]]:
     """
     Return the class if it is an attrs class, else None.
 
     This exists because `attrs.has` is not a proper TypeGuard.
     """
-    return cast("type[attr.AttrsInstance]", cls) if attrs.has(cls) else None
+    return attrs.has(cls)
 
+
+class Field(NamedTuple):
+    """
+    Relevant field information for an attrs class.
+    """
+
+    name: str
+    type: type
+    default: Union[Any, Literal[NOTHING]]
+    metadata: dict[Any, Any]
+
+
+def _fields(cls: type["attr.AttrsInstance"]) -> Iterable[Field]:
+    "Get all field information for this attrs class."
+    hints = get_type_hints(cls)
+    attrs_fields = attrs.fields(cls)
+    for field in attrs_fields:
+        yield Field(
+            field.name,
+            hints[field.name],
+            default=field.default,
+            metadata=field.metadata,
+        )
+
+
+# endregion
 
 # region: generic types
 
@@ -116,13 +178,13 @@ def _is_attrs_class(cls: type) -> Optional[type["attr.AttrsInstance"]]:
 # The origin in this case is `dict`, and the args are `(str, int)`.
 # This lets us inspect these types properly.
 
-# in the future, these should be made into `typing.TypeGuard`s.
-
 
 def _extract_dict_types(type_: type) -> Optional[tuple[type, type]]:
     """
     If this type annotation is a dictionary-like, extract its key and value types.
     Otherwise return None.
+
+    dictionary-like is defined as "has __getitem__ and two type arguments".
 
     >>> assert _extract_dict_types(dict[str, int]) == (str, int)
     >>> assert _extract_dict_types(list[int]) is None
@@ -131,7 +193,9 @@ def _extract_dict_types(type_: type) -> Optional[tuple[type, type]]:
     if origin is None:
         return None
 
-    if not issubclass(origin, MutableMapping):
+    if not _type_has_getitem(type_):
+        return None
+    if len(args) != 2:
         return None
 
     return args[0], args[1]
@@ -266,18 +330,18 @@ class _Deserializer:
             return self._deserialize_primitive(src, target_type)
 
         if attrs.has(target_type):
-            if isinstance(src, Mapping):
+            if _type_has_getitem(type(src)):
                 # assuming it has str key types.
                 return self._deserialize_attrs_class(src, target_type)
             else:
-                raise TypeCheckError(Mapping, src)
+                raise TypeCheckError("Mapping", src)
 
         if (dict_types := _extract_dict_types(target_type)) is not None:
-            if isinstance(src, Mapping):
+            if _type_has_getitem(type(src)):
                 # assuming it has str key types.
                 return self._deserialize_dict(src, dict_types[1])
             else:
-                raise TypeCheckError(Mapping, src)
+                raise TypeCheckError("Mapping", src)
 
         if (list_member_type := _extract_list_type(target_type)) is not None:
             if isinstance(src, Iterable):
@@ -292,14 +356,15 @@ class _Deserializer:
         Deserialize an optional type, handling the None case properly.
         """
         if src is None:
-            return None  # type: ignore
+            return None
         return self._deserialize(src, optional_alt)
 
-    def _deserialize_field(self, src: Mapping[str, Any], field: attrs.Attribute):
+    def _deserialize_field(self, src: Mapping[str, Any], field: Field):
         """
         Deserialize a field within an attrs class.
         """
-        assert field.type is not None, f"{field.name} is missing a type"
+        if field.metadata.get(_RETAIN_SOURCE_KEY, False):
+            return src
 
         nested: Optional[Sequence[str]] = field.metadata.get(_NESTED_PATH_KEY)
 
@@ -322,14 +387,12 @@ class _Deserializer:
 
     def _deserialize_attrs_class(self, src: Mapping[str, Any], to: type[T]) -> T:
         "Initialize an attrs class field-by-field."
-        cls = _is_attrs_class(to)
-        assert cls is not None, f"class was not an attrs class: {to.__name__}"
+        assert _is_attrs_class(to), f"class was not an attrs class: {to.__name__}"
 
         field_errors = []
         class_kwargs = {}
 
-        field: attrs.Attribute
-        for field in attrs.fields(cls):
+        for field in _fields(to):
             try:
                 # child will handle names because it has nested info
                 value = self._deserialize_field(src, field)
@@ -349,7 +412,7 @@ class _Deserializer:
                 field_errors.append(err)
 
         if not field_errors:
-            return cls(**class_kwargs)  # type: ignore
+            return to(**class_kwargs)  # type: ignore
         else:
             unstructured_src = self.unstructured_data_path[-1]
             src_name = (

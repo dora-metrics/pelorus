@@ -12,7 +12,7 @@ from pelorus.utils import (
 
 ROOT = dict(foo=dict(bar=dict()))
 PATH = "foo.bar.baz.quux"
-SLICED_PATH = ["foo", "bar"]
+SLICED_PATH = ("foo", "bar")
 VALUE = dict()
 
 
