@@ -127,3 +127,6 @@ class CommitMetric:
         commit_hash="io.openshift.build.commit.id",
         commit_time="io.openshift.build.commit.date",
     )
+
+
+__all__ = ["CommitMetric", "GitRepo", "CommitInfo"]
