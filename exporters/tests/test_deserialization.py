@@ -14,6 +14,9 @@ from pelorus.deserialization import (
     retain_source,
 )
 
+# TODO: test with kubernetes.dynamic.resource.ResourceField
+# TODO: test retaining source
+
 
 def test_simple_positive():
     @define
