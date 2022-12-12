@@ -310,11 +310,11 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
             if not (repo_url := self._get_repo_url(repo_url, build)):
                 missing.append("repo URL")
 
-            if not (
-                commit_hash := self._get_commit_hash_from_annotations(
-                    build.metadata.annotations
-                )
-            ):
+            commit_hash = build.commit_hash or self._get_commit_hash_from_annotations(
+                build.metadata.annotations
+            )
+
+            if not commit_hash:
                 missing.append("commit hash")
 
             if missing:
@@ -367,6 +367,7 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
                 build.metadata.name,
                 build.repo_url,
             )
+            return build.repo_url
         elif repo_url:
             return repo_url
         elif annotation := build.metadata.annotations.get(
