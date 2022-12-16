@@ -16,7 +16,7 @@
 #
 
 OPERATOR_PROJECT_NAME=pelorus-operator
-OPERATOR_ORG_NAME=migtools
+OPERATOR_ORG_NAME=pelorus
 OPERATOR_PROJECT_DOMAIN=pelorus.konveyor.io
 
 # Get the full absolute path to the script. Needed while calling the script
@@ -31,9 +31,6 @@ DEFAULT_PELORUS_CHARTS_DIR="${SCRIPT_DIR}/${DEFAULT_PELORUS_CHARTS_SUBDIR}/"
 DEFAULT_PELORUS_OPERATOR_DIR="${SCRIPT_DIR}/../pelorus-operator/"
 DEFAULT_PELORUS_OPERATOR_PATCHES_DIR="${SCRIPT_DIR}/pelorus-operator-patches/"
 
-# Needed for symlink inside pelorus-operator folder
-DEFAULT_OPERATOR_HELM_CHART_SUBDIR="helm-charts/pelorus"
-
 function print_help() {
     printf "\nUsage: %s [OPTION]\n\n" "$0"
     printf "\tStartup:\n"
@@ -42,17 +39,19 @@ function print_help() {
     printf "\t  -s\tpath to source pelorus helm charts folder, default: %s\n" "${DEFAULT_PELORUS_CHARTS_DIR}"
     printf "\t  -d\tpath to EMPTY destination folder, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_DIR}"
     printf "\t  -p\tpath to DIR with operator patches to be applied, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_PATCHES_DIR}"
+    printf "\t  -v\toperator version to be used in a format x.y.z. If not set z+1 is used.\n"
     exit 0
 }
 
 ### Options
 OPTIND=1
-while getopts "s:d:p:h?" option; do
+while getopts "s:d:p:h?v:" option; do
     case "$option" in
     h|\?) print_help;;
     s)    source_dir=$OPTARG;;
     d)    destination_dir=$OPTARG;;
     p)    patches_dir=$OPTARG;;
+    v)    operator_ver=$OPTARG;;
     esac
 done
 
@@ -100,23 +99,20 @@ pushd "${destination_dir}" || exit 2
     echo "INFO: Creating api"
     operator-sdk create api --helm-chart="${source_dir}" || exit 2
 
-# TBD: The symlink is not working. Manager do not contain any charts if they are symlinked
-    # We do want to have symlink to original helm-charts instead of direct copy, 
-    # but ONLY when the pelorus-operator is within pelorus git repository, otherwise leave the copied version
-    # The check assumes the git pelorus charts are one level up from the pelorus-operator folder
-#    if git remote -v | grep \/pelorus.git; then
-#        [ -d "${DEFAULT_OPERATOR_HELM_CHART_SUBDIR}" ] && [ -d "../charts/pelorus" ] && echo "Removing ${DEFAULT_OPERATOR_HELM_CHART_SUBDIR} directory" && rm -rf "${DEFAULT_OPERATOR_HELM_CHART_SUBDIR}"
-#        pushd helm-charts || exit 2
-#            echo "Creating symlink from helm-charts/pelorus to  directory"
-#            ln -s ../"${DEFAULT_PELORUS_CHARTS_SUBDIR}" ./pelorus
-#        popd || exit 2
-#    fi
-
     # Correct operator version, to be latest +1
     OPERATOR_VERSION=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq .tags[].name | head -1 | sed -e 's|\"||g')
     echo "INFO: Current operator version: ${OPERATOR_VERSION}"
-    NEW_OPERATOR_VERSION=$(echo ${OPERATOR_VERSION} | awk -F. -v OFS=. '{$NF += 1 ; print}')
-    echo "INFO: New operator version: ${NEW_OPERATOR_VERSION}"
+
+    if [ -z ${operator_ver+x} ]; then
+        NEW_OPERATOR_VERSION=$(echo "${OPERATOR_VERSION}" | awk -F. -v OFS=. '{$NF += 1 ; print}')
+        # Case where operator was never in the repo
+        if [ "$NEW_OPERATOR_VERSION" -eq "1" ]; then
+          NEW_OPERATOR_VERSION=0.0.1
+        fi
+    else
+        NEW_OPERATOR_VERSION="${operator_ver}"
+    fi
+
     sed -i "s/VERSION ?= 0.0.1/VERSION ?= ${NEW_OPERATOR_VERSION}/g" Makefile || exit 2
 
     # Correct IMAGE_TAG_BASE
@@ -132,16 +128,25 @@ popd || exit 2
 
 # Check if patches directory exists
 if [ ! -d "${patches_dir}" ]; then
-	echo "WARNING: Patches directory ${patches_dir} do not exists, patches will not be applied."
+    echo "WARNING: Patches directory ${patches_dir} do not exists, patches will not be applied."
 elif [ "$(ls -A "${patches_dir}"/*.diff 2>/dev/null)" ]; then
-        echo "INFO: Found patches in ${patches_dir}."
-        for patch_file in "${patches_dir}"/*.diff; do
-            echo "INFO: Applying patch ${patch_file}"
-            patch -d "${destination_dir}" -p0 < "${patch_file}"
-        done
+    echo "INFO: Found patches in ${patches_dir}."
+    for patch_file in "${patches_dir}"/*.diff; do
+        echo "INFO: Applying patch ${patch_file}"
+        patch -d "${destination_dir}" -p0 < "${patch_file}"
+    done
 fi
 
 pushd "${destination_dir}" || exit 2
+
+    # Set proper value for the 'metadata.annotations.containerImage'
+    # We first patch the config/manifests/bases/pelorus-operator.clusterserviceversion.yaml
+    # with "containerImage: placeholder", because we don't know which ORG the image will be
+    # pushed to and in this step we set correct containerImage metadata.
+    OPERATOR_RESULTING_IMG="quay.io/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}:${NEW_OPERATOR_VERSION}"
+    echo "INFO: Operator Image containerImage: ${OPERATOR_RESULTING_IMG}"
+    sed -i "s#^    containerImage: placeholder#    containerImage: ${OPERATOR_RESULTING_IMG}#g" config/manifests/bases/pelorus-operator.clusterserviceversion.yaml || exit 2
+
     echo "INFO: Executing make bundle"
     make bundle
 popd || exit 2
@@ -171,6 +176,6 @@ echo "  # make bundle-build"
 echo "  # make bundle-push"
 echo "  # # Log in to your cluster or export KUBECONFIG"
 echo "  # # Deploy bundle, e.g. version v${NEW_OPERATOR_VERSION} in the pelorus namespace"
-echo "  # operator-sdk run bundle quay.io/migtools/pelorus-operator-bundle:v${NEW_OPERATOR_VERSION} --namespace pelorus"
+echo "  # operator-sdk run bundle quay.io/${OPERATOR_ORG_NAME}/pelorus-operator-bundle:v${NEW_OPERATOR_VERSION} --namespace pelorus"
 echo "  # # Create pelorus instance from example in the pelorus namespace"
 echo "  # oc apply -f pelorus-operator/config/samples/charts_v1alpha1_pelorus.yaml -n pelorus"

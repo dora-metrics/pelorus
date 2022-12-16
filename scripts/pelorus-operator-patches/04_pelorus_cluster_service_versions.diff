@@ -1,6 +1,6 @@
 --- config/manifests/bases/pelorus-operator.clusterserviceversion.yaml.original	2022-12-15 17:01:35.384242008 +0100
 +++ config/manifests/bases/pelorus-operator.clusterserviceversion.yaml	2022-12-15 17:01:46.425296201 +0100
-@@ -4,39 +4,110 @@
+@@ -4,39 +4,111 @@
    annotations:
      alm-examples: '[]'
      capabilities: Basic Install
@@ -11,6 +11,7 @@
 +    operatorframework.io/suggested-namespace: pelorus
 +    repository: https://github.com/konveyor/pelorus/
 +    support: Pelorus Community
++    containerImage: placeholder
    name: pelorus-operator.v0.0.0
    namespace: placeholder
  spec:
