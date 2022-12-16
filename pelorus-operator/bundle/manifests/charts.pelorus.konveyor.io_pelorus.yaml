@@ -15,7 +15,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Pelorus is the Schema for the pelorus API
+        description: Configure a running instance of Pelorus
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -23,16 +23,48 @@ spec:
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
+            description: |-
+              Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
-            description: Spec defines the desired state of Pelorus
+            description: 'PelorusSpec defines state of the Pelorus application and
+              allows to configure for the desired workflow. More information about
+              Pelorus configuration that can be used in the Spec section is available
+              at: https://pelorus.readthedocs.io/en/latest/Configuration/'
+            properties:
+              exporters:
+                description: |-
+                  References configuration for the Pelorus exporters. More info about exporters configuration: https://pelorus.readthedocs.io/en/latest/Configuration/#configuring-exporters-details
+
+
+                    Example:
+                      instances:
+                        - app_name: < instance_name >
+                          enabled: < won't be created if set to false >
+                          exporter_type: < deploytime, committime, failure >
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              prometheus_retention:
+                description: 'Prometheus Retention time. More information: https://pelorus.readthedocs.io/en/latest/Install/#configure-prometheus-retention'
+                type: string
+              prometheus_retention_size:
+                description: 'Prometheus Retention Size. More information: https://pelorus.readthedocs.io/en/latest/Install/#configure-prometheus-retention'
+                type: string
+              prometheus_storage:
+                description: 'Use Prometheus Persistent Volume. More information:
+                  https://pelorus.readthedocs.io/en/latest/Install/#configure-prometheus-persistent-volume-recommended'
+                type: boolean
+              prometheus_storage_pvc_capacity:
+                description: Prometheus Persistent Volume capacity.
+                type: string
+              prometheus_storage_pvc_storageclass:
+                description: Prometheus Persistent Volume storage class to be used.
+                type: string
             type: object
-            x-kubernetes-preserve-unknown-fields: true
           status:
             description: Status defines the observed state of Pelorus
             type: object

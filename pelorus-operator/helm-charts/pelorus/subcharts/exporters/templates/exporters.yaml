@@ -1,28 +1,30 @@
 {{- range $index, $exporter := .Values.instances }}
-  # https://hackmd.io/@openshift-mig-eng/rkNC3W8dq
-  {{- if and ($exporter.image_name) (or $exporter.source_ref $exporter.source_url) }}
-    {{- fail "ERROR: image_name configuration can't be used with source_ref or source_url" }}
-  {{- end }}
-  {{- if and ($exporter.image_tag) (or $exporter.source_ref $exporter.source_url) }}
-    {{- fail "ERROR: image_tag configuration can't be used with source_ref or source_url" }}
-  {{- end }}
-  {{- if and $exporter.image_name $exporter.image_tag }}
-    {{- if contains ":" $exporter.image_name }}
-      {{- fail "ERROR: image_tag configuration can't be used with image_name that includes tag e.g. generic-exporter:tag-name" }}
+  {{- if ne ($exporter.enabled | toString) "false" }}
+    # https://hackmd.io/@openshift-mig-eng/rkNC3W8dq
+    {{- if and ($exporter.image_name) (or $exporter.source_ref $exporter.source_url) }}
+      {{- fail "ERROR: image_name configuration can't be used with source_ref or source_url" }}
     {{- end }}
+    {{- if and ($exporter.image_tag) (or $exporter.source_ref $exporter.source_url) }}
+      {{- fail "ERROR: image_tag configuration can't be used with source_ref or source_url" }}
+    {{- end }}
+    {{- if and $exporter.image_name $exporter.image_tag }}
+      {{- if contains ":" $exporter.image_name }}
+        {{- fail "ERROR: image_tag configuration can't be used with image_name that includes tag e.g. generic-exporter:tag-name" }}
+      {{- end }}
+    {{- end }}
+    {{- if or $exporter.source_ref $exporter.source_url }}
+      {{ include "exporters.buildconfig" $exporter }}
+    {{- end }}
+      {{ include "exporters.deploymentconfig" $exporter }}
+    {{- if or $exporter.source_ref $exporter.source_url }}
+      {{ include "exporters.imagestream" $exporter }}
+    {{- else }}
+      {{- if not $exporter.exporter_type }}
+        {{- fail "ERROR: exporter_type must be provided when using podman image installation method" }}
+      {{- end}}
+      {{ include "exporters.imagestream_from_image" $exporter }}
+    {{- end }}
+      {{ include "exporters.route" $exporter }}
+      {{ include "exporters.service" $exporter }}
   {{- end }}
-  {{- if or $exporter.source_ref $exporter.source_url }}
-    {{ include "exporters.buildconfig" $exporter }}
-  {{- end }}
-    {{ include "exporters.deploymentconfig" $exporter }}
-  {{- if or $exporter.source_ref $exporter.source_url }}
-    {{ include "exporters.imagestream" $exporter }}
-  {{- else }}
-    {{- if not $exporter.exporter_type }}
-      {{- fail "ERROR: exporter_type must be provided when using podman image installation method" }}
-    {{- end}}
-    {{ include "exporters.imagestream_from_image" $exporter }}
-  {{- end }}
-    {{ include "exporters.route" $exporter }}
-    {{ include "exporters.service" $exporter }}
 {{- end }}
