@@ -33,7 +33,6 @@ class FieldError(DeserializationError, Generic[Exc]):
 
 class MissingFieldError(FieldError[Optional[BadAttributePathError]]):
     "A field that is missing."
-    pass
 
 
 class MissingFieldWithMultipleSourcesError(MissingFieldError):
