@@ -233,6 +233,9 @@ this creates additional work as mentioned above.
 
 If we think it's worth it, do we use automation to implement the alternatives mentioned above?
 
+Where do we keep ADR docs?
+Let's not bikeshed this, but note: they are related to developer and architecture docs, but are not really user facing.
+
 ## Addendum
 
 Some of the wording in this ADR is inconsistent (imperative versus descriptive parts for the format), but that can be fixed in a cleanup PR later.
