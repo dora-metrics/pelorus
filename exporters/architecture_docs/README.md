@@ -3,7 +3,11 @@
 - [ ] TODO: document formal python version support policy
 - [ ] TODO: do we want diagrams anywhere?
 
-This documentation covers the design decisions behind Pelorus's code.
+This documentation covers the design decisions behind Pelorus's architecture and code.
+
+For the choices we made architecturally, known as [Architecture Decision Records](https://www.redhat.com/architect/architecture-decision-records), see [ADRs.md](ADRs.md).
+
+
 
 The [developer docs](https://pelorus.readthedocs.io/en/latest/Development/) are mainly about setting up a development environment, but we may move this in the future.
 
