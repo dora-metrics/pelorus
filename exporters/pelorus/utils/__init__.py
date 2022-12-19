@@ -21,24 +21,10 @@ Module utils contains helper utilities for common tasks in the codebase.
 They are mainly to help with type information and to deal with data structures
 in kubernetes that are not so idiomatic to deal with.
 """
-import contextlib
-import enum
 import logging
 import os
-from typing import (
-    Any,
-    ClassVar,
-    Generator,
-    Literal,
-    Mapping,
-    Optional,
-    TypeVar,
-    Union,
-    cast,
-    overload,
-)
+from typing import ClassVar, Generator, Optional, cast, overload
 
-import attrs
 import requests
 import requests.auth
 import urllib3
@@ -47,138 +33,15 @@ from kubernetes.dynamic import Resource, ResourceInstance
 from openshift.dynamic import DynamicClient
 
 from pelorus.certificates import set_up_requests_certs
-
-T = TypeVar("T")
-U = TypeVar("U")
-
-
-# sentinel value for the default kwarg to get_nested
-class NoDefault(enum.Enum):
-    NO_DEFAULT = enum.auto()
-
+from pelorus.utils.nested import (
+    BadAttributePathError,
+    collect_bad_attribute_path_error,
+    format_path,
+    get_nested,
+    split_path,
+)
 
 DEFAULT_VAR_KEYWORD = "default"
-
-
-@overload
-def get_nested(
-    root: Mapping[str, T],
-    path: Union[list[str], str],
-    *,
-    name: Optional[str] = None,
-) -> T:
-    ...
-
-
-@overload
-def get_nested(
-    root: Mapping[str, T],
-    path: Union[list[str], str],
-    *,
-    default: U,
-    name: Optional[str] = None,
-) -> Union[T, U]:
-    ...
-
-
-def get_nested(
-    root: Mapping[str, T],
-    path: Union[list[Any], str],
-    *,
-    default: Union[U, Literal[NoDefault.NO_DEFAULT]] = NoDefault.NO_DEFAULT,
-    name: Optional[str] = None,
-) -> Union[T, U]:
-    """
-    `get_nested` helps you safely traverse a deeply nested object that is indexable.
-    If `TypeError`, `KeyError`, or `IndexError` are thrown, then `default` will be returned.
-    If `default` is not given, a `MissingAttributeError` will be thrown,
-    which includes information about where in the path things went wrong, and a human-readable name (if included).
-
-    You may specify the path as either a list of keys, or a single string.
-    The string will be split on '.' so you can emulate the nested attribute lookup `ResourceField`
-    would offer.
-
-    A `name` for the item, if specified, makes the error message in the exception more useful.
-
-    Kubernetes API items often are deeply nested, with any number of fields that could be absent.
-    When using an `openshift.dynamic.ResourceField`, it will turn attribute accesses into
-    dictionary accesses. Normally, a deeply nested access like item.status.ref.foo.bar has four different spots
-    you could get an `AttributeError`. With a `ResourceField`, there are actually only three, since `item.status`
-    will return `None` if `status` is absent, but `None` will not have a `ref` field, leading to an
-    AttributeError.
-
-    This all may be unnecessary once Python 3.11 comes out, because of PEP-0647:
-    https://www.python.org/dev/peps/pep-0657/
-    """
-    item = root
-    if isinstance(path, str):
-        # filter out leading dot (or accidental double dots, technically)
-        path = [part for part in path.split(".") if part]
-    for i, key in enumerate(path):
-        try:
-            item = item[key]  # type: ignore
-        except (TypeError, IndexError, KeyError) as e:
-            if default is not NoDefault.NO_DEFAULT:
-                return default
-
-            raise BadAttributePathError(
-                root=root,
-                path=path,
-                path_slice=slice(i),
-                value=item,
-                root_name=name,
-            ) from e
-
-    return item
-
-
-@attrs.frozen
-class BadAttributePathError(Exception):
-    """
-    An error representing a nested lookup that went wrong.
-
-    root is the root item the attribute accesses started from.
-    path is the whole path that was meant to be accessed.
-    path_slice represents how far in the path we got before an issue was encountered.
-    value is the value that the last good attribute access returned.
-    root_name is the name of the root item, which makes the error message more helpful.
-    """
-
-    root: Any
-    path: list[Any]
-    path_slice: slice
-    value: Any
-    root_name: Optional[str] = None
-
-    @property
-    def message(self) -> str:
-        msg = f"{self.root_name + ' is missing' if self.root_name else 'Missing'} {'.'.join(self.path)}"
-
-        # keep message simple if there's only one child we tried to access,
-        # but otherwise add detail
-        if len(self.path) > 1:
-            msg += (
-                f" {'.'.join(self.path)} because "
-                f"{'.'.join(self.path[self.path_slice])} was {self.value}"
-            )
-
-        return msg
-
-    def __str__(self):
-        return self.message
-
-
-@contextlib.contextmanager
-def collect_bad_attribute_path_error(error_list: list, append: bool = True):
-    """
-    If a BadAttributePathError is raised, append it to the list of errors and continue.
-    If append is set to False then error will not be appended to the list of errors.
-    """
-    try:
-        yield
-    except BadAttributePathError as e:
-        if append:
-            error_list.append(e)
 
 
 class SpecializeDebugFormatter(logging.Formatter):
@@ -398,3 +261,21 @@ class Url(urllib3.util.Url):
 
     def __contains__(self, needle: str):
         return needle in self.url
+
+
+__all__ = [
+    "SpecializeDebugFormatter",
+    "DEFAULT_VAR_KEYWORD",
+    "get_env_var",
+    "get_k8s_client",
+    "TokenAuth",
+    "set_up_requests_session",
+    "join_url_path_components",
+    "paginate_resource",
+    "Url",
+    "BadAttributePathError",
+    "collect_bad_attribute_path_error",
+    "format_path",
+    "get_nested",
+    "split_path",
+]

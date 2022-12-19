@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional, cast
+from datetime import datetime, timezone
+from typing import cast
 
-import attr
 import pytest
 from kubernetes.client import ApiClient, Configuration
 from openshift.dynamic import DynamicClient
@@ -47,24 +47,24 @@ def setup_collector_from_env_loading():
     return cast(GitHubCommitCollector, config.make_collector())
 
 
-def expected_commits() -> list[CommitMetricEssentials]:
+def expected_commits() -> list[CommitMetric]:
     metrics = [
-        CommitMetricEssentials(
-            commit_timestamp=1619381788.0,
+        CommitMetric(
+            commit_timestamp=datetime.fromtimestamp(1619381788.0, tz=timezone.utc),
             namespace="basic-nginx-build",
             name="basic-nginx",
             commit_hash="15dedb60b6208aafdfb2328a93543e3d94500978",
             image_hash="sha256:c1282f65b5c327db4dcc6cdfb27e91338bd625d119d9ae769318f089d82e35e2",
         ),
-        CommitMetricEssentials(
-            commit_timestamp=1619381788.0,
+        CommitMetric(
+            commit_timestamp=datetime.fromtimestamp(1619381788.0, tz=timezone.utc),
             namespace="basic-nginx-build",
             name="basic-nginx",
             commit_hash="15dedb60b6208aafdfb2328a93543e3d94500978",
             image_hash="sha256:4a20c8cfa48af3a938462e9cd7bfa0b16abfbc6ba16f0999f3931c79b1130e4b",
         ),
-        CommitMetricEssentials(
-            commit_timestamp=1620401174.0,
+        CommitMetric(
+            commit_timestamp=datetime.fromtimestamp(1620401174.0, tz=timezone.utc),
             namespace="basic-nginx-build",
             name="basic-nginx",
             commit_hash="620ce8b570c644338ba34224fc09b2d8a30bca02",
@@ -75,35 +75,12 @@ def expected_commits() -> list[CommitMetricEssentials]:
     return metrics
 
 
-@attr.define
-class CommitMetricEssentials:
-    name: str = attr.field()
-    namespace: Optional[str] = attr.field(default=None, kw_only=True)
-
-    commit_hash: Optional[str] = attr.field(default=None, kw_only=True)
-    commit_timestamp: Optional[float] = attr.field(default=None, kw_only=True)
-
-    image_hash: Optional[str] = attr.field(default=None, kw_only=True)
-
-    @staticmethod
-    def from_commit_metric(cm: CommitMetric) -> CommitMetricEssentials:
-        args = {
-            key: getattr(cm, key)
-            for key in "name namespace commit_hash commit_timestamp image_hash".split()
-        }
-
-        return CommitMetricEssentials(**args)
-
-
 @pytest.mark.mockoon
 def test_github_provider():
     collector = setup_collector_from_env_loading()
 
-    actual = [
-        CommitMetricEssentials.from_commit_metric(cm)
-        for cm in collector.generate_metrics()
-    ]
+    actual = list(collector.generate_metrics())
 
-    actual.sort(key=lambda commit: commit.commit_timestamp)  # type: ignore
+    actual.sort(key=lambda commit: commit.commit_timestamp)
 
     assert actual == expected_commits()

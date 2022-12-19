@@ -2,6 +2,7 @@ from typing import Any, Optional
 
 import pytest
 from attrs import define, field
+from kubernetes.dynamic.resource import ResourceField
 
 from pelorus.deserialization import (
     DeserializationErrors,
@@ -10,7 +11,11 @@ from pelorus.deserialization import (
     MissingFieldError,
     deserialize,
     nested,
+    retain_source,
 )
+
+# TODO: test with kubernetes.dynamic.resource.ResourceField
+# TODO: test retaining source
 
 
 def test_simple_positive():
@@ -54,6 +59,16 @@ def test_nested_field_positive():
         nested_int: int = field(metadata=nested("foo.bar"))
 
     actual = deserialize(dict(foo=dict(bar=2)), Nested)
+
+    assert actual.nested_int == 2
+
+
+def test_multi_nested():
+    @define
+    class NestedNested:
+        nested_int: int = field(metadata=nested(["foo", "com.example.int"]))
+
+    actual = deserialize({"foo": {"com.example.int": 2}}, NestedNested)
 
     assert actual.nested_int == 2
 
@@ -264,3 +279,29 @@ def test_embedded_list():
 def test_any():
     x = deserialize([1, "2"], list[Any])
     assert x == [1, "2"]
+
+
+def test_resource_field():
+    some_kube_resource = ResourceField(dict(foo="bar"))
+
+    @define
+    class FooHolder:
+        foo: str
+
+    x = deserialize(some_kube_resource, FooHolder)
+
+    assert x.foo == "bar"
+
+
+def test_keeping_source():
+    src = dict(foo="bar")
+
+    @define
+    class WithSource:
+        foo: str
+        source: Any = field(metadata=retain_source())
+
+    x = deserialize(src, WithSource)
+
+    assert x.foo == "bar"
+    assert x.source is src
