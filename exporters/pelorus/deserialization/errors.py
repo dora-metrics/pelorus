@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from io import StringIO
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from typing import Any, Generic, Optional, Sequence, TypeVar, Union
 
 from exceptiongroup import ExceptionGroup
 
@@ -13,7 +13,7 @@ class DeserializationError(Exception):
     pass
 
 
-Exc = TypeVar("Exc", bound=Exception)
+Exc = TypeVar("Exc", bound=Optional[Exception])
 
 
 class FieldError(DeserializationError, Generic[Exc]):
@@ -24,26 +24,52 @@ class FieldError(DeserializationError, Generic[Exc]):
         self.field_name = field_name
         self.__cause__ = cause
         if self.__cause__ is not None:
-            msg = f"{self.field_name}: {self.__cause__}"
+            self.message = f"{self.field_name}: {self.__cause__}"
         else:
-            msg = f"{self.field_name} error"
+            self.message = f"{self.field_name} error"
 
-        super().__init__(msg)
+        super().__init__(self.message)
 
 
-class MissingFieldError(FieldError[BadAttributePathError]):
+class MissingFieldError(FieldError[Optional[BadAttributePathError]]):
     "A field that is missing."
     pass
+
+
+class MissingFieldWithMultipleSourcesError(MissingFieldError):
+    "A field that was missing, that was not present multiple alternative sources."
+
+    # TODO: kind of an exception group in its own right, but do we care?
+    # because each fallback could have its own cause, etc...
+
+    def __init__(self, field_name: str, sources: Sequence[str]):
+        # overriding FieldError's init a bit for better message handling.
+        self.field_name = field_name
+        self.__cause__ = None
+        self.sources = sources
+
+        self.message = f"{self.field_name} was not present in any of the following sources: {', '.join(self.sources)}"
 
 
 class TypeCheckError(TypeError):
     "A value that failed a type check."
 
-    def __init__(self, expected_type: type, actual_value: Any):
+    def __init__(self, expected_type: Union[type, str], actual_value: Any):
         self.expected_type = expected_type
         self.actual_value = actual_value
+        # "real" types (like a dict) / classes have a __name__.
+        # things like typing.Mapping have a _name instead for some reason.
+        # funnily enough, collections.abc.Mapping has a __name__. Weird!
+        if isinstance(expected_type, str):
+            expected_name = expected_type
+        else:
+            expected_name = (
+                getattr(expected_type, "__name__", None)
+                or getattr(expected_type, "_name", None)
+                or str(expected_type)  # fallback just in case of true weirdness.
+            )
         msg = (
-            f"needed a {self.expected_type.__name__},"
+            f"needed a {expected_name},"
             f" but got an instance of <{self.actual_type.__name__}>: {self.actual_value}"
         )
         super().__init__(msg)

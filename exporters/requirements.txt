@@ -3,6 +3,7 @@ openshift == 0.13.1    # module openshift
 prometheus_client      # module prometheus_client
 attrs                  # module attrs
 exceptiongroup         # module exceptiongroup
+typing-extensions      # module typing_extensions
 
 # Committime exporter
 azure-devops           # module azure
