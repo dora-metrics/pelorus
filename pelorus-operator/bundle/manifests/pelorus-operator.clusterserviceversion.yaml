@@ -50,7 +50,8 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    createdAt: "2022-12-16T15:10:12Z"
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.1
+    createdAt: "2022-12-19T11:26:21Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -58,7 +59,7 @@ metadata:
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
     repository: https://github.com/konveyor/pelorus/
     support: Pelorus Community
-  name: pelorus-operator.v0.0.38
+  name: pelorus-operator.v0.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -159,22 +160,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          - secrets
-          - serviceaccounts
-          - services
-          verbs:
-          - '*'
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - rolebindings
-          - roles
-          verbs:
-          - '*'
-        - apiGroups:
           - apps.openshift.io
           resources:
           - deploymentconfigs
@@ -206,6 +191,22 @@ spec:
           - route.openshift.io
           resources:
           - routes
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - secrets
+          - serviceaccounts
+          - services
+          verbs:
+          - '*'
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          - roles
           verbs:
           - '*'
         - apiGroups:
@@ -357,7 +358,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/migtools/pelorus-operator:0.0.38
+                image: quay.io/pelorus/pelorus-operator:0.0.1
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -459,4 +460,4 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.38
+  version: 0.0.1

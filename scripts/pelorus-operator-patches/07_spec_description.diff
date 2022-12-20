@@ -1,6 +1,6 @@
---- config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml.original	2022-12-16 11:41:22.683297131 +0100
-+++ config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml	2022-12-16 11:40:22.725983634 +0100
-@@ -15,29 +15,76 @@
+--- config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml.original	2022-12-16 20:39:18.630409481 +0100
++++ config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml	2022-12-16 20:39:03.674340069 +0100
+@@ -15,29 +15,77 @@
    - name: v1alpha1
      schema:
        openAPIV3Schema:
@@ -58,6 +58,7 @@
 +                          enabled: < won't be created if set to false >
 +                          exporter_type: < deploytime, committime, failure >
 +                type: object
++                x-kubernetes-preserve-unknown-fields: true
 +              prometheus_retention:
 +                description: >-
 +                  Prometheus Retention time. More information:
