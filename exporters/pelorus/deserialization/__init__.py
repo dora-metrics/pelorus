@@ -185,9 +185,6 @@ def _extract_dict_types(type_: type) -> Optional[tuple[type, type]]:
     Otherwise return None.
 
     dictionary-like is defined as "has __getitem__ and two type arguments".
-
-    >>> assert _extract_dict_types(dict[str, int]) == (str, int)
-    >>> assert _extract_dict_types(list[int]) is None
     """
     origin, args = typing.get_origin(type_), typing.get_args(type_)
     if origin is None:
@@ -205,9 +202,6 @@ def _extract_list_type(type_: type) -> Optional[type]:
     """
     If this type annotation is a list-like, extract its value type.
     Otherwise return None.
-
-    >>> assert _extract_list_type(list[int]) == int
-    >>> assert _extract_list_type(dict[str, str]) is None
     """
     origin, args = typing.get_origin(type_), typing.get_args(type_)
     if origin is None:
@@ -223,9 +217,6 @@ def _extract_optional_type(type_: type) -> Optional[type]:
     """
     If this type annotation is Optional[T], then returns the type T.
     Otherwise, returns None.
-
-    >>> assert _extract_optional_type(Optional[int]) == int
-    >>> assert _extract_optional_type(int) is None
     """
     # this is weird because Optional is just an alias for Union,
     # where the other entry is NoneType.
