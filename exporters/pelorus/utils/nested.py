@@ -103,9 +103,9 @@ def get_nested(
                 return default
 
             raise BadAttributePathError(
-                root=root,
                 path=path,
                 path_slice=slice(i),
+                key=key,
                 value=item,
                 root_name=name,
             ) from e
@@ -116,6 +116,9 @@ def get_nested(
 def split_path(path: Union[str, Sequence[str]]) -> Sequence[str]:
     """
     Idempotently split a path for use in nested access.
+
+    >>> assert split_path("foo.bar") == ("foo", "bar")
+    >>> assert split_path(["foo", "has.dots", "bar"]) == ["foo", "has.dots", "bar"]
     """
     if isinstance(path, str):
         # `if part` filters out leading dot (or accidental double dots, technically)
@@ -127,6 +130,7 @@ def split_path(path: Union[str, Sequence[str]]) -> Sequence[str]:
 def format_path(path: Sequence[str]) -> str:
     """
     Format a path for readability.
+
     >>> assert format_path("foo.bar".split(".")) == "foo.bar"
     >>> assert format_path(["foo", "has.dots", "bar"]) == "foo[has.dots].bar"
     """
@@ -136,7 +140,7 @@ def format_path(path: Sequence[str]) -> str:
             formatted += f"[{part}]"
         else:
             formatted += f".{part}"
-    return formatted
+    return formatted if formatted[0] != "." else formatted[1:]
 
 
 @attrs.frozen
@@ -151,21 +155,21 @@ class BadAttributePathError(Exception):
     root_name is the name of the root item, which makes the error message more helpful.
     """
 
-    root: Any
     path: Sequence[str]
     path_slice: slice
+    key: str
     value: Any
     root_name: Optional[str] = None
 
     @property
     def message(self) -> str:
-        msg = f"{self.root_name + ' is missing' if self.root_name else 'Missing'} {'.'.join(self.path)}"
+        msg = f"{self.root_name + ' is missing' if self.root_name else 'Missing'} {self.key}"
 
         # keep message simple if there's only one child we tried to access,
         # but otherwise add detail
         if len(self.path) > 1:
             msg += (
-                f" {'.'.join(self.path)} because "
+                f" in {format_path(self.path)} because "
                 f"{'.'.join(self.path[self.path_slice])} was {self.value}"
             )
 
