@@ -53,6 +53,7 @@ nav:
   - Getting Started:
     - Quickstart Tutorial: Demo.md
     - Installation: Install.md
+    - Uninstall: Uninstall.md
   - Our Philosophy:
     - Overview: philosophy/index.md
     - The Problem Today: philosophy/problem.md

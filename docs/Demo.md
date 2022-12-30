@@ -1,10 +1,5 @@
 # Pelorus Demo
-
-### Assumptions
-- oc, helm command line tools installed
-- Logged into OCP Cluster via the CLI and UI as kubeadmin
-
-### Goal
+## Goals
 
 In this demo, you will get a taste of how Pelorus captures a change going through the application's delivery cycle.
 
@@ -16,136 +11,145 @@ In this demo, you will get a taste of how Pelorus captures a change going throug
 
 Understand that Pelorus should be used as a conversation tool to read the trends in metrics and react by making informed investments in the software delivery process.
 
---------------------------
+## Assumptions (requirements better?)
 
-# Lead Time for Change and Deployment Frequency
+- Linux machine
 
-![dora_lead_deployment](img/dora_metrics1.png)
+- pelorus repository cloned locally and current directory being pelorus
 
-> **Note:** More information about the four key DORA metrics can be found at the [Software Delivery Performance section](Dashboards.md) 
+    ```
+    git clone https://github.com/konveyor/pelorus.git
+    cd pelorus
+    ```
 
-## Workflow - Install
-- install and configure Pelorus
-- install a sample application
+- `oc` (OpenShift CLI) and `helm` command line tools installed
 
-### Pelorus developer environment
+    To install... will setup a Python virtual environment and install prerequisite python and OpenShift CLI tools and libraries.
+    ```
+    make dev-env
+    source .venv/bin/activate
+    ```
 
-This is an **optional step** for developers that will setup a Python
-virtual environment and install prerequisite python and openshift cli tools and libraries.
+- Logged into OCP Cluster via the CLI and UI as kubeadmin (the specific user is really necessary?)
+TODO how to check if is logged in and the command to log
 
-        cd pelorus
-        make dev-env
-        source .venv/bin/activate
-        make help
+## Install and configure Pelorus
 
-### Pelorus install steps
+### Pelorus Installation
 
-* Create the pelorus namespace
+Create the pelorus namespace
+```
+oc create namespace pelorus
+```
 
-        oc create namespace pelorus
+Install the required Grafana and Prometheus operators
+```
+helm install operators charts/operators --namespace pelorus
+```
 
-* Install the required granfa and prometheus operators
+Wait for the operator install to complete (create script that checks when is finished https://github.com/hjwp/book-example/blob/master/functional_tests/base.py#L17 and I would change to an image)
+```
+$ oc get pods -n pelorus
+NAME                                                   READY     STATUS    RESTARTS   AGE
+grafana-operator-controller-manager-7678cc5c7c-spvls   2/2       Running   0          22s
+prometheus-operator-559d659944-fvsjg                   1/1       Running   0          10s
+```
 
-        helm install operators charts/operators --namespace pelorus
+Install Pelorus
+```
+helm install pelorus charts/pelorus --namespace pelorus
+```
 
-* Wait for the operator install to complete
+Wait for the Pelorus install to complete
+```
+$ oc get pods -n pelorus
+NAME                                                   READY     STATUS      RESTARTS      AGE
+deploytime-exporter-1-deploy                           0/1       Completed   0             93s
+deploytime-exporter-1-rwk5l                            1/1       Running     0             90s
+grafana-deployment-55f77ccc8f-d7m92                    2/2       Running     0             84s
+grafana-operator-controller-manager-7678cc5c7c-spvls   2/2       Running     0             4m5s
+prometheus-operator-559d659944-fvsjg                   1/1       Running     0             3m53s
+prometheus-prometheus-pelorus-0                        3/3       Running     1 (89s ago)   93s
+prometheus-prometheus-pelorus-1                        3/3       Running     1 (89s ago)   93s
+```
 
-        $ oc get pods -n pelorus
-        NAME                                                   READY     STATUS    RESTARTS   AGE
-        grafana-operator-controller-manager-7678cc5c7c-spvls   2/2       Running   0          22s
-        prometheus-operator-559d659944-fvsjg                   1/1       Running   0          10s
-    
-* Install Pelorus
-    
-        helm install pelorus charts/pelorus --namespace pelorus
-
-* Wait for the Pelorus install to complete
-
-        $ oc get pods -n pelorus
-        NAME                                                   READY     STATUS      RESTARTS      AGE
-        deploytime-exporter-1-deploy                           0/1       Completed   0             93s
-        deploytime-exporter-1-rwk5l                            1/1       Running     0             90s
-        grafana-deployment-55f77ccc8f-d7m92                    2/2       Running     0             84s
-        grafana-operator-controller-manager-7678cc5c7c-spvls   2/2       Running     0             4m5s
-        prometheus-operator-559d659944-fvsjg                   1/1       Running     0             3m53s
-        prometheus-prometheus-pelorus-0                        3/3       Running     1 (89s ago)   93s
-        prometheus-prometheus-pelorus-1                        3/3       Running     1 (89s ago)   93s
-
-* Finally check the install
-
-        oc get all -n pelorus
-    
+Finally check the install
+```
+oc get all -n pelorus
+```
 
 ### Pelorus configuration
 
-* Make a copy of [the values.yaml file in the pelorus repo](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) ([raw link for curl-ing](https://raw.githubusercontent.com/konveyor/pelorus/master/charts/pelorus/values.yaml)) and save it to /var/tmp/values.yaml
+Make a copy of [the values.yaml file in the pelorus repo](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) ([raw link for curl-ing](https://raw.githubusercontent.com/konveyor/pelorus/master/charts/pelorus/values.yaml)) and save it to `/var/tmp/values.yaml`
+```
+cp charts/pelorus/values.yaml /var/tmp/
+```
 
-        cp charts/pelorus/values.yaml /var/tmp/
-
-* Update the "exporters" section of the /var/tmp/values.yaml to match the following example:
-
-        exporters:
-          instances:
-          - app_name: deploytime-exporter
-            exporter_type: deploytime
-            extraEnv:
-            - name: LOG_LEVEL
-              value: DEBUG
-            - name: NAMESPACES
-              value: mongo-persistent
-          - app_name: committime-exporter
-            exporter_type: committime
-            extraEnv:
-            - name: LOG_LEVEL
-              value: DEBUG
-            - name: NAMESPACES
-              value: mongo-persistent
+Update the **exporters** section of the `/var/tmp/values.yaml` to match the following example:
+```yaml
+exporters:
+  instances:
+  - app_name: deploytime-exporter
+    exporter_type: deploytime
+    extraEnv:
+    - name: LOG_LEVEL
+      value: DEBUG
+    - name: NAMESPACES
+      value: mongo-persistent
+  - app_name: committime-exporter
+    exporter_type: committime
+    extraEnv:
+    - name: LOG_LEVEL
+      value: DEBUG
+    - name: NAMESPACES
+      value: mongo-persistent
+```
 
 >**Note:** [Documentation regarding values.yaml can be found on our readthedocs page.](https://pelorus.readthedocs.io/en/latest/Configuration/)
 
-* Apply the updated values for Pelorus by executing:
+Apply the updated values for Pelorus by executing:
+```
+helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
+```
 
-        helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
+> **Note:** Please pause to allow the committime exporter pod to be deployed. How to test or automate?
 
-> **Note:** Please pause to allow the committime exporter pod to be deployed.
+Pelorus should now be installed and configured to measure the sample application. We'll have to deploy the sample application to view measurements from Pelorus' Grafana dashboard.
 
-Pelorus should now be installed and configured to measure the todolist sample app. We'll have to deploy the sample application to view measurements from Pelorus's Grafana dashboard.
-
-## Todolist sample application install steps
+## Install a sample application that Pelorus will measure
 
 * git clone the forked copy of konveyor/mig-demo-apps
-
-        git clone https://github.com/your_org/mig-demo-apps.git
+```
+git clone https://github.com/your_org/mig-demo-apps.git
+```
 
 * Install the todolist-mongo-go sample application
-
-        cd mig-demo-apps/apps/todolist-mongo-go
-        export GITHUB_ORG=<YOUR_REAL_GITHUB_FORK_ORG>
-        sed -i.original "s/your_org/${GITHUB_ORG}/g" mongo-persistent.yaml
-        oc create -f mongo-persistent.yaml
-    
-
+```
+cd mig-demo-apps/apps/todolist-mongo-go
+export GITHUB_ORG=<YOUR_REAL_GITHUB_FORK_ORG>
+sed -i.original "s/your_org/${GITHUB_ORG}/g" mongo-persistent.yaml
+oc create -f mongo-persistent.yaml
+```
 The todolist application and mongo database should now build and deploy into the mongo-persistent namespace.
 
 * Check the build
-
-        oc get all -n mongo-persistent
+```
+oc get all -n mongo-persistent
+```
 
 >***Note:*** Please pause to allow the todolist pod to build and deploy.
 
-*  Ensure that your github fork of mig-demo-apps is correctly set as the uri value in the todolist BuildConfig.
-    
-        - kind: BuildConfig
-          apiVersion: build.openshift.io/v1
-          metadata:
-            name: todolist
-        <snip>
-              source:
-                type: Git
-                git:
-                  uri: https://github.com/weshayutin/mig-demo-apps.git
-                  ref: master
-    
+*  Ensure that your github fork of mig-demo-apps is correctly set as the uri value in the todolist BuildConfig. https://github.com/konveyor/mig-demo-apps/blob/master/apps/todolist-mongo-go/templates/build_config.yaml
+```yaml
+...
+      source:
+        type: Git
+        git:
+          uri: https://github.com/weshayutin/todolist-mongo-go.git or https://github.com/<your_org>/mig-demo-apps.git
+          ref: master
+...
+```
+
 ## View the Pelorus measurements
 
 * In your OpenShift Pelorus project page, open the link to granafa or get the link via the cli:
@@ -160,7 +164,7 @@ You should now see at least one measurement for "Lead time for Change" and "Depl
 ![gnome-shell-screenshot-3zh4l2](img/initial_measurement.png)
 
 
-## WorkFlow - Updates to your application's source code 
+## WorkFlow - Updates to your application's source code
 - Make changes to the application, e.g. replace a line to index.html
 - commit changes to source control
 - Watch the application redeploy with the changes to be captured by Pelorus
@@ -172,11 +176,11 @@ One can more easily watch how Pelorus works by automatically building and deploy
 * To get the build webhook URL you can navigate to the todolist BuildConfig details or via the cli:
 
         oc describe buildconfig.build.openshift.io/todolist -n mongo-persistent
-    
+
 > **Note:**
 > The secret is hardcoded in the todolist manifest template to be:
   `4Xwu0tyAab90aaoasd88qweAasdaqvjknfrl3qwpo`
-        
+
 
 * Navigate to https://github.com/your_org/mig-demo-apps/settings/hooks
 * Paste the URL with the real secret replacing the text <secret>
@@ -193,13 +197,13 @@ The following screenshot is the original todolist application prior to a change
 
         cd mig-demo-apps/apps/todolist-mongo-go
         sed -i.bak 's/Enter an activity../Add a todo../g' index.html
-    
+
 * If you are happy with the change, commit and push
 
         git add .
         git commit -m "update text box"
         git push origin master
-    
+
 
 ### Rebuilding and Deploying the todolist application
 * Once the commit is pushed the application will automatically rebuild because we have setup the github webhook.
@@ -444,4 +448,4 @@ The Pelorus and todolist application can be installed automatically.  Using the 
 
 *  Repeat with additional git commits
 
-* Create and close Github issues while ensuring the appropriate issue labels are set.  
+* Create and close Github issues while ensuring the appropriate issue labels are set.
