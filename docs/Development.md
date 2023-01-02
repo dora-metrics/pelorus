@@ -15,7 +15,7 @@ This track is focused around the development of custom [Prometheus exporters](ht
 
 We use [Helm](https://helm.sh) to provide an automated deployment and configuration experience for Pelorus. We are always doing work to cover more and more complex use cases with our helm charts. In order to be able to effectively contribute to these charts, you'll need a cluster that satisfies all of the installation prerequisites for Pelorus.
 
-See the [Install guide](Install.md) for more details on that.
+See the [Install guide](getting_started/Install.md) for more details on that.
 
 Currently we have two charts:
 
@@ -292,7 +292,7 @@ Checkout the PR on top of your fork.
 
 1. [Checkout](#checkout) the PR on top of your fork.
 
-2. [Install Pelorus](Install.md) from checked out fork/branch.
+2. [Install Pelorus](getting_started/Install.md) from checked out fork/branch.
 
     **NOTE:**
 
@@ -341,7 +341,7 @@ Each PR runs exporter tests in the CI systems, however those changes can be test
 
 ### Helm Install changes
 
-For testing changes to the helm chart, you should just follow the [standard install process](Install.md), then verify that:
+For testing changes to the helm chart, you should just follow the [standard install process](getting_started/Install.md), then verify that:
 
 * All expected pods are running and healthy
 * Any expected behavior changes mentioned in the PR can be observed.

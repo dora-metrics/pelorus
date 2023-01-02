@@ -105,7 +105,7 @@ function print_help() {
     printf "\t  -o\tgithub organization of the mig-demo-apps\n"
     printf "\t  -d\tpath to virtualenv DIR\n"
     printf "\t  -s\tpath to DIR with secrets files (used in prow CI)\n"
-    printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"    
+    printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"
     printf "\t  -t\tenable Thanos with s3 bucket\n"
     printf "\t  -c\tpath to DIR with secrets files for s3 bucket\n"
 
@@ -189,6 +189,28 @@ if [ -z "${ci_filename}" ]; then
     ci_filename="values.yaml"
 fi
 
+type oc &> /dev/null
+if [ $? -gt 0 ]; then
+    echo "OpenShift CLI is necessary to run the script."
+    exit 1
+fi
+
+type helm &> /dev/null
+if [ $? -gt 0 ]; then
+    echo "helm is necessary to run the script."
+    exit 1
+fi
+
+# oc whoami &> /dev/null
+# if [ $? -gt 0 ]; then
+#     echo "You must be logged in to your cluster to run the script."
+#     exit 1
+# fi
+
+# if [ $(oc whoami) != "kube:admin" ]; then
+#     echo "You must be logged in to your cluster as kube:admin to run the script."
+#     exit 1
+# fi
 
 ### MAIN
 
@@ -205,11 +227,18 @@ trap 'cleanup_and_exit $?' INT TERM EXIT
 download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/pelorus/$ci_filename" "ci_values.yaml" "${DWN_DIR}"
 download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/mongo-persistent.yaml" "mongo-persistent.yaml" "${DWN_DIR}"
 
+oc get namespace "${PELORUS_NAMESPACE}" &> /dev/null
+if [ $? -eq 0 ]; then
+    echo "Namespace ${PELORUS_NAMESPACE} already exists. Delete it before running the script again."
+    # Add flag to pass other namespace name?
+    exit 1
+fi
 # Create namespace where pelorus and grafana, prometheus operators will get deployed
 oc create namespace "${PELORUS_NAMESPACE}"
 
 # Modify downloaded files
 sed -i.bak "s/your_org/$demo_org/g" "${DWN_DIR}/mongo-persistent.yaml"
+# TODO remove .bak?
 
 # Show what has been modified:
 diff -uNr "${DWN_DIR}/mongo-persistent.yaml" "${DWN_DIR}/mongo-persistent.yaml.bak"
@@ -432,7 +461,7 @@ fi
 if [ "${ENABLE_BITBUCKET_COM_EXP}" == true ]; then
     secret_configured=$(create_k8s_secret bitbucket-secret BITBUCKET_API_TOKEN BITBUCKET_API_USER)
     secret_exit=$?
-    echo "${secret_configured}"    
+    echo "${secret_configured}"
     if [[ $secret_exit != 0 ]]; then
         exit 1
     fi
