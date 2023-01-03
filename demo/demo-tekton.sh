@@ -236,14 +236,22 @@ printf "Templates: "
 oc delete --all template.template.openshift.io -n "${app_namespace}" 2> /dev/null || echo "...done"
 printf "RBAC Authorization: "
 oc delete "clusterrolebinding.rbac.authorization.k8s.io/pipeline-role-binding-${app_namespace}" 2> /dev/null || echo "...done"
-echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-pv="$(oc get pv | grep "${app_name}" | cut -d " " -f 1)"
-echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-pvc="$(oc get pvc -n "${app_name}" | cut -d " " -f 1 | tail -n 1)"
-printf "Remove PV's and PVC's associated w/ the tekton demo: %s and %s\n" "$pv" "$pvc"
-oc delete pv "$pv" --grace-period=0 --wait=false || true
-oc delete pvc "$pvc" -n "${app_namespace}" --grace-period=0 --wait=false || true
-oc patch pvc "$pvc" -p '{"metadata":{"finalizers":null}}' -n "${app_namespace}" || true
+if oc get pv | grep "${app_name}"; then
+    pv="$(oc get pv | grep "${app_name}" | cut -d " " -f 1)"
+    printf "Remove PV's and PVC's associated w/ the tekton demo: %s\n" "$pv"
+    oc delete pv "$pv" --grace-period=0 --wait=false || true
+else
+    echo "No PV's to remove"
+fi
+app_pvcs=$(oc get pvc -n "${app_name}" 2>&1)
+if [[ $app_pvcs == "No resources found in ${app_name} namespace." ]]; then
+    echo "No PVC's to remove"
+else
+    pvc="$(oc get pvc -n "${app_name}" | cut -d " " -f 1 | tail -n 1)"
+    printf "Remove PVC's associated w/ the tekton demo: %s\n" "$pvc"
+    oc delete pvc "$pvc" -n "${app_namespace}" --grace-period=0 --wait=false || true
+    oc patch pvc "$pvc" -p '{"metadata":{"finalizers":null}}' -n "${app_namespace}" || true
+fi
 
 echo "Setting up resources:"
 
