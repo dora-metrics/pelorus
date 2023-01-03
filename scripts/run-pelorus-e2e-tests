@@ -189,25 +189,22 @@ if [ -z "${ci_filename}" ]; then
     ci_filename="values.yaml"
 fi
 
-type oc &> /dev/null
-if [ $? -gt 0 ]; then
+if ! type oc &> /dev/null; then
     echo "OpenShift CLI is necessary to run the script."
     exit 1
 fi
 
-type helm &> /dev/null
-if [ $? -gt 0 ]; then
+if ! type helm &> /dev/null; then
     echo "helm is necessary to run the script."
     exit 1
 fi
 
-# oc whoami &> /dev/null
-# if [ $? -gt 0 ]; then
+# if ! oc whoami &> /dev/null; then
 #     echo "You must be logged in to your cluster to run the script."
 #     exit 1
 # fi
 
-# if [ $(oc whoami) != "kube:admin" ]; then
+# if [ "$(oc whoami)" != "kube:admin" ]; then
 #     echo "You must be logged in to your cluster as kube:admin to run the script."
 #     exit 1
 # fi
@@ -227,8 +224,7 @@ trap 'cleanup_and_exit $?' INT TERM EXIT
 download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/pelorus/$ci_filename" "ci_values.yaml" "${DWN_DIR}"
 download_file_from_url "https://raw.githubusercontent.com/$demo_org/mig-demo-apps/$demo_branch/apps/todolist-mongo-go/mongo-persistent.yaml" "mongo-persistent.yaml" "${DWN_DIR}"
 
-oc get namespace "${PELORUS_NAMESPACE}" &> /dev/null
-if [ $? -eq 0 ]; then
+if oc get namespace "${PELORUS_NAMESPACE}" &> /dev/null; then
     echo "Namespace ${PELORUS_NAMESPACE} already exists. Delete it before running the script again."
     # Add flag to pass other namespace name?
     exit 1
