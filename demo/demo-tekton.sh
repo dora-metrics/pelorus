@@ -149,7 +149,7 @@ fi
 function cleanup_and_exit() {
     local exit_val=$1
     if [ -z "${PELORUS_DEMO_TMP_DIR}" ]; then
-        echo "cleanup_and_exit(): Temp download dir not provided !" >&2
+        echo "ERROR: cleanup_and_exit(): Temp download dir not provided !" >&2
     else
       # Ensure dir exists and starts with prefix
       if [ -d "${PELORUS_DEMO_TMP_DIR}" ]; then
@@ -236,7 +236,9 @@ printf "Templates: "
 oc delete --all template.template.openshift.io -n "${app_namespace}" 2> /dev/null || echo "...done"
 printf "RBAC Authorization: "
 oc delete "clusterrolebinding.rbac.authorization.k8s.io/pipeline-role-binding-${app_namespace}" 2> /dev/null || echo "...done"
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 pv="$(oc get pv | grep "${app_name}" | cut -d " " -f 1)"
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 pvc="$(oc get pvc -n "${app_name}" | cut -d " " -f 1 | tail -n 1)"
 printf "Remove PV's and PVC's associated w/ the tekton demo: %s and %s\n" "$pv" "$pvc"
 oc delete pv "$pv" --grace-period=0 --wait=false || true
