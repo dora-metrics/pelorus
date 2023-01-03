@@ -4,7 +4,6 @@ from typing import Optional, cast
 
 import attr
 import pytest
-from kubernetes.client import ApiClient, Configuration
 from openshift.dynamic import DynamicClient
 
 from committime import CommitMetric
@@ -12,21 +11,14 @@ from committime.app import GitCommittimeConfig
 from committime.collector_github import GitHubCommitCollector
 from pelorus.config import load_and_log
 
-
-def _make_dyn_client():
-    kube_config = Configuration()
-    kube_config.host = "https://localhost:3000"
-    kube_config.verify_ssl = False
-    return DynamicClient(ApiClient(configuration=kube_config))
-
-
 USERNAME = "gituser"
 TOKEN = "gittoken"
 GIT_API = "localhost:3000"
 NAMESPACES = "basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod"
 
 
-def setup_collector_from_env_loading():
+@pytest.fixture
+def github_collector(openshift_client: DynamicClient) -> GitHubCommitCollector:
     env = dict(
         API_USER=USERNAME,
         TOKEN=TOKEN,
@@ -38,7 +30,7 @@ def setup_collector_from_env_loading():
     config = load_and_log(
         GitCommittimeConfig,
         other=dict(
-            kube_client=_make_dyn_client(),
+            kube_client=openshift_client,
             tls_verify=False,
         ),
         env=env,
@@ -96,12 +88,11 @@ class CommitMetricEssentials:
 
 
 @pytest.mark.mockoon
-def test_github_provider():
-    collector = setup_collector_from_env_loading()
+def test_github_provider(github_collector: GitHubCommitCollector):
 
     actual = [
         CommitMetricEssentials.from_commit_metric(cm)
-        for cm in collector.generate_metrics()
+        for cm in github_collector.generate_metrics()
     ]
 
     actual.sort(key=lambda commit: commit.commit_timestamp)  # type: ignore
