@@ -147,9 +147,11 @@ fi
 # Function to safely remove temporary files and temporary download dir
 # Argument is optional exit value to propagate it after cleanup
 function cleanup_and_exit() {
+    echo "ERROR: An error occurred while running the script..." >&2
+    echo "Cleaning up before exiting..."
     local exit_val=$1
     if [ -z "${PELORUS_DEMO_TMP_DIR}" ]; then
-        echo "ERROR: cleanup_and_exit(): Temp download dir not provided !" >&2
+        echo "No temporary directory provided, nothing to delete."
     else
       # Ensure dir exists and starts with prefix
       if [ -d "${PELORUS_DEMO_TMP_DIR}" ]; then
@@ -166,6 +168,7 @@ function cleanup_and_exit() {
     exit 0
 }
 
+# why not return > 0? until what line this applies?
 trap 'cleanup_and_exit 0' INT TERM EXIT
 
 # Check if the remote branch exists
@@ -283,6 +286,7 @@ oc process -f "$tekton_setup_dir/05-build-and-deploy.yaml" -p PROJECT_URI="${GIT
            -p NAMESPACE="${app_namespace}" -p APPLICATION_NAME="${app_name}" \
            -n default > /tmp/05-build-and-deploy.yaml.out 2>/tmp/05-build-and-deploy.yaml.err
 oc apply -n "${app_namespace}" -f /tmp/05-build-and-deploy.yaml.out
+# should delete files from /tmp/?
 
 route=$(oc get -n "${app_namespace}" "route/${app_name}" --output=go-template='http://{{.spec.host}}')
 
