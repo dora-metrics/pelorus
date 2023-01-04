@@ -5,19 +5,19 @@ The following diagram shows the various components and traffic flows in the Pelo
 ## Terminology
 
 _Exporter_
-: Exporters enable Pelorus to customize data points to capture metrics from various providers.  
+: Exporters enable Pelorus to customize data points to capture metrics from various providers.
 e.g. Deploy time exporter, Commit time exporter, Failure exporter
 
 _Provider_
-: The source from which exporters automate collection of data points (metrics).  
+: The source from which exporters automate collection of data points (metrics).
 e.g. OpenShift, Git providers (GitHub, GitLab, Bitbucket), Issue trackers (JIRA, ServiceNow)
 
 _Metrics_
-: The data points that are collected from the providers.  
+: The data points that are collected from the providers.
 e.g. deploy_time, commit_time, failure_creation, failure_resolution
 
 _Measures_
-: Metrics calculated to represent an [outcome](philosophy/outcomes/index.md). Each outcome is made measurable by a set of representative measures.  
+: Metrics calculated to represent an [outcome](philosophy/outcomes/index.md). Each outcome is made measurable by a set of representative measures.
 e.g. Lead Time for Change, Deployment Frequency, Mean Time to Restore, Change Failure Rate
 
 ## Basic Architecture and Components
@@ -38,7 +38,7 @@ Pelorus is composed of the following open source components.
 
 ### Prometheus and Grafana
 
-Pelorus is built on top of [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/), an industry standard open source metrics gathering and dashboarding stack. This allows for us to focus on the core differntiators for Pelorus - the metrics we care about, methods of gathering then, and building information radiators from those metrics.
+Pelorus is built on top of [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/), an industry standard open source metrics gathering and dashboarding stack. This allows for us to focus on the core differentiators for Pelorus - the metrics we care about, methods of gathering then, and building information radiators from those metrics.
 
 [Thanos](https://thanos.io/) is a set of Prometheus components that provide high availability and long term storage of Prometheus data. We use Thanos in Pelorus to give our dashboards the ability to look back over months or years of organizational data.
 

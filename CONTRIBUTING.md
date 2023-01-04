@@ -1,7 +1,5 @@
 # Contributing to Pelorus
 
-//Table of Content goes here
-
 ## Types of contributions we’re looking for
 
 * Resolving issues
@@ -26,7 +24,7 @@ created as others will do so if they appreciate it.
 
 ## Getting set up for local development
 
-Check out our [Pelorus development guide](/docs/Development.md) to get started developing Pelorus.
+Check out our [Pelorus development guide](https://pelorus.readthedocs.io/en/latest/Development/) to get started developing Pelorus.
 
 ## Contributing Content
 
