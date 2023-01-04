@@ -241,7 +241,7 @@ printf "RBAC Authorization: "
 oc delete "clusterrolebinding.rbac.authorization.k8s.io/pipeline-role-binding-${app_namespace}" 2> /dev/null || echo "...done"
 if oc get pv | grep "${app_name}"; then
     pv="$(oc get pv | grep "${app_name}" | cut -d " " -f 1)"
-    printf "Remove PV's and PVC's associated w/ the tekton demo: %s\n" "$pv"
+    printf "Remove PV's associated w/ the tekton demo: %s\n" "$pv"
     oc delete pv "$pv" --grace-period=0 --wait=false || true
 else
     echo "No PV's to remove"
@@ -255,11 +255,17 @@ else
     oc delete pvc "$pvc" -n "${app_namespace}" --grace-period=0 --wait=false || true
     oc patch pvc "$pvc" -p '{"metadata":{"finalizers":null}}' -n "${app_namespace}" || true
 fi
+# oc delete -n "${app_namespace}" -f /tmp/05-build-and-deploy.yaml.out
+# oc process -f "$tekton_setup_dir/04-service-account_template.yaml" -p PROJECT_NAMESPACE="${app_namespace}" -n default | oc delete -f -
+# oc delete -f "$tekton_setup_dir/03-rbac-pipeline-role.yaml"
+# oc delete -f "$tekton_setup_dir/02-tekton-operator.yaml" # not enough :(
+# exit 0
 
 echo "Setting up resources:"
 
 echo "2. Installing tekton operator"
 oc apply -f "$tekton_setup_dir/02-tekton-operator.yaml"
+# I think we need to wait here
 
 echo "3. Creating pipeline-role ClusterRole"
 oc apply -f "$tekton_setup_dir/03-rbac-pipeline-role.yaml"
@@ -289,6 +295,7 @@ oc apply -n "${app_namespace}" -f /tmp/05-build-and-deploy.yaml.out
 # should delete files from /tmp/?
 
 route=$(oc get -n "${app_namespace}" "route/${app_name}" --output=go-template='http://{{.spec.host}}')
+# shouldn't be Grafana dashboard?
 
 counter=1
 
@@ -354,3 +361,4 @@ else
 fi
 
 echo "Finished. Consider removing remote branch: ${current_branch}"
+# this did not run...
