@@ -4,22 +4,51 @@ In this demo, you will
 
 * Get a taste of how Pelorus captures a change going through the application's delivery cycle.
 * Understand that Pelorus should be used as a conversation tool to read the trends in metrics and react by making informed investments in the software delivery process.
-* Use GitHub as the code and failure provider...TODO write better
+* Use GitHub as the commit and failure exporter (a GitHub account is necessary).
 
 To do so, you will
 
 * Install a sample application that Pelorus will measure
-* Set a baseline of data for Pelorus measurements
-* Create a new commits, and Github issues
+* Create new commits and issues
 * Watch as the metrics and trends change as new versions roll out**\***
 
 > **Note:** More information about the four key DORA metrics can be found at the [Software Delivery Performance section](../Dashboards.md).
+
+TODO during the text, say there are other types of commit and failure exporters (links) and we are using GitHub for the example
 
 ## Lead Time for Change and Deployment Frequency
 
 In this section you see how Pelorus measures two DORA metrics: **Lead time for change** and **Deployment frequency**.
 
 ![dora_lead_deployment](../img/dora_metrics1.png)
+
+### Install the sample application
+
+Clone **your** forked copy of [konveyor/mig-demo-apps](https://github.com/konveyor/mig-demo-apps), by running
+```
+git clone https://github.com/your_org/mig-demo-apps.git
+```
+
+To install the `todolist-mongo-go` sample application, run
+```
+cd mig-demo-apps/apps/todolist-mongo-go
+export GITHUB_ORG=<YOUR_REAL_GITHUB_FORK_ORG>
+sed -i "s/your_org/${GITHUB_ORG}/g" mongo-persistent.yaml
+oc create -f mongo-persistent.yaml
+```
+The todolist application and mongo database should now build and deploy into the `mongo-persistent` namespace.
+
+To check the build, run
+```
+oc get all --namespace mongo-persistent
+```
+
+> **Note:** Please pause to allow the todolist pod to build and deploy. (follow same methods as before)
+
+Ensure that your github fork of mig-demo-apps is correctly set as the uri value in the todolist BuildConfig, by running
+```
+oc get buildconfig.build.openshift.io/todolist --namespace mongo-persistent -o=go-template='URI value: {{.spec.source.git.uri | printf "%s\n"}}'
+```
 
 ### Pelorus configuration
 
@@ -78,34 +107,6 @@ hanging?
 )
 
 Pelorus is now configured to measure the sample application. Now, we'll have to deploy the sample application to view measurements from Pelorus' Grafana dashboard.
-
-### Install the sample application
-
-Clone **your** forked copy of [konveyor/mig-demo-apps](https://github.com/konveyor/mig-demo-apps), by running
-```
-git clone https://github.com/your_org/mig-demo-apps.git
-```
-
-To install the `todolist-mongo-go` sample application, run
-```
-cd mig-demo-apps/apps/todolist-mongo-go
-export GITHUB_ORG=<YOUR_REAL_GITHUB_FORK_ORG>
-sed -i "s/your_org/${GITHUB_ORG}/g" mongo-persistent.yaml
-oc create -f mongo-persistent.yaml
-```
-The todolist application and mongo database should now build and deploy into the `mongo-persistent` namespace.
-
-To check the build, run
-```
-oc get all --namespace mongo-persistent
-```
-
-> **Note:** Please pause to allow the todolist pod to build and deploy. (follow same methods as before)
-
-Ensure that your github fork of mig-demo-apps is correctly set as the uri value in the todolist BuildConfig, by running
-```
-oc get buildconfig.build.openshift.io/todolist --namespace mongo-persistent -o=go-template='URI value: {{.spec.source.git.uri | printf "%s\n"}}'
-```
 
 ### View the Pelorus measurements
 
@@ -242,7 +243,7 @@ exporters:
 
 >**Note:**
 >
-> * A user [Github personal access token](https://github.com/settings/tokens) is required
+> * A user [Github personal access token](https://github.com/settings/tokens) is required.
 > * The `PROJECTS` key's value is the fork of the mig-apps-demo repository.
 
 Apply the updated values for Pelorus by executing:
