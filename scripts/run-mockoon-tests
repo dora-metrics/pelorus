@@ -23,12 +23,13 @@
 # be available or won't start.
 #
 # After this script runs created instance of mockoon container is
-# removed from the system. 
+# removed from the system.
 
 CONTAINER_ENGINE="podman"
-MOCKOON_CONTAINER="mockoon/cli:1.5.1"
+MOCKOON_CONTAINER="docker.io/mockoon/cli:1.5.1"
 MOCKOON_PORT="3000"
 MOCKOON_TIMEOUT=30
+EXIT_CODE=0
 
 TEST_CONTAINER_NAME="mockoon_pelorus_tests"
 
@@ -64,20 +65,19 @@ function cleanup_and_exit() {
     echo "Exiting..."
     cleanup_mockoon_pod
     # Propagate exit value if was provided
-    [ -n "${exit_val}" ] && exit "$exit_val"    
+    [ -n "${exit_val}" ] && echo "Exit code: ${exit_val}" && exit "$exit_val"
     exit 0
 }
 
-trap 'cleanup_and_exit' INT TERM EXIT
+trap 'cleanup_and_exit $EXIT_CODE' INT TERM EXIT
 
 # Check if test container already exists, if yes remove it
-
 cleanup_mockoon_pod
 
-# We need to check if port 3000 is used by other process
-
+# We need to check if port MOCKOON_PORT is used by other process
 if lsof -Pi :"${MOCKOON_PORT}" -sTCP:LISTEN -t >/dev/null ; then
     echo "Can not run integration tests as other process uses port ${MOCKOON_PORT}"
+    EXIT_CODE=2
     exit 2
 fi
 
@@ -89,14 +89,17 @@ if [ "${RUNNING_ID}" == "" ]; then
     echo "Mockoon is not working as expected."
     echo "Logs from failing container:"
     ${CONTAINER_ENGINE} logs "${RUNNING_ID}"
+    EXIT_CODE=1
+    exit 1
 fi
 
 counter=1
-until curl -k https://localhost:3000/version
+until curl -k https://localhost:"${MOCKOON_PORT}"/version
 do
     if [ $counter -gt $MOCKOON_TIMEOUT ]; then
         echo "Timed out waiting for the mockoon service"
-        cleanup_and_exit
+        EXIT_CODE=1
+        exit 1
     fi
     echo "Trying to reach mockoon: $counter out of $MOCKOON_TIMEOUT"
     sleep 1
