@@ -61,7 +61,6 @@ nav:
     - Outcomes:
       - Overview: philosophy/outcomes/index.md
       - Software Delivery Performance: philosophy/outcomes/SoftwareDeliveryPerformance.md
-      - Platform Adoption: philosophy/outcomes/platform_adoption.md
     - philosophy/pelorus.md
   - Configuration:
     - Architecture: Architecture.md
