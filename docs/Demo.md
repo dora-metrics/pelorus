@@ -1,5 +1,7 @@
 # Pelorus Demo
 
+For Pelorus installation to monitor your application's workflow, please skip this Demo and jump straight to the [Installation](Install.md) and [Configuration](configuration2.md) part of the documentation.
+
 In this demo, you will
 
 * Get a taste of how Pelorus captures a change going through the application's delivery cycle.

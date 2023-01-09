@@ -1,12 +1,12 @@
 # Customizing Pelorus
 
-See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
+See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to the Pelorus configuration object YAML file.
 
 ## Configure Prometheus Retention
 
 For detailed information about planning Prometheus storage capacity and configuration options please refer to the [operational aspects](https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects) of the Prometheus documentation.
 
-Prometheus is removing data older than 1 year, so if the metric you are interested in happened to be older than 1 year it won't be visible. This is configurable in the `values.yaml` file with the following option:
+Prometheus is removing data older than 1 year, so if the metric you are interested in happened to be older than 1 year it won't be visible. This is configurable in the Pelorus configuration object YAML file with the following option:
 ```yaml
 prometheus_retention: 1y
 ```
@@ -22,26 +22,25 @@ Unlike ephemeral volume that have a lifetime of a pod, persistent volume allows 
 
 It is recommended to use Prometheus Persistent Volume together with the [Long Term Storage](#configure-long-term-storage-recommended).
 
-To install or upgrade helm chart with PVC that uses default StorageClass and default 2Gi (can units be standardized?) capacity, use one additional field in the `values.yaml` file
+To install Pelorus with PVC that uses default `gp2` StorageClass and default `2Gi` capacity, ensure `prometheus_storage` is set to `true` in the Pelorus configuration object YAML file:
 ```yaml
 prometheus_storage: true
 # prometheus_storage_pvc_capacity: "<PVC requested volume capacity>" # Optional, default 2Gi
 # prometheus_storage_pvc_storageclass: "<your storage class name>"   # Optional, default "gp2"
 ```
 
-Then run `helm upgrade` with updated `values.yaml` configuration
+To ensure PVC were properly created and Bound to the PV, run after Pelorus instance creation:
 ```shell
-helm upgrade pelorus charts/pelorus --namespace pelorus --values values.yaml
-```
+$ oc get pvc --namespace pelorus
+NAME                                                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+prometheus-prometheus-pelorus-db-prometheus-prometheus-pelorus-0   Bound    pvc-fe8ac17c-bd23-47da-9c72-057349a59209   2Gi        RWO            gp2            10s
+prometheus-prometheus-pelorus-db-prometheus-prometheus-pelorus-1   Bound    pvc-3f815e71-1121-4f39-8174-0243071f281c   2Gi        RWO            gp2            10s
 
-To ensure PVC were properly created and Bound to the PV, run
-```shell
-oc get pvc --namespace pelorus
 ```
 
 ## Configure Long Term Storage (Recommended)
 
-The Pelorus chart supports deploying a thanos (what is this?) instance for long term storage. It can use any S3 bucket provider. The following is an example of configuring a `values.yaml` file for [NooBaa](https://www.noobaa.io/) with the local s3 service name.
+The Pelorus chart supports deploying a [Thanos](https://thanos.io/) instance for long term storage. It can use any S3 bucket provider. The following is an example of configuring a `pelorus-sample-instance.yaml` file for [NooBaa](https://www.noobaa.io/) with the local s3 service name.
 ```yaml
 bucket_access_point: s3.pelorus.svc:443
 bucket_access_key: <your access key>
@@ -53,10 +52,7 @@ The default bucket name is thanos. It can be overridden by specifying the follow
 thanos_bucket_name: <bucket name here>
 ```
 
-Then run `helm upgrade` with updated `values.yaml` configuration:
-```
-helm upgrade pelorus charts/pelorus --namespace pelorus --values values.yaml
-```
+Then deploy Pelorus as described in the [Installation](Install.md) doc.
 
 If you don't have an object storage provider, we recommend NooBaa as a free, open source option. You can follow our [NooBaa quickstart](Noobaa.md) to host an instance on OpenShift and configure Pelorus to use it.
 
@@ -66,28 +62,33 @@ By default, Pelorus will pull in data from the cluster in which it is running, b
 
 ## Configure Production Cluster
 
-A production configuration example of `values.yaml` with one deploytime exporter, which uses AWS S3 bucket and AWS volume for Prometheus and tracks deployments to production.
+A production configuration example of the Pelorus configuration object YAML file `pelorus-sample-instance.yaml`:
 ```yaml
-thanos_bucket_name: <bucket name here>
-bucket_access_point: s3.us-east-2.amazonaws.com
-bucket_access_key: <your access key>
-bucket_secret_access_key: <your secret access key>
-
-prometheus_storage: true
-prometheus_storage_pvc_capacity: 20Gi
-prometheus_storage_pvc_storageclass: "gp2"
-
-deployment:
-  labels:
-    app.kubernetes.io/component: production
-    app.kubernetes.io/name: pelorus
-    app.kubernetes.io/version: v0.33.0
-
-exporters:
-  instances:
-  - app_name: deploytime-exporter
-    exporter_type: deploytime
-    env_from_configmaps:
-    - pelorus-config
-    - deploytime-config
+kind: Pelorus
+apiVersion: charts.pelorus.konveyor.io/v1alpha1
+metadata:
+  name: pelorus-production
+  namespace: pelorus
+spec:
+  exporters:
+    global: {}
+    instances:
+      - app_name: deploytime-exporter
+        exporter_type: deploytime
+      - app_name: failuretime-exporter
+        exporter_type: failure
+      - app_name: committime-exporter
+        exporter_type: committime
+  extra_prometheus_hosts: null
+  openshift_prometheus_basic_auth_pass: changeme
+  openshift_prometheus_htpasswd_auth: 'internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM='
+  prometheus_retention: 1y
+  prometheus_retention_size: 1GB
+  prometheus_storage: true
+  prometheus_storage_pvc_capacity: 20Gi
+  prometheus_storage_pvc_storageclass: gp2
+  thanos_bucket_name: <bucket name here>
+  bucket_access_point: s3.us-east-2.amazonaws.com
+  bucket_access_key: <your access key>
+  bucket_secret_access_key: <your secret access key>
 ```
