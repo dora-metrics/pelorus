@@ -6,7 +6,6 @@ The following will walk through the deployment of Pelorus.
 
 Before deploying Pelorus, the following tools are necessary
 
-* A Unix machine from which to run the install (usually your laptop)
 * An OpenShift 4.7 or higher environment
 * [git](https://git-scm.com/)
 * [oc](https://docs.openshift.com/container-platform/4.8/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli) The OpenShift CLI**\***
@@ -37,10 +36,7 @@ Change the current directory to `pelorus`, by running
 cd pelorus
 ```
 
-Login to the OpenShift cluster as **kube:admin** (the specific user is really necessary?), by running
-```
-oc login
-```
+Login to the OpenShift cluster as an admin, by running `oc login` command.
 
 Create the namespace called `pelorus` that Pelorus will use, by running
 ```
@@ -53,12 +49,12 @@ Pelorus gets installed via helm charts. First, deploy the operators on which Pel
 helm install operators charts/operators --namespace pelorus
 ```
 
-Wait for the operators install to complete. (create script that checks when is finished https://github.com/hjwp/book-example/blob/master/functional_tests/base.py#L17 and I would change to an image)
+Wait for the operators install to complete.
 ```
 $ oc get pods --namespace pelorus
 NAME                                                   READY     STATUS    RESTARTS   AGE
-grafana-operator-controller-manager-7678cc5c7c-spvls   2/2       Running   0          22s
-prometheus-operator-559d659944-fvsjg                   1/1       Running   0          10s
+grafana-operator-controller-manager-................   2/2       Running   0          22s
+prometheus-operator-................                   1/1       Running   0          10s
 ```
 
 Then, deploy the core Pelorus stack, by running
@@ -69,16 +65,17 @@ helm install pelorus charts/pelorus --namespace pelorus
 Wait for the Pelorus install to complete.
 ```
 $ oc get pods --namespace pelorus
-NAME                                                   READY     STATUS      RESTARTS      AGE
-deploytime-exporter-1-deploy                           0/1       Completed   0             93s
-deploytime-exporter-1-rwk5l                            1/1       Running     0             90s
-grafana-deployment-55f77ccc8f-d7m92                    2/2       Running     0             84s
-grafana-operator-controller-manager-7678cc5c7c-spvls   2/2       Running     0             4m5s
-prometheus-operator-559d659944-fvsjg                   1/1       Running     0             3m53s
-prometheus-prometheus-pelorus-0                        3/3       Running     1 (89s ago)   93s
-prometheus-prometheus-pelorus-1                        3/3       Running     1 (89s ago)   93s
+NAME                                                   READY   STATUS      RESTARTS      AGE
+committime-exporter-1-deploy                           0/1     Completed   0             43s
+committime-exporter-1-.....                            1/1     Running     0             40s
+deploytime-exporter-1-.....                            1/1     Running     0             40s
+deploytime-exporter-1-deploy                           0/1     Completed   0             43s
+grafana-deployment-................                    2/2     Running     0             34s
+grafana-operator-controller-manager-................   2/2     Running     0             2m5s
+prometheus-operator-................                   1/1     Running     0             111s
+prometheus-prometheus-pelorus-0                        3/3     Running     1 (40s ago)   44s
+prometheus-prometheus-pelorus-1                        3/3     Running     1 (39s ago)   44s
 ```
-(image is outdated!! deploy just completes but does not run?)
 
 In a few seconds, you will see a number of resourced get created. The above commands will result in the following being deployed:
 
@@ -97,7 +94,6 @@ To check this, run
 ```
 oc get all --namespace pelorus
 ```
-(hard to see, too  much information)
 
 From here, some additional configuration is required in order to deploy other exporters. See the [Configuration Guide](Configuration.md) for more information on exporters.
 
@@ -114,7 +110,7 @@ helm uninstall pelorus --namespace pelorus
 helm uninstall operators --namespace pelorus
 ```
 
-If Pelorus was deployed with PVCs, you may want to delete them, because helm uninstall will not remove PVCs. To delete them run
+If Pelorus was deployed with PVCs, you may want to delete them, because helm uninstall will not remove PVCs. To delete them, run
 ```
 oc delete pvc --namespace pelorus $(oc get pvc --namespace pelorus -o name)
 ```

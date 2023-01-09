@@ -91,4 +91,3 @@ exporters:
     - pelorus-config
     - deploytime-config
 ```
-(deployment does not appear in values.yaml, should we add? Add all options so that it can be copied? `openshift_prometheus_htpasswd_auth`, `openshift_prometheus_basic_auth_pass`, `extra_prometheus_hosts`, `prometheus_retention`, `prometheus_retention_size`)

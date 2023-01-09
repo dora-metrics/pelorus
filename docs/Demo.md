@@ -4,7 +4,7 @@ In this demo, you will
 
 * Get a taste of how Pelorus captures a change going through the application's delivery cycle.
 * Understand that Pelorus should be used as a conversation tool to read the trends in metrics and react by making informed investments in the software delivery process.
-* Use GitHub as the commit and failure exporter (a GitHub account is necessary).
+* Use GitHub as the Hosting Service for Version Control System (used by commit time exporter) and as the Issue Tracker System (used by failure exporter) (a GitHub account is necessary).
 
 To do so, you will
 
@@ -13,8 +13,6 @@ To do so, you will
 * Watch as the metrics and trends change as new versions roll out**\***
 
 > **Note:** More information about the four key DORA metrics can be found in our [Outcomes documentation](./philosophy/outcomes/index.md).
-
-TODO during the text, say there are other types of commit and failure exporters (links) and we are using GitHub for the example
 
 ## Lead Time for Change and Deployment Frequency
 
@@ -59,7 +57,7 @@ cp charts/pelorus/values.yaml /var/tmp/
 
 Update the **exporters** section of the `/var/tmp/values.yaml` to match the following example:
 ```yaml
-...
+[...]
 exporters:
   instances:
   - app_name: deploytime-exporter
@@ -83,28 +81,7 @@ Apply the updated values for Pelorus by executing:
 helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
 ```
 
-Wait for the upgrade to complete. (automate?)
-```
-$ oc get pods --namespace pelorus
-TODO
-```
-(
-committime-exporter-1-deploy                           0/1     Completed     0               2m46s
-committime-exporter-1-v5sfc                            1/1     Terminating   0               2m43s
-committime-exporter-2-deploy                           0/1     Completed     0               41s
-committime-exporter-2-mzjzc                            1/1     Running       0               37s
-deploytime-exporter-1-bvtqx                            1/1     Terminating   0               2m44s
-deploytime-exporter-1-deploy                           0/1     Completed     0               2m46s
-deploytime-exporter-2-deploy                           0/1     Completed     0               42s
-deploytime-exporter-2-kdzkh                            1/1     Running       0               38s
-grafana-deployment-56c9bd98bd-ztrjp                    2/2     Running       0               2m38s
-grafana-operator-controller-manager-86d9b6d885-2mjrc   2/2     Running       0               4m
-prometheus-operator-7f5db89664-hg7lr                   1/1     Running       0               3m47s
-prometheus-prometheus-pelorus-0                        3/3     Running       1 (2m43s ago)   2m47s
-prometheus-prometheus-pelorus-1                        3/3     Running       1 (2m43s ago)   2m47s
-
-hanging?
-)
+Wait for the upgrade to complete.
 
 Pelorus is now configured to measure the sample application. Now, we'll have to deploy the sample application to view measurements from Pelorus' Grafana dashboard.
 
@@ -120,7 +97,6 @@ Navigate to **"pelorus / Software Delivery Performance - By App"** and select th
 You should now see at least one measurement for **Lead Time for Change** and **Deployment Frequency**, like in the following image.
 
 ![gnome-shell-screenshot-3zh4l2](img/initial_measurement.png)
-(is the image up to date?)
 
 ### Update application
 
@@ -132,14 +108,12 @@ In this section we will
 
 #### Github Webhook
 
-(move section to configuration?)
 You can easily watch how Pelorus works by automatically building and deploying the todolist app when a commit is pushed to Github by utilizing Github's webhooks.
 
 To get the build webhook URL you can navigate to the todolist BuildConfig details or by running
 ```
-echo "$(cat ~/.kube/config | grep server | cut -c 13-)/apis/build.openshift.io/v1/namespaces/mongo-persistent/buildconfigs/todolist/webhooks/<secret>/github"
+oc describe buildconfig.build.openshift.io/todolist -n mongo-persistent
 ```
-(is there an easier command? does this command works for everyone?)
 > **Note:** The secret is hardcoded in the todolist manifest template to be: `4Xwu0tyAab90aaoasd88qweAasdaqvjknfrl3qwpo`.
 
 To add the webhook
@@ -209,7 +183,7 @@ It is necessary to have Github issues enabled in your fork of the mig-apps-demo 
 
 After following [Lead Time for Change and Deployment Frequency](#lead-time-for-change-and-deployment-frequency), update the **exporters** section of the `/var/tmp/values.yaml` to match the following example:
 ```yaml
-...
+[...]
 exporters:
   instances:
   - app_name: deploytime-exporter
@@ -249,21 +223,17 @@ Apply the updated values for Pelorus by executing:
 helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
 ```
 
-Wait for the upgrade to complete. (automate?)
-```
-$ oc get pods --namespace pelorus
-TODO
-```
+Wait for the upgrade to complete.
 
 Check the output from the failure exporter, by running
 ```
 curl $(oc get route failure-exporter --namespace pelorus -o=template='http://{{.spec.host | printf "%s\n"}}')
 ```
-No bugs should be found at this time. (explain more...)
+No bugs should be found at this time.
 
-### Github Issues
+### GitHub Issues
 
-Pelorus will utilize two labels to determine if a Github issue is associated with the todolist-mongo application:
+Pelorus will utilize two labels to determine if a GitHub issue is associated with the todolist-mongo application:
 
 * `bug`: We'll need the default `bug` label.
 * `app.kubernetes.io/name=todolist`: Additionally, by default Pelorus requires that all issues associated with a particular application be labeled with the `app.kubernetes.io/name=<app_name>` label. This works the same way as the deployment configuration.
@@ -281,7 +251,6 @@ Create a Github issue and label it appropriately to register a failure, like in 
 Refresh the Grafana dashboard and you should see the Change Failure Rate go up.
 
 ![change_failure_rate_1](img/change_failure_rate_1.png)
-(did not went up for me)
 
 Now, let's create a non critical bug: a bug that does not indicate a deployment failure in your todolist application.
 
@@ -311,7 +280,7 @@ Now, we should also have data in the `Mean Time to Restore` metric in Grafana da
 
 **Change Failure Rate** is a key quality metric that measures what percentage of changes fails in the production environment. It is crucial to have alignment on what constitutes a failure. The recommended definition is a change that either results in degraded service or subsequently requires remediation.
 
-## Partially Automated Demo
+<!-- ## Partially Automated Demo
 
 The Pelorus and todolist application can be installed automatically. Using the forked copy of [mig-demo-apps](https://github.com/konveyor/mig-demo-apps) referenced as `https://github.com/<your_org>/mig-demo-apps`, execute the following steps:
 
@@ -328,19 +297,16 @@ make dev-env
 source .venv/bin/activate
 scripts/run-pelorus-e2e-tests -o <your_org> -e failure
 ```
-(does it need to export kubeconfig and run make dev env and run inside virtual environment?)
-(TOO MUCH NOISE!!!)
 
 Then, after the script finishes its execution, just follow this steps to test Pelorus:
 
 * Create a source code change to the todolist app and push it. If the GitHub webhook is enabled, wait for the rebuild. Otherwise, trigger the build manually in OpenShift.
 
-* Create and close GitHub issues while ensuring the appropriate issue labels are set.
+* Create and close GitHub issues while ensuring the appropriate issue labels are set. -->
 
 ## Uninstall sample application
 
 To uninstall the sample application, run
 ```
-oc delete -f mongo-persistent.yaml
 curl https://raw.githubusercontent.com/konveyor/mig-demo-apps/master/apps/todolist-mongo-go/mongo-persistent.yaml | oc delete -f -
 ```
