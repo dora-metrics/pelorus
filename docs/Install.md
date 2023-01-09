@@ -88,7 +88,7 @@ In a few seconds, you will see a number of resourced get created. The above comm
     * A `Grafana` instance
     * A `ServiceMonitor` instance for scraping the Pelorus exporters.
     * A `GrafanaDatasource` pointing to Prometheus.
-    * A set of `GrafanaDashboards`. See the [dashboards documentation](../Dashboards.md) for more details.
+    * A set of `GrafanaDashboards`. See the [Outcomes (Dashboards) documentation](philosophy/outcomes/index.md) for more details.
 * The following exporters:
     * Deploy Time
     * Commit Time
@@ -99,10 +99,22 @@ oc get all --namespace pelorus
 ```
 (hard to see, too  much information)
 
-From here, some additional configuration is required in order to deploy other exporters. See the [Configuration Guide](../Configuration.md) for more information on exporters.
+From here, some additional configuration is required in order to deploy other exporters. See the [Configuration Guide](Configuration.md) for more information on exporters.
 
 You may also want to enabled other features for the core stack. See the [Configuration2 Guide](configuration2.md) to understand those options.
 
 To understand how to set up an application to Pelorus to watch, see [QuickStart tutorial](Demo.md).
 
-To uninstall Pelorus, see the [Uninstall Guide](Uninstall.md).
+## Uninstalling
+
+Cleaning up Pelorus is very simple. Just run
+
+```
+helm uninstall pelorus --namespace pelorus
+helm uninstall operators --namespace pelorus
+```
+
+If Pelorus was deployed with PVCs, you may want to delete them, because helm uninstall will not remove PVCs. To delete them run
+```
+oc delete pvc --namespace pelorus $(oc get pvc --namespace pelorus -o name)
+```

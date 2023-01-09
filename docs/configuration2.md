@@ -1,6 +1,6 @@
 # Customizing Pelorus
 
-See [Configuring the Pelorus Stack](../Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
+See [Configuring the Pelorus Stack](Configuration.md) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to a Pelorus deployment.
 
 ## Configure Prometheus Retention
 
@@ -58,11 +58,11 @@ Then run `helm upgrade` with updated `values.yaml` configuration:
 helm upgrade pelorus charts/pelorus --namespace pelorus --values values.yaml
 ```
 
-If you don't have an object storage provider, we recommend NooBaa as a free, open source option. You can follow our [NooBaa quickstart](../Noobaa.md) to host an instance on OpenShift and configure Pelorus to use it.
+If you don't have an object storage provider, we recommend NooBaa as a free, open source option. You can follow our [NooBaa quickstart](Noobaa.md) to host an instance on OpenShift and configure Pelorus to use it.
 
 ## Deploying Across Multiple Clusters
 
-By default, Pelorus will pull in data from the cluster in which it is running, but it also supports collecting data across multiple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket across clusters. See [Pelorus Multi-Cluster Architecture](../Architecture.md) for details. You define exporters for the desired metrics in each of the clusters and the main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
+By default, Pelorus will pull in data from the cluster in which it is running, but it also supports collecting data across multiple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket across clusters. See [Pelorus Multi-Cluster Architecture](Architecture.md) for details. You define exporters for the desired metrics in each of the clusters and the main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
 
 ## Configure Production Cluster
 

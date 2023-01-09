@@ -12,7 +12,7 @@ To do so, you will
 * Create new commits and issues
 * Watch as the metrics and trends change as new versions roll out**\***
 
-> **Note:** More information about the four key DORA metrics can be found at the [Software Delivery Performance section](../Dashboards.md).
+> **Note:** More information about the four key DORA metrics can be found in our [Outcomes documentation](./philosophy/outcomes/index.md).
 
 TODO during the text, say there are other types of commit and failure exporters (links) and we are using GitHub for the example
 
@@ -20,7 +20,7 @@ TODO during the text, say there are other types of commit and failure exporters 
 
 In this section you see how Pelorus measures two DORA metrics: **Lead time for change** and **Deployment frequency**.
 
-![dora_lead_deployment](../img/dora_metrics1.png)
+![dora_lead_deployment](img/dora_metrics1.png)
 
 ### Install the sample application
 
@@ -119,10 +119,8 @@ Navigate to **"pelorus / Software Delivery Performance - By App"** and select th
 
 You should now see at least one measurement for **Lead Time for Change** and **Deployment Frequency**, like in the following image.
 
-![gnome-shell-screenshot-3zh4l2](../img/initial_measurement.png)
+![gnome-shell-screenshot-3zh4l2](img/initial_measurement.png)
 (is the image up to date?)
-
-> **Note:** If your dashboard is not like in the image, please check [Troubleshooting Guide](Troubleshooting.md).
 
 ### Update application
 
@@ -164,7 +162,7 @@ oc get route todolist-route --namespace mongo-persistent -o=go-template='http://
 
 It should look like in the following image.
 
-![todolist](../img/todolist_orig.png)
+![todolist](img/todolist_orig.png)
 
 The text "Enter an activity" does not seem clear, let's change that to "Add a todo", by running
 ```
@@ -182,18 +180,18 @@ Once the commit is pushed to the repository, it will automatically rebuild becau
 
 You will now see that the todolist application starts to rebuild, like in the following image.
 
-![todolist_rebuild](../img/todolist_rebuild.png)
+![todolist_rebuild](img/todolist_rebuild.png)
 
 After it finishes, you can now see on your todolist application the updated text change "Add a todo", like in the following image.
 
-![todolist-fixed](../img/todolist_fixed.png)
+![todolist-fixed](img/todolist_fixed.png)
 
 ### Understand the changes to the Grafana Dashboard
 
 Navigate to **"pelorus / Software Delivery Performance - By App"** and set the interval to 15 minutes.
 Pelorus will now read the updated commit and register a new deploytime.  You should now see a total for two deployments, like in the following image.
 
-![First-Update](../img/todolist_update1.png)
+![First-Update](img/todolist_update1.png)
 
 The **Lead Time for Change** should initially go down as we just pushed a commit.  The time difference between changes to the original git repository and your personal forked repo will most likely cause this metric to go down.
 
@@ -203,7 +201,7 @@ There have been two deployments since this demonstration was started, the initia
 
 In this section you see how Pelorus measures the last two DORA metrics: **Mean time to recovery** and **Change failure rate**.
 
-![dora_fail_recover](../img/dora_metrics2.png)
+![dora_fail_recover](img/dora_metrics2.png)
 
 It is necessary to have Github issues enabled in your fork of the mig-apps-demo repository (visit settings to enable it).
 
@@ -272,28 +270,28 @@ Pelorus will utilize two labels to determine if a Github issue is associated wit
 
 Navigate to https://github.com/your_org/mig-demo-apps/labels and check/create the following Github issue labels exists, like in the following image.
 
-![github_start](../img/github_issues_setup.png)
+![github_start](img/github_issues_setup.png)
 
 Now, we will create an issue in Github and set the appropriate labels. Pelorus will register an issue as a deployment failure only if it is labeled as a `bug` and `app.kubernetes.io/name=todolist` (our application name).
 
 Create a Github issue and label it appropriately to register a failure, like in the following image.
 
-![github_issue1](../img/github_issue_1.png)
+![github_issue1](img/github_issue_1.png)
 
 Refresh the Grafana dashboard and you should see the Change Failure Rate go up.
 
-![change_failure_rate_1](../img/change_failure_rate_1.png)
+![change_failure_rate_1](img/change_failure_rate_1.png)
 (did not went up for me)
 
 Now, let's create a non critical bug: a bug that does not indicate a deployment failure in your todolist application.
 
 Create another Github issue and add the bug label, however do **not** add the application label.
 
-![issue_untagged](../img/issue_2_non_deployment.png)
+![issue_untagged](img/issue_2_non_deployment.png)
 
 Now, let's resolve issue #1 and see how that impacts our `Failure Rate` and the `Mean Time to Restore`.
 
-![issue_close](../img/github_issue_1_close.png)
+![issue_close](img/github_issue_1_close.png)
 
 Check the output from the failure exporter again, by running
 ```
@@ -307,7 +305,7 @@ Notice the fields `failure_creation_timestamp` and `failure_resolution_timestamp
 
 Now, we should also have data in the `Mean Time to Restore` metric in Grafana dashboard, like in the following image.
 
-![mean_time_to_restore](../img/mean_time_to_restore.png)
+![mean_time_to_restore](img/mean_time_to_restore.png)
 
 **Mean Time to Restore** measures how long it takes to restore the service when an incident occurs.
 

@@ -51,12 +51,9 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started:
-    - Installation: getting_started/Install.md
-    - Quickstart Tutorial: getting_started/Demo.md
-    - Configuration: getting_started/configuration2.md
-    - Troubleshooting: getting_started/Troubleshooting.md
-    - Uninstall: getting_started/Uninstall.md
-    - Dashboards: Dashboards.md
+    - Installation: Install.md
+    - Quickstart Tutorial: Demo.md
+    - Configuration: configuration2.md
   - Our Philosophy:
     - Overview: philosophy/index.md
     - The Problem Today: philosophy/problem.md
