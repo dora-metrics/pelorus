@@ -105,7 +105,7 @@ function print_help() {
     printf "\t  -o\tgithub organization of the mig-demo-apps\n"
     printf "\t  -d\tpath to virtualenv DIR\n"
     printf "\t  -s\tpath to DIR with secrets files (used in prow CI)\n"
-    printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"    
+    printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"
     printf "\t  -t\tenable Thanos with s3 bucket\n"
     printf "\t  -c\tpath to DIR with secrets files for s3 bucket\n"
 
@@ -189,6 +189,25 @@ if [ -z "${ci_filename}" ]; then
     ci_filename="values.yaml"
 fi
 
+if ! type oc &> /dev/null; then
+    echo "OpenShift CLI is necessary to run the script."
+    exit 1
+fi
+
+if ! type helm &> /dev/null; then
+    echo "helm is necessary to run the script."
+    exit 1
+fi
+
+if ! oc whoami &> /dev/null; then
+    echo "You must be logged in to your cluster as an admin to run the script."
+    exit 1
+fi
+
+if oc get namespace "${PELORUS_NAMESPACE}" &> /dev/null; then
+    echo "Namespace ${PELORUS_NAMESPACE} already exists. Delete it before running the script again."
+    exit 1
+fi
 
 ### MAIN
 
@@ -432,7 +451,7 @@ fi
 if [ "${ENABLE_BITBUCKET_COM_EXP}" == true ]; then
     secret_configured=$(create_k8s_secret bitbucket-secret BITBUCKET_API_TOKEN BITBUCKET_API_USER)
     secret_exit=$?
-    echo "${secret_configured}"    
+    echo "${secret_configured}"
     if [[ $secret_exit != 0 ]]; then
         exit 1
     fi

@@ -1,447 +1,312 @@
 # Pelorus Demo
 
-### Assumptions
-- oc, helm command line tools installed
-- Logged into OCP Cluster via the CLI and UI as kubeadmin
+In this demo, you will
 
-### Goal
+* Get a taste of how Pelorus captures a change going through the application's delivery cycle.
+* Understand that Pelorus should be used as a conversation tool to read the trends in metrics and react by making informed investments in the software delivery process.
+* Use GitHub as the Hosting Service for Version Control System (used by commit time exporter) and as the Issue Tracker System (used by failure exporter) (a GitHub account is necessary).
 
-In this demo, you will get a taste of how Pelorus captures a change going through the application's delivery cycle.
+To do so, you will
 
-* Install and configure Pelorus
 * Install a sample application that Pelorus will measure
-* Set a baseline of data for Pelorus measurements
-* Create a new commits, and Github issues
-* Watch as the metrics and trends change as new versions roll out
+* Create new commits and issues
+* Watch as the metrics and trends change as new versions roll out**\***
 
-Understand that Pelorus should be used as a conversation tool to read the trends in metrics and react by making informed investments in the software delivery process.
+> **Note:** More information about the four key DORA metrics can be found in our [Outcomes documentation](./philosophy/outcomes/index.md).
 
---------------------------
+## Lead Time for Change and Deployment Frequency
 
-# Lead Time for Change and Deployment Frequency
+In this section you see how Pelorus measures two DORA metrics: **Lead time for change** and **Deployment frequency**.
 
 ![dora_lead_deployment](img/dora_metrics1.png)
 
-> **Note:** More information about the four key DORA metrics can be found at the [Software Delivery Performance section](Dashboards.md) 
+### Install the sample application
 
-## Workflow - Install
-- install and configure Pelorus
-- install a sample application
+Clone **your** forked copy of [konveyor/mig-demo-apps](https://github.com/konveyor/mig-demo-apps), by running
+```
+git clone https://github.com/your_org/mig-demo-apps.git
+```
 
-### Pelorus developer environment
+To install the `todolist-mongo-go` sample application, run
+```
+cd mig-demo-apps/apps/todolist-mongo-go
+export GITHUB_ORG=<YOUR_REAL_GITHUB_FORK_ORG>
+sed -i "s/your_org/${GITHUB_ORG}/g" mongo-persistent.yaml
+oc create -f mongo-persistent.yaml
+```
+The todolist application and mongo database should now build and deploy into the `mongo-persistent` namespace.
 
-This is an **optional step** for developers that will setup a Python
-virtual environment and install prerequisite python and openshift cli tools and libraries.
+To check the build, run
+```
+oc get all --namespace mongo-persistent
+```
 
-        cd pelorus
-        make dev-env
-        source .venv/bin/activate
-        make help
+> **Note:** Please pause to allow the todolist pod to build and deploy. (follow same methods as before)
 
-### Pelorus install steps
-
-* Create the pelorus namespace
-
-        oc create namespace pelorus
-
-* Install the required granfa and prometheus operators
-
-        helm install operators charts/operators --namespace pelorus
-
-* Wait for the operator install to complete
-
-        $ oc get pods -n pelorus
-        NAME                                                   READY     STATUS    RESTARTS   AGE
-        grafana-operator-controller-manager-7678cc5c7c-spvls   2/2       Running   0          22s
-        prometheus-operator-559d659944-fvsjg                   1/1       Running   0          10s
-    
-* Install Pelorus
-    
-        helm install pelorus charts/pelorus --namespace pelorus
-
-* Wait for the Pelorus install to complete
-
-        $ oc get pods -n pelorus
-        NAME                                                   READY     STATUS      RESTARTS      AGE
-        deploytime-exporter-1-deploy                           0/1       Completed   0             93s
-        deploytime-exporter-1-rwk5l                            1/1       Running     0             90s
-        grafana-deployment-55f77ccc8f-d7m92                    2/2       Running     0             84s
-        grafana-operator-controller-manager-7678cc5c7c-spvls   2/2       Running     0             4m5s
-        prometheus-operator-559d659944-fvsjg                   1/1       Running     0             3m53s
-        prometheus-prometheus-pelorus-0                        3/3       Running     1 (89s ago)   93s
-        prometheus-prometheus-pelorus-1                        3/3       Running     1 (89s ago)   93s
-
-* Finally check the install
-
-        oc get all -n pelorus
-    
+Ensure that your github fork of mig-demo-apps is correctly set as the uri value in the todolist BuildConfig, by running
+```
+oc get buildconfig.build.openshift.io/todolist --namespace mongo-persistent -o=go-template='URI value: {{.spec.source.git.uri | printf "%s\n"}}'
+```
 
 ### Pelorus configuration
 
-* Make a copy of [the values.yaml file in the pelorus repo](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) ([raw link for curl-ing](https://raw.githubusercontent.com/konveyor/pelorus/master/charts/pelorus/values.yaml)) and save it to /var/tmp/values.yaml
+After following [Installation guide](Install.md), copy `values.yaml` file to `/var/tmp/values.yaml`, by running
+```
+cp charts/pelorus/values.yaml /var/tmp/
+```
 
-        cp charts/pelorus/values.yaml /var/tmp/
+Update the **exporters** section of the `/var/tmp/values.yaml` to match the following example:
+```yaml
+[...]
+exporters:
+  instances:
+  - app_name: deploytime-exporter
+    exporter_type: deploytime
+    extraEnv:
+    - name: LOG_LEVEL
+      value: DEBUG
+    - name: NAMESPACES
+      value: mongo-persistent
+  - app_name: committime-exporter
+    exporter_type: committime
+    extraEnv:
+    - name: LOG_LEVEL
+      value: DEBUG
+    - name: NAMESPACES
+      value: mongo-persistent
+```
 
-* Update the "exporters" section of the /var/tmp/values.yaml to match the following example:
+Apply the updated values for Pelorus by executing:
+```
+helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
+```
 
-        exporters:
-          instances:
-          - app_name: deploytime-exporter
-            exporter_type: deploytime
-            extraEnv:
-            - name: LOG_LEVEL
-              value: DEBUG
-            - name: NAMESPACES
-              value: mongo-persistent
-          - app_name: committime-exporter
-            exporter_type: committime
-            extraEnv:
-            - name: LOG_LEVEL
-              value: DEBUG
-            - name: NAMESPACES
-              value: mongo-persistent
+Wait for the upgrade to complete.
 
->**Note:** [Documentation regarding values.yaml can be found on our readthedocs page.](https://pelorus.readthedocs.io/en/latest/Configuration/)
+Pelorus is now configured to measure the sample application. Now, we'll have to deploy the sample application to view measurements from Pelorus' Grafana dashboard.
 
-* Apply the updated values for Pelorus by executing:
+### View the Pelorus measurements
 
-        helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
+In your OpenShift Pelorus project page, open the link to Grafana or get the link, by running
+```
+oc get route grafana-route --namespace pelorus -o=go-template='https://{{.spec.host | printf "%s\n" }}'
+```
 
-> **Note:** Please pause to allow the committime exporter pod to be deployed.
+Navigate to **"pelorus / Software Delivery Performance - By App"** and select the **todolist** application.
 
-Pelorus should now be installed and configured to measure the todolist sample app. We'll have to deploy the sample application to view measurements from Pelorus's Grafana dashboard.
-
-## Todolist sample application install steps
-
-* git clone the forked copy of konveyor/mig-demo-apps
-
-        git clone https://github.com/your_org/mig-demo-apps.git
-
-* Install the todolist-mongo-go sample application
-
-        cd mig-demo-apps/apps/todolist-mongo-go
-        export GITHUB_ORG=<YOUR_REAL_GITHUB_FORK_ORG>
-        sed -i.original "s/your_org/${GITHUB_ORG}/g" mongo-persistent.yaml
-        oc create -f mongo-persistent.yaml
-    
-
-The todolist application and mongo database should now build and deploy into the mongo-persistent namespace.
-
-* Check the build
-
-        oc get all -n mongo-persistent
-
->***Note:*** Please pause to allow the todolist pod to build and deploy.
-
-*  Ensure that your github fork of mig-demo-apps is correctly set as the uri value in the todolist BuildConfig.
-    
-        - kind: BuildConfig
-          apiVersion: build.openshift.io/v1
-          metadata:
-            name: todolist
-        <snip>
-              source:
-                type: Git
-                git:
-                  uri: https://github.com/weshayutin/mig-demo-apps.git
-                  ref: master
-    
-## View the Pelorus measurements
-
-* In your OpenShift Pelorus project page, open the link to granafa or get the link via the cli:
-
-        oc get route grafana-route -o=go-template='https://{{.spec.host | printf "%s\n" }}'
-
-* Navigate to **"pelorus / Software Delivery Performance - By App"**
-* Select the **todolist** application
-
-You should now see at least one measurement for "Lead time for Change" and "Deployment Frequency"
+You should now see at least one measurement for **Lead Time for Change** and **Deployment Frequency**, like in the following image.
 
 ![gnome-shell-screenshot-3zh4l2](img/initial_measurement.png)
 
+### Update application
 
-## WorkFlow - Updates to your application's source code 
-- Make changes to the application, e.g. replace a line to index.html
-- commit changes to source control
+In this section we will
+
+- Make changes to the application
+- Commit changes to source control
 - Watch the application redeploy with the changes to be captured by Pelorus
 
-## Github Webhook
+#### Github Webhook
 
-One can more easily watch how Pelorus works by automatically building and deploying the todolist app when a commit is pushed to Github by utizing Github's webhooks.
+You can easily watch how Pelorus works by automatically building and deploying the todolist app when a commit is pushed to Github by utilizing Github's webhooks.
 
-* To get the build webhook URL you can navigate to the todolist BuildConfig details or via the cli:
+To get the build webhook URL you can navigate to the todolist BuildConfig details or by running
+```
+oc describe buildconfig.build.openshift.io/todolist -n mongo-persistent
+```
+> **Note:** The secret is hardcoded in the todolist manifest template to be: `4Xwu0tyAab90aaoasd88qweAasdaqvjknfrl3qwpo`.
 
-        oc describe buildconfig.build.openshift.io/todolist -n mongo-persistent
-    
-> **Note:**
-> The secret is hardcoded in the todolist manifest template to be:
-  `4Xwu0tyAab90aaoasd88qweAasdaqvjknfrl3qwpo`
-        
+To add the webhook
 
 * Navigate to https://github.com/your_org/mig-demo-apps/settings/hooks
-* Paste the URL with the real secret replacing the text <secret>
-* Toggle SSL as needed, for testing consider disabling.
-* Content type: application/json
-* Click, "Add webhook"
+* Click **Add webhook**
+* Paste the URL in **Payload URL**, with the real secret replacing the text `<secret>`
+* Select content type **application/json**
+* Toggle SSL as needed, for testing consider disabling
+* Click **Add webhook**
 
-## Update the application source
-The following screenshot is the original todolist application prior to a change
+For more information, consult [GitHub's documentation](https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks).
+
+#### Update the application source code
+
+In your OpenShift mongo-persistent project page, open the link to the sample application or get the link, by running
+```
+oc get route todolist-route --namespace mongo-persistent -o=go-template='http://{{.spec.host | printf "%s\n" }}'
+```
+
+It should look like in the following image.
 
 ![todolist](img/todolist_orig.png)
 
-* The text "Enter an activity" does not seem clear, let's change that to "Add a todo"
+The text "Enter an activity" does not seem clear, let's change that to "Add a todo", by running
+```
+sed -i 's/Enter an activity/Add a todo/g' index.html
+```
 
-        cd mig-demo-apps/apps/todolist-mongo-go
-        sed -i.bak 's/Enter an activity../Add a todo../g' index.html
-    
-* If you are happy with the change, commit and push
+If you are happy with the change, commit and push
+```
+git add index.html
+git commit -m "update text box"
+git push origin master
+```
 
-        git add .
-        git commit -m "update text box"
-        git push origin master
-    
+Once the commit is pushed to the repository, it will automatically rebuild because we have setup the GitHub webhook.
 
-### Rebuilding and Deploying the todolist application
-* Once the commit is pushed the application will automatically rebuild because we have setup the github webhook.
-
-* You will now see the todolist application start to rebuild
+You will now see that the todolist application starts to rebuild, like in the following image.
 
 ![todolist_rebuild](img/todolist_rebuild.png)
 
-### Understand the changes to the Grafana Dashboard
-
-> **Note:**
-> The dashboard is avaiable by navigating to grafana via the url found with:<br />
-> `oc -n pelorus get route grafana-route -o json | jq -r '.spec.host'`<br />
-> And navigating Home(top left) -> pelorus -> Softare Delivery Performance
-
-* Navigate to the Granfa Dashboard, Software Delivery Performance by App, set the interval to 15 minutes.
-Pelorus will now read the updated commit and register a new deploytime.  You should now see a total for two deployments.
-
-![First-Update](img/todolist_update1.png)
-
-* **Lead Time for Change:**
-    * Lead Time = {deploy time} - {commit time}
-
-    * The lead time for change should initially go down as we just pushed a commit.  The time difference between changes to the original git repository and your personal forked repo will most likely cause this metric to go down.
-
-* **Deployment Frequency:**
-    * Deployment Frequency = {number of deploys in a defined time frame}
-
-    * There have been two deployments since this demonstration was started, the initial deployment and now the redeployment after pushing a change to the git repository.  The deployment frequency should have gone up by 100% in the last 15 minutes.  Once your initial deployment time is longer than 15 minutes in the past, you will find your interval has fallen by 50%.
-
-### See the raw data in the Pelorus Exporter logs
-Check the Pelorus committime output for the commit hash that was pushed:
-
-```
-git log -p -1
-```
-
-Compare the output with the following command:
-
-```
-curl $(oc get route -n pelorus committime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-```
-
-Also notice the built deployed image sha is visible via the deploytime-exporter
-
-```
-curl $(oc get route -n pelorus deploytime-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-```
-
-### See the change to your todolist application
-You can now also check on your todolist application and see the updated text change "Add a todo"
+After it finishes, you can now see on your todolist application the updated text change "Add a todo", like in the following image.
 
 ![todolist-fixed](img/todolist_fixed.png)
 
+### Understand the changes to the Grafana Dashboard
 
-## Troubleshooting
+Navigate to **"pelorus / Software Delivery Performance - By App"** and set the interval to 15 minutes.
+Pelorus will now read the updated commit and register a new deploytime.  You should now see a total for two deployments, like in the following image.
 
-If exporters are not functioning or deployed, no data will show up in the dashboard. It will look like the following:
+![First-Update](img/todolist_update1.png)
 
-![No-Data](img/pelorus-dashboard-no-data.png)
+The **Lead Time for Change** should initially go down as we just pushed a commit.  The time difference between changes to the original git repository and your personal forked repo will most likely cause this metric to go down.
 
-* Please check the logs of exporter pod.
+There have been two deployments since this demonstration was started, the initial deployment and now the redeployment after pushing a change to the git repository. The **Deployment Frequency** should have gone up by 100% in the last 15 minutes.  Once your initial deployment time is longer than 15 minutes in the past, you will find your interval has fallen by 50%.
 
-An "idle" state could resemble:
+## Mean Time to Restore and Change Failure Rate
 
-![Idle-Data](img/pelorus-dashboard-idle-data.png)
-
-
-# Mean Time to Restore and Change Failure Rate
+In this section you see how Pelorus measures the last two DORA metrics: **Mean time to recovery** and **Change failure rate**.
 
 ![dora_fail_recover](img/dora_metrics2.png)
 
-> **Note:** More information about the four key DORA metrics can be found at the [Software Delivery Performance section](Dashboards.md) 
-
-### Assumptions
-- Github issues are enabled in https://github.com/your_org/mig-demo-apps/settings
-
-### Workflow - Failure and Resolution
-- Create and resolve bugs in Github issues that exercise Pelorus metrics
-- View the changes to the `Mean Time to Restore` and `Change Failure Rate` metrics.
-
+It is necessary to have Github issues enabled in your fork of the mig-apps-demo repository (visit settings to enable it).
 
 ### Pelorus configuration
 
+After following [Lead Time for Change and Deployment Frequency](#lead-time-for-change-and-deployment-frequency), update the **exporters** section of the `/var/tmp/values.yaml` to match the following example:
+```yaml
+[...]
+exporters:
+  instances:
+  - app_name: deploytime-exporter
+    exporter_type: deploytime
+    extraEnv:
+    - name: LOG_LEVEL
+      value: DEBUG
+    - name: NAMESPACES
+      value: mongo-persistent
+  - app_name: committime-exporter
+    exporter_type: committime
+    extraEnv:
+    - name: LOG_LEVEL
+      value: DEBUG
+    - name: NAMESPACES
+      value: mongo-persistent
+  - app_name: failure-exporter
+    exporter_type: failure
+    extraEnv:
+    - name: LOG_LEVEL
+      value: DEBUG
+    - name: PROVIDER
+      value: github
+    - name: TOKEN
+      value: <TOKEN>
+    - name: PROJECTS
+      value: <your_org>/mig-demo-apps
+```
+
 >**Note:**
-> * A users [Github personal access token](https://github.com/settings/tokens) is required
+>
+> * A user [Github personal access token](https://github.com/settings/tokens) is required.
 > * The `PROJECTS` key's value is the fork of the mig-apps-demo repository.
 
-* Update the "exporters" section of the /var/tmp/values.yaml to match the following example:
+Apply the updated values for Pelorus by executing:
+```
+helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
+```
 
-        exporters:
-          instances:
-          - app_name: deploytime-exporter
-            exporter_type: deploytime
-            extraEnv:
-            - name: LOG_LEVEL
-              value: DEBUG
-            - name: NAMESPACES
-              value: mongo-persistent
-          - app_name: committime-exporter
-            exporter_type: committime
-            extraEnv:
-            - name: LOG_LEVEL
-              value: DEBUG
-            - name: NAMESPACES
-              value: mongo-persistent
-          - app_name: failure-exporter
-            exporter_type: failure
-            extraEnv:
-            - name: LOG_LEVEL
-              value: DEBUG
-            - name: PROVIDER
-              value: github
-            - name: TOKEN
-              value: ghp_J<snip>
-            - name: PROJECTS
-              value: <your_org>/mig-demo-apps
+Wait for the upgrade to complete.
 
-* Documentation regarding values.yaml can be found [in the configuration section.](Configuration.md)
-  Apply the updated values for Pelorus by executing:
+Check the output from the failure exporter, by running
+```
+curl $(oc get route failure-exporter --namespace pelorus -o=template='http://{{.spec.host | printf "%s\n"}}')
+```
+No bugs should be found at this time.
 
-    
-        helm upgrade pelorus charts/pelorus --namespace pelorus --values /var/tmp/values.yaml
-    
+### GitHub Issues
 
->**Note:** Please pause to allow the failure exporter pod to build and deploy.
+Pelorus will utilize two labels to determine if a GitHub issue is associated with the todolist-mongo application:
 
-* Check the output from the failure exporter.  No bugs should be found at this time.
+* `bug`: We'll need the default `bug` label.
+* `app.kubernetes.io/name=todolist`: Additionally, by default Pelorus requires that all issues associated with a particular application be labeled with the `app.kubernetes.io/name=<app_name>` label. This works the same way as the deployment configuration.
 
-    
-        curl $(oc get route -n pelorus failure-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-    
-
-### Github Issues
-
-Pelorus will utilize two tags to determine if a Github issue is associated with the todolist-mongo application.  We'll need the default `bug` tag. Additionally, by default Pelorus requires that all issues associated with a particular application be labeled with the app.kubernetes.io/name=<app_name> label. This works the same way as the deployment configuration.
-
-* Navigate to https://github.com/your_org/mig-demo-apps/issues
-  * Required Github issue tags:
-    * `bug`
-    * `app.kubernetes.io/name=todolist`
+Navigate to https://github.com/your_org/mig-demo-apps/labels and check/create the following Github issue labels exists, like in the following image.
 
 ![github_start](img/github_issues_setup.png)
 
+Now, we will create an issue in Github and set the appropriate labels. Pelorus will register an issue as a deployment failure only if it is labeled as a `bug` and `app.kubernetes.io/name=todolist` (our application name).
 
-### Create a Github issues
-
-Now we will create an issue in Github and set the appropriate labels.
-Pelorus will register an issue as a deployment failure only if it is labeled as a `bug` and labeled with the application name `app.kubernetes.io/name=todolist`
-
-* Create a Github issue and label it appropriately to register a failure.
+Create a Github issue and label it appropriately to register a failure, like in the following image.
 
 ![github_issue1](img/github_issue_1.png)
 
-* Now refresh the Grafana dashboard and you should see the Change Failure Rate go up.
+Refresh the Grafana dashboard and you should see the Change Failure Rate go up.
 
 ![change_failure_rate_1](img/change_failure_rate_1.png)
 
-* Let's now create a non critical bug. A bug that does not indicate a deployment failure in your todolist application.  A the bug label however do *not* add the application label
+Now, let's create a non critical bug: a bug that does not indicate a deployment failure in your todolist application.
+
+Create another Github issue and add the bug label, however do **not** add the application label.
 
 ![issue_untagged](img/issue_2_non_deployment.png)
 
-* Ensure that issue #2 is not impacting our failure rate metric by curl-ing the output of the failure exporter.
-
-  **command:**
-
-    curl $(oc get route -n pelorus failure-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
-
-*  Issue #1 should be found in the output of the curl.  Issue #2 will not be registered as a deployment failure because the issue is *not* tagged with `app.kubernetes.io/name=todolist`
-
-Notice the message `failure_creation_timestamp`.  This indicates the time the issue was created.
-
-  **output:**
-
-    failure_creation_timestamp{app="todolist",issue_number="1"} *654704543e+09
-    
-
-* Now lets resolve issue #1 and see how that impacts our `Failure Rate` and the `Mean Time to Restore`
+Now, let's resolve issue #1 and see how that impacts our `Failure Rate` and the `Mean Time to Restore`.
 
 ![issue_close](img/github_issue_1_close.png)
 
-* Check the output from the failure exporter again and we should see a `failure_resolution_timestamp`, which indicates when a bug was closed.
+Check the output from the failure exporter again, by running
+```
+curl $(oc get route failure-exporter --namespace pelorus -o=template='http://{{.spec.host | printf "%s\n"}}')
+```
+Issue #1 should be found in the output of the curl. Issue #2 will not be registered as a deployment failure because the issue is **not** tagged with `app.kubernetes.io/name=todolist`.
 
-  **command:**
+Notice the fields `failure_creation_timestamp` and `failure_resolution_timestamp` in the previous command's output. They indicate the time the issue was created and when it was closed.
 
-      curl $(oc get route -n pelorus failure-exporter -o=template='http://{{.spec.host | printf "%s\n"}}')
+### Understand the changes to the Grafana Dashboard
 
-  **output:**
-
-      failure_creation_timestamp{app="todolist",issue_number="1"} *654704543e+09
-      failure_resolution_timestamp{app="todolist",issue_number="1"} *654705784e+09
-
-* Now we should also data in the `Mean Time to Restore` metric in Grafana
+Now, we should also have data in the `Mean Time to Restore` metric in Grafana dashboard, like in the following image.
 
 ![mean_time_to_restore](img/mean_time_to_restore.png)
 
-* **Mean Time to Restore:**
-    * Mean Time to Restore = Average( {failure_resolution_timestamp} - {failure_creation_timestamp} )
+**Mean Time to Restore** measures how long it takes to restore the service when an incident occurs.
 
-    * How long it takes to restore service when a service incident occurs.
+**Change Failure Rate** is a key quality metric that measures what percentage of changes fails in the production environment. It is crucial to have alignment on what constitutes a failure. The recommended definition is a change that either results in degraded service or subsequently requires remediation.
 
-* **Change Failure Rate:**
-    * Change Failure Rate = {number of failed changes} / {total number of changes to the system}
+<!-- ## Partially Automated Demo
 
-    * A key quality metric that measures what percentage of changes to production fail.  It is crucial to have alignment on what constitutes a failure.  The recommended definition is a change that either results in degraded service or subsequently requires remediation.
+The Pelorus and todolist application can be installed automatically. Using the forked copy of [mig-demo-apps](https://github.com/konveyor/mig-demo-apps) referenced as `https://github.com/<your_org>/mig-demo-apps`, execute the following steps:
 
+* [**Optional step**] Setup the [GitHub webhook](#github-webhook).
 
-## Parially Automated Demo
-
-> **Note:**
-  > Before starting please ensure pelorus has been uninstalled completely. The automated demo scripts expect that Pelorus is not installed and the Pelorus namespace is *not* present.
-
-The Pelorus and todolist application can be installed automatically.  Using the forked copy of [mig-demo-apps](https://github.com/konveyor/mig-demo-apps) referenced as `https://github.com/<your_org>/mig-demo-apps`, execute the following steps:
-
-
-* Setup the github webhook prior to execution
-
-    * The Github webhook address should be:
-
-        ```
-        https://api.cluster-<snip>.com:6443/apis/build.openshift.io/v1/namespaces/mongo-persistent/buildconfigs/todolist/webhooks/4Xwu0tyAab90aaoasd88qweAasdaqvjknfrl3qwpo/github
-        ```
-
-* Enable Github Issues in the repository's settings prior to execution
-
-    * In order for the demo to fully succeed at least one Github issue must be present with the `bug` and `app.kubernetes.io/name=todolist` issue labels.
+* Enable Github Issues in the repository's settings and create at least one Github issue with the `bug` and `app.kubernetes.io/name=todolist` issue labels.
 
 * Execute `run-pelorus-e2e-tests`
-  
-        cd pelorus
-        export KUBECONFIG=$PATH_TO_KUBECONFIG_FILE
-        export TOKEN=<github_personal_access_token>
-        make dev-env
-        source .venv/bin/activate
-        scripts/run-pelorus-e2e-tests -o <your_org> -e failure
+```
+cd pelorus
+export KUBECONFIG=$PATH_TO_KUBECONFIG_FILE
+export TOKEN=<github_personal_access_token>
+make dev-env
+source .venv/bin/activate
+scripts/run-pelorus-e2e-tests -o <your_org> -e failure
+```
 
-> **Note:**  Please wait as Pelorus is installed and the todolist application are deployed.
+Then, after the script finishes its execution, just follow this steps to test Pelorus:
 
-* Create a source code change to the todolist app and git push
+* Create a source code change to the todolist app and push it. If the GitHub webhook is enabled, wait for the rebuild. Otherwise, trigger the build manually in OpenShift.
 
-*  If the Github webhook is enabled, wait for the rebuild or trigger the build manually in OpenShift.
+* Create and close GitHub issues while ensuring the appropriate issue labels are set. -->
 
-*  Repeat with additional git commits
+## Uninstall sample application
 
-* Create and close Github issues while ensuring the appropriate issue labels are set.  
+To uninstall the sample application, run
+```
+curl https://raw.githubusercontent.com/konveyor/mig-demo-apps/master/apps/todolist-mongo-go/mongo-persistent.yaml | oc delete -f -
+```

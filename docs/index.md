@@ -49,14 +49,13 @@ Pelorus works by integrating with your application platforms, developer tools, a
 
 <div class="flex cards" markdown>
 
--   # :simple-kubernetes:
 -   # :simple-redhatopenshift:
 -   # :simple-github:
--   # :simple-gitlab:
 -   # :simple-bitbucket:
+-   # :simple-gitea:
+-   # :simple-gitlab:
+-   # :simple-azuredevops:
 -   # :simple-jirasoftware:
--   # :fontawesome-brands-servicestack:
--   # :simple-trello:
 
 </div>
 </div>
@@ -69,7 +68,7 @@ Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift clust
 
 ![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
 
-A short video describing each of these metrics is available [here](https://www.youtube.com/watch?v=7-iB_KhUaQg), and you can learn more about each individual dashboard in the [dashboards documentation](Dashboards.md).
+You can see [a short video describing each of these metrics](https://www.youtube.com/watch?v=7-iB_KhUaQg), and you can learn more about each dashboard per the [outcomes](philosophy/outcomes/) they represent.
 
 ## Prior Knowledge
 

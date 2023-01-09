@@ -51,8 +51,9 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started:
-    - Quickstart Tutorial: Demo.md
     - Installation: Install.md
+    - Quickstart Tutorial: Demo.md
+    - Configuration: configuration2.md
   - Our Philosophy:
     - Overview: philosophy/index.md
     - The Problem Today: philosophy/problem.md
