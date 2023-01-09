@@ -95,7 +95,7 @@ class GithubFailureCollector(AbstractFailureCollector):
     def _get_github_user(self) -> str:
         # login and get username
         # set the username / server to env for exporter consistency
-        url = "https://{}/user".format(self.tracker_api)
+        url = "https://{}/user".format(self.tracker_api)  # won't this always break?
         resp = cast(dict[str, Any], self._make_request(None, None, url))
         return resp["login"]
 

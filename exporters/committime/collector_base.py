@@ -62,7 +62,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     kube_client: DynamicClient = field()
 
-    username: str = field()
+    username: str = (
+        field()
+    )  # what about /exporters/pelorus/config/env_var_names.py USERNAME?
     token: str = field(repr=False)
 
     namespaces: set[str] = field(factory=set, converter=comma_separated(set))

@@ -398,5 +398,9 @@ rm -rf .cache && mkdocs serve
 ```
 to fix it.
 
-
 The mkdocs config is controlled by the `mkdocs.yml` file in the root of this project. All of the documents that will be served are in the [/docs](https://github.com/konveyor/pelorus/tree/master/docs) folder.
+
+To generate diagrams images, run
+```
+(cd docs/img/diagrams && python generate_diagrams.py)
+```

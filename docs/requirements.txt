@@ -6,3 +6,6 @@ mkdocs-redirects
 # Social cards
 pillow
 cairosvg
+
+# Documentation diagrams
+diagrams

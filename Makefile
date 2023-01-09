@@ -190,19 +190,19 @@ format-check: $(PELORUS_VENV) black-check isort-check
 
 black: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	black exporters scripts
+	black exporters scripts docs
 
 black-check: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	black --check exporters scripts
+	black --check exporters scripts docs
 
 isort: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	isort exporters scripts
+	isort exporters scripts docs
 
 isort-check: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	isort --check exporters scripts
+	isort --check exporters scripts docs
 
 
 # Linting
