@@ -4,11 +4,11 @@ We appreciate your interest in contributing to Pelorus! Use this guide to help y
 
 There are three main tracks of Pelorus development to consider.
 
-1. [Deployment Automation](#contributing-to-deployment-automation)  
+1. [Deployment Automation](#contributing-to-deployment-automation)
 This track mostly involves testing, fixing, and updating our Helm chart(s) to streamline the installation and configuration experience. Knowledge of Helm, OpenShift, Operators and Prometheus configuration is assumed for this work.
-2. [Dashboard Development](#dashboard-development)  
+2. [Dashboard Development](#dashboard-development)
 This is where we take the raw data we've collected and turn it into actionable visual representations that will help IT organizations make important decisions. Knowledge of Grafana and PromQL is required for contribution here.
-3. [Exporter Development](#exporter-development)  
+3. [Exporter Development](#exporter-development)
 This track is focused around the development of custom [Prometheus exporters](https://prometheus.io/docs/instrumenting/writing_exporters/) to gather the information we need in order to calculate our core metrics. Python development experience is assumed.
 
 ## Contributing to Deployment Automation
@@ -63,7 +63,7 @@ The following outlines a workflow for working on a dashboard:
         $ oc get route grafana-route -n pelorus
 
 1. Once signed in, sign as an administrator
-    1. Click the signin button in the bottom right corner:  
+    1. Click the signin button in the bottom right corner:
     ![Signin button](img/signin.png)
     1. The admin credentials can be pulled from the following commands:
 
@@ -364,7 +364,7 @@ We are in the process of refactoring our helm charts such that they can be teste
 The following is a walkthrough of the process we follow to create and manage versioned releases of Pelorus.
 Pelorus release versions follow SemVer versioning conventions. Change of the version is managed via Makefile.
 
-1. Create Pelorus Pull Request with the release you're about to make.  
+1. Create Pelorus Pull Request with the release you're about to make.
 
     For PATCH version bump use:
 
@@ -385,10 +385,18 @@ Pelorus release versions follow SemVer versioning conventions. Change of the ver
 
 ## Testing the Docs
 
-Our documentation gets published via [readthedocs](https://readthedocs.org/), via the [mkdocs](https://www.mkdocs.org/) framework. Mkdocs can be run locally for testing the rendering of the markdown files. If you followed the [local setup](#running-locally) instructions above, you should already have mkdocs installed.
+Our documentation gets published via [readthedocs](https://readthedocs.org/), via the [mkdocs](https://www.mkdocs.org/) framework. Mkdocs can be run locally for testing the rendering of the markdown files. If you followed the [local setup](#running-locally) instructions above, you should already have `mkdocs` installed.
 
-Stand up the local server by running:
+Stand up the local server by running
+```
+mkdocs serve
+```
 
-    mkdocs serve
+If an error with `KeyError: 'Regular'` appears when testing the the documentation, run
+```
+rm -rf .cache && mkdocs serve
+```
+to fix it.
 
-The mkdocs config is controlled by the mkdocs.yml file in the root of this project. All of the documents that will be served are in the [/docs](/docs) folder.
+
+The mkdocs config is controlled by the `mkdocs.yml` file in the root of this project. All of the documents that will be served are in the [/docs](/docs) folder.

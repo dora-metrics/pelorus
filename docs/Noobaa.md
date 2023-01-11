@@ -45,7 +45,7 @@ They will be used later in the [Update Pelorus Configuration](#update-pelorus-co
 #------------------#
 
 AWS_ACCESS_KEY_ID     : <s3 access key>
-AWS_SECRET_ACCESS_KEY : <s3 secred access key>
+AWS_SECRET_ACCESS_KEY : <s3 secret access key>
 ```
 
 After running `noobaa install --namespace pelorus` step, you may confirm that installation went fine by checking the System Status output and ensuring that ll the services are marked with ✅:
@@ -97,7 +97,7 @@ To create `thanos` NooBaa bucket:
 noobaa bucket create thanos --namespace pelorus
 ```
 
-At any time to check if the bucket was created succesfully and it's healthy run the command:
+At any time to check if the bucket was created successfully and it's healthy run the command:
 
 ```
 noobaa bucket status thanos --namespace pelorus
@@ -107,7 +107,7 @@ noobaa bucket status thanos --namespace pelorus
 
 To update our Pelorus stack, follow the instructions provided in the [Long Term Storage](configuration2.md#configure-long-term-storage-recommended).
 
-Ensure that `<s3 access key>`, `<s3 secred access key>` and the `<bucket name>` are used from the [Deploy NooBaa
+Ensure that `<s3 access key>`, `<s3 secret access key>` and the `<bucket name>` are used from the [Deploy NooBaa
 ](#deploy-noobaa) step and `s3.pelorus.svc:443`, which is an `S3 InternalDNS Address` from the `noobaa status --namespace pelorus` command, as bucket access point as in example:
 
 ```yaml

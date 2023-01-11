@@ -2,7 +2,7 @@
 
 ## Configuring The Pelorus Stack
 
-The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [values.yaml](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) file and [charts/pelorus/configmaps/](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/configmaps) directory, and store in in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `charts/pelorus/configmaps` files with `values.yaml` and applying the changes like so:
+The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [values.yaml](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) file and [charts/pelorus/configmaps/](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/configmaps) directory, and store in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `charts/pelorus/configmaps` files with `values.yaml` and applying the changes like so:
 
 ```
 oc apply -f `myclusterconfigs/pelorus/configmaps
@@ -178,7 +178,7 @@ exporters:
 
 #### Source-to-image (S2I)
 
-By specyfing `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/konveyor/pelorus/releases) Pelorus.
+By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/konveyor/pelorus/releases) Pelorus.
 
 Example of such exporter instances are below:
 
@@ -208,11 +208,12 @@ exporters:
 
 ### Authentication to Remote Services
 
-Pelorus exporters make use of `personal access tokens` when authentication is 
-required.  It is recommended to configure the Pelorus exporters with authenticaion
+Pelorus exporters make use of `personal access tokens` when authentication is
+required.  It is recommended to configure the Pelorus exporters with authentication
 via the `TOKEN` key to avoid connection rate limiting and access restrictions.
 
 More information about personal access tokens:
+
 * [Github Personal Access Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 * [Jira / Bitbucket Personal Access Tokens](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
@@ -325,12 +326,12 @@ When it starts up, you should see information about custom certificate usage, de
 
 Labels are key/value pairs that are attached to objects, such as pods. Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users and Pelorus.
 
-The commit time, deploy time, and failure exporters all rely on labels to indentify the application that is associated with an object.  The object can
+The commit time, deploy time, and failure exporters all rely on labels to identify the application that is associated with an object.  The object can
 include a build, build configuration, deployment or issue.
 
-In Pelorus the default label is: `app.kubernetes.io/name=<app_name>` where 
+In Pelorus the default label is: `app.kubernetes.io/name=<app_name>` where
 app_name is the name of the application(s) being monitored. The label can
-be customized by setting the `APP_LABEL` variable to your custom value. 
+be customized by setting the `APP_LABEL` variable to your custom value.
 
 An example may be to override the APP_LABEL for the failure exporter to indicate a production bug or issue.
 The `APP_LABEL` with the value `production_issue/name` may give more context than `app.kubernetes.io/name`
@@ -353,7 +354,7 @@ Example Failure exporter config:
     value: production_issue/name
 ```
 
-> **Warning** 
+> **Warning**
 > If the application label is not properly configured, Pelorus will not collect data for that object.
 
 In the following examples an application named [todolist](https://github.com/konveyor/mig-demo-apps/blob/master/apps/todolist-mongo-go/mongo-persistent.yaml) is being monitored.
@@ -434,7 +435,7 @@ Note: The requirement to label the build with `app.kubernetes.io/name=<app_name>
 * Sample Application
 
 ```
-cat app.py 
+cat app.py
 #!/usr/bin/env python3
 print("Hello World")
 ```
@@ -569,7 +570,7 @@ data:
 
 #### Custom JIRA workflow
 
-The Failure Time Exporter(s) can be easilly adjusted to adapt custom JIRA workflow(s), this includes:
+The Failure Time Exporter(s) can be easily adjusted to adapt custom JIRA workflow(s), this includes:
 
 1. Custom JIRA JQL query to find all matching issues to be tracked. *NOTE* in such case `PROJECTS` value is ignored, because user may or may not include `project` as part of the custom JQL query. More information is available at [Advanced Jira Query Language (JQL) site](https://support.atlassian.com/jira-service-management-cloud/docs/use-advanced-search-with-jira-query-language-jql/).
 
@@ -739,7 +740,7 @@ This exporter provides several configuration options, passed via `pelorus-config
 
 The job of the failure time exporter is to capture the timestamp at which a failure occurs in a production environment and when it is resolved.
 
-Failure Time Exporter may be deployed with one of three backends, such as JIRA, GithHub Issues and ServiceNow. In one clusters' namespace there may be multiple instances of the Failure Time Exporter for each of the backends or/and watched projects.
+Failure Time Exporter may be deployed with one of three backends, such as JIRA, GitHub Issues and ServiceNow. In one clusters' namespace there may be multiple instances of the Failure Time Exporter for each of the backends or/and watched projects.
 
 Each of the backend requires specific [configuration](#failureconfigmap), that may be used via ConfigMap associated with the exporter instance.
 
@@ -807,14 +808,14 @@ metadata:
   namespace: pelorus
 data:
   PROVIDER: "github"     # jira  |  jira, github, servicenow
-  SERVER:                #       |  URL to the Jira or ServiceNowServer, can be overriden by env_from_secrets
-  API_USER:                  #       |  Tracker Username, can be overriden by env_from_secrets
-  TOKEN:                 #       |  User's API Token, can be overriden by env_from_secrets
+  SERVER:                #       |  URL to the Jira or ServiceNowServer, can be overridden by env_from_secrets
+  API_USER:                  #       |  Tracker Username, can be overridden by env_from_secrets
+  TOKEN:                 #       |  User's API Token, can be overridden by env_from_secrets
   PROJECTS: "konveyor/todolist-mongo-go,konveyor/todolist-mariadb-go"
   APP_FIELD: "todolist"  #       |  This is optional for the Github failure exporter
 ```
 
-The `PROJECTS` key is comma deliniated and formated at "Github_organization/Github_repository"
+The `PROJECTS` key is comma delimited and formatted at "Github_organization/Github_repository"
 The `APP_FIELD` key may be used to associate the Github repository with a particular application
 
 Any Github issue must be labeled as a "bug".  Any issue optionally can be labeled with a label associated
