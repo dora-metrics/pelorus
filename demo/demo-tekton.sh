@@ -113,43 +113,42 @@ if [[ "$url" == "" ]] && [[ $(git status --porcelain --untracked-files=no) ]]; t
   exit 1
 fi
 
-# Check if Pelorus is installed
-if ! oc get namespace pelorus &> /dev/null; then
-    echo "ERROR: 'pelorus' namespace does not exist. Create it and install Pelorus in it." >&2
-    exit 1
-fi
-
-pelorus_pods=$(oc get pod -n pelorus 2>&1)
+# # Check if Pelorus is installed
+# if ! oc get namespace pelorus &> /dev/null; then
+#    echo "ERROR: 'pelorus' namespace does not exist. Create it and install Pelorus in it." >&2
+#    exit 1
+# fi
+# #
+# pelorus_pods=$(oc get pod -n pelorus 2>&1)
 # TODO this does not seem the best command for this, improve it
-if [[ $pelorus_pods == "No resources found in pelorus namespace." ]]; then
-    echo "ERROR: Pelorus is not installed in 'pelorus' namespace. Install it by running" >&2
-    exit 1
-fi
+# if [[ $pelorus_pods == "No resources found in pelorus namespace." ]]; then
+#    echo "ERROR: Pelorus is not installed in 'pelorus' namespace. Install it by running" >&2
+#    exit 1
+# fi
 
-echo "Discovering Pelorus deployment in the 'pelorus' namespace"
-FOUND_COMMITTIME=false
+# echo "Discovering Pelorus deployment in the 'pelorus' namespace"
+# FOUND_COMMITTIME=false
 # Check if Pelorus is deployed on the cluster and monitors
 # required namespace or default one, which means all of them
-COMMITTIME_EXPORTERS=$(oc get pod -n pelorus -l pelorus.konveyor.io/exporter-type=committime --field-selector=status.phase==Running --no-headers -o custom-columns=":metadata.name")
-for committime_exporter in $COMMITTIME_EXPORTERS;
-do
-  committime_namespaces=$(oc exec -n pelorus "${committime_exporter}" -- printenv NAMESPACES)
-  echo ",${committime_namespaces},"  | grep ",${app_namespace}," > /dev/null && FOUND_COMMITTIME=true
-  echo "${committime_namespaces}"  | grep "default" > /dev/null && FOUND_COMMITTIME=true
-done
-if [ "${FOUND_COMMITTIME}" == false ]; then
-  echo "ERROR: Commit Time exporter for the Pelorus deployment in the 'pelorus' namespace do not"
-  echo "       monitor '${app_namespace}' namespace in which you are trying to deploy application."
-  echo "       Please correct your Pelorus deployment and restart demo script."
-  exit 1
-fi
+# COMMITTIME_EXPORTERS=$(oc get pod -n pelorus -l pelorus.konveyor.io/exporter-type=committime --field-selector=status.phase==Running --no-headers -o custom-columns=":metadata.name")
+# for committime_exporter in $COMMITTIME_EXPORTERS;
+# do
+#  committime_namespaces=$(oc exec -n pelorus "${committime_exporter}" -- printenv NAMESPACES)
+#  echo ",${committime_namespaces},"  | grep ",${app_namespace}," > /dev/null && FOUND_COMMITTIME=true
+#  echo "${committime_namespaces}"  | grep "default" > /dev/null && FOUND_COMMITTIME=true
+# done
+# if [ "${FOUND_COMMITTIME}" == false ]; then
+#  echo "ERROR: Commit Time exporter for the Pelorus deployment in the 'pelorus' namespace do not"
+#  echo "       monitor '${app_namespace}' namespace in which you are trying to deploy application."
+#  echo "       Please correct your Pelorus deployment and restart demo script."
+#  exit 1
+# fi
 
 EXIT_CODE=0
 
 # Function to safely remove temporary files and temporary download dir
 # Argument is optional exit value to propagate it after cleanup
 function cleanup_and_exit() {
-    echo "An error occurred while running the script..."
     echo "Cleaning up before exiting..."
     local exit_val=$1
     if [ -z "${PELORUS_DEMO_TMP_DIR}" ]; then
@@ -181,23 +180,23 @@ if [[ "$url" == "" ]]; then
     REMOTE_BRANCH_EXISTS=true
   fi
   # Top level git repository
-  PELORUS_WORKING_DIR="$(git rev-parse --show-toplevel)" || EXIT_CODE=1 && exit 1
+  PELORUS_WORKING_DIR="$(git rev-parse --show-toplevel)" || (EXIT_CODE=1 && exit 1)
 else
   # Create temporary directory
-  PELORUS_DEMO_TMP_DIR=$( mktemp -d -t "${TMP_DIR_PREFIX}_XXXXX" ) || EXIT_CODE=1 && exit 1
+  PELORUS_DEMO_TMP_DIR=$( mktemp -d -t "${TMP_DIR_PREFIX}_XXXXX" ) || (EXIT_CODE=1 && exit 1)
   echo "Pre: Temp directory created: ${PELORUS_DEMO_TMP_DIR}"
   if git ls-remote --heads "${url}" "${current_branch}"  2>/dev/null | grep "${current_branch}">/dev/null; then
     REMOTE_BRANCH_EXISTS=true
   fi
   git clone "${url}" "${PELORUS_DEMO_TMP_DIR}/pelorus"
-  pushd "${PELORUS_DEMO_TMP_DIR}/pelorus" || EXIT_CODE=1 && exit 1
-    PELORUS_WORKING_DIR="$( git rev-parse --show-toplevel )" || EXIT_CODE=1 && exit 1
+  pushd "${PELORUS_DEMO_TMP_DIR}/pelorus" || (EXIT_CODE=1 && exit 1)
+    PELORUS_WORKING_DIR="$( git rev-parse --show-toplevel )" || (EXIT_CODE=1 && exit 1)
   popd
 fi
 
 # Ensure we are on the proper branch, if branch is not in remote create one
 echo "Pre: Using Pelorus git dir: ${PELORUS_WORKING_DIR}"
-pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
+pushd "${PELORUS_WORKING_DIR}" || (EXIT_CODE=1 && exit 1)
   if [ "${REMOTE_BRANCH_EXISTS}" == true ]; then
     echo "Pre: Using existing remote branch: ${current_branch}"
     git fetch origin
@@ -211,7 +210,7 @@ pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
     EXIT_CODE=1
     exit 1
   fi
-popd || EXIT_CODE=1 && exit 1
+popd || (EXIT_CODE=1 && exit 1)
 
 # Create namespace if one doesn't exist
 if oc get namespace "${app_namespace}" >/dev/null 2>&1 ; then
@@ -270,7 +269,7 @@ echo "4. Creating ClusterRoleBinding with ServiceAccount"
 oc process -f "$tekton_setup_dir/04-service-account_template.yaml" -p PROJECT_NAMESPACE="${app_namespace}" -n default | oc create -f -
 
 echo "5. Setting up build and deployment information"
-pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
+pushd "${PELORUS_WORKING_DIR}" || (EXIT_CODE=1 && exit 1)
   GIT_TKN_BRANCH=$(git symbolic-ref --short HEAD)
   GIT_TKN_URL=$(git config --get remote.origin.url)
   # Tekton does not have ssh certificates, so needs to use http/https
@@ -282,7 +281,7 @@ pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
       GIT_TKN_URL=$( echo "${GIT_TKN_URL}" | sed 's/\:/\//g' | sed 's/git\@/https\:\/\//g' )
     fi
   fi
-popd || EXIT_CODE=1 && exit 1
+popd || (EXIT_CODE=1 && exit 1)
 
 oc process -f "$tekton_setup_dir/05-build-and-deploy.yaml" -p PROJECT_URI="${GIT_TKN_URL}" -p PROJECT_REF="${GIT_TKN_BRANCH}" \
            -p NAMESPACE="${app_namespace}" -p APPLICATION_NAME="${app_name}" \
@@ -294,7 +293,7 @@ route=$(oc get -n "${app_namespace}" "route/${app_name}" --output=go-template='h
 counter=1
 
 function run_pipeline {
-    pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
+    pushd "${PELORUS_WORKING_DIR}" || (EXIT_CODE=1 && exit 1)
       echo "Running pipeline for the '${GIT_TKN_URL}' repo and '${GIT_TKN_BRANCH}' branch"
       tkn pipeline start -n "${app_namespace}" --showlog "${app_name}-pipeline" \
         -w name=repo,claimName="${app_name}-build-pvc" \
@@ -302,7 +301,7 @@ function run_pipeline {
         -p build-no="${counter}" \
         -l app.kubernetes.io/name="${app_name}" \
         -p BUILD_TYPE="$build_type"
-    popd || EXIT_CODE=1 && exit 1
+    popd || (EXIT_CODE=1 && exit 1)
 }
 
 echo -e "\nRunning pipeline\n"
@@ -320,7 +319,7 @@ if [ "${NO_HUMAN}" == false ]; then
        echo ""
        case $a in
           1* )
-             pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
+             pushd "${PELORUS_WORKING_DIR}" || (EXIT_CODE=1 && exit 1)
                echo "We've modified this file, time to build and deploy a new version from ${GIT_TKN_BRANCH} branch and ${GIT_TKN_URL} repo. Times modified: $counter" | tee -a "demo/${python_example_txt}"
                git commit -m "modifying python example, number $counter" -- "demo/${python_example_txt}"
                git push origin "$current_branch"
@@ -330,7 +329,7 @@ if [ "${NO_HUMAN}" == false ]; then
 
                echo -e "\nWhen ready, page will be available at $route"
 
-             popd || EXIT_CODE=1 && exit 1
+             popd || (EXIT_CODE=1 && exit 1)
           ;;
 
           2* ) exit 0 ;;
@@ -339,7 +338,7 @@ if [ "${NO_HUMAN}" == false ]; then
     done
 else
     while [ $counter -lt "$num_deployments" ]; do
-        pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
+        pushd "${PELORUS_WORKING_DIR}" || (EXIT_CODE=1 && exit 1)
           echo "We've modified this file, time to build and deploy a new version from ${GIT_TKN_BRANCH} branch and ${GIT_TKN_URL} repo. Times modified: $counter" | tee -a "demo/${python_example_txt}"
           git commit -m "modifying python example, number $counter" -- "demo/${python_example_txt}"
           git push origin "$current_branch"
