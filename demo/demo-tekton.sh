@@ -11,7 +11,7 @@ url=""
 build_type="binary"
 NO_HUMAN=false
 sleep_between=300
-no_deployments=1
+num_deployments=1
 REMOTE_BRANCH_EXISTS=false
 PELORUS_WORKING_DIR=""
 PELORUS_DEMO_TMP_DIR=""
@@ -33,7 +33,7 @@ Help()
    echo "h     Print this Help."
    echo "b     build type [buildconfig, binary, s2i], default ${build_type}"
    echo "t     Time in seconds to sleep between subsequent deployments, default ${sleep_between} (enables non-interaction mode)"
-   echo "c     Number of deployments, default ${no_deployments} (enables non-interaction mode)"
+   echo "c     Number of deployments, default ${num_deployments} (enables non-interaction mode)"
    echo
 }
 
@@ -53,7 +53,7 @@ while getopts ":hg:b:r:n:t:c:a:" option; do
          sleep_between=$OPTARG && \
          NO_HUMAN=true;;
       c) # Number of subsequent deployments
-         no_deployments=$OPTARG && \
+         num_deployments=$OPTARG && \
          NO_HUMAN=true;;
       a) # Application name
          app_name=$OPTARG;;
@@ -80,7 +80,7 @@ echo "Git ref: $current_branch"
 echo "Build Type: $build_type"
 echo "No interaction mode: ${NO_HUMAN}"
 if [ "${NO_HUMAN}" == true ]; then
-    echo "Number of deployments: ${no_deployments}"
+    echo "Number of deployments: ${num_deployments}"
     echo "Time between deployments: ${sleep_between}[s]"
 fi
 echo "============================"
@@ -118,11 +118,11 @@ if ! oc get namespace pelorus &> /dev/null; then
     echo "ERROR: 'pelorus' namespace does not exist. Create it and install Pelorus in it." >&2
     exit 1
 fi
+
 pelorus_pods=$(oc get pod -n pelorus 2>&1)
-# TODO this does not seem the best command for this
+# TODO this does not seem the best command for this, improve it
 if [[ $pelorus_pods == "No resources found in pelorus namespace." ]]; then
     echo "ERROR: Pelorus is not installed in 'pelorus' namespace. Install it by running" >&2
-    echo "    TODO command"
     exit 1
 fi
 
@@ -144,10 +144,12 @@ if [ "${FOUND_COMMITTIME}" == false ]; then
   exit 1
 fi
 
+EXIT_CODE=0
+
 # Function to safely remove temporary files and temporary download dir
 # Argument is optional exit value to propagate it after cleanup
 function cleanup_and_exit() {
-    echo "ERROR: An error occurred while running the script..." >&2
+    echo "An error occurred while running the script..."
     echo "Cleaning up before exiting..."
     local exit_val=$1
     if [ -z "${PELORUS_DEMO_TMP_DIR}" ]; then
@@ -168,8 +170,7 @@ function cleanup_and_exit() {
     exit 0
 }
 
-# why not return > 0? until what line this applies?
-trap 'cleanup_and_exit 0' INT TERM EXIT
+trap 'cleanup_and_exit $EXIT_CODE' INT TERM EXIT
 
 # Check if the remote branch exists
 # if url is "" means user want to run script from within local folder
@@ -180,23 +181,23 @@ if [[ "$url" == "" ]]; then
     REMOTE_BRANCH_EXISTS=true
   fi
   # Top level git repository
-  PELORUS_WORKING_DIR="$(git rev-parse --show-toplevel)" || exit 1
+  PELORUS_WORKING_DIR="$(git rev-parse --show-toplevel)" || EXIT_CODE=1 && exit 1
 else
   # Create temporary directory
-  PELORUS_DEMO_TMP_DIR=$( mktemp -d -t "${TMP_DIR_PREFIX}_XXXXX" ) || exit 1
+  PELORUS_DEMO_TMP_DIR=$( mktemp -d -t "${TMP_DIR_PREFIX}_XXXXX" ) || EXIT_CODE=1 && exit 1
   echo "Pre: Temp directory created: ${PELORUS_DEMO_TMP_DIR}"
   if git ls-remote --heads "${url}" "${current_branch}"  2>/dev/null | grep "${current_branch}">/dev/null; then
     REMOTE_BRANCH_EXISTS=true
   fi
   git clone "${url}" "${PELORUS_DEMO_TMP_DIR}/pelorus"
-  pushd "${PELORUS_DEMO_TMP_DIR}/pelorus" || exit 1
-    PELORUS_WORKING_DIR="$( git rev-parse --show-toplevel )" || exit 1
+  pushd "${PELORUS_DEMO_TMP_DIR}/pelorus" || EXIT_CODE=1 && exit 1
+    PELORUS_WORKING_DIR="$( git rev-parse --show-toplevel )" || EXIT_CODE=1 && exit 1
   popd
 fi
 
 # Ensure we are on the proper branch, if branch is not in remote create one
 echo "Pre: Using Pelorus git dir: ${PELORUS_WORKING_DIR}"
-pushd "${PELORUS_WORKING_DIR}" || exit 1
+pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
   if [ "${REMOTE_BRANCH_EXISTS}" == true ]; then
     echo "Pre: Using existing remote branch: ${current_branch}"
     git fetch origin
@@ -207,9 +208,10 @@ pushd "${PELORUS_WORKING_DIR}" || exit 1
     git push --set-upstream origin "${current_branch}"
   else
     echo "ERROR: Remote branch check went terribly wrong, exiting"
+    EXIT_CODE=1
     exit 1
   fi
-popd || exit 1
+popd || EXIT_CODE=1 && exit 1
 
 # Create namespace if one doesn't exist
 if oc get namespace "${app_namespace}" >/dev/null 2>&1 ; then
@@ -255,17 +257,11 @@ else
     oc delete pvc "$pvc" -n "${app_namespace}" --grace-period=0 --wait=false || true
     oc patch pvc "$pvc" -p '{"metadata":{"finalizers":null}}' -n "${app_namespace}" || true
 fi
-# oc delete -n "${app_namespace}" -f /tmp/05-build-and-deploy.yaml.out
-# oc process -f "$tekton_setup_dir/04-service-account_template.yaml" -p PROJECT_NAMESPACE="${app_namespace}" -n default | oc delete -f -
-# oc delete -f "$tekton_setup_dir/03-rbac-pipeline-role.yaml"
-# oc delete -f "$tekton_setup_dir/02-tekton-operator.yaml" # not enough :(
-# exit 0
 
 echo "Setting up resources:"
 
 echo "2. Installing tekton operator"
 oc apply -f "$tekton_setup_dir/02-tekton-operator.yaml"
-# I think we need to wait here
 
 echo "3. Creating pipeline-role ClusterRole"
 oc apply -f "$tekton_setup_dir/03-rbac-pipeline-role.yaml"
@@ -274,7 +270,7 @@ echo "4. Creating ClusterRoleBinding with ServiceAccount"
 oc process -f "$tekton_setup_dir/04-service-account_template.yaml" -p PROJECT_NAMESPACE="${app_namespace}" -n default | oc create -f -
 
 echo "5. Setting up build and deployment information"
-pushd "${PELORUS_WORKING_DIR}" || exit 1
+pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
   GIT_TKN_BRANCH=$(git symbolic-ref --short HEAD)
   GIT_TKN_URL=$(git config --get remote.origin.url)
   # Tekton does not have ssh certificates, so needs to use http/https
@@ -286,21 +282,19 @@ pushd "${PELORUS_WORKING_DIR}" || exit 1
       GIT_TKN_URL=$( echo "${GIT_TKN_URL}" | sed 's/\:/\//g' | sed 's/git\@/https\:\/\//g' )
     fi
   fi
-popd || exit 1
+popd || EXIT_CODE=1 && exit 1
 
 oc process -f "$tekton_setup_dir/05-build-and-deploy.yaml" -p PROJECT_URI="${GIT_TKN_URL}" -p PROJECT_REF="${GIT_TKN_BRANCH}" \
            -p NAMESPACE="${app_namespace}" -p APPLICATION_NAME="${app_name}" \
            -n default > /tmp/05-build-and-deploy.yaml.out 2>/tmp/05-build-and-deploy.yaml.err
 oc apply -n "${app_namespace}" -f /tmp/05-build-and-deploy.yaml.out
-# should delete files from /tmp/?
 
 route=$(oc get -n "${app_namespace}" "route/${app_name}" --output=go-template='http://{{.spec.host}}')
-# shouldn't be Grafana dashboard?
 
 counter=1
 
 function run_pipeline {
-    pushd "${PELORUS_WORKING_DIR}" || exit 1
+    pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
       echo "Running pipeline for the '${GIT_TKN_URL}' repo and '${GIT_TKN_BRANCH}' branch"
       tkn pipeline start -n "${app_namespace}" --showlog "${app_name}-pipeline" \
         -w name=repo,claimName="${app_name}-build-pvc" \
@@ -308,7 +302,7 @@ function run_pipeline {
         -p build-no="${counter}" \
         -l app.kubernetes.io/name="${app_name}" \
         -p BUILD_TYPE="$build_type"
-    popd || exit 1
+    popd || EXIT_CODE=1 && exit 1
 }
 
 echo -e "\nRunning pipeline\n"
@@ -326,7 +320,7 @@ if [ "${NO_HUMAN}" == false ]; then
        echo ""
        case $a in
           1* )
-             pushd "${PELORUS_WORKING_DIR}" || exit 1
+             pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
                echo "We've modified this file, time to build and deploy a new version from ${GIT_TKN_BRANCH} branch and ${GIT_TKN_URL} repo. Times modified: $counter" | tee -a "demo/${python_example_txt}"
                git commit -m "modifying python example, number $counter" -- "demo/${python_example_txt}"
                git push origin "$current_branch"
@@ -336,7 +330,7 @@ if [ "${NO_HUMAN}" == false ]; then
 
                echo -e "\nWhen ready, page will be available at $route"
 
-             popd || exit 1
+             popd || EXIT_CODE=1 && exit 1
           ;;
 
           2* ) exit 0 ;;
@@ -344,8 +338,8 @@ if [ "${NO_HUMAN}" == false ]; then
        esac
     done
 else
-    while [ $counter -lt "$no_deployments" ]; do
-        pushd "${PELORUS_WORKING_DIR}" || exit 1
+    while [ $counter -lt "$num_deployments" ]; do
+        pushd "${PELORUS_WORKING_DIR}" || EXIT_CODE=1 && exit 1
           echo "We've modified this file, time to build and deploy a new version from ${GIT_TKN_BRANCH} branch and ${GIT_TKN_URL} repo. Times modified: $counter" | tee -a "demo/${python_example_txt}"
           git commit -m "modifying python example, number $counter" -- "demo/${python_example_txt}"
           git push origin "$current_branch"
@@ -354,7 +348,7 @@ else
           echo -e "\nWhen ready, page will be available at $route"
         popd
           # Do not sleep on the last iteration
-        if [ $counter -lt "$no_deployments" ]; then
+        if [ $counter -lt "$num_deployments" ]; then
             sleep "$sleep_between"
         fi
     done
