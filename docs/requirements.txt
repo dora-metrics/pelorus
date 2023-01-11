@@ -1,6 +1,7 @@
 # Required by mkdocs material theme
 pymdown-extensions
 mkdocs-material
+mkdocs-redirects
 
 # Social cards
 pillow

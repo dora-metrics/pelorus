@@ -51,25 +51,33 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started:
-    - Installation: Install.md
-    - Quickstart Tutorial: Demo.md
-    - Configuration: configuration2.md
+    - Overview: GettingStarted/Overview.md
+    - Installation: GettingStarted/Installation.md
+    - Configuration:
+      - Pelorus Core: GettingStarted/configuration/PelorusCore.md
+      - Pelorus Exporters: GettingStarted/configuration/PelorusExporters.md
+      - Production best practices: GettingStarted/configuration/ProductionBestPractice.md
+      - NooBaa for Long Term Storage: GettingStarted/configuration/Noobaa.md
+    - Quickstart Tutorial: GettingStarted/QuickstartTutorial.md
+    - Examples: GettingStarted/Examples.md
   - Our Philosophy:
-    - Overview: philosophy/index.md
-    - The Problem Today: philosophy/problem.md
-    - Finding the Right Bridge Outcomes: philosophy/bridge_outcomes.md
+    - Overview: philosophy/Overview.md
+    - The Problem Today: philosophy/TheProblemToday.md
+    - Finding the Right Bridge Outcomes: philosophy/BridgeOutcomes.md
     - Outcomes:
-      - Overview: philosophy/outcomes/index.md
+      - Overview: philosophy/outcomes/Overview.md
       - Software Delivery Performance: philosophy/outcomes/SoftwareDeliveryPerformance.md
-    - philosophy/pelorus.md
-  - Configuration:
-    - Architecture: Architecture.md
-    - Configuration: Configuration.md
-    - NooBaa for Long Term Storage: Noobaa.md
+    - How Pelorus Can Help: philosophy/HowPelorusCanHelp.md
+  - Architecture: Architecture.md
   - Contribution:
     - Dev Guide: Development.md
     - Upstream Support: UpstreamSupport.md
 plugins:
   - social
+  - redirects:
+      redirect_maps:
+           # Used by the Pelorus Operator v0.0.1
+           'Configuration.md': 'GettingStarted/configuration/PelorusCore.md'
+           'Install.md': 'GettingStarted/configuration/ProductionBestPractice.md'
 watch:
 - overrides

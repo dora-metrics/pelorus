@@ -406,13 +406,13 @@ Example Github issue:
 
 Create an issue, and create a Github issue label: "app.kubernetes.io/name=todolist".  Here is a working [example](https://github.com/konveyor/mig-demo-apps/issues/82)
 
-![github_issue](img/github_issue.png)
+![github_issue](../../img/github_issue.png)
 
 Jira issue:
 
 In the Jira project issue settings, create a label with the text "app.kubernetes.io/name=todolist". 
 
-![jira_issue](img/jira_issue.png)
+![jira_issue](../../img/jira_issue.png)
 
 ### Annotations and local build support
 

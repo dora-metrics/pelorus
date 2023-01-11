@@ -17,7 +17,7 @@ _Metrics_
 e.g. deploy_time, commit_time, failure_creation, failure_resolution
 
 _Measures_
-: Metrics calculated to represent an [outcome](philosophy/outcomes/index.md). Each outcome is made measurable by a set of representative measures.
+: Metrics calculated to represent an [outcome](../philosophy/outcomes/Overview/). Each outcome is made measurable by a set of representative measures.
 e.g. Lead Time for Change, Deployment Frequency, Mean Time to Restore, Change Failure Rate
 
 ## Basic Architecture and Components

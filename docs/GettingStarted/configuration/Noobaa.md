@@ -2,7 +2,7 @@
 
 NooBaa is a software-driven data service that provides S3 object-storage interface that we use for testing and development of Pelorus project.
 
-The following is a walkthrough for deploying NooBaa Operator on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](configuration2.md#configure-long-term-storage-recommended) solution.
+The following is a walkthrough for deploying NooBaa Operator on OpenShift and then configuring Pelorus to consume it as a [Long Term Storage](../ProductionBestPractice/#configure-long-term-storage-recommended) solution.
 
 ## Install NooBaa Operator CLI
 
@@ -105,7 +105,7 @@ noobaa bucket status thanos --namespace pelorus
 
 ## Update Pelorus Configuration
 
-To update our Pelorus stack, follow the instructions provided in the [Long Term Storage](configuration2.md#configure-long-term-storage-recommended).
+To update our Pelorus stack, follow the instructions provided in the [Long Term Storage](../ProductionBestPractice/#configure-long-term-storage-recommended).
 
 Ensure that `<s3 access key>`, `<s3 secret access key>` and the `<bucket name>` are used from the [Deploy NooBaa
 ](#deploy-noobaa) step and `s3.pelorus.svc:443`, which is an `S3 InternalDNS Address` from the `noobaa status --namespace pelorus` command, as bucket access point as in example:

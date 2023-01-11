@@ -30,9 +30,9 @@ Some of the key outcomes we'd like Pelorus help us measure are:
 
 </div>
 
-[:material-arrow-right: Read more about our Outcomes](philosophy/outcomes/index.md)
+[:material-arrow-right: Read more about our Outcomes](philosophy/outcomes/Overview/)
 
-To understand the motivation, see [Our Philosophy](philosophy/index.md).
+To understand the motivation, see [Our Philosophy](philosophy/Overview/).
 
 For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
 

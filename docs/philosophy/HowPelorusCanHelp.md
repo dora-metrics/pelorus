@@ -1,6 +1,6 @@
 # How Pelorus Can Help
 
-Pelorus aims to provide a tooling framework that helps to automate the collection of KPIs related to these Bridge Outcomes and present them as a set of easily consumable [dashboards](outcomes/index.md) to visualize trends.
+Pelorus aims to provide a tooling framework that helps to automate the collection of KPIs related to these Bridge Outcomes and present them as a set of easily consumable [dashboards](../Overview/) to visualize trends.
 
 ## Creating Conversations around Pelorus
 
