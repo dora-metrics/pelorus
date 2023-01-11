@@ -10,7 +10,7 @@ Having worked with organizations around the world, we've found that very few of 
 
 Fewer still are using that information to learn and continuously improve their organization.
 
-As software delivery and operational performance has a proven correlation to organizational performance, we believe that there are other similar [_bridge outcomes_](bridge_outcomes.md) that organizations can use to build a shared focus on measuring and improving to impact the organization as a whole.
+As software delivery and operational performance has a proven correlation to organizational performance, we believe that there are other similar [_bridge outcomes_](../BridgeOutcomes/) that organizations can use to build a shared focus on measuring and improving to impact the organization as a whole.
 
 We believe that a shared focus on measuring and improving on a specific set of business outcomes within an IT organization will result in a notable positive impact on the organization as a whole.
 

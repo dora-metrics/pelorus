@@ -34,32 +34,32 @@ Before deploying Pelorus, the following tools are necessary
 ### Installing Operator
 
 After logging in to the OpenShift Web console select OperatorHub from the Operators menu and search for Pelorus Operator by typing DORA, Dora metrics or Pelorus in the search field:
-  ![1_operator_install_step](img/1_operator_install_step.png)
+  ![1_operator_install_step](../img/1_operator_install_step.png)
 
 Next click on Install in the left top corner:
-  ![2_operator_install_step](img/2_operator_install_step.png)
+  ![2_operator_install_step](../img/2_operator_install_step.png)
 
 You can select OpenShift namespace to which Pelorus will be installed, then click Install. We recommend using default one, which is **pelorus**. This creates Pelorus Subscription in the given namespace.
-  ![3_operator_install_step](img/3_operator_install_step.png)
+  ![3_operator_install_step](../img/3_operator_install_step.png)
 
 Verify that Pelorus, Grafana and Prometheus Operators are installed successfully by checking them under Installed Operators submenu:
-  ![4_operator_install_step](img/4_operator_install_step.png)
+  ![4_operator_install_step](../img/4_operator_install_step.png)
 
 ### Creating Pelorus instance
 
 >**Note:** Currently it is possible to create only one instance of Pelorus per cluster.
 
 Click on the Pelorus Operator from the [Installing Operator](#installing-operator) last step and then on the "Create instance" link:
-  ![5_operator_install_step](img/5_operator_install_step.png)
+  ![5_operator_install_step](../img/5_operator_install_step.png)
 
 
-** Note:** See the [Configuration Guide](Configuration.md) for more information on exporters and the [Configuration2 Guide](configuration2.md) to understand Pelorus core stack options before continuing.
+** Note:** See the [Pelorus Exporters Configuration Guide](../configuration/PelorusExporters/) for more information on exporters and the [Pelorus Core Configuration Guide](../configuration/PelorusCore/) to understand Pelorus core stack options before continuing.
 
 Click on the `YAML view`, which will open sample Pelorus object YAML, that should be adopted to the application workflow configuration of exporters, which are placed under `instances:` section and eventually additional configuration for the Pelorus core stack under `spec:` and click on the Create button:
-  ![6_operator_install_step](img/6_operator_install_step.png)
+  ![6_operator_install_step](../img/6_operator_install_step.png)
 
 Verify Pelorus application deployment by selecting Pelorus tab from the Pelorus Operator view and ensuring the application has `Deployed` status. You may want to check more information about the Pelorus application deployment by clicking on the application name in the following picture `pelorus-sample`:
-  ![7_operator_install_step](img/7_operator_install_step.png)
+  ![7_operator_install_step](../img/7_operator_install_step.png)
 
 ## OpenShift Command Line Tool
 
@@ -135,7 +135,7 @@ Verify the ClusterServiceVersion (csv) for Pelorus Operator together with Grafan
 
 The Pelorus object YAML file requires specific to the application workflow configuration of exporters that are placed under `instances:` section and eventually additional configuration for the Pelorus core stack under `spec:`.
 
-See the [Configuration Guide](Configuration.md) for more information on exporters and the [Configuration2 Guide](configuration2.md) to understand Pelorus core stack options.
+See the [Pelorus Exporters Configuration Guide](../configuration/PelorusExporters/) for more information on exporters and the [Pelorus Core Configuration Guide](../configuration/PelorusCore/) to understand Pelorus core stack options.
 
 *(Example)* Create Pelorus configuration object YAML file. In this example with two enabled exporters `committime-exporter` and `deploytime-exporter`, without prometheus persistent storage:
   ```shell
@@ -264,7 +264,7 @@ In a few seconds, you will see a number of resourced get created. The above comm
     * A `Grafana` instance
     * A `ServiceMonitor` instance for scraping the Pelorus exporters.
     * A `GrafanaDatasource` pointing to Prometheus.
-    * A set of `GrafanaDashboards`. See the [Outcomes (Dashboards) documentation](philosophy/outcomes/index.md) for more details.
+    * A set of `GrafanaDashboards`. See the [Outcomes (Dashboards) documentation](../../philosophy/outcomes/SoftwareDeliveryPerformance/) for more details.
 * The following exporters:
     * Deploy Time
     * Commit Time
@@ -274,11 +274,11 @@ To check this, run
 oc get all --namespace pelorus
 ```
 
-From here, some additional configuration is required in order to deploy other exporters. See the [Configuration Guide](Configuration.md) for more information on exporters.
+From here, some additional configuration is required in order to deploy other exporters. See the [Pelorus Exporters Configuration Guide](../configuration/PelorusExporters/) for more information on exporters.
 
-You may also want to enabled other features for the core stack. See the [Configuration2 Guide](configuration2.md) to understand those options.
+You may also want to enabled other features for the core stack. See the [Pelorus Core Configuration Guide](../configuration/PelorusCore/) to understand those options.
 
-To understand how to set up an application to Pelorus to watch, see [QuickStart tutorial](Demo.md).
+To understand how to set up an application to Pelorus to watch, see [QuickStart tutorial](../QuickstartTutorial/).
 
 ### Uninstalling
 
