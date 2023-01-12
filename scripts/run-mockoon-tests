@@ -29,7 +29,6 @@ CONTAINER_ENGINE="podman"
 MOCKOON_CONTAINER="docker.io/mockoon/cli:2.2.1"
 MOCKOON_PORT="3000"
 MOCKOON_TIMEOUT=30
-EXIT_CODE=0
 
 TEST_CONTAINER_NAME="mockoon_pelorus_tests"
 
@@ -38,8 +37,8 @@ MOCK_JSON="${MOCK_JSON-"${SCRIPT_DIR}/../mocks/commitexporter_github.json"}"
 
 if ! command -v "pytest" &> /dev/null
 then
-      echo "No pytest found in the PATH"
-      exit 2
+    echo "No pytest found in the PATH"
+    exit 2
 fi
 
 if ! command -v "${CONTAINER_ENGINE}" &> /dev/null
@@ -47,8 +46,8 @@ then
     CONTAINER_ENGINE="docker"
     if ! command -v "${CONTAINER_ENGINE}" &> /dev/null
     then
-      echo "No podman or docker found in the PATH"
-      exit 2
+        echo "No podman or docker found in the PATH"
+        exit 2
     fi
 fi
 
@@ -69,7 +68,7 @@ function cleanup_and_exit() {
     exit 0
 }
 
-trap 'cleanup_and_exit $EXIT_CODE' INT TERM EXIT
+trap 'cleanup_and_exit $?' INT TERM EXIT
 
 # Check if test container already exists, if yes remove it
 cleanup_mockoon_pod
@@ -77,7 +76,6 @@ cleanup_mockoon_pod
 # We need to check if port MOCKOON_PORT is used by other process
 if lsof -Pi :"${MOCKOON_PORT}" -sTCP:LISTEN -t >/dev/null ; then
     echo "Can not run integration tests as other process uses port ${MOCKOON_PORT}"
-    EXIT_CODE=2
     exit 2
 fi
 
@@ -89,7 +87,6 @@ if [ "${RUNNING_ID}" == "" ]; then
     echo "Mockoon is not working as expected."
     echo "Logs from failing container:"
     ${CONTAINER_ENGINE} logs "${RUNNING_ID}"
-    EXIT_CODE=1
     exit 1
 fi
 
@@ -98,7 +95,6 @@ until curl -k https://localhost:"${MOCKOON_PORT}"/version
 do
     if [ $counter -gt $MOCKOON_TIMEOUT ]; then
         echo "Timed out waiting for the mockoon service"
-        EXIT_CODE=1
         exit 1
     fi
     echo "Trying to reach mockoon: $counter out of $MOCKOON_TIMEOUT"
@@ -106,10 +102,5 @@ do
     counter=$((counter+1))
 done
 
-# Remove exit trap, so we can propagate exit value from pytest
-trap - EXIT
-
 # Run mockoon tests
 pytest -rap -m mockoon
-pytest_exit=$?
-cleanup_and_exit $pytest_exit
