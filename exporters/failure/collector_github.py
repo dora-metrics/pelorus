@@ -179,7 +179,7 @@ class GithubFailureCollector(AbstractFailureCollector):
         return critical_issues
 
     def get_app_name(self, issue, label: Optional[dict[str, Any]]):
-        if label:
+        if label and "=" in label["name"]:
             return label["name"].split("=")[1]
         # default to repo name if app_label is not set
         else:
