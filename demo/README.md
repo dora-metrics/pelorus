@@ -14,7 +14,6 @@ Instructions:
 * Fork the konveyor/pelorus git repository to your github organization.
 
 * Add or configure your github-secret with your Github token
-
 ```
 oc create secret generic github-secret --from-literal=TOKEN=ghp_<snip> -n pelorus
 ```
@@ -22,15 +21,14 @@ oc create secret generic github-secret --from-literal=TOKEN=ghp_<snip> -n peloru
 * Copy the sample Pelorus instance manifest in pelorus/demo/operator_tekton_demo_values.yaml.sample
 
 ```
-cp pelorus/demo/operator_tekton_demo_values.yaml.sample pelorus/demo/operator_tekton_demo_values.yaml
+cp pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml.sample pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml
 ```
 
-* Edit pelorus/demo/operator_tekton_demo_values.yaml to match your github organization
+* Edit pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml to match your github organization
 
 * Apply the Pelorus instance
-
 ```
-oc apply -f pelorus/demo/operator_tekton_demo_values.yaml
+oc apply -f pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml
 ```
 
 
