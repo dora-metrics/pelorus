@@ -1,0 +1,54 @@
+kind: Pelorus
+apiVersion: charts.pelorus.konveyor.io/v1alpha1
+metadata:
+  name: pelorus-sample
+  namespace: pelorus
+spec:
+  exporters:
+    global: {}
+    instances:
+      - app_name: deploytime-exporter
+        exporter_type: deploytime
+        extraEnv:
+        - name: LOG_LEVEL
+          value: DEBUG
+        - name: NAMESPACES
+          value: basic-python-tekton
+      - app_name: committime-exporter
+        exporter_type: committime
+        env_from_secrets:
+          - github-secret
+        extraEnv:
+        - name: LOG_LEVEL
+          value: DEBUG
+        - name: NAMESPACES
+          value: basic-python-tekton
+      - app_name: committime-image-exporter
+        exporter_type: committime
+        extraEnv:
+        - name: LOG_LEVEL
+          value: DEBUG
+        - name: PROVIDER
+          value: image
+      - app_name: failuretime-exporter
+        exporter_type: failure
+        env_from_secrets:
+          - github-secret
+        extraEnv:
+        - name: LOG_LEVEL
+          value: DEBUG
+        - name: PROVIDER
+          value: github
+        - name: PROJECTS
+          value: <your_git_org>/pelorus
+        - name: APP_LABEL
+          value: production_issue/name
+  extra_prometheus_hosts: null
+  openshift_prometheus_basic_auth_pass: changeme
+  openshift_prometheus_htpasswd_auth: 'internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM='
+  prometheus_retention: 1y
+  prometheus_retention_size: 1GB
+  prometheus_storage: false
+  prometheus_storage_pvc_capacity: 2Gi
+  prometheus_storage_pvc_storageclass: gp2
+
