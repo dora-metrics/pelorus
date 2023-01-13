@@ -7,6 +7,7 @@ on:
       - '!mocks/README.md'
       - '.github/workflows/mockoon-tests.yml'
       - 'Makefile'
+      - 'scripts/run-mockoon-tests'
 
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - '!mocks/README.md'
       - '.github/workflows/mockoon-tests.yml'
       - 'Makefile'
+      - 'scripts/run-mockoon-tests'
 
 jobs:
   integration-test:
