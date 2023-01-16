@@ -62,9 +62,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     kube_client: DynamicClient = field()
 
-    username: str = (
-        field()
-    )  # what about /exporters/pelorus/config/env_var_names.py USERNAME?
+    username: str = field()
     token: str = field(repr=False)
 
     namespaces: set[str] = field(factory=set, converter=comma_separated(set))
@@ -90,9 +88,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     def __attrs_post_init__(self):
         self.commit_dict = dict()
+        # remove this? duplication
         if not (self.username and self.token):
             logging.warning(
-                "No API_USER and no TOKEN given. This is okay for public repositories only."
+                "No API_USER or no TOKEN given. This is okay for public repositories only."
             )
         elif (self.username and not self.token) or (not self.username and self.token):
             logging.warning(

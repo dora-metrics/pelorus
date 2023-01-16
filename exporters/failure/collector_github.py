@@ -71,7 +71,9 @@ class GithubFailureCollector(AbstractFailureCollector):
     tls_verify: bool = field(default=True)
 
     session: requests.Session = field(factory=requests.Session, init=False)
-    user: str = field(default="", init=False)
+    user: str = field(
+        default="", init=False
+    )  # what about /exporters/pelorus/config/env_var_names.py USERNAME?
 
     issue_label: str = field(
         default=DEFAULT_GITHUB_ISSUE_LABEL, metadata=env_vars("GITHUB_ISSUE_LABEL")
@@ -95,7 +97,7 @@ class GithubFailureCollector(AbstractFailureCollector):
     def _get_github_user(self) -> str:
         # login and get username
         # set the username / server to env for exporter consistency
-        url = "https://{}/user".format(self.tracker_api)  # won't this always break?
+        url = "https://{}/user".format(self.tracker_api)
         resp = cast(dict[str, Any], self._make_request(None, None, url))
         return resp["login"]
 

@@ -6,7 +6,7 @@ from attrs import define, field
 
 from committime import CommitMetric
 from pelorus.config.converters import pass_through
-from pelorus.utils import Url, set_up_requests_session
+from pelorus.utils import TokenAuth, Url, set_up_requests_session
 from provider_common.github import parse_datetime
 
 from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
@@ -29,7 +29,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         set_up_requests_session(
-            self.session, self.tls_verify, username=self.username, token=self.token
+            self.session, self.tls_verify, auth=TokenAuth(self.token)
         )
 
     def get_commit_time(self, metric: CommitMetric):
