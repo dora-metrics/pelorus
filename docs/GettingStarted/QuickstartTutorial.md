@@ -1,5 +1,7 @@
 # Pelorus Demo
 
+**NOTE** This demo is based on the Pelorus Helm chart installation which is now deprecrated.  Please also refer to the [Pelorus Operator demo](https://github.com/konveyor/pelorus/tree/master/demo)  
+
 For Pelorus installation to monitor your application's workflow, please skip this Demo and jump straight to the [Installation](../Installation/) and [Configuration](../configuration/PelorusCore/) part of the documentation.
 
 In this demo, you will

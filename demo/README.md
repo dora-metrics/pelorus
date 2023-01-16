@@ -6,47 +6,48 @@ This demonstration will make use of a Tekton pipeline to mimic the development o
 The details of each build type and the steps required to support Pelorus can be found in the [tekton manifest](./tekton-demo-setup/05-build-and-deploy.yaml)
 
 
-Instructions:
+## Setup Instructions:
 
 * Install the Pelorus operator, using the installation [documentation](../docs/GettingStarted/Installation.md)
 
 * Fork the [konveyor/pelorus](https://github.com/konveyor/pelorus) git repository to your github organization.
 
-* Add or configure your github-secret with your Github token.  Instructions can be found in the [Authentication to Remote Services](../docs/GettingStarted/configuration/PelorusExporters.md#authentication-to-remote-services) section of the documentation.
-
-Example:
+* Add or configure your github-secret with your Github token:
 ```
 oc create secret generic github-secret --from-literal=TOKEN=ghp_<snip> -n pelorus
-```
+```  
+  * Instructions can be found in the [Authentication to Remote Services](../docs/GettingStarted/configuration/PelorusExporters.md#authentication-to-remote-services) section of the documentation.
 
-Copy the sample Pelorus instance manifest in pelorus/demo/operator_tekton_demo_values.yaml.sample:
+## Configure Pelorus:
+* Copy the sample Pelorus instance manifest in pelorus/demo/operator_tekton_demo_values.yaml.sample:
 
 ```
 cp pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml.sample pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml
 ```
 
-Edit pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml to match your github organization:
+* Edit pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml to match your github organization:
 ```
 sed -i 's/<your_git_org>/weshayutin/' pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml
 ```
 
-Apply the Pelorus instance:
+* Apply the Pelorus instance:
 ```
 oc apply -f pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml
 ```
 
-Execute the demo-tekton.sh command:
+## Execute
+* Execute the demo-tekton.sh command:
 
 ```
 ./demo-tekton.sh -g https://github.com/<your_org/pelorus.git -b binary -r demo_test1
 ```
 
-The script can be invoked to automatically commit changes to the source on a development branch and execute in a loop:
+* The script can be invoked to automatically commit changes to the source on a development branch and execute in a loop:
 ```
 ./demo-tekton.sh -g https://github.com/weshayutin/pelorus.git -b binary -r demo_test2 -c 10 -t 5
 ```
 
-To ensure the failure exporter is exercised enable Github issues in your fork.
+* To ensure the failure exporter is exercised enable Github issues in your fork.
 Open bugs ensuring they are labeled correctly using the [Github issue documentation](../docs/GettingStarted/QuickstartTutorial.md#github-issues).  
 
   * Two labels are required:
@@ -54,6 +55,7 @@ Open bugs ensuring they are labeled correctly using the [Github issue documentat
      * label: production_issue/name=basic-python-tekton
   * Open and close bugs as needed.
 
+## Help and Support
 Help:
 ```
 ./demo-tekton.sh -h
