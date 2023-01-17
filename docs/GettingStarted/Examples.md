@@ -2,19 +2,19 @@ In the following sections, we present example configurations for a variety of Gi
 
 ## Bitbucket & Jira
 
-In this example, we are monitoring only one application, where:
+In this example, Pelorus will monitor only one application, where:
 
-* Our application is deployed to the **example_namespace** Namespace in OpenShift.
-* Our application source code is hosted in Bitbucket.
+* The application is deployed to the **example_namespace** Namespace in OpenShift.
+* The application source code is hosted in Bitbucket.
     * Bitbucket user is **bitbucket_user**.
     * Bitbucket token is **bitbucket_token**.
-* Our application uses Jira as the Issue tracker. (Default)
+* The application uses Jira as the Issue tracker. (Default)
     * Jira user is **jira_user**.
     * Jira token is **jira_token**.
     * Jira server is **example_server_url**.
-    * We will only monitor issues of type **Bug** and priority **Hightest**. (Default)
-    * We will monitor the issues in **example_project** project.
-    * We will consider monitored issues to be resolved when their status change to **DONE**.
+    * Pelorus will only monitor issues of type **Bug** and priority **Hightest**. (Default)
+    * Pelorus will monitor the issues in **example_project** project.
+    * Pelorus will consider monitored issues to be resolved when their status change to **DONE**.
 
 ```yaml
 apiVersion: charts.pelorus.konveyor.io/v1alpha1
@@ -63,16 +63,16 @@ To monitor more applications, we would have to:
 
 ## GitHub
 
-In this example, we are monitoring only one application, where:
+In this example, Pelorus will monitor only one application, where:
 
-* Our application is deployed to the **example_namespace** Namespace in OpenShift.
-* Our application source code is hosted in GitHub. (Default)
+* The application is deployed to the **example_namespace** Namespace in OpenShift.
+* The application source code is hosted in GitHub. (Default)
     * GitHub token is **github_token**.
-* Our application uses GitHub as the Issue tracker.
+* The application uses GitHub as the Issue tracker.
     * GitHub token is **github_token**.
-    * We will only monitor issues labeled with **bug** and **app.kubernetes.io/name**. (Default)
-    * We will monitor the issues in **user/example_repository** GitHub repository.
-    * We will consider monitored issues to be resolved when they are closed.
+    * Pelorus will only monitor issues labeled with **bug** and **app.kubernetes.io/name**. (Default)
+    * Pelorus will monitor the issues in **user/example_repository** GitHub repository.
+    * Pelorus will consider monitored issues to be resolved when they are closed.
 
 ```yaml
 apiVersion: charts.pelorus.konveyor.io/v1alpha1
@@ -113,7 +113,7 @@ To monitor more applications, we would have to:
 
 ## GitHub & Bitbucket & Jira
 
-In this example, we are monitoring two applications, where:
+In this example, Pelorus will monitor two applications, where:
 
 * The first application:
     * is named **app1** in OpenShift.
@@ -130,11 +130,11 @@ In this example, we are monitoring two applications, where:
     * Jira user is **jira_user**.
     * Jira token is **jira_token**.
     * Jira server is **example_server_url**.
-    * We will only monitor issues of type **Bug** and priority **Hightest**. (Default)
+    * Pelorus will only monitor issues of type **Bug** and priority **Hightest**. (Default)
         * Issues labeled with **app.kubernetes.io/name=app1** are related to the first application. (Default)
         * Issues labeled with **app.kubernetes.io/name=app2** are related to the second application. (Default)
-    * We will monitor the issues in **example_project** project.
-    * We will consider monitored issues to be resolved when their status change to **DONE**.
+    * Pelorus will monitor the issues in **example_project** project.
+    * Pelorus will consider monitored issues to be resolved when their status change to **DONE**.
 
 ```yaml
 apiVersion: charts.pelorus.konveyor.io/v1alpha1
