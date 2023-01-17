@@ -88,10 +88,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     def __attrs_post_init__(self):
         self.commit_dict = dict()
-        # remove this? duplication
         if not (self.username and self.token):
             logging.warning(
-                "No API_USER or no TOKEN given. This is okay for public repositories only."
+                "No API_USER and no TOKEN given. This is okay for public repositories only."
             )
         elif (self.username and not self.token) or (not self.username and self.token):
             logging.warning(

@@ -71,9 +71,7 @@ class GithubFailureCollector(AbstractFailureCollector):
     tls_verify: bool = field(default=True)
 
     session: requests.Session = field(factory=requests.Session, init=False)
-    user: str = field(
-        default="", init=False
-    )  # what about /exporters/pelorus/config/env_var_names.py USERNAME?
+    user: str = field(default="", init=False)
 
     issue_label: str = field(
         default=DEFAULT_GITHUB_ISSUE_LABEL, metadata=env_vars("GITHUB_ISSUE_LABEL")
