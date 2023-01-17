@@ -115,20 +115,17 @@ class GitCommittimeConfig:
     )
 
     def __attrs_post_init__(self):
-        if not (self.username and self.token):
+        if not (self.username or self.token):
             logging.warning(
-                "No API_USER or no TOKEN given. This is okay for public repositories only."
+                "No API_USER and no TOKEN given. This is okay for public repositories only."
             )
-        elif (
-            (self.git_provider != pelorus.DEFAULT_GIT)
-            and (self.username and not self.token)
-            or (not self.username and self.token)
-        ):
-            logging.warning(
-                "username and token must both be set, or neither should be set. Unsetting both."
-            )
-            self.username = ""
-            self.token = ""
+        elif (self.username and not self.token) or (not self.username and self.token):
+            if self.git_provider != pelorus.DEFAULT_GIT:
+                logging.warning(
+                    "username and token must both be set, or neither should be set. Unsetting both."
+                )
+                self.username = ""
+                self.token = ""
 
     def make_collector(self) -> AbstractCommitCollector:
         git_provider = self.git_provider

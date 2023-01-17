@@ -1,8 +1,19 @@
+To deploy Pelorus to monitor your application(s), the following information are needed:
+
+* The OpenShift Namespace(s) your application(s) is(are) deployed.
+* The Git Provider(s) information (name, credentials, etc) your application(s) source code(s) is(are) hosted.
+* The Issue Tracker(s) information (name, credentials, etc) your application(s) uses.
+
+With this information gathered, Pelorus can be deployed following the steps.
+
+![Pelorus Deployment Steps](../img/diagrams/pelorus_deployment_steps.png)
+
+For more information on each step, check [Installation](Installation.md), [Core's Configuration](configuration/PelorusCore.md) and [Exporters' Configuration](configuration/PelorusExporters.md) documentation.
+## Visualization
+
 Pelorus is composed of Prometheus, Grafana and exporters. It can be easily deployed to an OpenShift cluster and provides an organizational-level view of critical measures.
 
 ![Pelorus Overview](../img/diagrams/pelorus_overview.png)
-
-![Pelorus Overview](../img/diagrams/pelorus_overview2.png)
 
 [:material-arrow-right: Further knowledge on Pelorus architecture](../Architecture.md)
 
@@ -14,18 +25,6 @@ Pelorus is composed of Prometheus, Grafana and exporters. It can be easily deplo
 - **Provider**: The tools from where Pelorus Exporters collect the metrics.
 - **Metric**: The data that is used to generate a measure.
 - **Measure**: The outcome to make better decisions based on it.
-
-## Deployment Steps
-
-![Pelorus Deployment Steps](../img/diagrams/pelorus_deployment_steps.png)
-
-To deploy Pelorus to monitor your application(s), the following information are needed:
-
-* The OpenShift Namespace(s) your application(s) lives in.
-* The Git Provider(s) your application(s) source code(s) is(are) hosted (and authentication credentials, if needed).
-* The Issue Tracker(s) your application(s) uses (and authentication credentials, if needed).
-
-For more information on each step, check [Installation](Installation.md), [Core's Configuration](configuration/PelorusCore.md) and [Exporters' Configuration](configuration/PelorusExporters.md) documentation.
 
 ## Supported Providers
 
