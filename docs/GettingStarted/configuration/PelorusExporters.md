@@ -204,43 +204,22 @@ When it starts up, you should see information about custom certificate usage, de
 
 ### Labels
 
-Labels are key/value pairs that are attached to objects, such as pods. Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users and Pelorus.
+Labels are key/value pairs that are attached to Kubernetes objects (pods, build configurations, etc), and providers objects (like issues, in the case of Issue Trackers providers).
 
-The commit time, deploy time, and failure exporters all rely on labels to identify the application that is associated with an object.  The object can
-include a build, build configuration, deployment or issue.
+Pelorus uses labels to identify objects that are relevant to it. The commit time, deploy time, and failure exporters all rely on labels to identify the application that is associated with it.
 
-In Pelorus the default label is: `app.kubernetes.io/name=<app_name>` where
-app_name is the name of the application(s) being monitored. The label can
-be customized by setting the `APP_LABEL` variable to your custom value.
+In Pelorus, the default label is **app.kubernetes.io/name=app_name**, where **app_name** is the name of one of the applications being monitored. The label can be customized by setting the `APP_LABEL` variable to your desired value, to give more context.
 
-An example may be to override the APP_LABEL for the failure exporter to indicate a production bug or issue.
-The `APP_LABEL` with the value `production_issue/name` may give more context than `app.kubernetes.io/name`
-In this case the Github issue would be labeled with `production_issue/name=todolist`
+> **NOTE:** If labels are not properly set in the application objects and in the providers objects, Pelorus will not collect data from those.
 
-Example Failure exporter config:
-```
-- app_name: failure-exporter
-  exporter_type: failure
-  env_from_secrets:
-  - github-secret
-  extraEnv:
-  - name: LOG_LEVEL
-    value: DEBUG
-  - name: PROVIDER
-    value: github
-  - name: PROJECTS
-    value: konveyor/mig-demo-apps,konveyor/oadp-operator
-  - name: APP_LABEL
-    value: production_issue/name
-```
+#### Examples
 
-> **Warning**
-> If the application label is not properly configured, Pelorus will not collect data for that object.
+##### Application
 
-In the following examples an application named [todolist](https://github.com/konveyor/mig-demo-apps/blob/master/apps/todolist-mongo-go/mongo-persistent.yaml) is being monitored.
+In this example, an application named **todolist** is being monitored using the default label. So, all the application objects must have the `metadata.labels.app.kubernetes.io/name` YAML value set to **todolist**.
 
 Example BuildConfig:
-```
+```yaml
 - kind: BuildConfig
   apiVersion: build.openshift.io/v1
   metadata:
@@ -251,7 +230,7 @@ Example BuildConfig:
 ```
 
 Example DeploymentConfig:
-```
+```yaml
 - apiVersion: apps.openshift.io/v1
   kind: DeploymentConfig
   metadata:
@@ -265,7 +244,7 @@ Example DeploymentConfig:
 ```
 
 Example ReplicaSet:
-```
+```yaml
 replicas: 1
 template:
   metadata:
@@ -277,22 +256,25 @@ template:
       app.kubernetes.io/name: todolist
 ```
 
-Example Application via the cli:
+##### Failure exporter
+
+In this example, we configure a Failure exporter to monitor issues from 2 GitHub Issue Trackers that:
+
+* have **production_issue=app_name** label, where **app_name** is the name of one of the applications being monitored.
+
+```yaml
+[...]
+      - app_name: failure-exporter
+        exporter_type: failure
+        env_from_secrets:
+        - github-secret
+        extraEnv:
+          - name: PROJECTS
+            value: konveyor/mig-demo-apps,konveyor/oadp-operator
+          - name: APP_LABEL
+            value: production_issue
+[...]
 ```
-oc -n mongo-persistent new-app todolist -l "app.kubernetes.io/name=todolist"
-```
-
-Example Github issue:
-
-Create an issue, and create a Github issue label: "app.kubernetes.io/name=todolist".  Here is a working [example](https://github.com/konveyor/mig-demo-apps/issues/82)
-
-![github_issue](../../img/github_issue.png)
-
-Jira issue:
-
-In the Jira project issue settings, create a label with the text "app.kubernetes.io/name=todolist". 
-
-![jira_issue](../../img/jira_issue.png)
 
 ### Annotations and local build support
 
@@ -416,87 +398,4 @@ $ oc label image "sha256:${IMAGE_SHA}" "app.kubernetes.io/name=${NAME}"
 
 $ oc annotate image "sha256:${IMAGE_SHA}" --overwrite \
      io.openshift.build.commit.date="${EPOCH_TIMESTAMP}"
-```
-
-### Configuring JIRA workflow(s)
-
-#### Default JIRA workflow
-
-Failure Time Exporter configured to work with JIRA issue tracking and project management software, by default will collect information about *all* of the Issues with the following attributes:
-
-1. JIRA Issue to be type of `Bug` with the `Highest` priority.
-2. The Resolved JIRA Issue must have `resolutiondate` field.
-
-Optionally user may configure:
-
-1. Pelorus to track only relevant JIRA projects by specyfing `PROJECTS` ConfigMap Data Value. This comma separated value may include either JIRA Project name or JIRA Project Key. Ensure the project key or project name exists in the JIRA, otherwise none of the metrics will get collected.
-2. Issue labeled with the `app.kubernetes.io/name=<application_name>`, where `<application_name>` is a user defined application name to be monitored by Pelorus. This name needs to be consistent across other exporters, so the performance metrics presented in the Grafana dashboard are correct. Issues without such label are collected by the failure exporter with the application name: `unknown`.
-
-#### Example Failure Time Exporter ConfigMap with optional fields
-
-Three JIRA projects to be monitored and custom application label to be used within JIRA Issues:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: custom-failure-config
-  namespace: pelorus
-data:
-  PROVIDER: "jira"
-  PROJECTS: "Testproject,SECONDPROJECTKEY,thirdproject"
-  APP_LABEL: "my.app.label/myname"
-```
-
-#### Custom JIRA workflow
-
-The Failure Time Exporter(s) can be easily adjusted to adapt custom JIRA workflow(s), this includes:
-
-1. Custom JIRA JQL query to find all matching issues to be tracked. *NOTE* in such case `PROJECTS` value is ignored, because user may or may not include `project` as part of the custom JQL query. More information is available at [Advanced Jira Query Language (JQL) site](https://support.atlassian.com/jira-service-management-cloud/docs/use-advanced-search-with-jira-query-language-jql/).
-
-2. Custom label name to track `<application_name>`. Similarly to the previously explained example in the [Default JIRA workflow](#default-jira-workflow) section. 
-
-3. Custom Resolved state(s). Moving JIRA Issue to one of those states reflects resolution date of an Issue, which is different from the default `resolutiondate` field.
-
-#### Example Failure Time Exporter ConfigMap for custom JIRA workflow
-
-Custom JIRA query to collect all Issues with type of `Bug` that has one of the priorities `Highest` or `Medium` and is within JIRA project name `Sample` or `MYJIRAPROJ` project key name. Additionally each JIRA Issue should be labelled with the custom `my.company.org/appname=<application_name>` label. Pelorus expects the Issue to be marked as Resolved if the Issue is moved to one of the states: `Done`, `Closed` or `Resolved`.
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: second-custom-failure-config
-  namespace: pelorus
-data:
-  PROVIDER: "jira"
-  JIRA_JQL_SEARCH_QUERY: 'type in ("Bug") AND priority in ("Highest","Medium") AND project in ("Sample","MYJIRAPROJ")'
-  JIRA_RESOLVED_STATUS: 'Done,Closed,Resolved'
-  APP_LABEL: "my.company.org/appname"
-```
-
-#### Custom JIRA Failure Instance Config
-
-User may deploy multiple Failure Time Exporter instances to gather metrics from multiple JIRA servers or different JIRA workflows. This is achieved by passing different ConfigMap for each instance.
-
-Example ConfigMaps from the previous [Configuring JIRA workflow(s)](#configuring-jira-workflows) section may be used to deploy two separate instances. As shown in the below Pelorus configuration, each of the ConfigMap may be configured variously:
-
-```yaml
-exporters:
-  instances:
-  - app_name: custom-failure-exporter
-    exporter_type: failure
-    env_from_secrets:
-    - my-jira-secret
-    env_from_configmaps:
-    - pelorus-config
-    - custom-failure-config
-
-  - app_name: second-custom-failure-exporter
-    exporter_type: failure
-    env_from_secrets:
-    - my-jira-secret
-    env_from_configmaps:
-    - pelorus-config
-    - second-custom-failure-config
 ```
