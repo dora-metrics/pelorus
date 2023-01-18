@@ -50,8 +50,8 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    containerImage: quay.io/pelorus/pelorus-operator:0.0.1
-    createdAt: "2022-12-19T11:26:21Z"
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.2
+    createdAt: "2023-01-18T18:25:19Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -59,7 +59,7 @@ metadata:
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
     repository: https://github.com/konveyor/pelorus/
     support: Pelorus Community
-  name: pelorus-operator.v0.0.1
+  name: pelorus-operator.v0.0.2
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -358,7 +358,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/pelorus/pelorus-operator:0.0.1
+                image: quay.io/pelorus/pelorus-operator:0.0.2
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -441,8 +441,8 @@ spec:
   links:
   - name: Pelorus Docs
     url: https://pelorus.readthedocs.io/en/latest/
-  - name: Pelorus Configuration Docs
-    url: https://pelorus.readthedocs.io/en/latest/Configuration/
+  - name: Pelorus Getting Started
+    url: https://pelorus.readthedocs.io/en/latest/GettingStarted/Overview/
   - name: Pelorus GIT repository
     url: https://github.com/konveyor/pelorus/
   maintainers:
@@ -460,4 +460,4 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.1
+  version: 0.0.2

@@ -1,0 +1,9 @@
+--- watches.yaml.original	2023-01-18 17:44:32.236167254 +0100
++++ watches.yaml	2023-01-18 17:44:48.578216943 +0100
+@@ -3,4 +3,5 @@
+   version: v1alpha1
+   kind: Pelorus
+   chart: helm-charts/pelorus
++  watchDependentResources: false
+ #+kubebuilder:scaffold:watch
+

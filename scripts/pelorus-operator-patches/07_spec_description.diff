@@ -42,7 +42,7 @@
 +              to configure for the desired workflow. More information about
 +              Pelorus configuration that can be used in the Spec section is
 +              available at:
-+              https://pelorus.readthedocs.io/en/latest/Configuration/
++              https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusCore/
              type: object
 -            x-kubernetes-preserve-unknown-fields: true
 +            properties:
@@ -50,7 +50,7 @@
 +                description: >-
 +                  References configuration for the Pelorus exporters. More
 +                  info about exporters configuration:
-+                  https://pelorus.readthedocs.io/en/latest/Configuration/#configuring-exporters-details
++                  https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusExporters/
 +
 +                    Example:
 +                      instances:
@@ -62,17 +62,17 @@
 +              prometheus_retention:
 +                description: >-
 +                  Prometheus Retention time. More information:
-+                  https://pelorus.readthedocs.io/en/latest/Install/#configure-prometheus-retention
++                  https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusCore/#prometheus_retention
 +                type: string
 +              prometheus_retention_size:
 +                description: >-
 +                  Prometheus Retention Size. More information:
-+                  https://pelorus.readthedocs.io/en/latest/Install/#configure-prometheus-retention
++                  https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusCore/#prometheus_retention_size
 +                type: string
 +              prometheus_storage:
 +                description: >-
 +                  Use Prometheus Persistent Volume. More information:
-+                  https://pelorus.readthedocs.io/en/latest/Install/#configure-prometheus-persistent-volume-recommended
++                  https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusCore/#prometheus-persistent-volume
 +                type: boolean
 +              prometheus_storage_pvc_capacity:
 +                description: Prometheus Persistent Volume capacity.

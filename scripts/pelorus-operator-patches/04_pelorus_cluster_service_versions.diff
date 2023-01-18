@@ -101,8 +101,8 @@
 -    url: https://pelorus-operator.domain
 +  - name: Pelorus Docs
 +    url: https://pelorus.readthedocs.io/en/latest/
-+  - name: Pelorus Configuration Docs
-+    url: https://pelorus.readthedocs.io/en/latest/Configuration/
++  - name: Pelorus Getting Started
++    url: https://pelorus.readthedocs.io/en/latest/GettingStarted/Overview/
 +  - name: Pelorus GIT repository
 +    url: https://github.com/konveyor/pelorus/
    maintainers:

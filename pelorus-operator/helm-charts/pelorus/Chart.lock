@@ -3,4 +3,4 @@ dependencies:
   repository: file://./subcharts/exporters
   version: 2.0.4
 digest: sha256:76d6f1ef53a7d8586a7d04dac9932b82460dcf135e48901741f510b401b906c3
-generated: "2022-12-19T12:26:16.845346124+01:00"
+generated: "2023-01-18T19:25:13.200901467+01:00"
