@@ -4,26 +4,126 @@ Failure time exporter captures the timestamp at which a failure occurred, in a p
 
 Failure Time Exporter may be deployed with one of the [supported Issues Trackers](../Overview.md#issue-trackers). In one clusters' namespace there may be multiple instances of Failure Time Exporter, one for each provider (or each project). Each provider requires specific [configuration](#failureconfigmap).
 
-<!-- For GitHub Issues and JIRA backends we require that all issues associated with a particular application be labelled with the same `app.kubernetes.io/name=<app_name>` label, or custom label if it was configured via `APP_LABEL`. -->
+## List of all configuration options
 
-## ConfigMap Data Values
-This exporter provides several configuration options, passed via `pelorus-config` and `failuretime-config` variables. User may define own ConfigMaps and pass to the committime exporter in a similar way.
+This is the list of options that can be applied to `env_from_secrets`, `env_from_configmaps` and `extraEnv` section of a Failure time exporter.
 
-| Variable                  | Required | Explanation                                                                                                                                                                        | Default Value            |
-|---------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------|
-| `PROVIDER`                | no       | Set the type of failure provider. One of `jira`, `github`, `servicenow`                                                                                                            | `jira`                   |
-| `LOG_LEVEL`               | no       | Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`                                                                                                                      | `INFO`                   |
-| `SERVER`                  | yes      | URL to the Jira or ServiceNowServer                                                                                                                                                | unset                    |
-| `API_USER`                | yes      | Tracker Username                                                                                                                                                                   | unset                    |
-| `TOKEN`                   | yes      | User's API Token                                                                                                                                                                   | unset                    |
-| `APP_LABEL`               | no       | Used in GitHub and JIRA only. Changes the label key used to identify applications                                                                                                  | `app.kubernetes.io/name` |
-| `APP_FIELD`               | no       | Required for ServiceNow, field used for the Application label. ex: "u_appName"                                                                                                     | 'u_application'          |
-| `PROJECTS`                | no       | Used for Jira Exporter to query issues from a list of project keys. Comma separated string. ex: `PROJECTKEY1,PROJECTKEY2`. Value is ignored if `JIRA_JQL_SEARCH_QUERY` is defined. | unset                    |
-| `PELORUS_DEFAULT_KEYWORD` | no       | ConfigMap default keyword. If specified it's used in other data values to indicate "Default Value" should be used                                                                  | `default`                |
-| `JIRA_JQL_SEARCH_QUERY`   | no       | Used for Jira Exporter to define custom JQL query to gather list issues. Ex: `type in ("Bug") AND priority in ("Highest","Medium") AND project in ("Project_1","Project_2")`       | unset                    |
-| `JIRA_RESOLVED_STATUS`    | no       | Used for Jira Exporter to define list Issue states that indicates whether issue is considered resolved. Comma separated string. ex: `Done,Closed,Resolved,Fixed`                   | unset                    |
+| Variable | Required | Default Value |
+|----------|----------|---------------|
+| [PROVIDER](#provider) | no | `jira` |
+| [LOG_LEVEL](#log_level) | no | `INFO` |
+| [SERVER](#server) | yes | - |
+| [API_USER](#api_user) | yes | - |
+| [TOKEN](#token) | yes | - |
+| [APP_LABEL](#app_label) | no | `app.kubernetes.io/name` |
+| [APP_FIELD](#app_field) | no | `u_application` |
+| [PROJECTS](#projects) | no | - |
+| [PELORUS_DEFAULT_KEYWORD](#pelorus_default_keyword) | no | `default` |
+| [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) | no | - |
+| [JIRA_RESOLVED_STATUS](#jira_resolved_status) | no | - |
 
-## Github failure exporter details
+### PROVIDER
+
+- **Required:** no
+    - **Default Value:** jira
+- **Type:** string
+
+Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`.
+
+### LOG_LEVEL
+
+- **Required:** no
+    - **Default Value:** INFO
+- **Type:** string
+
+Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`.
+
+### SERVER
+
+(JUST FOR JIRA AND SERVICENOW ISSUE TRACKERS)
+
+- **Required:** yes
+- **Type:** string
+
+URL to the Jira or ServiceNow Server.
+
+### API_USER
+
+(JUST FOR JIRA AND SERVICENOW ISSUE TRACKERS)
+
+- **Required:** yes
+- **Type:** string
+
+Issue Tracker provider username.
+
+### TOKEN
+
+- **Required:** yes
+- **Type:** string
+
+Issue Tracker provider API Token.
+
+### APP_LABEL
+
+(JUST FOR JIRA AND GITHUB ISSUE TRACKERS)
+
+- **Required:** no
+    - **Default Value:** app.kubernetes.io/name
+- **Type:** string
+
+Changes the label used to identify applications.
+
+### APP_FIELD
+
+(JUST FOR SERVICENOW ISSUE TRACKER)
+
+- **Required:** no
+    - **Default Value:** u_application
+- **Type:** string
+
+Required for ServiceNow, field used for the Application label. ex: "u_appName".
+
+### PROJECTS
+
+(JUST FOR JIRA AND GITHUB ISSUE TRACKERS)
+
+- **Required:** no
+- **Type:** string
+
+Comma separated.
+
+* Used by Jira to define which projects (keys or names) to monitor. Value is ignored if [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) is defined. Ensure the project(s) exists, otherwise none of the metrics will get collected.
+
+* Used by GitHub to define which repositories' issues to monitor.
+
+### PELORUS_DEFAULT_KEYWORD
+
+- **Required:** no
+    - **Default Value:** default
+- **Type:** string
+
+ConfigMap default keyword. If specified, it is used in other data values to indicate "Default Value" should be used.
+
+### JIRA_JQL_SEARCH_QUERY
+
+(JUST FOR JIRA ISSUE TRACKER)
+
+- **Required:** no
+- **Type:** string
+
+Used to define custom JQL query to gather issues. More information is available at [Advanced Jira Query Language (JQL) site](https://support.atlassian.com/jira-service-management-cloud/docs/use-advanced-search-with-jira-query-language-jql/).
+
+### JIRA_RESOLVED_STATUS
+
+(JUST FOR JIRA ISSUE TRACKER)
+
+- **Required:** no
+- **Type:** string
+
+Defines issue status (comma separated) that indicates if issue is resolved.
+
+
+## Configuring GitHub
 
 Example Github issue:
 
@@ -69,7 +169,7 @@ An example of not setting the `APP_FIELD` is here:
 05-25-2022 13:16:14 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=3 } 1652394664.0
 ```
 
-## ServiceNow failure exporter details
+## Configuring ServiceNow
 
 The integration with ServiceNow is configured to process Incident objects that have been resolved (stage=6).  Since there are not Tags in all versions of ServiceNow there may be a need to configure a custom field on the Incident object to provide an application name to match Openshift Labels.  The exporter uses the opened_at field for created timestamp and the resolved_at field for the resolution timestamp.  The exporter will traverse through all the incidents and when a resolved_at field is populated it will create a resolution record.
 
@@ -80,102 +180,130 @@ A custom field can be configure with the following steps:
 - Create a new field (String, Table or reference a List)
 - You can use the API Explorer to verify the name of the field to be used as the APP_FIELD
 
-## Configuring JIRA workflow(s)
+## Configuring Jira
 
-> **Note:** By default JIRA exporter expects specific workflow to be used, where the monitored issues need to:
->
->* be type of `Bug`.
->* be of priority `Highest`.
->* be labeled with `app.kubernetes.io/name=<app_name>`.
->* be `Resolved` with `resolutiondate`.
->
->This however can be customized by configuring `JIRA_JQL_SEARCH_QUERY`, `JIRA_RESOLVED_STATUS` and `APP_LABEL` options as explained in the [Configuring JIRA workflow(s)](#configuring-jira-workflows).
+### Default workflow
 
-For all JIRA configuration options refer to the [Failure Exporter ConfigMap Data Values](#failureconfigmap).
+By default, Failure Time Exporter(s) configured to work with Jira expects specific workflow to be used, where the monitored issues need to:
 
-Jira issue:
+* Be in any of the projects within the [SERVER](#server).
 
-In the Jira project issue settings, create a label with the text "app.kubernetes.io/name=todolist".
+* Be of type `Bug` and of priority `Highest`.
 
-![jira_issue](../../img/jira_issue.png)
+* Be labeled with `app.kubernetes.io/name=app_name`, where **app_name** is the name of one of the applications being monitored.
 
-### Default JIRA workflow
+    > **NOTE:** Issues without such label are collected with the application name set to **unknown**.
 
-Failure Time Exporter configured to work with JIRA issue tracking and project management software, by default will collect information about *all* of the Issues with the following attributes:
+* Be `Resolved` with `resolutiondate`.
 
-1. JIRA Issue to be type of `Bug` with the `Highest` priority.
-2. The Resolved JIRA Issue must have `resolutiondate` field.
+### Custom workflow
 
-Optionally user may configure:
+Failure Time Exporter(s) configured to work with Jira can be easily adjusted to adapt to custom workflow(s), like:
 
-1. Pelorus to track only relevant JIRA projects by specyfing `PROJECTS` ConfigMap Data Value. This comma separated value may include either JIRA Project name or JIRA Project Key. Ensure the project key or project name exists in the JIRA, otherwise none of the metrics will get collected.
-2. Issue labeled with the `app.kubernetes.io/name=<application_name>`, where `<application_name>` is a user defined application name to be monitored by Pelorus. This name needs to be consistent across other exporters, so the performance metrics presented in the Grafana dashboard are correct. Issues without such label are collected by the failure exporter with the application name: `unknown`.
+* Custom selected projects within the [SERVER](#server), using [PROJECTS](#projects).
 
-### Example Failure Time Exporter ConfigMap with optional fields
+* Custom Jira JQL query to find all matching issues, using [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query).
 
-Three JIRA projects to be monitored and custom application label to be used within JIRA Issues:
+    > **NOTE:** in such case [PROJECTS](#projects) value is ignored.
+
+* Custom label to track application named **app_name**, using [APP_LABEL](#app_label).
+
+* Custom issue resolved status, using [JIRA_RESOLVED_STATUS](#jira_resolved_status).
+
+### Examples
+
+In the following examples, we consider that `env_from_secrets` contains both [API_USER](#api_user) and [TOKEN](#token).
+
+#### Custom projects and label
+
+In this example, Failure Time Exporter configured to work with Jira will monitor only issues:
+
+* in **example_server_url** server.
+* in **Testproject**, **SECONDPROJECTKEY** or **thirdproject** projects.
+* of type **Bug**.
+* with priority **Hightest**.
+* labeled with **my.app.label/myname** or **my.app.label/myname=app_name**.
+* And only issues that have `resolutiondate` will be considered resolved.
 
 ```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: custom-failure-config
-  namespace: pelorus
-data:
-  PROVIDER: "jira"
-  PROJECTS: "Testproject,SECONDPROJECTKEY,thirdproject"
-  APP_LABEL: "my.app.label/myname"
+[...]
+      - app_name: jira-failure-exporter
+        exporter_type: failure
+        env_from_secrets:
+        - jira-secret
+        extraEnv:
+          - name: SERVER
+            value: example_server_url
+          - name: PROJECTS
+            value: Testproject,SECONDPROJECTKEY,thirdproject
+          - name: APP_LABEL
+            value: my.app.label/myname
+[...]
 ```
 
-### Custom JIRA workflow
+#### Custom JQL, resolved states and label
 
-The Failure Time Exporter(s) can be easily adjusted to adapt custom JIRA workflow(s), this includes:
+In this example, Failure Time Exporter configured to work with Jira will monitor only issues:
 
-1. Custom JIRA JQL query to find all matching issues to be tracked. *NOTE* in such case `PROJECTS` value is ignored, because user may or may not include `project` as part of the custom JQL query. More information is available at [Advanced Jira Query Language (JQL) site](https://support.atlassian.com/jira-service-management-cloud/docs/use-advanced-search-with-jira-query-language-jql/).
-
-2. Custom label name to track `<application_name>`. Similarly to the previously explained example in the [Default JIRA workflow](#default-jira-workflow) section. 
-
-3. Custom Resolved state(s). Moving JIRA Issue to one of those states reflects resolution date of an Issue, which is different from the default `resolutiondate` field.
-
-### Example Failure Time Exporter ConfigMap for custom JIRA workflow
-
-Custom JIRA query to collect all Issues with type of `Bug` that has one of the priorities `Highest` or `Medium` and is within JIRA project name `Sample` or `MYJIRAPROJ` project key name. Additionally each JIRA Issue should be labelled with the custom `my.company.org/appname=<application_name>` label. Pelorus expects the Issue to be marked as Resolved if the Issue is moved to one of the states: `Done`, `Closed` or `Resolved`.
+* in **example_server_url** server.
+* in **Sample**  or **MYJIRAPROJ** projects.
+* of type **Bug**.
+* with priority **Hightest** or **Medium**.
+* labeled with **my.company.org/appname** or **my.company.org/appname=app_name**.
+* And only issues that have their status changed to **DONE**, **CLOSED** or **RESOLVED** will be considered resolved.
 
 ```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: second-custom-failure-config
-  namespace: pelorus
-data:
-  PROVIDER: "jira"
-  JIRA_JQL_SEARCH_QUERY: 'type in ("Bug") AND priority in ("Highest","Medium") AND project in ("Sample","MYJIRAPROJ")'
-  JIRA_RESOLVED_STATUS: 'Done,Closed,Resolved'
-  APP_LABEL: "my.company.org/appname"
+[...]
+      - app_name: jira-failure-exporter
+        exporter_type: failure
+        env_from_secrets:
+        - jira-secret
+        extraEnv:
+          - name: SERVER
+            value: example_server_url
+          - name: JIRA_JQL_SEARCH_QUERY
+            value: type in ("Bug") AND priority in ("Highest","Medium") AND project in ("Sample","MYJIRAPROJ")
+          - name: APP_LABEL
+            value: my.company.org/appname
+          - name: JIRA_RESOLVED_STATUS
+            value: Done,Closed,Resolved
+[...]
 ```
 
-### Custom JIRA Failure Instance Config
+#### Multiple Jira servers
 
-User may deploy multiple Failure Time Exporter instances to gather metrics from multiple JIRA servers or different JIRA workflows. This is achieved by passing different ConfigMap for each instance.
+In this example, 2 Failure Time Exporters are configured to work with Jira, each in a different server.
 
-Example ConfigMaps from the previous [Configuring JIRA workflow(s)](#configuring-jira-workflows) section may be used to deploy two separate instances. As shown in the below Pelorus configuration, each of the ConfigMap may be configured variously:
+`jira-failure-exporter-1` will monitor only issues:
+
+* in any of the projects within the **example_server_url_1** server.
+
+`jira-failure-exporter-2` will monitor only issues:
+
+* in any of the projects within the **example_server_url_2** server.
+
+And both will monitor only issues:
+
+* of type **Bug**.
+* with priority **Hightest**.
+* labeled with **my.app.label/myname** or **my.app.label/myname=app_name**.
+* And only issues that have `resolutiondate` will be considered resolved.
 
 ```yaml
-exporters:
-  instances:
-  - app_name: custom-failure-exporter
-    exporter_type: failure
-    env_from_secrets:
-    - my-jira-secret
-    env_from_configmaps:
-    - pelorus-config
-    - custom-failure-config
-
-  - app_name: second-custom-failure-exporter
-    exporter_type: failure
-    env_from_secrets:
-    - my-jira-secret
-    env_from_configmaps:
-    - pelorus-config
-    - second-custom-failure-config
+[...]
+      - app_name: jira-failure-exporter-1
+        exporter_type: failure
+        env_from_secrets:
+        - jira-secret
+        extraEnv:
+          - name: SERVER
+            value: example_server_url_1
+      - app_name: jira-failure-exporter-2
+        exporter_type: failure
+        env_from_secrets:
+        - jira-secret
+        extraEnv:
+          - name: SERVER
+            value: example_server_url_2
+[...]
 ```
