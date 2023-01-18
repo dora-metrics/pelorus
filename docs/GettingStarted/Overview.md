@@ -20,7 +20,7 @@ Pelorus is composed of Prometheus, Grafana and exporters. It can be easily deplo
 ## Terminology
 
 - **Instance**: The set of Pelorus Core and Exporters objects.
-- **Pelorus Core**: The storage manager.
+- **Pelorus Core**: The integration layer between Prometheus, Grafana and exporters.
 - **Pelorus Exporter**: The metrics collector.
 - **Provider**: The tools from where Pelorus Exporters collect the metrics.
 - **Metric**: The data that is used to generate a measure.

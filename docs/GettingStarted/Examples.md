@@ -4,7 +4,9 @@ In the following sections, we present example configurations for a variety of Gi
 
 In this example, Pelorus will monitor only one application, where:
 
-* The application is deployed to the **example_namespace** Namespace in OpenShift.
+* The application:
+    * is named **app_name** in OpenShift.
+    * is deployed to the **example_namespace** Namespace in OpenShift.
 * The application source code is hosted in Bitbucket.
     * Bitbucket user is **bitbucket_user**.
     * Bitbucket token is **bitbucket_token**.
@@ -12,7 +14,10 @@ In this example, Pelorus will monitor only one application, where:
     * Jira user is **jira_user**.
     * Jira token is **jira_token**.
     * Jira server is **example_server_url**.
-    * Pelorus will only monitor issues of type **Bug** and priority **Hightest**. (Default)
+    * Pelorus will only monitor issues:
+        * of type **Bug**. (Default)
+        * with priority **Hightest**. (Default)
+        * labeled **example_label=app_name**.
     * Pelorus will monitor the issues in **example_project** project.
     * Pelorus will consider monitored issues to be resolved when their status change to **DONE**.
 
@@ -49,28 +54,34 @@ spec:
             value: jira_token
           - name: SERVER
             value: example_server_url
+          - name: APP_LABEL
+            value: example_label
           - name: PROJECTS
             value: example_project
           - name: JIRA_RESOLVED_STATUS
             value: DONE
 ```
 
-To monitor more applications, we would have to:
+To monitor more applications using Bitbucket & Jira as providers, we would have to:
 
 * Add all the others namespaces (comma separated) in the `deploytime` exporter.
 * Create a `committime` exporter for each application, like the previous one, but with their corresponding namespaces.
-* Create a `failure` exporter for each application, like the previous one, but with their corresponding Jira projects.
+* Add all the others Jira projects (comma separated) in the `failure` exporter (or create new ones, if they live in different servers) and label issues properly with each application name.
 
 ## GitHub
 
 In this example, Pelorus will monitor only one application, where:
 
-* The application is deployed to the **example_namespace** Namespace in OpenShift.
+* The application:
+    * is named **app_name** in OpenShift.
+    * is deployed to the **example_namespace** Namespace in OpenShift.
 * The application source code is hosted in GitHub. (Default)
     * GitHub token is **github_token**.
 * The application uses GitHub as the Issue tracker.
     * GitHub token is **github_token**.
-    * Pelorus will only monitor issues labeled with **bug** and **app.kubernetes.io/name**. (Default)
+    * Pelorus will only monitor issues labeled both with:
+        * **bug**. (Default)
+        * **example_label=app_name**.
     * Pelorus will monitor the issues in **user/example_repository** GitHub repository.
     * Pelorus will consider monitored issues to be resolved when they are closed.
 
@@ -101,15 +112,17 @@ spec:
             value: github
           - name: TOKEN
             value: github_token
+          - name: APP_LABEL
+            value: example_label
           - name: PROJECTS
             value: user/example_repository
 ```
 
-To monitor more applications, we would have to:
+To monitor more applications using GitHub as the provider, we would have to:
 
 * Add all the others namespaces (comma separated) in the `deploytime` exporter.
 * Create a `committime` exporter for each application, like the previous one, but with their corresponding namespaces.
-* Create a `failure` exporter for each application, like the previous one, but with their corresponding GitHub repositories.
+* Create a `failure` exporter for each application, like the previous one, but with their corresponding GitHub repositories, and label issues properly with each application name.
 
 ## GitHub & Bitbucket & Jira
 
@@ -131,8 +144,8 @@ In this example, Pelorus will monitor two applications, where:
     * Jira token is **jira_token**.
     * Jira server is **example_server_url**.
     * Pelorus will only monitor issues of type **Bug** and priority **Hightest**. (Default)
-        * Issues labeled with **app.kubernetes.io/name=app1** are related to the first application. (Default)
-        * Issues labeled with **app.kubernetes.io/name=app2** are related to the second application. (Default)
+        * Issues labeled with **example_label=app1** are related to the first application.
+        * Issues labeled with **example_label=app2** are related to the second application.
     * Pelorus will monitor the issues in **example_project** project.
     * Pelorus will consider monitored issues to be resolved when their status change to **DONE**.
 
@@ -176,6 +189,8 @@ spec:
             value: jira_token
           - name: SERVER
             value: example_server_url
+          - name: APP_LABEL
+            value: example_label
           - name: PROJECTS
             value: example_project
           - name: JIRA_RESOLVED_STATUS
