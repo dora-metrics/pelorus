@@ -1,40 +1,20 @@
-# Pelorus Architecture
+## Basic Architecture and Components
 
 The following diagram shows the various components and traffic flows in the Pelorus ecosystem.
-
-## Terminology
-
-_Exporter_
-: Exporters enable Pelorus to customize data points to capture metrics from various providers.
-e.g. Deploy time exporter, Commit time exporter, Failure exporter
-
-_Provider_
-: The source from which exporters automate collection of data points (metrics).
-e.g. OpenShift, Git providers (GitHub, GitLab, Bitbucket), Issue trackers (JIRA, ServiceNow)
-
-_Metrics_
-: The data points that are collected from the providers.
-e.g. deploy_time, commit_time, failure_creation, failure_resolution
-
-_Measures_
-: Metrics calculated to represent an [outcome](../philosophy/outcomes/Overview/). Each outcome is made measurable by a set of representative measures.
-e.g. Lead Time for Change, Deployment Frequency, Mean Time to Restore, Change Failure Rate
-
-## Basic Architecture and Components
 
 ![Pelorus Architecture Diagram](img/architecture.png)
 
 Pelorus is composed of the following open source components.
 
 * Prometheus Operator
-  * Prometheus
-  * Thanos (backed by Object Store)
+    * Prometheus
+    * Thanos (backed by Object Store)
 * Grafana Operator
-  * Grafana
+    * Grafana
 * Pelorus Exporters
-  * Commit Time
-  * Deploy Time
-  * Failure
+    * Commit Time
+    * Deploy Time
+    * Failure
 
 ### Prometheus and Grafana
 
