@@ -144,7 +144,7 @@ The following is a recommended directory structure for a Pelorus exporter `<NAME
 
 #### Python & Repo Setup
 
-After cloning the repo, you'll need a python version that's >= 3.9 but < 3.11.
+After cloning the repo, you'll need a python version that's >= 3.9 but <= 3.11.
 
 Running `make dev-env` should be enough to get you started.
 
