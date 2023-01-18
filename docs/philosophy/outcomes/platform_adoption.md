@@ -88,7 +88,7 @@ _Adoption Lead Time ( $LT$ )_
 :   Given a collection of $N$ individual adoption lead times ( $LT_{1}..LT_{N}$ ), the _average adoption lead time_ $\overline{x}LT$ can be calculated as follows:
 
     $$
-    \overline{x}LT = \frac{sum(LT_{1}..LT_{N})}{N}
+    \overline{x}LT = \frac{\sum_{1}^{N}(LT_{i})}{N}
     $$
 
 ### :fontawesome-solid-arrow-trend-up: Adoption rate
@@ -133,7 +133,7 @@ _Adoptions at Time $t_{2}$ ( $a^{t_{2}}$)_
 **_Adoption Rate $AR$_**
 
 $$
-AR = (a^{t_{2}} - a^{t_{2}} - 1) * 100
+AR = (a^{t_{2}} - a^{t_{2}} - 1) \cdot 100
 $$
 
 ### :material-account-arrow-down: __Retention Rate__
@@ -196,7 +196,7 @@ _Active users_
 :   Explain
 
     $$
-    RR = \left(\frac{u_{E} - u_{N}}{u_{S}}\right) * 100
+    RR = \left(\frac{u_{E} - u_{N}}{u_{S}}\right) \cdot 100
     $$
 
 ### :fontawesome-solid-people-roof: __Operational efficiency__
