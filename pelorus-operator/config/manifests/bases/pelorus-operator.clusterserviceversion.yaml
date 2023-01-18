@@ -6,7 +6,7 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    containerImage: quay.io/pelorus/pelorus-operator:0.0.1
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.2
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -93,8 +93,8 @@ spec:
   links:
   - name: Pelorus Docs
     url: https://pelorus.readthedocs.io/en/latest/
-  - name: Pelorus Configuration Docs
-    url: https://pelorus.readthedocs.io/en/latest/Configuration/
+  - name: Pelorus Getting Started
+    url: https://pelorus.readthedocs.io/en/latest/GettingStarted/Overview/
   - name: Pelorus GIT repository
     url: https://github.com/konveyor/pelorus/
   maintainers:

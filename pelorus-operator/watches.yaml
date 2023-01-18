@@ -3,4 +3,5 @@
   version: v1alpha1
   kind: Pelorus
   chart: helm-charts/pelorus
+  watchDependentResources: false
 #+kubebuilder:scaffold:watch
