@@ -140,6 +140,125 @@ The following is a recommended directory structure for a Pelorus exporter `<NAME
         └── test_<NAME>.py
 ```
 
+### Exporter installation sources
+
+Each exporter can be deployed from the pre-built images or from the source code hosted in the accessible from the cluster GIT repository. Each exporter instance may be deployed using different method.
+
+If not defined specifically, exporters are using pre-built container images with the `stable` tag from the following sources:
+
+  * Quay repository for the [committime-exporter](https://quay.io/repository/pelorus/pelorus-committime-exporter)
+  * Quay repository for the [failure-exporter](https://quay.io/repository/pelorus/pelorus-failure-exporter)
+  * Quay repository for the [deploytime-exporter](https://quay.io/repository/pelorus/pelorus-deploytime-exporter)
+
+#### Pre-built Quay images
+
+Each Pelorus GitHub pull request that is [merged](https://github.com/konveyor/pelorus/pulls?q=is%3Apr+is%3Amerged) results in a new set of images that are tagged with the GitHub commit hash, for example `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/konveyor/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31). The newest merged commit results in additional image tag `latest`.
+
+Each new Pelorus [release](https://github.com/konveyor/pelorus/releases) results in a new set of images that are tagged with the release number, for example `v1.7.1`. At the same time when release is made a `stable` tag is updated to point to the latest released version of the images.
+
+During Pelorus Helm deployment or update time user have option to specify the image tag for each exporter instance individually. Example below shows two different tags for the commit time exporter and two tags for the failure exporter.
+
+```yaml
+exporters:
+  instances:
+  - app_name: committime-github
+    exporter_type: comittime
+    image_tag: latest # Newest image from the last merged source code
+    env_from_secrets:
+    - github-credentials
+    env_from_configmaps:
+    - pelorus-config
+    - committime-config
+
+  - app_name: committime-gh-enterprise
+    exporter_type: comittime
+    image_tag: stable # By default it's `stable`, so we do not need to include image_tag here
+    env_from_secrets:
+    - github-enterprise-credentials
+    env_from_configmaps:
+    - pelorus-config
+    - comittime-enterprise-config
+
+  - app_name: failure-github
+    exporter_type: deploytime
+    image_tag: d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31 # Specific merge build
+    env_from_secrets:
+    - github-credentials
+    env_from_configmaps:
+    - pelorus-config
+    - my-failure-github-config
+
+- app_name: jira-failure-exporter
+    exporter_type: failure
+    image_tag: v1.7.1 # Specific release
+    env_from_secrets:
+    - jira-credentials
+    env_from_configmaps:
+    - pelorus-config
+    - my-failure-jira-config
+```
+
+#### Pre-built custom images
+
+This method can be used to deploy Pelorus with the user built images or pre-built images mirrored in other than [quay.io](https://quay.io/) registry.
+
+In such case the exporter instance configuration needs to include `image_name` that is in a format of full path to the image including image `:tag` or just image path without the `:tag` part. Not including image `:tag` results to use default `stable` tag unless `image_tag` configuration option is specified.
+
+Example of such exporter instances are below:
+
+```yaml
+exporters:
+  instances:
+  - app_name: committime-github
+    exporter_type: comittime
+    image_name: my.container.registry.io/pelorus/my-committime-exporter:latest # :stable would be used if no :latest was specified
+    env_from_secrets:
+    - github-credentials
+    env_from_configmaps:
+    - pelorus-config
+    - committime-config
+
+  - app_name: committime-gh-enterprise
+    exporter_type: comittime
+    image_name: my.container.registry.io/pelorus/my-committime-exporter # image tag specified in the image_tag line below
+    image_tag: mytag
+    env_from_secrets:
+    - github-enterprise-credentials
+    env_from_configmaps:
+    - pelorus-config
+    - comittime-enterprise-config
+```
+
+#### Source-to-image (S2I)
+
+By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/konveyor/pelorus/releases) Pelorus.
+
+Example of such exporter instances are below:
+
+```yaml
+exporters:
+  instances:
+  - app_name: committime-github
+    exporter_type: comittime
+    source_url: https://github.com/konveyor/pelorus.git
+    source_ref: refs/pull/567/head # References not merged GitHub pull request number 567
+    env_from_secrets:
+    - github-credentials
+    env_from_configmaps:
+    - pelorus-config
+    - committime-config
+
+  - app_name: committime-gh-enterprise
+    exporter_type: comittime
+    source_url: https://github.com/mypelorusfork/pelorus.git
+    source_ref: testbranch # Use testbranch from mypelorusfork org
+    env_from_secrets:
+    - github-enterprise-credentials
+    env_from_configmaps:
+    - pelorus-config
+    - comittime-enterprise-config
+```
+
 ### Dev Environment Setup
 
 #### Python & Repo Setup
