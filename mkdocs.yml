@@ -55,7 +55,11 @@ nav:
     - Installation: GettingStarted/Installation.md
     - Configuration:
       - Pelorus Core: GettingStarted/configuration/PelorusCore.md
-      - Pelorus Exporters: GettingStarted/configuration/PelorusExporters.md
+      - Pelorus Exporters:
+        - Overview: GettingStarted/configuration/PelorusExporters.md
+        - Deploy Time: GettingStarted/configuration/ExporterDeploytime.md
+        - Commit Time: GettingStarted/configuration/ExporterCommittime.md
+        - Failure Time: GettingStarted/configuration/ExporterFailure.md
       - Production best practices: GettingStarted/configuration/ProductionBestPractice.md
       - NooBaa for Long Term Storage: GettingStarted/configuration/Noobaa.md
     - Quickstart Tutorial: GettingStarted/QuickstartTutorial.md
