@@ -4,7 +4,47 @@ Failure time exporter captures the timestamp at which a failure occurred, in a p
 
 Failure Time Exporter may be deployed with one of the [supported Issues Trackers](../Overview.md#issue-trackers). In one clusters' namespace there may be multiple instances of Failure Time Exporter, one for each provider (or each project). Each provider requires specific [configuration](#failureconfigmap).
 
-## List of all configuration options
+Each Failure time exporter configuration option must be placed under `spec.exporters.instances` in the Pelorus configuration object YAML file as in the example:
+
+```yaml
+apiVersion: charts.pelorus.konveyor.io/v1alpha1
+kind: Pelorus
+metadata:
+  name: example-configuration
+spec:
+  exporters:
+    instances:
+      - app_name: failure-exporter
+        exporter_type: failure
+        [...] # Failure time exporter configuration options
+```
+
+## Example
+
+Configuration part of the Failure time exporter YAML file, with some non-default options:
+
+```yaml
+apiVersion: charts.pelorus.konveyor.io/v1alpha1
+kind: Pelorus
+metadata:
+  name: example-configuration
+spec:
+  exporters:
+    instances:
+      - app_name: failure-exporter
+        exporter_type: failure
+        env_from_secrets:
+        - github-secret
+        env_from_configmaps:
+        - failure-config
+        extraEnv:
+          - name: PROVIDER
+            value: github
+          - name: PROJECTS
+            value: github_user/repository
+```
+
+## Failure Time Exporter configuration options
 
 This is the list of options that can be applied to `env_from_secrets`, `env_from_configmaps` and `extraEnv` section of a Failure time exporter.
 
@@ -41,18 +81,16 @@ Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`.
 
 ### SERVER
 
-(JUST FOR JIRA AND SERVICENOW ISSUE TRACKERS)
-
 - **Required:** yes
+    - Only applicable for [PROVIDER](#provider) set to `jira` or `servicenow`
 - **Type:** string
 
 URL to the Jira or ServiceNow Server.
 
 ### API_USER
 
-(JUST FOR JIRA AND SERVICENOW ISSUE TRACKERS)
-
 - **Required:** yes
+    - Only applicable for [PROVIDER](#provider) set to `jira` or `servicenow`
 - **Type:** string
 
 Issue Tracker provider username.
@@ -66,9 +104,8 @@ Issue Tracker provider API Token.
 
 ### APP_LABEL
 
-(JUST FOR JIRA AND GITHUB ISSUE TRACKERS)
-
 - **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `jira` or `github`
     - **Default Value:** app.kubernetes.io/name
 - **Type:** string
 
@@ -76,9 +113,8 @@ Changes the label used to identify applications.
 
 ### APP_FIELD
 
-(JUST FOR SERVICENOW ISSUE TRACKER)
-
 - **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `servicenow`
     - **Default Value:** u_application
 - **Type:** string
 
@@ -86,9 +122,8 @@ Field used for the Application label.
 
 ### PROJECTS
 
-(JUST FOR JIRA AND GITHUB ISSUE TRACKERS)
-
 - **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `jira` or `github`
 - **Type:** string
 
 Comma separated.
@@ -103,31 +138,28 @@ Comma separated.
     - **Default Value:** default
 - **Type:** string
 
-ConfigMap default keyword. If specified, it is used in other data values to indicate "Default Value" should be used.
+Used only when configuring instance using ConfigMap. It is the ConfigMap value that represents `default` value. If specified it's used in other data values to indicate "Default Value" should be used.
 
 ### JIRA_JQL_SEARCH_QUERY
 
-(JUST FOR JIRA ISSUE TRACKER)
-
 - **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `jira`
 - **Type:** string
 
 Used to define custom JQL query to gather issues. More information is available at [Advanced Jira Query Language (JQL) site](https://support.atlassian.com/jira-service-management-cloud/docs/use-advanced-search-with-jira-query-language-jql/).
 
 ### JIRA_RESOLVED_STATUS
 
-(JUST FOR JIRA ISSUE TRACKER)
-
 - **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `jira`
 - **Type:** string
 
 Defines issue status (comma separated) that indicates if issue is resolved.
 
 ### GITHUB_ISSUE_LABEL
 
-(JUST FOR GITHUB ISSUE TRACKER)
-
 - **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `github`
     - **Default Value:** bug
 - **Type:** string
 
