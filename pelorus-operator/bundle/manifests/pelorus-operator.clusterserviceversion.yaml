@@ -461,3 +461,6 @@ spec:
     name: Red Hat
     url: https://redhat.com
   version: 0.0.2
+  replaces: pelorus-operator.v0.0.1
+  skips:
+    - pelorus-operator.v0.0.1
