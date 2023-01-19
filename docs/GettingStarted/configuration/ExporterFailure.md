@@ -21,6 +21,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 | [PELORUS_DEFAULT_KEYWORD](#pelorus_default_keyword) | no | `default` |
 | [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) | no | - |
 | [JIRA_RESOLVED_STATUS](#jira_resolved_status) | no | - |
+| [GITHUB_ISSUE_LABEL](#github_issue_label) | no | bug |
 
 ### PROVIDER
 
@@ -122,63 +123,15 @@ Used to define custom JQL query to gather issues. More information is available 
 
 Defines issue status (comma separated) that indicates if issue is resolved.
 
+### GITHUB_ISSUE_LABEL
 
-## Configuring GitHub
+(JUST FOR GITHUB ISSUE TRACKER)
 
-Example Github issue:
+- **Required:** no
+    - **Default Value:** bug
+- **Type:** string
 
-Create an issue, and create a Github issue label: "app.kubernetes.io/name=todolist".
-
-![github_issue](../../img/github_issue.png)
-
-The recommendation for utilizing the Github failure exporter is to define the Github token and Github projects.
-The `TOKEN` should be defined in an OpenShift secret as described above.
-The `PROJECTS` are best defined in the failure exporter ConfigMap. An example is found below.
-
-```yaml
-kind: ConfigMap
-metadata:
-  name: failuretime-config
-  namespace: pelorus
-data:
-  PROVIDER: "github"     # jira  |  jira, github, servicenow
-  SERVER:                #       |  URL to the Jira or ServiceNowServer, can be overridden by env_from_secrets
-  API_USER:                  #       |  Tracker Username, can be overridden by env_from_secrets
-  TOKEN:                 #       |  User's API Token, can be overridden by env_from_secrets
-  PROJECTS: "konveyor/todolist-mongo-go,konveyor/todolist-mariadb-go"
-  APP_FIELD: "todolist"  #       |  This is optional for the Github failure exporter
-```
-
-The `PROJECTS` key is comma delimited and formatted at "Github_organization/Github_repository"
-The `APP_FIELD` key may be used to associate the Github repository with a particular application
-
-Any Github issue must be labeled as a "bug".  Any issue optionally can be labeled with a label associated
-with a particular application.  If an application is not found it will default the app to the Github repository name.
-
-An example of the output with the `APP_FIELD` for the [todolist-mongo-go repository](https://github.com/konveyor/todolist-mongo-go)  is found below:
-```
-05-25-2022 13:09:40 INFO     Collected failure_creation_timestamp{ app=todolist, issue_number=3 } 1652305808.0
-05-25-2022 13:09:40 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=4 } 1652462194.0
-05-25-2022 13:09:40 INFO     Collected failure_creation_timestamp{ app=todolist, issue_number=3 } 1652394664.0
-```
-
-An example of not setting the `APP_FIELD` is here:
-```
-05-25-2022 13:16:14 INFO     Collected failure_creation_timestamp{ app=todolist-mongo-go, issue_number=3 } 1652305808.0
-05-25-2022 13:16:14 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=4 } 1652462194.0
-05-25-2022 13:16:14 INFO     Collected failure_creation_timestamp{ app=todolist-mariadb-go, issue_number=3 } 1652394664.0
-```
-
-## Configuring ServiceNow
-
-The integration with ServiceNow is configured to process Incident objects that have been resolved (stage=6).  Since there are not Tags in all versions of ServiceNow there may be a need to configure a custom field on the Incident object to provide an application name to match Openshift Labels.  The exporter uses the opened_at field for created timestamp and the resolved_at field for the resolution timestamp.  The exporter will traverse through all the incidents and when a resolved_at field is populated it will create a resolution record.
-
-A custom field can be configure with the following steps:
-
-- Navigate to an existing Incident
-- Use the upper left Menu and select Configure -> Form Layout
-- Create a new field (String, Table or reference a List)
-- You can use the API Explorer to verify the name of the field to be used as the APP_FIELD
+Defines a custom label to be used in GitHub issues to identify the ones to be monitored.
 
 ## Configuring Jira
 
@@ -307,3 +260,65 @@ And both will monitor only issues:
             value: example_server_url_2
 [...]
 ```
+
+## Configuring GitHub
+
+### Default workflow
+
+By default, Failure Time Exporter(s) configured to work with GitHub expects specific workflow to be used, where the monitored issues need to:
+
+* Be in the repositories listed in [PROJECTS](#projects).
+
+* Be labeled with `bug`.
+
+* Be labeled with `app.kubernetes.io/name=app_name`, where **app_name** is the name of one of the applications being monitored.
+
+    > **NOTE:** Issues without such label are collected with the application name set to the **repository name**.
+
+### Custom workflow
+
+Failure Time Exporter(s) configured to work with GitHub can be easily adjusted to adapt to custom workflow(s), like:
+
+* Custom label to track monitored issues, using [GITHUB_ISSUE_LABEL](#github_issue_label).
+
+* Custom label to track application named **app_name**, using [APP_LABEL](#app_label).
+
+### Examples
+
+In the following examples, we consider that `env_from_secrets` contains [TOKEN](#token).
+
+#### Multiple GitHub repositories
+
+In this example, Failure Time Exporter configured to work with GitHub will monitor only issues:
+
+* in **github_user/repository1** or **github_user/repository2** repositories' issues.
+* labeled with **bug**.
+* labeled with **important** or **important=app_name**.
+* And only issues that are closed, will be considered resolved.
+
+```yaml
+[...]
+      - app_name: github-failure-exporter
+        exporter_type: failure
+        env_from_secrets:
+        - github-secret
+        extraEnv:
+          - name: PROVIDER
+            value: github
+          - name: APP_LABEL
+            value: important
+          - name: PROJECTS
+            value: github_user/repository1,github_user/repository2
+[...]
+```
+
+## Configuring ServiceNow
+
+The integration with ServiceNow is configured to process Incident objects that have been resolved (stage=6).  Since there are not Tags in all versions of ServiceNow there may be a need to configure a custom field on the Incident object to provide an application name to match Openshift Labels.  The exporter uses the opened_at field for created timestamp and the resolved_at field for the resolution timestamp.  The exporter will traverse through all the incidents and when a resolved_at field is populated it will create a resolution record.
+
+A custom field can be configure with the following steps:
+
+- Navigate to an existing Incident
+- Use the upper left Menu and select Configure -> Form Layout
+- Create a new field (String, Table or reference a List)
+- You can use the API Explorer to verify the name of the field to be used as the APP_FIELD
