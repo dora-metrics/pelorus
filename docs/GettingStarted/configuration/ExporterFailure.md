@@ -82,7 +82,7 @@ Changes the label used to identify applications.
     - **Default Value:** u_application
 - **Type:** string
 
-Required for ServiceNow, field used for the Application label. ex: "u_appName".
+Field used for the Application label.
 
 ### PROJECTS
 
@@ -314,11 +314,26 @@ In this example, Failure Time Exporter configured to work with GitHub will monit
 
 ## Configuring ServiceNow
 
-The integration with ServiceNow is configured to process Incident objects that have been resolved (stage=6).  Since there are not Tags in all versions of ServiceNow there may be a need to configure a custom field on the Incident object to provide an application name to match Openshift Labels.  The exporter uses the opened_at field for created timestamp and the resolved_at field for the resolution timestamp.  The exporter will traverse through all the incidents and when a resolved_at field is populated it will create a resolution record.
+### Default workflow
+
+By default, Failure Time Exporter(s) configured to work with ServiceNow expects specific workflow to be used, where the monitored incidents need to:
+
+* Be in the [SERVER](#server).
+
+* Have the field `u_application`, where it should store the name of one of the applications being monitored.
+
+    > **NOTE:** Since there are not tags in all versions of ServiceNow, there is the need to configure a custom field on the Incident object to provide an application name to match OpenShift Labels.
+
+* And only incidents that are `stage=6` (when a `resolved_at` field is populated) will be considered resolved.
+
+### Custom workflow
+
+Failure Time Exporter(s) configured to work with ServiceNow can be easily adjusted to adapt to custom workflow(s), like:
+
+* Have the field [APP_FIELD](#app_field), where it should store the name of one of the applications being monitored.
 
 A custom field can be configure with the following steps:
 
-- Navigate to an existing Incident
-- Use the upper left Menu and select Configure -> Form Layout
-- Create a new field (String, Table or reference a List)
-- You can use the API Explorer to verify the name of the field to be used as the APP_FIELD
+- Navigate to an existing Incident.
+- Use the upper left Menu and select Configure -> Form Layout.
+- Create a new field (String, Table or reference a List).
