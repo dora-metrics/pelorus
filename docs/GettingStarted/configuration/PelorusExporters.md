@@ -1,175 +1,326 @@
-# Configuration
+An **exporter** is a data collector application that pulls data from various tools and exposes it such that it can be consumed by Pelorus dashboards. Each exporter gets deployed individually alongside the core Pelorus stack.
 
-## Configuring The Pelorus Stack
+There are currently three **exporter** types:
 
-The Pelorus stack (Prometheus, Grafana, Thanos, etc.) can be configured by changing the `values.yaml` file that is passed to helm. The recommended practice is to make a copy of the one [values.yaml](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) file and [charts/pelorus/configmaps/](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/configmaps) directory, and store in your own configuration repo for safe keeping, and updating. Once established, you can make configuration changes by updating your `charts/pelorus/configmaps` files with `values.yaml` and applying the changes like so:
-
-```
-oc apply -f `myclusterconfigs/pelorus/configmaps
-helm upgrade pelorus charts/pelorus --namespace pelorus --values myclusterconfigs/pelorus/values.yaml
-```
-
-The following configurations may be made through the `values.yaml` file:
-
-| Variable                               | Required | Explanation                                                                                                                                                                                                                                                                                                                       | Default Value                          |
-|----------------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
-| `openshift_prometheus_htpasswd_auth`   | yes      | The contents for the htpasswd file that Prometheus will use for basic authentication user.                                                                                                                                                                                                                                        | User: `internal`, Password: `changeme` |
-| `openshift_prometheus_basic_auth_pass` | yes      | The password that grafana will use for its Prometheus datasource. Must match the above.                                                                                                                                                                                                                                           | `changme`                              |
-| `custom_ca`                            | no       | Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.4/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki) | `false`                                |
-| `exporters`                            | no       | Specified which exporters to install. See [Configuring Exporters](#configuring-exporters).                                                                                                                                                                                                                                        | Installs deploytime exporter only.     |
-
-## Configuring Exporters Overview
-
-An _exporter_ is a data collection application that pulls data from various tools and platforms and exposes it such that it can be consumed by Pelorus dashboards. Each exporter gets deployed individually alongside the core Pelorus stack.
-
-There are currently three _exporter_ types which needs to be specified via `exporters.instances.exporter_type` value, those are `deploytime`, `failure` or `comittime`.
+- [Deploy time](ExporterDeploytime.md)
+- [Commit time](ExporterCommittime.md)
+- [Failure](ExporterFailure.md)
 
 
-Exporters can be deployed via a list of `exporters.instances` inside the `values.yaml` file that corresponds to the OpenShift ConfigMap configurations from the `charts/pelorus/configmaps/` directory. Some exporters also require secrets to be created when integrating with external tools and platforms. A sample exporter configuration may look like this:
+Each exporter configuration option must be placed under `spec.exporters.instances` in the Pelorus configuration object YAML file as in the example:
 
 ```yaml
-exporters:
-  instances:
-  - app_name: deploytime-exporter
-    exporter_type: deploytime
-    env_from_configmaps:
-    - pelorus-config
-    - deploytime-config
-```
-
-Additionally, you may want to deploy a single exporter multiple times to gather data from different sources. For example, if you wanted to pull commit data from both GitHub and a private GitHub Enterprise instance, you would deploy two instances of the Commit Time Exporter.
-
-Each exporter additionally takes a unique set of environment variables to further configure its integrations and behavior. These can be set by using example ConfigMap object configurations similarly to the kubernetes secrets and listing them under `env_from_configmaps` or under `env_from_secrets` accordingly. As shown below.
-
-```yaml
-exporters:
-  instances:
-  - app_name: committime-github
-    exporter_type: comittime
-    env_from_secrets:
-    - github-credentials
-    env_from_configmaps:
-    - pelorus-config
-    - committime-config
-
-  - app_name: committime-gh-enterprise
-    exporter_type: comittime
-    env_from_secrets:
-    - github-enterprise-credentials
-    env_from_configmaps:
-    - pelorus-config
-    - comittime-enterprise-config
-```
-
-### ConfigMap configuration values
-
-Configuration for each exporter is done via ConfigMap objects. Best practice is to store the folder outside of local Pelorus Git repository and modify accordingly.
-Each ConfigMap must be in a separate file and must be applied to the cluster before deploying pelorus helm chart.
-
-ConfigMap can be applied individually or all together:
-```shell
-# Only deploytime ConfigMap
-oc apply -f charts/pelorus/configmaps/deploytime.yaml
-
-# All at once
-oc apply -f charts/pelorus/configmaps/
-```
-
-Example ConfigMap for the `deploytime-exporter` with the unique name `deploytime-config`:
-```
-apiVersion: v1
-kind: ConfigMap
+apiVersion: charts.pelorus.konveyor.io/v1alpha1
+kind: Pelorus
 metadata:
-  name: deploytime-config
-  namespace: pelorus
-data:
-  PROD_LABEL: "default"    # "" / PROD_LABEL is ignored if NAMESPACES are provided
-  NAMESPACES: "default"    # ""
+  name: example-configuration
+spec:
+  [...] # Pelorus Core configuration options
+  exporters:
+    instances:
+      [...] # Pelorus exporter configuration options
 ```
-### Authentication to Remote Services
 
-Pelorus exporters make use of `personal access tokens` when authentication is
+## Example
+
+Configuration part of the Pelorus object YAML file, with some non-default options:
+
+```yaml
+kind: Pelorus
+apiVersion: charts.pelorus.konveyor.io/v1alpha1
+metadata:
+  name: pelorus-instance
+  namespace: pelorus
+spec:
+  [...] # Pelorus Core configuration options
+  exporters:
+    instances:
+      - app_name: deploytime-exporter
+        exporter_type: deploytime
+        extraEnv:
+          - name: NAMESPACES
+            value: example_namespace
+      - app_name: committime-exporter
+        exporter_type: committime
+        env_from_secrets:
+        - bitbucket-secret
+        extraEnv:
+          - name: GIT_PROVIDER
+            value: bitbucket
+          - name: NAMESPACES
+            value: example_namespace
+      - app_name: failure-exporter
+        exporter_type: failure
+        env_from_secrets:
+        - jira-secret
+        env_from_configmaps:
+        - jira-config
+```
+
+## List of all configuration options
+
+This is the list of options that can be applied to `exporters.instances` section.
+
+| Variable | Required | Default Value |
+|----------|----------|---------------|
+| [app_name](#app_name) | yes | - |
+| [exporter_type](#exporter_type) | yes | - |
+| [env_from_secrets](#env_from_secrets) | no | - |
+| [env_from_configmaps](#env_from_configmaps) | no | - |
+| [extraEnv](#extraenv) | no | - |
+| [enabled](#enabled) | no | `true` |
+| [custom_certs](#custom_certs) | no | - |
+| [image_tag](#image_tag) | no | - |
+| [image_name](#image_name) | no | - |
+| [source_url](#source_url) | no | - |
+| [source_ref](#source_ref) | no | - |
+
+### app_name
+
+- **Required:** yes
+- **Type:** string
+
+    Set the exporter name.
+
+### exporter_type
+
+- **Required:** yes
+- **Type:** string
+
+    Set the exporter type. One of `deploytime`, `committime`, `failure`.
+
+### env_from_secrets
+
+- **Required:** no
+- **Type:** list
+
+    **Recommended for sensitive data**
+
+    List of secrets, like in the following example.
+    ```yaml
+    env_from_secrets:
+    - example-secret
+    ```
+
+    Check the list of all available options per exporter type:
+
+    - [Deploy time](ExporterDeploytime.md#deploy-time-exporter-configuration-options)
+    - [Commit time](ExporterCommittime.md#commit-time-exporter-configuration-options)
+    - [Failure](ExporterFailure.md#failure-time-exporter-configuration-options)
+
+    **Secrets Examples**
+
+    1. To create a secret named **example-secret** in **pelorus** namespace, with the option **TOKEN** with value **token_value**, run
+        ```
+        oc create secret generic example-secret -n pelorus \
+        --from-literal=TOKEN=token_value
+        ```
+        Then, add
+        ```yaml
+        [...]
+                env_from_secrets:
+                - example-secret
+        [...]
+        ```
+        to the exporter configuration.
+
+    1. To create a secret named **other-secret** in **pelorus** namespace, with the
+
+        - option **SERVER** with value **server_url**
+        - option **API_USER** with value **username**
+        - option **TOKEN** with value **token_value**
+
+        run
+        ```
+        oc create secret generic other-secret -n pelorus \
+        --from-literal=SERVER=server_url \
+        --from-literal=API_USER=username \
+        --from-literal=TOKEN=token_value
+        ```
+        Then, add
+        ```yaml
+        [...]
+                env_from_secrets:
+                - other-secret
+        [...]
+        ```
+        to the exporter configuration.
+
+### env_from_configmaps
+
+- **Required:** no
+- **Type:** list
+
+    List of ConfigMaps, like in the following example.
+    ```yaml
+    env_from_configmaps:
+    - example-configmap
+    ```
+
+    Check the list of all available options per exporter type:
+
+    - [Deploy time](ExporterDeploytime.md#deploy-time-exporter-configuration-options)
+    - [Commit time](ExporterCommittime.md#commit-time-exporter-configuration-options)
+    - [Failure](ExporterFailure.md#failure-time-exporter-configuration-options)
+
+    **ConfigMap Example**
+
+    To create a ConfigMap named **example-config** in **pelorus** namespace, with the
+
+    - option **APP_LABEL** with value **example**
+    - option **NAMESPACES** with value **one,two**
+
+    using the file **config.yaml**
+    ```yaml
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: example-config
+      namespace: pelorus
+    data:
+      APP_LABEL: "example"
+      NAMESPACES: "one,two"
+    ```
+    run
+    ```
+    oc apply -f config.yaml
+    ```
+    Then, add
+    ```yaml
+    [...]
+            env_from_configmaps:
+            - example-config
+    [...]
+    ```
+    to the exporter configuration.
+
+### extraEnv
+
+- **Required:** no
+- **Type:** list
+
+    List of `name` and `value` pairs, like in the following example.
+
+    ```yaml
+    extraEnv:
+      - name: OPTION1
+        value: value1
+      - name: OPTION2
+        value: value2
+    ```
+
+    Check the list of all available options per exporter type:
+
+    - [Deploy time](ExporterDeploytime.md#deploy-time-exporter-configuration-options)
+    - [Commit time](ExporterCommittime.md#commit-time-exporter-configuration-options)
+    - [Failure](ExporterFailure.md#failure-time-exporter-configuration-options)
+
+### enabled
+
+- **Required:** no
+    - **Default Value:** true
+- **Type:** boolean
+
+    If set to `false`, the exporter is not deployed.
+
+### custom_certs
+
+- **Required:** no
+- **Type:** list
+
+    List of `map_name`s, like in the following example.
+
+    ```yaml
+    custom_certs:
+      - map_name: name
+    ```
+
+    Check [Custom Certificates](#custom-certificates) for more information.
+
+### image_tag
+
+- **Required:** no
+    - Only applicable for development configuration, **do not use in production**
+    - **Default Value:** stable
+- **Type:** string
+
+    Used to set exporter image tag (or custom image, if [image_name](#image_name) is set).
+
+    Check [Development guide](../../Development.md) for more information.
+
+### image_name
+
+- **Required:** no
+    - Only applicable for development configuration, **do not use in production**
+- **Type:** string
+
+    Used to deploy exporter with the user built images or pre-built images mirrored in other than [quay.io](https://quay.io/) registry. If no tag is specified in the image name, [image_tag](#image_tag) is used.
+
+    Check [Development guide](../../Development.md) for more information.
+
+### source_url
+
+- **Required:** no
+    - Only applicable for development configuration, **do not use in production**
+- **Type:** string
+
+    Used to deploy exporter with the user Git source code.
+
+    Check [Development guide](../../Development.md) for more information.
+
+### source_ref
+
+- **Required:** no
+    - Only applicable for development configuration, **do not use in production**
+    - **Default Value:** points to the latest released Pelorus
+- **Type:** string
+
+    A Git reference or branch.
+
+    Check [Development guide](../../Development.md) for more information.
+
+## Authentication to Remote Services
+
+Pelorus exporters make use of **personal access tokens** when authentication is
 required.  It is recommended to configure the Pelorus exporters with authentication
-via the `TOKEN` key to avoid connection rate limiting and access restrictions.
+via the **TOKEN** key to avoid connection rate limiting and access restrictions.
 
-More information about personal access tokens:
+More information about some of the supported providers personal access tokens:
 
 * [Github Personal Access Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
-* [Jira / Bitbucket Personal Access Tokens](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
+* [Bitbucket Personal Access Tokens](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html)
+
+* [Gitea Tokens](https://docs.gitea.io/en-us/api-usage/#generating-and-listing-api-tokens)
 
 * [Gitlab Personal Access Tokens](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
 
 * [Microsoft Azure DevOps Tokens](https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows)
 
-* [Gitea Tokens](https://docs.gitea.io/en-us/api-usage/#generating-and-listing-api-tokens)
+To store a personal access token securely and to make it available to Pelorus, use OpenShift secrets. Pelorus can utilize secrets for all of the exporters. Check [env_from_secrets](#env_from_secrets) for examples.
 
-To store a personal access token securely and to make the token available to Pelorus use
-Openshift secrets. Pelorus can utilize secrets for all of the exporters. The following
-is an example for the committime exporter.
-
-A simple Github example:
-```shell
-oc create secret generic github-secret --from-literal=TOKEN=<personal access token> -n pelorus
-```
-
-A Pelorus exporter can require additional information to collect data such as the 
-remote `GIT_API` or `API_USER` information.  It is recommended to consult the requirements
-for each Pelorus exporter in this guide and include the additional key / value information in the Openshift secret. An API example is `github.mycompany.com/api/v3`
-or `https://gitea.mycompany.com`.
-
-The cli commands can also be substituted with Secret templates. Example files can be found [here](https://github.com/konveyor/pelorus/tree/master/charts/pelorus/secrets)
-
-Create a secret containing your Git username, token, and API example:
-
-```shell
-oc create secret generic github-secret --from-literal=API_USER=<username> --from-literal=TOKEN=<personal access token> --from-literal=GIT_API=<api> -n pelorus
-```
-
-A Jira example:
-```shell
-oc create secret generic jira-secret \
---from-literal=SERVER=<Jira Server> \
---from-literal=API_USER=<username/e-mail> \
---from-literal=TOKEN=<personal access token> \
--n pelorus
-```
-
-A ServiceNow example:
-```shell
-oc create secret generic snow-secret \
---from-literal=SERVER=<ServiceNow Server> \
---from-literal=API_USER=<username> \
---from-literal=TOKEN=<personal access token> \
---from-literal=TRACKER_PROVICER=servicenow \
---from-literal=APP_FIELD=<Custom app label field> \
--n pelorus
-```
-
-### Custom Certificates
+## Custom Certificates
 
 If you run services internally with certificates not signed by typical public root CAs,
 you can supply your own custom certificates.
 
-Currently, this is only supported for the following exporters:
+Currently, this is only supported for the following:
 
-| Exporter Type | Exporter Backend |
+| Exporter Type | Provider |
 |---------------|------------------|
+| Commit Time   | GitHub           |
 | Commit Time   | BitBucket        |
 | Commit Time   | Gitea            |
-| Commit Time   | GitHub           |
 | Commit Time   | GitLab           |
 | Failure       | GitHub           |
 
 We hope to expand this list in the future.
 
-To use custom certificates, create `ConfigMap`s that have keys ending in `.pem`,
-with their values as PEM-formatted certificate files.
-Then under each exporter's `custom_certs` key, list each cert with `map_name: $NAME_HERE`. 
+To use custom certificates, create ConfigMaps that have keys ending in `.pem`, with their values as PEM-formatted certificate files.
 
-#### Custom Certificates Example
+### Custom Certificates Example
 
-First, you need a dir full of PEM-formatted certificates. Be careful not to expose private keys!
+First, you need a directory full of PEM-formatted certificates. Be careful not to expose private keys!
 
 ```console
 $ ls ./certificates
@@ -180,29 +331,28 @@ $ cat trusted_internal_CA.pem
 -----END CERTIFICATE-----
 ```
 
-Next, create the secret based on this directory.
+Next, create the ConfigMap named **my-certs** based on this directory.
 ```shell
 oc create configmap my-certs --from-file=./certificates
 ```
 
-Then configure the exporter to use the `ConfigMap`'s certificates:
+Then, configure the exporter to use the ConfigMap's certificates:
 ```yaml
-- app_name: committime-exporter
-  exporter_type: committime
-  custom_certs:
-    - map_name: my-certs
+[...]
+      - app_name: committime-exporter
+        exporter_type: committime
+        custom_certs:
+          - map_name: my-certs
+[...]
 ```
 
 When it starts up, you should see information about custom certificate usage, depending upon your `LOG_LEVEL`:
-```log
+```
 08-24-2022 19:08:59 INFO Combining custom certificate file /etc/pelorus/custom_certs/my-certs/foo.pem
 08-24-2022 19:08:59 DEBUG /opt/app-root/lib64/python3.9/site-packages/pelorus/certificates.py:48 _combine_certificates() Combined certificate bundle created at /tmp/custom-certsklkg4hel.pem
 ```
 
-...and then requests to internal services using certs in the given chains should work.
-
-
-### Labels
+## Labels
 
 Labels are key/value pairs that are attached to Kubernetes objects (pods, build configurations, etc), and providers objects (like issues, in the case of Issue Trackers providers).
 
@@ -212,9 +362,9 @@ In Pelorus, the default label is **app.kubernetes.io/name=app_name**, where **ap
 
 > **NOTE:** If labels are not properly set in the application objects and in the providers objects, Pelorus will not collect data from those.
 
-#### Examples
+### Examples
 
-##### Application
+#### Application
 
 In this example, an application named **todolist** is being monitored using the default label. So, all the application objects must have the `metadata.labels.app.kubernetes.io/name` YAML value set to **todolist**.
 
@@ -256,7 +406,7 @@ template:
       app.kubernetes.io/name: todolist
 ```
 
-##### Failure exporter
+#### Failure exporter
 
 In this example, we configure a Failure exporter to monitor issues from 2 GitHub Issue Trackers that:
 
