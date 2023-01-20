@@ -228,3 +228,7 @@ The Pelorus chart supports deploying a [Thanos](https://thanos.io/) instance for
 - **Type:** 'true' string or commented out for 'false'
 
 : Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.11/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki).
+
+## Deploying Across Multiple Clusters
+
+By default, Pelorus will pull in data from the cluster in which it is running, but it also supports collecting data across multiple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket across clusters. See [Pelorus Multi-Cluster Architecture](../../Architecture.md#multi-cluster-architecture-production) for details. You define exporters for the desired metrics in each of the clusters and the main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
