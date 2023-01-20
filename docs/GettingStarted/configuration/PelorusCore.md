@@ -95,7 +95,7 @@ For detailed information about planning Prometheus storage capacity and configur
 
 Unlike ephemeral volume that have a lifetime of a pod, persistent volume allows to withstand container restarts or crashes making Prometheus data resilient to such situations. Pelorus allows to use underlying [Prometheus Operator Storage](https://prometheus-operator.dev/docs/operator/storage/#storage-provisioning-on-aws) capabilities by using Kubernetes [`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/).
 
-It is recommended to use Prometheus Persistent Volume **together** with the [Thanos](#thanos) for the long term storage.
+It is recommended to use Prometheus Persistent Volume **together** with [Thanos](#thanos) for the long term storage. Check [NooBaa for Long Term Storage](Noobaa.md) for more information.
 
 ###### prometheus_storage
 
@@ -131,7 +131,7 @@ It is recommended to use Prometheus Persistent Volume **together** with the [Tha
     - **Default Value:** internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
 - **Type:** string
 
-: Credentials for the `internal` user that are used by Grafana to communicate with the Prometheus instance deployed by Pelorus. Those credentials must use `internal` user name and must match the [openshift_prometheus_basic_auth_pass](#openshift_prometheus_basic_auth_pass) password from the [Grafana credentials](#grafana-credentials) configuration option. 
+: Credentials for the `internal` user that are used by Grafana to communicate with the Prometheus instance deployed by Pelorus. Those credentials must use `internal` user name and must match the [openshift_prometheus_basic_auth_pass](#openshift_prometheus_basic_auth_pass) password from the [Grafana credentials](#grafana-credentials) configuration option.
 
 : Format supported: Base64-encoded SHA-1
 
@@ -181,7 +181,7 @@ Grafana is a dashboard which represents data stored in the [Prometheus](#prometh
 
 ## Thanos
 
-The Pelorus chart supports deploying a [Thanos](https://thanos.io/) instance for long term storage.
+The Pelorus chart supports deploying a [Thanos](https://thanos.io/) instance for long term storage. If you don't have an object storage provider, we recommend NooBaa as a free, open source option. You can check [NooBaa for Long Term Storage](Noobaa.md) to guide on how to host an instance on OpenShift and configure Pelorus to use it.
 
 ###### thanos_version
 
