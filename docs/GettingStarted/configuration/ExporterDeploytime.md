@@ -35,7 +35,7 @@ spec:
 
 ## Deploy Time Exporter configuration options
 
-This is the list of options that can be applied to `env_from_secrets`, `env_from_configmaps` and `extraEnv` section of a Failure time exporter.
+This is the list of options that can be applied to `env_from_secrets`, `env_from_configmaps` and `extraEnv` section of a Deploy time exporter.
 
 | Variable | Required | Default Value |
 |----------|----------|---------------|
