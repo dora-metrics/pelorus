@@ -63,107 +63,105 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 | [JIRA_RESOLVED_STATUS](#jira_resolved_status) | no | - |
 | [GITHUB_ISSUE_LABEL](#github_issue_label) | no | bug |
 
-### PROVIDER
+###### PROVIDER
 
 - **Required:** no
     - **Default Value:** jira
 - **Type:** string
 
-Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`.
+: Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`.
 
-### LOG_LEVEL
+###### LOG_LEVEL
 
 - **Required:** no
     - **Default Value:** INFO
 - **Type:** string
 
-Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`.
+: Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`.
 
-### SERVER
-
-- **Required:** yes
-    - Only applicable for [PROVIDER](#provider) set to `jira` or `servicenow`
-- **Type:** string
-
-URL to the Jira or ServiceNow Server.
-
-### API_USER
+###### SERVER
 
 - **Required:** yes
     - Only applicable for [PROVIDER](#provider) set to `jira` or `servicenow`
 - **Type:** string
 
-Issue Tracker provider username.
+: URL to the Jira or ServiceNow Server.
 
-### TOKEN
+###### API_USER
+
+- **Required:** yes
+    - Only applicable for [PROVIDER](#provider) set to `jira` or `servicenow`
+- **Type:** string
+
+: Issue Tracker provider username.
+
+###### TOKEN
 
 - **Required:** yes
 - **Type:** string
 
-Issue Tracker provider API Token.
+: Issue Tracker provider API Token.
 
-### APP_LABEL
+###### APP_LABEL
 
 - **Required:** no
     - Only applicable for [PROVIDER](#provider) set to `jira` or `github`
     - **Default Value:** app.kubernetes.io/name
 - **Type:** string
 
-Changes the label used to identify applications.
+: Changes the label used to identify applications.
 
-### APP_FIELD
+###### APP_FIELD
 
 - **Required:** no
     - Only applicable for [PROVIDER](#provider) set to `servicenow`
     - **Default Value:** u_application
 - **Type:** string
 
-Field used for the Application label.
+: Field used for the Application label.
 
-### PROJECTS
+###### PROJECTS
 
 - **Required:** no
     - Only applicable for [PROVIDER](#provider) set to `jira` or `github`
-- **Type:** string
+- **Type:** comma separated list of strings
 
-Comma separated.
+: * Used by Jira to define which projects (keys or names) to monitor. Value is ignored if [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) is defined. Ensure the project(s) exists, otherwise none of the metrics will get collected.
 
-* Used by Jira to define which projects (keys or names) to monitor. Value is ignored if [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) is defined. Ensure the project(s) exists, otherwise none of the metrics will get collected.
+: * Used by GitHub to define which repositories' issues to monitor.
 
-* Used by GitHub to define which repositories' issues to monitor.
-
-### PELORUS_DEFAULT_KEYWORD
+###### PELORUS_DEFAULT_KEYWORD
 
 - **Required:** no
     - **Default Value:** default
 - **Type:** string
 
-Used only when configuring instance using ConfigMap. It is the ConfigMap value that represents `default` value. If specified it's used in other data values to indicate "Default Value" should be used.
+: Used only when configuring instance using ConfigMap. It is the ConfigMap value that represents `default` value. If specified it's used in other data values to indicate "Default Value" should be used.
 
-### JIRA_JQL_SEARCH_QUERY
-
-- **Required:** no
-    - Only applicable for [PROVIDER](#provider) set to `jira`
-- **Type:** string
-
-Used to define custom JQL query to gather issues. More information is available at [Advanced Jira Query Language (JQL) site](https://support.atlassian.com/jira-service-management-cloud/docs/use-advanced-search-with-jira-query-language-jql/).
-
-### JIRA_RESOLVED_STATUS
+###### JIRA_JQL_SEARCH_QUERY
 
 - **Required:** no
     - Only applicable for [PROVIDER](#provider) set to `jira`
 - **Type:** string
 
-Defines issue status (comma separated) that indicates if issue is resolved.
+: Used to define custom JQL query to gather issues. More information is available at [Advanced Jira Query Language (JQL) site](https://support.atlassian.com/jira-service-management-cloud/docs/use-advanced-search-with-jira-query-language-jql/).
 
-### GITHUB_ISSUE_LABEL
+###### JIRA_RESOLVED_STATUS
+
+- **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `jira`
+- **Type:** string
+
+: Defines issue status (comma separated) that indicates if issue is resolved.
+
+###### GITHUB_ISSUE_LABEL
 
 - **Required:** no
     - Only applicable for [PROVIDER](#provider) set to `github`
     - **Default Value:** bug
 - **Type:** string
 
-Defines a custom label to be used in GitHub issues to identify the ones to be monitored.
+: Defines a custom label to be used in GitHub issues to identify the ones to be monitored.
 
 ## Configuring Jira
 
