@@ -124,8 +124,8 @@ Verify the ClusterServiceVersion (csv) for Pelorus Operator together with Grafan
   ```shell
   $ oc get csv -n pelorus
   NAME                        DISPLAY               VERSION   REPLACES                    PHASE
-  grafana-operator.v4.6.0     Grafana Operator      4.6.0     grafana-operator.v4.5.1     Succeeded
-  pelorus-operator.v0.0.1     Pelorus Operator      0.0.1                                 Succeeded
+  grafana-operator.v4.8.0     Grafana Operator      4.8.0     grafana-operator.v4.7.1     Succeeded
+  pelorus-operator.v0.0.2     Pelorus Operator      0.0.2     pelorus-operator.v0.0.1     Succeeded
   prometheusoperator.0.47.0   Prometheus Operator   0.47.0    prometheusoperator.0.37.0   Succeeded
   ```
 
