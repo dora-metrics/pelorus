@@ -264,7 +264,7 @@ In a few seconds, you will see a number of resourced get created. The above comm
     * A `Grafana` instance
     * A `ServiceMonitor` instance for scraping the Pelorus exporters.
     * A `GrafanaDatasource` pointing to Prometheus.
-    * A set of `GrafanaDashboards`. See the [Outcomes (Dashboards) documentation](../../philosophy/outcomes/SoftwareDeliveryPerformance/) for more details.
+    * A set of `GrafanaDashboards`. See the [Outcomes (Dashboards) documentation](../philosophy/outcomes/SoftwareDeliveryPerformance.md) for more details.
 * The following exporters:
     * Deploy Time
     * Commit Time
@@ -274,11 +274,11 @@ To check this, run
 oc get all --namespace pelorus
 ```
 
-From here, some additional configuration is required in order to deploy other exporters. See the [Pelorus Exporters Configuration Guide](../configuration/PelorusExporters/) for more information on exporters.
+From here, some additional configuration is required in order to deploy other exporters. See the [Pelorus Exporters Configuration Guide](configuration/PelorusExporters.md) for more information on exporters.
 
-You may also want to enabled other features for the core stack. See the [Pelorus Core Configuration Guide](../configuration/PelorusCore/) to understand those options.
+You may also want to enabled other features for the core stack. See the [Pelorus Core Configuration Guide](configuration/PelorusCore.md) to understand those options.
 
-To understand how to set up an application to Pelorus to watch, see [QuickStart tutorial](../QuickstartTutorial/).
+To understand how to set up an application to Pelorus to watch, see [QuickStart tutorial](QuickstartTutorial.md).
 
 ### Uninstalling
 

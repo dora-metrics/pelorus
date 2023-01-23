@@ -7,13 +7,13 @@ template: home.html
 ---
 # Measure things that matter
 
-Pelorus is a monitoring tool that can easily be deployed to an OpenShift cluster. It helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole.
+Pelorus is a monitoring tool that helps IT organizations measure their impact on the overall software delivery performance of their projects. It does this by gathering metrics about teams and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver.
+
+![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
 
 For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation) or watch [this short video](https://www.youtube.com/watch?v=7-iB_KhUaQg).
 
-<!-- ![Software Delivery Metrics Dashboard](img/sdp-dashboard.png) -->
-
-[:material-arrow-right: Understand the motivation](philosophy/index.md)
+[:material-arrow-right: Understand the motivation](philosophy/Overview.md)
 
 Some of the key outcomes we would like Pelorus help us measure are:
 
@@ -29,7 +29,7 @@ Some of the key outcomes we would like Pelorus help us measure are:
 
 </div>
 
-[:material-arrow-right: Read more about our Outcomes](philosophy/outcomes/Overview/)
+[:material-arrow-right: Read more about our Outcomes](philosophy/outcomes/Overview.md)
 
 <div class="grid popout" markdown>
   <div markdown>
