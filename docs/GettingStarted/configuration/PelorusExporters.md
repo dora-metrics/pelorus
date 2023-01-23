@@ -75,21 +75,21 @@ This is the list of options that can be applied to `exporters.instances` section
 | [source_url](#source_url) | no | - |
 | [source_ref](#source_ref) | no | - |
 
-### app_name
+###### app_name
 
 - **Required:** yes
 - **Type:** string
 
     Set the exporter name.
 
-### exporter_type
+###### exporter_type
 
 - **Required:** yes
 - **Type:** string
 
     Set the exporter type. One of `deploytime`, `committime`, `failure`.
 
-### env_from_secrets
+###### env_from_secrets
 
 - **Required:** no
 - **Type:** list
@@ -161,7 +161,7 @@ This is the list of options that can be applied to `exporters.instances` section
         ```
         to the exporter configuration.
 
-### env_from_configmaps
+###### env_from_configmaps
 
 - **Required:** no
 - **Type:** list
@@ -237,7 +237,7 @@ This is the list of options that can be applied to `exporters.instances` section
         ```
         to each one of the exporters configuration.
 
-### extraEnv
+###### extraEnv
 
 - **Required:** no
 - **Type:** list
@@ -258,7 +258,7 @@ This is the list of options that can be applied to `exporters.instances` section
     - [Commit time](ExporterCommittime.md#commit-time-exporter-configuration-options)
     - [Failure](ExporterFailure.md#failure-time-exporter-configuration-options)
 
-### enabled
+###### enabled
 
 - **Required:** no
     - **Default Value:** true
@@ -266,7 +266,7 @@ This is the list of options that can be applied to `exporters.instances` section
 
     If set to `false`, the exporter is not deployed.
 
-### custom_certs
+###### custom_certs
 
 - **Required:** no
 - **Type:** list
@@ -280,7 +280,7 @@ This is the list of options that can be applied to `exporters.instances` section
 
     Check [Custom Certificates](#custom-certificates) for more information.
 
-### image_tag
+###### image_tag
 
 - **Required:** no
     - Only applicable for development configuration, **do not use in production**
@@ -291,7 +291,7 @@ This is the list of options that can be applied to `exporters.instances` section
 
     Check [Development guide](../../Development.md) for more information.
 
-### image_name
+###### image_name
 
 - **Required:** no
     - Only applicable for development configuration, **do not use in production**
@@ -301,7 +301,7 @@ This is the list of options that can be applied to `exporters.instances` section
 
     Check [Development guide](../../Development.md) for more information.
 
-### source_url
+###### source_url
 
 - **Required:** no
     - Only applicable for development configuration, **do not use in production**
@@ -311,7 +311,7 @@ This is the list of options that can be applied to `exporters.instances` section
 
     Check [Development guide](../../Development.md) for more information.
 
-### source_ref
+###### source_ref
 
 - **Required:** no
     - Only applicable for development configuration, **do not use in production**
