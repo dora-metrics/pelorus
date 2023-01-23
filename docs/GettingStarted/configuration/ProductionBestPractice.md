@@ -1,5 +1,3 @@
-# Customizing Pelorus
-
 There are two main configuration parts required by Pelorus to serve it's function:
 
 - [Pelorus Core Configuration](./PelorusCore.md)

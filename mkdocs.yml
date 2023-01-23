@@ -50,9 +50,10 @@ markdown_extensions:
   - tables
 nav:
   - Home: index.md
-  - Getting Started:
+  - Docs:
     - Overview: GettingStarted/Overview.md
     - Installation: GettingStarted/Installation.md
+    - Quickstart Tutorial: GettingStarted/QuickstartTutorial.md
     - Configuration:
       - Pelorus Core: GettingStarted/configuration/PelorusCore.md
       - Pelorus Exporters:
@@ -62,7 +63,6 @@ nav:
         - Failure Time: GettingStarted/configuration/ExporterFailure.md
       - Production best practices: GettingStarted/configuration/ProductionBestPractice.md
       - NooBaa for Long Term Storage: GettingStarted/configuration/Noobaa.md
-    - Quickstart Tutorial: GettingStarted/QuickstartTutorial.md
     - Examples: GettingStarted/Examples.md
   - Our Philosophy:
     - Overview: philosophy/Overview.md
