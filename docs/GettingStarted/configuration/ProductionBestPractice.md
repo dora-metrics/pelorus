@@ -1,68 +1,52 @@
 # Customizing Pelorus
 
-See [Configuring the Pelorus Stack](../../configuration/PelorusCore/) for a full readout of all possible configuration items. The following sections describe the  most common supported customizations that can be made to the Pelorus configuration object YAML file.
+There are two main configuration parts required by Pelorus to serve it's function:
 
-## Configure Prometheus Retention
+- [Pelorus Core Configuration](./PelorusCore.md)
+- [Pelorus Exporters Configuration](./PelorusExporters.md)
 
-For detailed information about planning Prometheus storage capacity and configuration options please refer to the [operational aspects](https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects) of the Prometheus documentation.
+This part of the documentation will focus on the recommended production settings for the [Pelorus Core Configuration](./PelorusCore.md).
 
-Prometheus is removing data older than 1 year, so if the metric you are interested in happened to be older than 1 year it won't be visible. This is configurable in the Pelorus configuration object YAML file with the following option:
-```yaml
-prometheus_retention: 1y
-```
+## Pelorus Core Production Cluster Configuration
 
-Additionally, users have the option to configure maximum size of storage to be used by Prometheus. The oldest data will be removed first if it exceeds that limit. If the data is within retention time, but over retention size, it will also be removed.
-```yaml
-prometheus_retention_size: 1GB
-```
+### Internal user password
 
-## Configure Prometheus Persistent Volume (Recommended)
+There are two configuration options that are needed to be adjusted for the `internal` user's credentials:
 
-Unlike ephemeral volume that have a lifetime of a pod, persistent volume allows to withstand container restarts or crashes making Prometheus data resilient to such situations. Pelorus chart allows to use underlying [Prometheus Operator Storage](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md#storage-provisioning-on-aws) capabilities by using Kubernetes [`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/).
+- [openshift_prometheus_htpasswd_auth](./PelorusCore.md#prometheus-credentials)
+- [openshift_prometheus_basic_auth_pass](./PelorusCore.md#grafana-credentials)
 
-It is recommended to use Prometheus Persistent Volume together with the [Long Term Storage](#configure-long-term-storage-recommended).
+### Configure Prometheus Retention and PV
 
-To install Pelorus with PVC that uses default `gp2` StorageClass and default `2Gi` capacity, ensure `prometheus_storage` is set to `true` in the Pelorus configuration object YAML file:
-```yaml
-prometheus_storage: true
-# prometheus_storage_pvc_capacity: "<PVC requested volume capacity>" # Optional, default 2Gi
-# prometheus_storage_pvc_storageclass: "<your storage class name>"   # Optional, default "gp2"
-```
+Prometheus is removing data older than 1 year and if within that time the default maximum storage of 1GB is used the data will get removed as well.
+There are two configuration options that allows to modify those retention values:
 
-To ensure PVC were properly created and Bound to the PV, run after Pelorus instance creation:
-```shell
-$ oc get pvc --namespace pelorus
-NAME                                                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-prometheus-prometheus-pelorus-db-prometheus-prometheus-pelorus-0   Bound    pvc-fe8ac17c-bd23-47da-9c72-057349a59209   2Gi        RWO            gp2            10s
-prometheus-prometheus-pelorus-db-prometheus-prometheus-pelorus-1   Bound    pvc-3f815e71-1121-4f39-8174-0243071f281c   2Gi        RWO            gp2            10s
+- [prometheus_retention](./PelorusCore.md#prometheus_retention)
+- [prometheus_retention_size](./PelorusCore.md#prometheus_retention_size)
 
-```
+Additionaly it is recommended to create Persistent Volumes to withstand prometheus container restarts. To enable that the [prometheus_storage](./PelorusCore.md#prometheus_storage) needs to be set to `true` and additionally PVC configuration options controls how it should be created. Relevant options are:
 
-## Configure Long Term Storage (Recommended)
+- [prometheus_storage](./PelorusCore.md#prometheus_storage)
+- [prometheus_storage_pvc_capacity](./PelorusCore.md#prometheus_storage_pvc_capacity)
+- [prometheus_storage_pvc_storageclass](./PelorusCore.md#prometheus_storage_pvc_storageclass)
 
-The Pelorus chart supports deploying a [Thanos](https://thanos.io/) instance for long term storage. It can use any S3 bucket provider. The following is an example of configuring a `pelorus-sample-instance.yaml` file for [NooBaa](https://www.noobaa.io/) with the local s3 service name.
-```yaml
-bucket_access_point: s3.pelorus.svc:443
-bucket_access_key: <your access key>
-bucket_secret_access_key: <your secret access key>
-```
+### Configure Long Term Storage
 
-The default bucket name is thanos. It can be overridden by specifying the following field.
-```yaml
-thanos_bucket_name: <bucket name here>
-```
+The [Configure Prometheus Retention and PV](#configure-prometheus-retention-and-pv) allows to withstand prometheus container restarts, however to ensure data is preserved we recommend deploying Prometheus with the [Thanos](./PelorusCore.md#thanos).
 
-Then deploy Pelorus as described in the [Installation](../../Installation/) doc.
+There are four configuration options to enable [Thanos](./PelorusCore.md#thanos):
 
-If you don't have an object storage provider, we recommend NooBaa as a free, open source option. You can follow our [NooBaa quickstart](../Noobaa) to host an instance on OpenShift and configure Pelorus to use it.
+- [thanos_bucket_name](./PelorusCore.md#thanos_bucket_name)
+- [bucket_access_point](./PelorusCore.md#bucket_access_point)
+- [bucket_access_key](./PelorusCore.md#bucket_secret_access_key)
+- [bucket_secret_access_key](./PelorusCore.md#bucket_secret_access_key)
 
-## Deploying Across Multiple Clusters
+> **Note:** If you don't have an object storage provider, we recommend NooBaa as a free, open source option. You can follow our [NooBaa quickstart](./Noobaa.md) to host an instance on OpenShift and configure Pelorus to use it.
 
-By default, Pelorus will pull in data from the cluster in which it is running, but it also supports collecting data across multiple OpenShift clusters. In order to do this, the thanos sidecar can be configured to read from a shared S3 bucket across clusters. See [Pelorus Multi-Cluster Architecture](../../../Architecture/) for details. You define exporters for the desired metrics in each of the clusters and the main cluster's Grafana dashboard will display a combined view of the metrics collected in the shared S3 bucket via thanos.
+### Example
 
-## Configure Production Cluster
+A production configuration example of the Pelorus configuration object YAML:
 
-A production configuration example of the Pelorus configuration object YAML file `pelorus-sample-instance.yaml`:
 ```yaml
 kind: Pelorus
 apiVersion: charts.pelorus.konveyor.io/v1alpha1
@@ -71,24 +55,26 @@ metadata:
   namespace: pelorus
 spec:
   exporters:
-    global: {}
-    instances:
-      - app_name: deploytime-exporter
-        exporter_type: deploytime
-      - app_name: failuretime-exporter
-        exporter_type: failure
-      - app_name: committime-exporter
-        exporter_type: committime
-  extra_prometheus_hosts: null
-  openshift_prometheus_basic_auth_pass: changeme
-  openshift_prometheus_htpasswd_auth: 'internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM='
+    [...] # Pelorus exporters configuration options
+
+  # Internal user password
+  openshift_prometheus_basic_auth_pass: mysecretpassword
+  openshift_prometheus_htpasswd_auth: 'internal:{SHA}CM2SM2eJAAllfquBJ1M3m9syHus='
+
+  # Configure Prometheus Retention and PV
   prometheus_retention: 1y
-  prometheus_retention_size: 1GB
+  prometheus_retention_size: 2GB
   prometheus_storage: true
   prometheus_storage_pvc_capacity: 20Gi
   prometheus_storage_pvc_storageclass: gp2
+
+  # Configure Long Term Storage
   thanos_bucket_name: <bucket name here>
-  bucket_access_point: s3.us-east-2.amazonaws.com
+  bucket_access_point: <s3 access point here>
   bucket_access_key: <your access key>
   bucket_secret_access_key: <your secret access key>
 ```
+
+## Deploying Across Multiple Clusters
+
+Please refer to the [Deploying Across Multiple Clusters](./PelorusCore.md#deploying-across-multiple-clusters) for information about using Pelorus across multiple clusters.
