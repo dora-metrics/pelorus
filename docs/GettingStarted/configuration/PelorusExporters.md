@@ -100,6 +100,7 @@ This is the list of options that can be applied to `exporters.instances` section
     ```yaml
     env_from_secrets:
     - example-secret
+    - other-secret
     ```
 
     Check the list of all available options per exporter type:
@@ -110,10 +111,20 @@ This is the list of options that can be applied to `exporters.instances` section
 
     **Secrets Examples**
 
-    1. To create a secret named **example-secret** in **pelorus** namespace, with the option **TOKEN** with value **token_value**, run
+    1. To create a Secret named **example-secret** in **pelorus** namespace, with the option **TOKEN** with value **token_value**, using the file **secret.yaml**
+        ```yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: example-secret
+          namespace: pelorus
+        type: Opaque
+        stringData:
+          TOKEN: "token_value"
         ```
-        oc create secret generic example-secret -n pelorus \
-        --from-literal=TOKEN=token_value
+        run
+        ```
+        oc apply -f secret.yaml
         ```
         Then, add
         ```yaml
@@ -123,6 +134,10 @@ This is the list of options that can be applied to `exporters.instances` section
         [...]
         ```
         to the exporter configuration.
+
+        If no `metadata.namespace` is added to Secret file, you must run the command with the namespace you want to apply it. For example, `oc apply -f secret.yaml -n pelorus`.
+
+        More [examples Secret files](https://github.com/konveyor/pelorus/tree/master/charts/secrets).
 
     1. To create a secret named **other-secret** in **pelorus** namespace, with the
 
@@ -155,6 +170,7 @@ This is the list of options that can be applied to `exporters.instances` section
     ```yaml
     env_from_configmaps:
     - example-configmap
+    - other-configmap
     ```
 
     Check the list of all available options per exporter type:
@@ -163,36 +179,63 @@ This is the list of options that can be applied to `exporters.instances` section
     - [Commit time](ExporterCommittime.md#commit-time-exporter-configuration-options)
     - [Failure](ExporterFailure.md#failure-time-exporter-configuration-options)
 
-    **ConfigMap Example**
+    **ConfigMap Examples**
 
-    To create a ConfigMap named **example-config** in **pelorus** namespace, with the
+    1. To create a ConfigMap named **example-config** in **pelorus** namespace, with the
 
-    - option **APP_LABEL** with value **example**
-    - option **NAMESPACES** with value **one,two**
+        - option **APP_LABEL** with value **example**
+        - option **NAMESPACES** with value **one,two**
 
-    using the file **config.yaml**
-    ```yaml
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: example-config
-      namespace: pelorus
-    data:
-      APP_LABEL: "example"
-      NAMESPACES: "one,two"
-    ```
-    run
-    ```
-    oc apply -f config.yaml
-    ```
-    Then, add
-    ```yaml
-    [...]
-            env_from_configmaps:
-            - example-config
-    [...]
-    ```
-    to the exporter configuration.
+        using the file **config.yaml**
+        ```yaml
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: example-config
+          namespace: pelorus
+        data:
+          APP_LABEL: "example"
+          NAMESPACES: "one,two"
+        ```
+        run
+        ```
+        oc apply -f config.yaml
+        ```
+        Then, add
+        ```yaml
+        [...]
+                env_from_configmaps:
+                - example-config
+        [...]
+        ```
+        to the exporter configuration.
+
+        If no `metadata.namespace` is added to ConfigMap file, you must run the command with the namespace you want to apply it. For example, `oc apply -f config.yaml -n pelorus`.
+
+        More [examples ConfigMap files](https://github.com/konveyor/pelorus/tree/master/charts/configmaps).
+
+    1. To create a ConfigMap named **example-for-all** in **pelorus** namespace, that will be used by multiple exporters, with the option **LOG_LEVEL** with value **DEBUG**, using the file **config.yaml**
+        ```yaml
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: example-for-all
+          namespace: pelorus
+        data:
+          LOG_LEVEL: "DEBUG"
+        ```
+        run
+        ```
+        oc apply -f config.yaml
+        ```
+        Then, add
+        ```yaml
+        [...]
+                env_from_configmaps:
+                - example-for-all
+        [...]
+        ```
+        to each one of the exporters configuration.
 
 ### extraEnv
 
@@ -254,7 +297,7 @@ This is the list of options that can be applied to `exporters.instances` section
     - Only applicable for development configuration, **do not use in production**
 - **Type:** string
 
-    Used to deploy exporter with the user built images or pre-built images mirrored in other than [quay.io](https://quay.io/) registry. If no tag is specified in the image name, [image_tag](#image_tag) is used.
+    Used to deploy exporter with the user built images or pre-built images hosted in non default container image registry. The container image URI may be with or without `:tag` suffix. If no tag suffix is specified in the URI, [image_tag](#image_tag) is used.
 
     Check [Development guide](../../Development.md) for more information.
 

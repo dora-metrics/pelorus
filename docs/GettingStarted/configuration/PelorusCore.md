@@ -95,7 +95,7 @@ For detailed information about planning Prometheus storage capacity and configur
 
 Unlike ephemeral volume that have a lifetime of a pod, persistent volume allows to withstand container restarts or crashes making Prometheus data resilient to such situations. Pelorus allows to use underlying [Prometheus Operator Storage](https://prometheus-operator.dev/docs/operator/storage/#storage-provisioning-on-aws) capabilities by using Kubernetes [`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/).
 
-It is recommended to use Prometheus Persistent Volume **together** with [Thanos](#thanos) for the long term storage. Check [NooBaa for Long Term Storage](Noobaa.md) for more information.
+It is recommended to use Prometheus Persistent Volume **together** with [Thanos](#thanos) for the long term storage.
 
 ###### prometheus_storage
 
