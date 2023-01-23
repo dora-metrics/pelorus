@@ -11,7 +11,7 @@ Pelorus is a monitoring tool that helps IT organizations measure their impact on
 
 ![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
 
-For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation) or watch [this short video](https://www.youtube.com/watch?v=7-iB_KhUaQg).
+For a better understanding of software delivery metrics, you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post [Metrics-Driven Approach to Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation) or watch [this short video](https://www.youtube.com/watch?v=7-iB_KhUaQg).
 
 [:material-arrow-right: Understand the motivation](philosophy/Overview.md)
 
@@ -36,9 +36,9 @@ Some of the key outcomes we would like Pelorus help us measure are:
 
 ## Pull metrics from your existing tools
 
-  Pelorus works by integrating with your application deployment platforms, hosting service for version control systems and software development project tracking tools to track the flow of work across your value streams.
+  Pelorus works by integrating with your application deployment platforms, code repositories and issues trackers to monitor the flow of work across your value streams.
 
-  [:material-arrow-right: Check the full list of supported tools]()
+  [:material-arrow-right: Check the full list of supported tools](GettingStarted/Overview.md#supported-providers)
 
   </div>
   <div class="flex cards" markdown>
@@ -58,13 +58,13 @@ Some of the key outcomes we would like Pelorus help us measure are:
 
 In order to be successful in installing, configuring and consuming Pelorus, the following prior knowledge is required:
 
-* Software Development Life Cycle.
-* [Kubernetes Operators](https://www.redhat.com/en/topics/containers/what-is-a-kubernetes-operator).
-* [OpenShift Builds](https://docs.openshift.com/container-platform/4.6/builds/understanding-image-builds.html).
-* Cloud Native monitoring tools: [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/).
-* Version control system: [Git](https://git-scm.com/).
-* Hosting service for version control systems (like [GitHub](https://github.com/)).
-* Software development project tracking tools (like [Jira](https://www.atlassian.com/software/jira)).
+* Software Development Life Cycle
+* [Kubernetes Operators](https://www.redhat.com/en/topics/containers/what-is-a-kubernetes-operator)
+* [OpenShift Builds](https://docs.openshift.com/container-platform/4.6/builds/understanding-image-builds.html)
+* Cloud Native monitoring tools: [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/)
+* Version control system: [Git](https://git-scm.com/)
+* Code repository providers (like [GitHub](https://github.com/))
+* Issue tracking tools (like [Jira](https://www.atlassian.com/software/jira))
 
 ## The Name
 
