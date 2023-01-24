@@ -83,5 +83,6 @@ plugins:
            # Used by the Pelorus Operator v0.0.1
            'Configuration.md': 'GettingStarted/configuration/PelorusCore.md'
            'Install.md': 'GettingStarted/configuration/ProductionBestPractice.md'
+           'Demo.md': 'GettingStarted/QuickstartTutorial.md'
 watch:
 - overrides
