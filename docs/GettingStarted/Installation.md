@@ -53,7 +53,7 @@ Click on the Pelorus Operator from the [Installing Operator](#installing-operato
   ![5_operator_install_step](../img/5_operator_install_step.png)
 
 
-** Note:** See the [Pelorus Exporters Configuration Guide](../configuration/PelorusExporters/) for more information on exporters and the [Pelorus Core Configuration Guide](../configuration/PelorusCore/) to understand Pelorus core stack options before continuing.
+** Note:** See the [Pelorus Exporters Configuration Guide](configuration/PelorusExporters.md) for more information on exporters and the [Pelorus Core Configuration Guide](configuration/PelorusCore.md) to understand Pelorus core stack options before continuing.
 
 Click on the `YAML view`, which will open sample Pelorus object YAML, that should be adopted to the application workflow configuration of exporters, which are placed under `instances:` section and eventually additional configuration for the Pelorus core stack under `spec:` and click on the Create button:
   ![6_operator_install_step](../img/6_operator_install_step.png)
@@ -135,7 +135,7 @@ Verify the ClusterServiceVersion (csv) for Pelorus Operator together with Grafan
 
 The Pelorus object YAML file requires specific to the application workflow configuration of exporters that are placed under `instances:` section and eventually additional configuration for the Pelorus core stack under `spec:`.
 
-See the [Pelorus Exporters Configuration Guide](../configuration/PelorusExporters/) for more information on exporters and the [Pelorus Core Configuration Guide](../configuration/PelorusCore/) to understand Pelorus core stack options.
+See the [Pelorus Exporters Configuration Guide](configuration/PelorusExporters.md) for more information on exporters and the [Pelorus Core Configuration Guide](configuration/PelorusCore.md) to understand Pelorus core stack options.
 
 *(Example)* Create Pelorus configuration object YAML file. In this example with two enabled exporters `committime-exporter` and `deploytime-exporter`, without prometheus persistent storage:
   ```shell
