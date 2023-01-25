@@ -7,67 +7,7 @@ template: home.html
 ---
 # Measure things that matter
 
-<<<<<<< HEAD
 Pelorus is a monitoring tool that helps IT organizations measure their impact on the overall software delivery performance of their projects. It does this by gathering metrics about teams and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver.
-=======
-![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
-![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)
-![](https://github.com/redhat-cop/pelorus/workflows/Conftest/badge.svg)
-![](https://github.com/redhat-cop/pelorus/workflows/Chart%20Lint/badge.svg)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
-
-Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole.
-
-Some of the key outcomes we'd like Pelorus help us measure are:
-
-<div class="grid cards" markdown>
-
--   :material-truck-delivery:{ .middle } Software Delivery Performance :material-check-circle:{ .checked .middle }
--   :fontawesome-solid-person-circle-plus: Supported Technology Adoption :material-check-circle:{ .unchecked }
--   :fontawesome-solid-money-bill-trend-up: Value Flow :material-check-circle:{ .unchecked }
--   :material-monitor-dashboard: Availability :material-check-circle:{ .unchecked }
--   :material-account-heart: Employee Satisfaction :material-check-circle:{ .unchecked }
--   :material-emoticon-happy-outline: Customer Experience :material-check-circle:{ .unchecked }
--   :material-leaf: Quality and Sustainability :material-check-circle:{ .unchecked }
-
-</div>
-
-[:material-arrow-right: Read more about our Outcomes](philosophy/outcomes/Overview/)
-
-To understand the motivation, see [Our Philosophy](philosophy/Overview/).
-
-For more background on the project you can read [@trevorquinn](https://github.com/trevorquinn)'s blog post on [Metrics Driven Transformation](https://www.openshift.com/blog/exploring-a-metrics-driven-approach-to-transformation).
-
-<div class="grid popout" markdown>
-
-<div markdown>
-
-## Pull metrics from your existing tools
-
-Pelorus works by integrating with your application platforms, developer tools, and ticketing systems to track the flow of work across your value streams.
-
-</div>
-
-<div class="flex cards" markdown>
-
--   # :simple-redhatopenshift:
--   # :simple-github:
--   # :simple-bitbucket:
--   # :simple-gitea:
--   # :simple-gitlab:
--   # :simple-azuredevops:
--   # :simple-jirasoftware:
-
-</div>
-</div>
-
-## Software Delivery Performance as an outcome
-
-Currently, Pelorus functionality can capture proven metrics that measure Software Delivery Performance -- a significant outcome that IT organizations aim to deliver.
-
-Pelorus is a Grafana dashboard that can easily be deployed to an OpenShift cluster, and provides an organizational-level view of the [four critical measures of software delivery performance](https://blog.openshift.com/exploring-a-metrics-driven-approach-to-transformation/).
->>>>>>> 258f417 (Add more formulas and explanation for retention)
 
 ![Software Delivery Metrics Dashboard](img/sdp-dashboard.png)
 
