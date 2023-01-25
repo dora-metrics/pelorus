@@ -1,5 +1,5 @@
 # For details refer to the documentation:
-#       https://pelorus.readthedocs.io/en/latest/Configuration/#configuring-exporters
+#       https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusExporters/#env_from_configmaps
 
 apiVersion: v1
 kind: ConfigMap

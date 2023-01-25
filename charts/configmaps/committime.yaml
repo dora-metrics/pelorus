@@ -1,5 +1,6 @@
 # For details refer to the documentation:
-#       https://pelorus.readthedocs.io/en/latest/Configuration/#commit-time-exporter
+#       https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusExporters/#env_from_configmaps
+#       https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/ExporterCommittime/
 
 apiVersion: v1
 kind: ConfigMap

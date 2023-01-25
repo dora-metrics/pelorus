@@ -81,7 +81,8 @@ def set_up_requests_certs(verify: Optional[bool] = None) -> Union[bool, str]:
     if verify is False:
         logging.warn(
             "Disabling TLS verification. Custom certificates are now supported, consider using them: "
-            "https://pelorus.readthedocs.io/en/latest/Configuration/index.html#custom-certificates"
+            "https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusExporters/"
+            "#custom-certificates"
         )
         return False
 

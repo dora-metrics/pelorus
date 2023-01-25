@@ -1,7 +1,7 @@
 # These configmaps are not meant to be edited directly.
 # To configure pelorus, you can create your own copies of these.
 # See the documentation for details:
-# https://pelorus.readthedocs.io/en/latest/Configuration/#configuring-exporters
+# https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusExporters/#env_from_configmaps
 ---
 apiVersion: v1
 kind: ConfigMap
