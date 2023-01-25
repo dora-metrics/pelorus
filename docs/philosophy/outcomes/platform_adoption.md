@@ -237,7 +237,7 @@ Measures the extent to which the platform is meeting the needs and wants of deve
 
 ## What does "good" look like?
 
-As with most of our [outcomes](index.md), there is no universal definition of "good" and "bad" tech adoption metrics. The expectation is simply that:
+As with most of our [outcomes](Overview.md), there is no universal definition of "good" and "bad" tech adoption metrics. The expectation is simply that:
 
 a. We are measuring them consistently for our platforms
 b. The metrics improve over time
