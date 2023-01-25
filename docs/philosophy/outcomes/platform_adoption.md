@@ -140,12 +140,7 @@ $$
 
 So we've got a platform up and running, onboarding is really fast and we've been able to attract a bunch of new users. Now we need to ask a new set of questions. Is the platform meeting the needs of its users? Are people continually using it? Measuring _retention rate_ tells us whether users that have adopted our platform continue to use it over time to do valuable work. It is the yin to _adoption rate's_ yang.
 
-Use time since last adoption on a varying time scale to determine active users.
-
-To determine your retention rate, first identify the time frame you want to study
-Next, collect the number of existing customers at the start of the time period ($u_{S}$)
-Then find the number of total customers at the end of the time period ($u_{E}$)
-Finally, determine the number of new customers added within the time period ($u_{N}$)
+To determine your retention rate, first identify the time frame you want to study. Next, collect the number of existing customers at the start of the time period ($u_{S}$). Then find the number of total customers at the end of the time period ($u_{E}$). Finally, determine the number of new customers added within the time period ($u_{N}$)
 
 #### Data Points
 
