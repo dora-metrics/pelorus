@@ -8,7 +8,7 @@ on:
   # pull_request required to auto label PRs
   pull_request:
     types: [opened, reopened, synchronize]
-    
+
 jobs:
   release_drafter:
     runs-on: ubuntu-latest

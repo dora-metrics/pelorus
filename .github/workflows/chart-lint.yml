@@ -2,21 +2,21 @@ name: Chart Lint
 on:
   push:
     branches: [ master ]
-    paths: 
+    paths:
       - 'charts/**'
       - 'lintconf.yaml'
       - '.github/workflows/chart-lint.yml'
       - 'exporters/requirements-dev.txt' # yamllint and yamale
-      - Makefile
+      - 'Makefile'
 
   pull_request:
     branches: [ master ]
-    paths: 
+    paths:
       - 'charts/**'
       - 'lintconf.yaml'
       - '.github/workflows/chart-lint.yml'
       - 'exporters/requirements-dev.txt' # yamllint and yamale
-      - Makefile
+      - 'Makefile'
 
 jobs:
   lint:
@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.10', '3.11']
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v1

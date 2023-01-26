@@ -13,7 +13,7 @@ on:
       - 'pyproject.toml'
       - '.github/workflows/typecheck.yml'
       - 'Makefile'
-  
+
 jobs:
   typecheck:
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
 
       - name: Install dependencies
         run: make dev-env
-      
+
       - name: Install node
         run: sudo apt-get install nodejs
 
