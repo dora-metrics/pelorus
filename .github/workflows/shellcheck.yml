@@ -3,24 +3,24 @@ on:
   push:
     # Sync with Makefile and SHELL_SCRIPTS
     paths:
-      - 'demo/demo-tekton'
+      - 'demo/demo-tekton.sh'
       - 'scripts/create_release_pr'
       - 'scripts/install_dev_tools'
       - 'scripts/pre-commit'
       - 'scripts/run-mockoon-tests'
-      - 'scripts/setup-pre-commit-hook'
       - 'scripts/run-pelorus-e2e-tests'
+      - 'scripts/setup-pre-commit-hook'
 
   pull_request:
     # Sync with Makefile and SHELL_SCRIPTS
     paths:
-      - 'demo/demo-tekton'
+      - 'demo/demo-tekton.sh'
       - 'scripts/create_release_pr'
       - 'scripts/install_dev_tools'
       - 'scripts/pre-commit'
       - 'scripts/run-mockoon-tests'
-      - 'scripts/setup-pre-commit-hook'
       - 'scripts/run-pelorus-e2e-tests'
+      - 'scripts/setup-pre-commit-hook'
 
 jobs:
   unit-test:

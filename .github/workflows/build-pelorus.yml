@@ -5,9 +5,9 @@ on:
     branches:
       - master
     paths:
-      - exporters/
-      - charts/pelorus/charts/exporters/templates/_buildconfig.yaml
-      - .github/workflows/build-pelorus.yaml
+      - 'exporters/**'
+      - 'charts/pelorus/subcharts/exporters/templates/_buildconfig.yaml'
+      - '.github/workflows/build-pelorus.yml'
 
 env:
   builder_image: 'registry.access.redhat.com/ubi8/python-39'

@@ -5,14 +5,14 @@ on:
     paths:
       - '_test/**'
       - 'charts/**'
-      - '.github/workflows/conftest.yaml'
+      - '.github/workflows/conftest.yml'
       - 'Makefile'
 
   pull_request:
     paths:
       - '_test/**'
       - 'charts/**'
-      - '.github/workflows/conftest.yaml'
+      - '.github/workflows/conftest.yml'
       - 'Makefile'
 
 jobs:
