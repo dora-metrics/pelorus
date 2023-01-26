@@ -1,0 +1,166 @@
+kind: Pelorus
+apiVersion: charts.pelorus.konveyor.io/v1alpha1
+metadata:
+  name: pelorus-test-precedence
+  namespace: pelorus
+spec:
+  exporters:
+    global: {}
+    instances:
+      - app_name: d31
+        exporter_type: deploytime
+        env_from_secrets:
+        - debug-secret
+        env_from_configmaps:
+        - warning-configmap
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+
+      - app_name: d32
+        exporter_type: deploytime
+        env_from_secrets:
+        - debug-secret
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+        env_from_configmaps:
+        - warning-configmap
+
+      - app_name: d33
+        exporter_type: deploytime
+        env_from_configmaps:
+        - warning-configmap
+        env_from_secrets:
+        - debug-secret
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+
+      - app_name: d34
+        exporter_type: deploytime
+        env_from_configmaps:
+        - warning-configmap
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+        env_from_secrets:
+        - debug-secret
+
+      - app_name: d35
+        exporter_type: deploytime
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+        env_from_secrets:
+        - debug-secret
+        env_from_configmaps:
+        - warning-configmap
+
+      - app_name: d36
+        exporter_type: deploytime
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+        env_from_configmaps:
+        - warning-configmap
+        env_from_secrets:
+        - debug-secret
+
+      - app_name: d21
+        exporter_type: deploytime
+        env_from_secrets:
+        - debug-secret # won
+        env_from_configmaps:
+        - warning-configmap
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+
+      - app_name: d22
+        exporter_type: deploytime
+        env_from_secrets:
+        - debug-secret
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+
+      - app_name: d23
+        exporter_type: deploytime
+        env_from_configmaps:
+        - warning-configmap
+        env_from_secrets:
+        - debug-secret # won
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+
+      - app_name: d24
+        exporter_type: deploytime
+        env_from_configmaps:
+        - warning-configmap
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+
+      - app_name: d25
+        exporter_type: deploytime
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+        env_from_secrets:
+        - debug-secret
+
+      - app_name: d26
+        exporter_type: deploytime
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won
+        env_from_configmaps:
+        - warning-configmap
+
+# sanity checks
+
+      - app_name: d11
+        exporter_type: deploytime
+        env_from_secrets:
+        - debug-secret # won
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+
+      - app_name: d12
+        exporter_type: deploytime
+        env_from_configmaps:
+        - warning-configmap # won
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+
+      - app_name: d13
+        exporter_type: deploytime
+        extraEnv:
+          - name: NAMESPACES
+            value: pelorus
+          - name: LOG_LEVEL
+            value: ERROR # won

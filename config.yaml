@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: warning-configmap
+  namespace: pelorus
+data:
+  LOG_LEVEL: "WARNING"
