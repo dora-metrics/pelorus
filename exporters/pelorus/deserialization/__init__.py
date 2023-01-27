@@ -527,5 +527,7 @@ def deserialize(
     Deserialize any supported type (see module docs) from unstructured data.
     src_name and target_name are used for helpful error messages,
     and will default to the names of the argument types.
+
+    Tuples are not yet supported!
     """
     return _Deserializer().deserialize(src, target_type, src_name, target_name)

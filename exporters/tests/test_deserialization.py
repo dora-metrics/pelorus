@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Sequence, Union
 
 import pytest
 from attrs import define, field
@@ -9,51 +9,128 @@ from pelorus.deserialization import (
     FieldTypeCheckError,
     InnerFieldDeserializationErrors,
     MissingFieldError,
+    _extract_dict_types,
+    _extract_list_type,
+    _extract_optional_type,
     deserialize,
     nested,
     retain_source,
 )
 
 
-def test_simple_positive():
-    @define
-    class Simple:
-        str_: str
-        int_: int
+@define
+class AttrsTestClass:
+    str_: str
+    int_: int
+    other: Optional[list[str]] = ["test"]
 
-    actual = deserialize(dict(str_="str", int_=2), Simple, target_name="Simple")
+
+@pytest.mark.parametrize(
+    "type_",
+    [list[int], str, set[float]],
+)
+def test_extract_dict_types_from_non_dict(type_: type):
+    # Optional[type] breaks this function, but it is only called after parsing
+    # Optional in deserialize function, so it is safe to allow this behavior
+    assert _extract_dict_types(type_) is None
+
+
+@pytest.mark.parametrize(
+    "input,output",
+    [(dict[str, int], (str, int)), (dict[str, list[int]], (str, list[int]))],
+)
+def test_extract_dict_types_from_dict(input: type, output: tuple[type, type]):
+    assert _extract_dict_types(input) == output
+
+
+@pytest.mark.parametrize(
+    "type_",
+    [dict[int, str], int, set[str]],
+)
+def test_extract_list_types_from_non_list(type_: type):
+    assert _extract_list_type(type_) is None
+
+
+@pytest.mark.parametrize(
+    "input,output",
+    [(list[int], int), (list[int], int)],
+)
+def test_extract_list_types_from_list(input: type, output: type):
+    assert _extract_list_type(input) == output
+
+
+@pytest.mark.parametrize(
+    "type_",
+    [
+        dict[int, str],
+        int,
+        set[str],
+        Union[str, int],
+        list[float],
+        Union[None, str, list[str]],
+    ],
+)
+def test_extract_optional_types_from_non_optional(type_: type):
+    assert _extract_optional_type(type_) is None
+
+
+@pytest.mark.parametrize(
+    "input,output",
+    [(Optional[int], int), (Union[float, None], float), (Union[None, str], str)],
+)
+def test_extract_optional_types_from_optional(input: type, output: type):
+    assert _extract_optional_type(input) == output
+
+
+def test_deserialize_positive():
+    actual = deserialize(
+        dict(str_="str", int_=2), AttrsTestClass, target_name="AttrsTestClass"
+    )
 
     assert "str" == actual.str_
     assert 2 == actual.int_
 
 
-def test_simple_type_err():
-    @define
-    class Int:
-        int_: int
-
+def test_deserialize_type_error():
     with pytest.raises(DeserializationErrors) as e:
-        deserialize(dict(int_="string!"), Int, target_name="Int")
+        deserialize(
+            dict(str_="str", int_="string!"),
+            AttrsTestClass,
+            target_name="AttrsTestClass",
+        )
+
     assert e.value.subgroup(lambda e: isinstance(e, TypeError)) is not None
     print(e.value)
 
 
-def test_simple_absence():
-    @define
-    class Missing:
-        str_: str
-
+def test_deserialize_missing_error():
     with pytest.raises(DeserializationErrors) as e:
-        deserialize(dict(), Missing, target_name="Missing")
+        deserialize(dict(str_="str"), AttrsTestClass, target_name="AttrsTestClass")
 
     assert e.value.subgroup(lambda e: isinstance(e, MissingFieldError)) is not None
     print(e.value)
 
 
-def test_nested_field_positive():
+def test_deserialize_gives_multiple_errors_at_once():
+    with pytest.raises(DeserializationErrors) as e:
+        deserialize(
+            dict(str_="str", int_="string!", other=[1, "2", 3]),
+            AttrsTestClass,
+            target_name="AttrsTestClass",
+        )
+
+    print(e.value)
+    exceptions = e.value.exceptions
+    assert len(exceptions) == 2
+    assert isinstance(exceptions[0], FieldTypeCheckError)
+    assert isinstance(exceptions[1], InnerFieldDeserializationErrors)
+
+
+@pytest.mark.parametrize("nested_path", ["foo.bar", ("foo", "bar")])
+def test_nested_field_positive(nested_path: Union[str, Sequence[str]]):
     @define
     class Nested:
-        nested_int: int = field(metadata=nested("foo.bar"))
+        nested_int: int = field(metadata=nested(nested_path))
 
     actual = deserialize(dict(foo=dict(bar=2)), Nested)
 
@@ -79,6 +156,28 @@ def test_nested_field_type_err():
         deserialize(dict(foo=dict(bar="string!")), Nested, target_name="Nested")
 
     assert e.value.subgroup(lambda e: isinstance(e, TypeError)) is not None
+    print(e.value)
+
+
+def test_nested_missing():
+    @define
+    class Nested:
+        nested_int: int = field(metadata=nested("foo.bar"))
+
+    with pytest.raises(DeserializationErrors) as e:
+        deserialize(dict(foo=dict()), Nested)
+
+    print(e.value)
+
+
+def test_multi_nested_missing():
+    @define
+    class Nested:
+        nested_int: int = field(metadata=nested(["foo", "com", "example.int"]))
+
+    with pytest.raises(DeserializationErrors) as e:
+        deserialize(dict(foo=dict()), Nested)
+
     print(e.value)
 
 
@@ -273,9 +372,14 @@ def test_embedded_list():
     assert x.list_[0].int_ == 2
 
 
-def test_any():
-    x = deserialize([1, "2"], list[Any])
-    assert x == [1, "2"]
+@pytest.mark.parametrize(
+    "obj, structure",
+    [([1, "2"], list[Any]), ({"a": "a", "1": 1}, dict[str, Any])],
+)
+def test_any(obj: Any, structure: type):
+    # Optional[Any] not yet supported
+    x = deserialize(obj, structure)
+    assert x == obj
 
 
 def test_resource_field():
@@ -288,6 +392,19 @@ def test_resource_field():
     x = deserialize(some_kube_resource, FooHolder)
 
     assert x.foo == "bar"
+
+
+def test_resource_field_error():
+    some_kube_resource = ResourceField(dict(foo="bar"))
+
+    @define
+    class FooHolder:
+        foo: int
+
+    with pytest.raises(DeserializationErrors) as e:
+        deserialize(some_kube_resource, FooHolder)
+
+    print(e.value)
 
 
 def test_keeping_source():
