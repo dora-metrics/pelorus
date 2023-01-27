@@ -22,7 +22,7 @@ There are two configuration options that allows to modify those retention values
 - [prometheus_retention](./PelorusCore.md#prometheus_retention)
 - [prometheus_retention_size](./PelorusCore.md#prometheus_retention_size)
 
-Additionaly it is recommended to create Persistent Volumes to withstand prometheus container restarts. To enable that the [prometheus_storage](./PelorusCore.md#prometheus_storage) needs to be set to `true` and additionally PVC configuration options controls how it should be created. Relevant options are:
+Additionally it is recommended to create Persistent Volumes to withstand prometheus container restarts. To enable that the [prometheus_storage](./PelorusCore.md#prometheus_storage) needs to be set to `true` and additionally PVC configuration options controls how it should be created. Relevant options are:
 
 - [prometheus_storage](./PelorusCore.md#prometheus_storage)
 - [prometheus_storage_pvc_capacity](./PelorusCore.md#prometheus_storage_pvc_capacity)

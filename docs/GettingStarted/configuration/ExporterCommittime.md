@@ -230,7 +230,7 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
 
 : Annotation name associated with the Image from which commit time is taken.
 : 
-> **NOTE:** The date and time found in the OpenShift object [COMMIT_DATE_ANNOTATION](#commit_date_annotation) annotation will be calculated by parsting it's value string in the following order:
+> **NOTE:** The date and time found in the OpenShift object [COMMIT_DATE_ANNOTATION](#commit_date_annotation) annotation will be calculated by parsing it's value string in the following order:
 > 
 - 10 digit EPOCH timestamp. Allowed EPOCH string format is one, where milliseconds are ignored.
 - The one from the [COMMIT_DATE_FORMAT](#commit_date_format)

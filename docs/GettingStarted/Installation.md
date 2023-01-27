@@ -120,7 +120,7 @@ Verify the pelorus-operator Subscription (sub) has been successfully created:
   NAME               PACKAGE            SOURCE                CHANNEL
   pelorus-operator   pelorus-operator   community-operators   alpha
   ```
-Verify the ClusterServiceVersion (csv) for Pelorus Operator together with Grafana and Prometheus were succesfully created:
+Verify the ClusterServiceVersion (csv) for Pelorus Operator together with Grafana and Prometheus were successfully created:
   ```shell
   $ oc get csv -n pelorus
   NAME                        DISPLAY               VERSION   REPLACES                    PHASE
@@ -184,7 +184,7 @@ Verify the pelorus-sample has been successfully created:
   pelorus-sample   31s
   ```
 
-Verbose command to list Pelorus objects with their statuses, presenting succesfull Deployment with the InstallationSuccessful status:
+Verbose command to list Pelorus objects with their statuses, presenting successful Deployment with the InstallationSuccessful status:
   ```
   $ oc get pelorus -n pelorus -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.conditions}{"\n"}{end}'
   pelorus-sample	[{"lastTransitionTime":"2023-01-10T14:12:56Z","status":"True","type":"Initialized"},{"lastTransitionTime":"2023-01-10T14:13:00Z","reason":"InstallSuccessful","status":"True","type":"Deployed"}]
