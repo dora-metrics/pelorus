@@ -91,7 +91,7 @@ if [ "${RUNNING_ID}" == "" ]; then
 fi
 
 counter=1
-until curl -k https://localhost:"${MOCKOON_PORT}"/version
+until curl --silent --insecure https://localhost:"${MOCKOON_PORT}"/version
 do
     if [ $counter -gt $MOCKOON_TIMEOUT ]; then
         echo "Timed out waiting for the mockoon service"
