@@ -1,9 +1,6 @@
 # Needed by exporters/tests
 pytest
-
-# Mentioned in the docs/Development.md
-# Also used by the github unittests.yml workflow
-coverage
+pytest-cov
 
 # Used by bats in the conftests
 yq

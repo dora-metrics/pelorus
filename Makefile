@@ -148,12 +148,11 @@ e2e-tests-scenario-2: e2e-tests-dev-env
 	./scripts/run-pelorus-e2e-tests -f "periodic/different_deployment_methods.yaml"
 
 # Integration tests
-## integration-tests: pytest -rap -m integration
+## integration-tests: pytest everything marked as integration
 .PHONY: integration-tests
 integration-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	coverage run -m pytest -rap -m "integration" && \
-	coverage report
+	pytest -rap -m "integration"
 
 # Unit tests
 ## unit-tests: pytest everything minus integration and mockoon
@@ -163,8 +162,7 @@ unit-tests: $(PELORUS_VENV)
   # because using (A)ll includes stdout
   # -m filters out integration tests
 	. ${PELORUS_VENV}/bin/activate && \
-	coverage run -m pytest -rap -m "not integration and not mockoon" && \
-	coverage report
+	pytest -rap -m "not integration and not mockoon"
 
 # Prometheus ruels
 ## test-prometheusrules: test prometheus with data in _test/test_promethusrules
@@ -257,16 +255,6 @@ else
 shellcheck-optional:
 	$(warning 🐚 ⏭ Shellcheck not found, skipping)
 endif
-
-
-# Testing
-.PHONY: test
-
-# -r: show extra test summaRy: (a)ll except passed, (p)assed
-# because using (A)ll includes stdout
-# -m filters out integration tests
-test: $(PELORUS_VENV)
-	. ${PELORUS_VENV}/bin/activate && pytest -r ap -m "not integration"
 
 # Cleanup
 

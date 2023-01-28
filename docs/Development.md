@@ -446,11 +446,6 @@ Each PR runs exporter tests in the CI systems, however those changes can be test
         make help
 
 5. As an example run unit tests using `make unit-tests`.
-    1. You can also run coverage reports with the following:
-
-            coverage run -m pytest -rap -m "not integration and not mockoon"
-            coverage report
-
 
 5. Gather necessary [configuration information](../GettingStarted/configuration/PelorusExporters/).
 6. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
