@@ -102,7 +102,7 @@ env_from_secrets:
 - example-secret
 - other-secret
 ```
-[More examples](#secrets).
+**For more information, check [detailed Secrets examples](#secrets).**
 
 : Check the list of all available options per exporter type:
 : - [Deploy time](ExporterDeploytime.md#deploy-time-exporter-configuration-options)
@@ -121,7 +121,7 @@ env_from_configmaps:
 - example-configmap
 - other-configmap
 ```
-[More examples](#configmaps).
+**For more information, check [detailed ConfigMaps examples](#configmaps).**
 
 : Check the list of all available options per exporter type:
 : - [Deploy time](ExporterDeploytime.md#deploy-time-exporter-configuration-options)
