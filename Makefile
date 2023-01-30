@@ -256,6 +256,10 @@ shellcheck-optional:
 	$(warning 🐚 ⏭ Shellcheck not found, skipping)
 endif
 
+## doc-check: Check if there is any problem with the project documentation generation
+doc-check: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && mkdocs build --verbose --strict
+
 # Cleanup
 
 ## clean-dev-env: remove the virtual environment and clean up all .pyc files

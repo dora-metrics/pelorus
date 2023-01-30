@@ -42,7 +42,7 @@ with out CI integration will have an associated Github issue in CI status and St
 ## Integration in CI
 Pelorus is being tested and it's parts such as container images or documentation are being created by various Continuous Integration systems.
 
-Most of the CI runs are invoked using [Makefile](https://github.com/konveyor/pelorus/blob/master/Makefile) allowing developer to replicate those runs on the local computer. Please refer to the [Dev Guide](../Development) for more information.
+Most of the CI runs are invoked using [Makefile](https://github.com/konveyor/pelorus/blob/master/Makefile) allowing developer to replicate those runs on the local computer. Please refer to the [Dev Guide](Development.md) for more information.
 
 ### GitHub Actions
 

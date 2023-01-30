@@ -15,7 +15,7 @@ This track is focused around the development of custom [Prometheus exporters](ht
 
 We use [Helm](https://helm.sh) to provide an automated deployment and configuration experience for Pelorus. We are always doing work to cover more and more complex use cases with our helm charts. In order to be able to effectively contribute to these charts, you'll need a cluster that satisfies all of the installation prerequisites for Pelorus.
 
-See the [Install guide](../GettingStarted/Installation/) for more details on that.
+See the [Install guide](GettingStarted/Installation.md) for more details on that.
 
 Currently we have two charts:
 
@@ -52,7 +52,7 @@ or bump specific charts with shell script:
 
 ## Dashboard Development
 
-We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Outcomes (Dashboards)](../philosophy/outcomes/Overview/) user guide for that information.
+We are continually doing work to enhance and bugfix the Pelorus dashboards. Doing so requires a complete Pelorus stack, including all exporters required to populate a given dashboard. See the [Outcomes (Dashboards)](philosophy/outcomes/Overview.md) user guide for that information.
 
 To effectively do dashboard development, you'll likely need at least two browser windows open, one with Grafana, and another with Prometheus for testing queries. Since our dashboards are imported to Grafana via the Grafana Operator, they get imported in read-only mode. Because of this, you'll need to make a copy of it for development purposes.
 
@@ -356,7 +356,7 @@ Running an exporter on your local machine should follow this process:
 
         . .venv/bin/activate
 
-3. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](../GettingStarted/configuration/PelorusExporters/) to see supported variables).
+3. Set any environment variables required (or desired) for the given exporter (see [Configuring Exporters](GettingStarted/configuration/PelorusExporters.md) to see supported variables).
 
         export LOG_LEVEL=debug
         export TOKEN=xxxx
@@ -411,7 +411,7 @@ Checkout the PR on top of your fork.
 
 1. [Checkout](#checkout) the PR on top of your fork.
 
-2. [Install Pelorus](../GettingStarted/Installation/) from checked out fork/branch.
+2. [Install Pelorus](GettingStarted/Installation.md) from checked out fork/branch.
 
     **NOTE:**
 
@@ -447,7 +447,7 @@ Each PR runs exporter tests in the CI systems, however those changes can be test
 
 5. As an example run unit tests using `make unit-tests`.
 
-5. Gather necessary [configuration information](../GettingStarted/configuration/PelorusExporters/).
+5. Gather necessary [configuration information](GettingStarted/configuration/PelorusExporters.md).
 6. [Run exporter locally](#running-locally). You can do this either via the command line, or use the provided [VSCode debug confuration](#ide-setup-vscode) to run it in your IDE Debugger.
 7. Once exporter is running, you can test it via a simple `curl localhost:8080`. You should be validating that:
     1. You get a valid response with metrics.
@@ -455,7 +455,7 @@ Each PR runs exporter tests in the CI systems, however those changes can be test
 
 ### Helm Install changes
 
-For testing changes to the helm chart, you should just follow the [standard install process](../GettingStarted/Installation/#helm-charts), then verify that:
+For testing changes to the helm chart, you should just follow the [standard install process](GettingStarted/Installation.md#helm-charts), then verify that:
 
 * All expected pods are running and healthy
 * Any expected behavior changes mentioned in the PR can be observed.
