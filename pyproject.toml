@@ -4,7 +4,7 @@ src_paths = ["exporters" ,"scripts"]
 known_first_party = ["pelorus"]
 
 [tool.pytest.ini_options]
-testpaths = ["exporters/tests"]
+testpaths = ["exporters"]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
     "mockoon: tests that should be run with mockoon running"
@@ -12,6 +12,9 @@ markers = [
 log_cli = true
 addopts = [
     "--doctest-modules",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov=exporters",
 ]
 
 [tool.pylama]
