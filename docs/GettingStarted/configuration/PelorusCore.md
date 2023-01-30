@@ -103,7 +103,7 @@ It is recommended to use Prometheus Persistent Volume **together** with [Thanos]
     - **Default Value:** false
 - **Type:** boolean
 
-: Controlls wether Prometheus should use persistent volume. If set to `true` [PersistentVolumeClaim](https://docs.openshift.com/container-platform/4.11/storage/understanding-persistent-storage.html#persistent-volume-claims_understanding-persistent-storage) will be created.
+: Controls wether Prometheus should use persistent volume. If set to `true` [PersistentVolumeClaim](https://docs.openshift.com/container-platform/4.11/storage/understanding-persistent-storage.html#persistent-volume-claims_understanding-persistent-storage) will be created.
 
 ###### prometheus_storage_pvc_capacity
 
@@ -142,7 +142,7 @@ $ htpasswd -nbs internal <my-secret-password>
 
 ### Multiple Prometheus
 
-By default Pelorus gathers the data from the Prometheus instance deployed in the same cluster in whcih it is running. To collect data across multiple OpenShift clusters additional Prometheus hosts have to be configured. To do this `extra_prometheus_hosts` configuration option is used.
+By default Pelorus gathers the data from the Prometheus instance deployed in the same cluster in which it is running. To collect data across multiple OpenShift clusters additional Prometheus hosts have to be configured. To do this `extra_prometheus_hosts` configuration option is used.
 
 ###### extra_prometheus_hosts
 

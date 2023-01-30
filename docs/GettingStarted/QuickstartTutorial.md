@@ -22,7 +22,7 @@ To do so, you will
 
 ### Tools and access
 
-To succesfully go through this demo you will need:
+To successfully go through this demo you will need:
 
 * [GitHub](https://github.com) account with a [Personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) generated.
 
@@ -54,9 +54,9 @@ Deployment of the running Pelorus Operator instance consists of two steps:
 
 #### Prepare Config file
 
-> **NOTE**: A comprehensive list of all configuration options is available in our [Pelorus Core](./configuration/PelorusCore.md) and [Pelorus Exportrs](./configuration/PelorusExporters.md) documentation.
+> **NOTE**: A comprehensive list of all configuration options is available in our [Pelorus Core](./configuration/PelorusCore.md) and [Pelorus Exporters](./configuration/PelorusExporters.md) documentation.
 
-For this demo we will need to prepare a configuration file that will be used in our deployment. For now it's enought to understand that our Pelorus Deployment will consist of:
+For this demo we will need to prepare a configuration file that will be used in our deployment. For now it's enough to understand that our Pelorus Deployment will consist of:
 
 * The pelorus instance:
     * is named **pelorus-quickstart**
@@ -131,12 +131,12 @@ prometheus-prometheus-pelorus-1                        3/3     Running     1 (2m
 
 #### Accessing Pelorus dashboard
 
-To view the Pelorus measurements we need to gain access to its' Grafana dasboard. To get the URL of the Grafana dashboard use the following command:
+To view the Pelorus measurements we need to gain access to its' Grafana dashboard. To get the URL of the Grafana dashboard use the following command:
 ```shell
 $ oc get route grafana-route --namespace pelorus -o=go-template='https://{{.spec.host | printf "%s\n" }}'
 ```
 
-In the Grafana dasboard navigate to **search** and select **"pelorus ➔ Software Delivery Performance - By App"**. An empty dashboard without any measurements should be presented. That is expected, because we did not deploy our sample application yet!
+In the Grafana dashboard navigate to **search** and select **"pelorus ➔ Software Delivery Performance - By App"**. An empty dashboard without any measurements should be presented. That is expected, because we did not deploy our sample application yet!
 
 ![pelorus_dashboard_no_data](../img/pelorus-dashboard-no-data.png)
 
@@ -144,10 +144,10 @@ In the Grafana dasboard navigate to **search** and select **"pelorus ➔ Softwar
 
 Pelorus is now configured to measure the sample application.
 
-It is time to deploy the sample application to view measurements from Pelorus' Grafana dashboard. Plase keep the Grafana page open.
+It is time to deploy the sample application to view measurements from Pelorus' Grafana dashboard. Please keep the Grafana page open.
 
 
-## Sample Aplication Demo
+## Sample Application Demo
 
 ### Lead Time for Change and Deployment Frequency
 
@@ -191,7 +191,7 @@ $ oc get buildconfig.build.openshift.io/todolist --namespace mongo-persistent -o
 
 #### View the Pelorus measurements
 
-After a couple of minutes you should see at least one measurement for **Lead Time for Change** and **Deployment Frequency** in the Grafana dasboard, like in the following image:
+After a couple of minutes you should see at least one measurement for **Lead Time for Change** and **Deployment Frequency** in the Grafana dashboard, like in the following image:
 
 > **Note:** If the time elapsed from your `mongo-persistent` deployment is higher then **5 minutes**, you may want to adjust different relative time range <span style="color:red">⓵</span> e.g. **Last 3 hours**s.
 
@@ -199,9 +199,9 @@ After a couple of minutes you should see at least one measurement for **Lead Tim
 
 #### Update application
 
-In this section we will observe application continous delivery and analyze it with Pelorus. Few steps will guide us through this process:
+In this section we will observe application continuous delivery and analyze it with Pelorus. Few steps will guide us through this process:
 
-- [Setting up GitHub Webhook](#github-webhook) that allows to automatically run new builds of your smaple applications when the commit to the source code happens
+- [Setting up GitHub Webhook](#github-webhook) that allows to automatically run new builds of your sample applications when the commit to the source code happens
 - Fixing an issue in the running application and [update the application source code](#update-the-application-source-code)
 - Committing changes to source control
 - Watching the application redeploy with the changes to be captured by Pelorus
@@ -237,7 +237,7 @@ To add the webhook to your forked GitHub repo:
 : For this quickstart tutorial consider **Disable**, as you may not have signed SSL Certificate in your testing OpenShift environment and the webhook will fail to deliver it's payload with the error: `We couldn’t deliver this payload: x509: certificate signed by unknown authority`.
 * <span style="color:red">⓺</span> Click **Add webhook**
 
-Now your webhook should be added and green success icon should appear left to your webhook's URL, which means it succesfully sent the first `ping` payload to your OpenShift URL endpoint:
+Now your webhook should be added and green success icon should appear left to your webhook's URL, which means it successfully sent the first `ping` payload to your OpenShift URL endpoint:
 
 ![github_webhook_3](../img/github_webhook_3.png)
 
@@ -330,7 +330,7 @@ Pelorus will utilize two labels to determine if a GitHub issue is associated wit
 
 > **Note:** Only those GitHub issues which have **both** labels are recognized by Pelorus as a critical bugs in our "production" environment.
 
-Ensure the above labels are present and create them in the event of their absence by navingating to the following URL, like in the following image:
+Ensure the above labels are present and create them in the event of their absence by navigating to the following URL, like in the following image:
 
 : **https://github.com/`<your_org>`/mig-demo-apps/labels**
 
@@ -359,7 +359,7 @@ You may also check the output from the failure exporter again, by running:
 $ curl $(oc get route failure-exporter --namespace pelorus -o=template='http://{{.spec.host | printf "%s\n"}}')
 ```
 
-At this time you should see lines startning with `failure_creation_timestamp` and `failure_resolution_timestamp`. They indicate the time the issue was created and when it was closed.
+At this time you should see lines starting with `failure_creation_timestamp` and `failure_resolution_timestamp`. They indicate the time the issue was created and when it was closed.
 
 #### Understand the changes to the Grafana Dashboard
 
