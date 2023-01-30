@@ -110,7 +110,7 @@ You can check all chart versions and bump them if needed with a script that comp
 
 or bump specific charts with shell script:
 
-    $ ./scripts/bump-version CHART_PATH [ CHART_PATH ...]
+    $ ./scripts/bump-version.py CHART_PATH [ CHART_PATH ...]
 
 ## Dashboard Development
 

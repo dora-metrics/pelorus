@@ -199,6 +199,7 @@ fi
 
 echo "INFO: Adding replaces and skips entries to ${source_dir}${destination_dir}/bundle/manifests/charts.pelorus.dora-metrics.io_pelorus.yaml"
 set -e
+# shellcheck disable=SC2086 # We need to expand $OPERATOR_VERSIONS
 $SCRIPT_DIR/specify_operator_update.py $NEW_OPERATOR_VERSION $destination_dir $OPERATOR_VERSIONS
 
 echo "INFO: Current operator version: ${OPERATOR_VERSION}"

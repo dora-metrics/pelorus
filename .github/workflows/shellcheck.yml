@@ -1,26 +1,15 @@
 name: Shellcheck Tests
 on:
   push:
-    # Sync with Makefile and SHELL_SCRIPTS
     paths:
-      - 'demo/demo-tekton.sh'
-      - 'scripts/create_release_pr'
-      - 'scripts/install_dev_tools'
-      - 'scripts/pre-commit'
-      - 'scripts/run-mockoon-tests'
-      - 'scripts/run-pelorus-e2e-tests'
-      - 'scripts/setup-pre-commit-hook'
-
+      - '.github/workflows/shellcheck.yml'
+      - 'Makefile'
+      - '**.sh'
   pull_request:
-    # Sync with Makefile and SHELL_SCRIPTS
     paths:
-      - 'demo/demo-tekton.sh'
-      - 'scripts/create_release_pr'
-      - 'scripts/install_dev_tools'
-      - 'scripts/pre-commit'
-      - 'scripts/run-mockoon-tests'
-      - 'scripts/run-pelorus-e2e-tests'
-      - 'scripts/setup-pre-commit-hook'
+      - '.github/workflows/shellcheck.yml'
+      - 'Makefile'
+      - '**.sh'
 
 jobs:
   unit-test:
@@ -44,5 +33,4 @@ jobs:
             pyproject.toml
 
       - name: Test with shellcheck
-        run: |
-          make shellcheck
+        run: make shellcheck

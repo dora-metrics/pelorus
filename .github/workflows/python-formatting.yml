@@ -2,10 +2,10 @@ name: Check Python Formatting
 on:
   pull_request:
     paths:
-      - 'exporters/**'
-      - 'pyproject.toml'
       - '.github/workflows/python-formatting.yml'
+      - 'pyproject.toml'
       - 'Makefile'
+      - '**.py'
 
 jobs:
   format-check:
