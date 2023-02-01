@@ -29,7 +29,6 @@ from .collector_base import AbstractCommitCollector
 
 @define(kw_only=True)
 class ImageCommitCollector(AbstractCommitCollector):
-
     date_format: str
 
     date_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["commit_time"]
@@ -153,7 +152,6 @@ class ImageCommitCollector(AbstractCommitCollector):
 
     # overrides collector_base.generate_metric()
     def generate_metrics(self) -> Iterable[CommitMetric]:
-
         # Initialize metrics list
         metrics = []
         app_label = self.app_label

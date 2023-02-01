@@ -16,13 +16,9 @@
 #
 
 import logging
-from typing import Any, Optional, cast
-
-from attrs import define, field
-from jira import JIRA
-from jira.client import ResultList
 from typing import List, Optional
 
+from attrs import define, field
 from jira import JIRA, Issue
 from jira.exceptions import JIRAError
 
@@ -88,7 +84,8 @@ class JiraFailureCollector(AbstractFailureCollector):
         try:
             # Connect to JIRA
             jira_client = JIRA(
-                options={"server": self.server}, basic_auth=(self.user, self.apikey)
+                options={"server": self.tracker_api},
+                basic_auth=(self.username, self.token),
             )
             # Ensure connection was performed
             jira_client.session()
@@ -240,7 +237,7 @@ class JiraFailureCollector(AbstractFailureCollector):
 
     def get_app_name(self, issue: Issue) -> str:
         for label in issue.fields.labels:
-            matcher = f"{pelorus.get_app_label()}="
+            matcher = f"{self.app_label}="
             if label.startswith(matcher):
                 return label.replace(matcher, "")
         return "unknown"

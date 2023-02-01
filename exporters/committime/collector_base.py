@@ -209,7 +209,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         """Expects a sorted array of build data sorted by app label"""
         metrics = []
         for app in apps:
-
             builds = apps[app]
             jenkins_builds = list(
                 filter(lambda b: b.spec.strategy.type == "JenkinsPipeline", builds)
@@ -318,7 +317,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         elif repo_url:
             metric.repo_url = repo_url
         else:
-
             repo_from_annotation = metric.annotations.get(self.repo_url_annotation_name)
             if repo_from_annotation:
                 metric.repo_url = repo_from_annotation

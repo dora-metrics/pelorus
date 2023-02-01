@@ -49,7 +49,6 @@ DEFAULT_COMMIT_DATE_FORMAT = "%a %b %d %H:%M:%S %Y %z"
 
 @define(kw_only=True)
 class CommittimeTypeConfig:
-
     provider: str = field(
         default=DEFAULT_PROVIDER, validator=attrs.validators.in_(PROVIDER_TYPES)
     )
@@ -72,7 +71,6 @@ class ImageCommittimeConfig:
     )
 
     def make_collector(self) -> AbstractCommitCollector:
-
         # Image provider is a special case, where commit time
         # metadata is stored within image.openshift.io/v1 object
         #

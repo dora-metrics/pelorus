@@ -108,7 +108,6 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
         return namespaces
 
     def generate_metrics(self) -> Iterable[DeployTimeMetric]:
-
         namespaces = self.get_and_log_namespaces()
         if not namespaces:
             return []
