@@ -14,11 +14,6 @@ on:
       - '.github/workflows/integration-tests.yml'
       - 'Makefile'
 
-env:
-  JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
-  JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
-  TEST_QUAY: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
-
 jobs:
   integration-test:
     runs-on: ubuntu-latest
@@ -43,6 +38,7 @@ jobs:
         run: make dev-env
 
       - name: Run integration-test
-        run: |
-          env
-          make integration-tests
+        env:
+          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+        run: make integration-tests
