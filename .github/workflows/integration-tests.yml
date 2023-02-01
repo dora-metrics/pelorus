@@ -41,4 +41,6 @@ jobs:
         env:
           JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
-        run: make integration-tests
+        run: |
+          env
+          make integration-tests
