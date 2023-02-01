@@ -42,6 +42,8 @@ JIRA_VALUES = [
 PROJECTS_COMMA = "proj1,proj2,proj1,proj3,proj3"
 PROJECTS_SPACES = "proj1 proj2 proj1 proj3 proj3"
 PROJECTS_UNIQUE = {"proj1", "proj2", "proj3"}
+JIRA_USERNAME = os.environ.get("JIRA_USERNAME")
+JIRA_TOKEN = os.environ.get("JIRA_TOKEN")
 
 
 def setup_jira_collector(
@@ -76,21 +78,27 @@ def test_jira_pass_connection(server, username, apikey):
     assert "Basic authentication with passwords is deprecated" in str(context_ex.value)
 
 
-# TODO write mockoon or integration to test success (and success without finding any issue)
-# @pytest.mark.parametrize("projects", ["non_existing,Test,wrong_name", "Test"])
-# @pytest.mark.parametrize(
-#     JIRA_PARAMETERS,
-#     [("https://pelorustest.atlassian.net", "valid_username", "valid_token")],
-# )
-# @pytest.mark.integration
-# def test_jira_search(server, username, apikey, projects):
-#     collector = setup_jira_collector(server, username, apikey, projects)
+# TODO write mockoon or integration to test success without finding any issue
+@pytest.mark.parametrize("projects", ["non_existing,Test,wrong_name", "Test"])
+@pytest.mark.parametrize(
+    JIRA_PARAMETERS,
+    [("https://pelorustest.atlassian.net", JIRA_USERNAME, JIRA_TOKEN)],
+)
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not JIRA_USERNAME, reason="No Jira username set, run export JIRA_USERNAME=username"
+)
+@pytest.mark.skipif(
+    not JIRA_TOKEN, reason="No Jira token set, run export JIRA_TOKEN=token"
+)
+def test_jira_search(server, username, apikey, projects):
+    collector = setup_jira_collector(server, username, apikey, projects)
 
-#     with nullcontext() as context:
-#         issues = collector.search_issues()
+    with nullcontext() as context:
+        issues = collector.search_issues()
 
-#     assert context is None
-#     assert len(issues) == 103
+    assert context is None
+    assert len(issues) == 103
 
 
 @pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)

@@ -35,9 +35,10 @@ jobs:
             pyproject.toml
 
       - name: Install dependencies
-        run: |
-          make dev-env
+        run: make dev-env
 
       - name: Run integration-test
-        run: |
-          make integration-tests
+        env:
+          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+        run: make integration-tests
