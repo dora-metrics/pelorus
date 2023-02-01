@@ -41,6 +41,7 @@ jobs:
         env:
           JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          TEST_QUAY: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
         run: |
           env
           make integration-tests
