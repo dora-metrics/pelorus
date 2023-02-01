@@ -126,7 +126,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
     - Only applicable for [PROVIDER](#provider) set to `jira` or `github`
 - **Type:** comma separated list of strings
 
-: * Used by Jira to define which projects (keys or names) to monitor. Value is ignored if [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) is defined. Ensure the project(s) exists, otherwise none of the metrics will get collected.
+: * Used by Jira to define which projects (keys or names) to monitor. Value is ignored if [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) is defined.
 
 : * Used by GitHub to define which repositories' issues to monitor.
 
