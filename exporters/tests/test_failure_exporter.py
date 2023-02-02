@@ -28,36 +28,35 @@ from prometheus_client.core import REGISTRY
 
 from failure import collector_jira
 from failure.collector_github import GithubAuthenticationError, GithubFailureCollector
-from failure.collector_jira import JiraFailureCollector
+from failure.collector_jira import DEFAULT_JQL_SEARCH_QUERY, JiraFailureCollector
 from pelorus.config import load_and_log
 
-JIRA_PARAMETERS = "server, username, apikey"
-JIRA_VALUES = [
-    (
-        "https://pelorustest.atlassian.net",
-        "fake@user.com",
-        "WIEds4uZHiCGnrtmgQPn9E7D",
-    )
-]
+JIRA_SERVER = "https://pelorustest.atlassian.net"
+JIRA_USERNAME = os.environ.get("JIRA_USERNAME")
+JIRA_TOKEN = os.environ.get("JIRA_TOKEN")
 PROJECTS_COMMA = "proj1,proj2,proj1,proj3,proj3"
 PROJECTS_SPACES = "proj1 proj2 proj1 proj3 proj3"
 PROJECTS_UNIQUE = {"proj1", "proj2", "proj3"}
-JIRA_USERNAME = os.environ.get("JIRA_USERNAME")
-JIRA_TOKEN = os.environ.get("JIRA_TOKEN")
 
 
 def setup_jira_collector(
-    server, username, apikey, projects: Optional[str] = None
+    username: str = "fake@user.com",
+    token: str = "WIEds4uZHiCGnrtmgQPn9E7D",
+    projects: Optional[str] = None,
+    jql_query_string: str = DEFAULT_JQL_SEARCH_QUERY,
 ) -> JiraFailureCollector:
     return JiraFailureCollector(
-        tracker_api=server, username=username, token=apikey, projects=projects
+        tracker_api=JIRA_SERVER,
+        username=username,
+        token=token,
+        projects=projects,
+        jql_query_string=jql_query_string,
     )
 
 
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
 @pytest.mark.integration
-def test_jira_connection(server, username, apikey):
-    collector = setup_jira_collector(server, username, apikey)
+def test_jira_connection():
+    collector = setup_jira_collector()
     with pytest.raises(JIRAError) as context_ex:
         collector._connect_to_jira()
     assert (
@@ -66,24 +65,15 @@ def test_jira_connection(server, username, apikey):
     )
 
 
-@pytest.mark.parametrize(
-    JIRA_PARAMETERS,
-    [("https://pelorustest.atlassian.net", "fake@user.com", "fakepass")],
-)
 @pytest.mark.integration
-def test_jira_pass_connection(server, username, apikey):
-    collector = setup_jira_collector(server, username, apikey)
+def test_jira_pass_connection():
+    collector = setup_jira_collector(token="fakepass")
     with pytest.raises(JIRAError) as context_ex:
         collector._connect_to_jira()
     assert "Basic authentication with passwords is deprecated" in str(context_ex.value)
 
 
-# TODO write mockoon or integration to test success without finding any issue
 @pytest.mark.parametrize("projects", ["non_existing,Test,wrong_name", "Test"])
-@pytest.mark.parametrize(
-    JIRA_PARAMETERS,
-    [("https://pelorustest.atlassian.net", JIRA_USERNAME, JIRA_TOKEN)],
-)
 @pytest.mark.integration
 @pytest.mark.skipif(
     not JIRA_USERNAME, reason="No Jira username set, run export JIRA_USERNAME=username"
@@ -91,8 +81,8 @@ def test_jira_pass_connection(server, username, apikey):
 @pytest.mark.skipif(
     not JIRA_TOKEN, reason="No Jira token set, run export JIRA_TOKEN=token"
 )
-def test_jira_search(server, username, apikey, projects):
-    collector = setup_jira_collector(server, username, apikey, projects)
+def test_jira_search_with_projects(projects):
+    collector = setup_jira_collector(JIRA_USERNAME, JIRA_TOKEN, projects)
 
     with nullcontext() as context:
         issues = collector.search_issues()
@@ -101,23 +91,116 @@ def test_jira_search(server, username, apikey, projects):
     assert len(issues) == 103
 
 
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
-def test_jira_prometheus_register(
-    server, username, apikey, monkeypatch: pytest.MonkeyPatch
-):
+@pytest.mark.parametrize(
+    "projects", ["non_existing,wrong_name", "project_without_issues"]
+)
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not JIRA_USERNAME, reason="No Jira username set, run export JIRA_USERNAME=username"
+)
+@pytest.mark.skipif(
+    not JIRA_TOKEN, reason="No Jira token set, run export JIRA_TOKEN=token"
+)
+def test_jira_search_with_projects_without_results(projects):
+    collector = setup_jira_collector(JIRA_USERNAME, JIRA_TOKEN, projects)
+
+    with nullcontext() as context:
+        issues = collector.search_issues()
+
+    assert context is None
+    assert len(issues) == 0
+
+
+@pytest.mark.parametrize(
+    "jql",
+    [
+        'project in ("Test","wrong_name") AND type in ("Bug") AND priority in ("Highest")',
+        "type in (Bug) AND project in (Test,wrong_name) AND priority in (Highest)",
+        "type in ('Bug') AND priority in ('Highest') AND project in ('Test','wrong_name')",
+    ],
+)
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not JIRA_USERNAME, reason="No Jira username set, run export JIRA_USERNAME=username"
+)
+@pytest.mark.skipif(
+    not JIRA_TOKEN, reason="No Jira token set, run export JIRA_TOKEN=token"
+)
+def test_jira_search_with_jql(jql):
+    collector = setup_jira_collector(
+        JIRA_USERNAME,
+        JIRA_TOKEN,
+        jql_query_string=jql,
+    )
+
+    with nullcontext() as context:
+        issues = collector.search_issues()
+
+    assert context is None
+    assert len(issues) == 103
+
+
+@pytest.mark.parametrize(
+    "jql",
+    [
+        'project in ("wrong_name") AND type in ("Bug") AND priority in ("Highest")',
+        "type in (Bug) AND project in (wrong_name) AND priority in (Highest)",
+        "type in ('Bug') AND priority in ('Highest') AND project in ('wrong_name')",
+    ],
+)
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not JIRA_USERNAME, reason="No Jira username set, run export JIRA_USERNAME=username"
+)
+@pytest.mark.skipif(
+    not JIRA_TOKEN, reason="No Jira token set, run export JIRA_TOKEN=token"
+)
+def test_jira_search_with_jql_without_results(jql):
+    collector = setup_jira_collector(
+        JIRA_USERNAME,
+        JIRA_TOKEN,
+        jql_query_string=jql,
+    )
+
+    with nullcontext() as context:
+        issues = collector.search_issues()
+
+    assert context is None
+    assert len(issues) == 0
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not JIRA_USERNAME, reason="No Jira username set, run export JIRA_USERNAME=username"
+)
+@pytest.mark.skipif(
+    not JIRA_TOKEN, reason="No Jira token set, run export JIRA_TOKEN=token"
+)
+def test_jira_search_with_wrong_jql():
+    collector = setup_jira_collector(
+        JIRA_USERNAME,
+        JIRA_TOKEN,
+        jql_query_string='type in ("Not a type")',
+    )
+
+    with nullcontext() as context:
+        issues = collector.search_issues()
+
+    assert context is None
+    assert len(issues) == 0
+
+
+def test_jira_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     def mock_search_issues(self):
         return []
 
     monkeypatch.setattr(JiraFailureCollector, "search_issues", mock_search_issues)
-    collector = setup_jira_collector(server, username, apikey)
+    collector = setup_jira_collector()
 
     REGISTRY.register(collector)  # type: ignore
 
 
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
-def test_jira_exception_is_not_raised(
-    server, username, apikey, monkeypatch: pytest.MonkeyPatch
-):
+def test_jira_exception_is_not_raised(monkeypatch: pytest.MonkeyPatch):
     def mock_jql_query_issues(self, jira_client, query_string):
         raise JIRAError(status_code=400, text="Fake search error")
 
@@ -125,7 +208,7 @@ def test_jira_exception_is_not_raised(
     monkeypatch.setattr(
         JiraFailureCollector, "_jql_query_issues", mock_jql_query_issues
     )
-    collector = setup_jira_collector(server, username, apikey)
+    collector = setup_jira_collector()
 
     with nullcontext() as context:
         collector.search_issues()
@@ -134,9 +217,8 @@ def test_jira_exception_is_not_raised(
 
 
 @pytest.mark.parametrize("projects", [PROJECTS_COMMA, PROJECTS_SPACES])
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
-def test_jira_removes_duplicated_projects(server, username, apikey, projects: str):
-    collector = setup_jira_collector(server, username, apikey, projects)
+def test_jira_removes_duplicated_projects(projects: str):
+    collector = setup_jira_collector(projects=projects)
 
     assert collector.projects == PROJECTS_UNIQUE
 
@@ -241,8 +323,7 @@ def test_github_closed_issue_search_issues(monkeypatch: pytest.MonkeyPatch):
     assert critical_issues[0].resolutiondate == float(1653672080.0)
 
 
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
-def test_default_jql_search_query(server, username, apikey):
+def test_default_jql_search_query():
     env = {collector_jira.JQL_SEARCH_QUERY_ENV: collector_jira.DEFAULT_JQL_SEARCH_QUERY}
     projects = {"custom", "projects"}
 
@@ -250,9 +331,7 @@ def test_default_jql_search_query(server, username, apikey):
         JiraFailureCollector,
         env=env,
         other=dict(
-            username=username,
-            token=apikey,
-            tracker_api=server,
+            tracker_api=JIRA_SERVER,
             projects=projects,
         ),
     )
@@ -268,19 +347,15 @@ def test_default_jql_search_query(server, username, apikey):
         assert f'"{project}"' in collector.jql_query_string
 
 
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
-def test_custom_jql_search_query(server, username, apikey):
+def test_custom_jql_search_query():
     custom_jql_query = "custom JIRA JQL query"
-
     env = {collector_jira.JQL_SEARCH_QUERY_ENV: custom_jql_query}
 
     collector = load_and_log(
         JiraFailureCollector,
         env=env,
         other=dict(
-            username=username,
-            token=apikey,
-            tracker_api=server,
+            tracker_api=JIRA_SERVER,
             projects={"custom", "projects"},
         ),
     )
@@ -291,13 +366,8 @@ def test_custom_jql_search_query(server, username, apikey):
     assert "AND project" not in collector.jql_query_string
 
 
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
-def test_no_resolved_timestamp(server, username, apikey):
-    collector = JiraFailureCollector(
-        username=username,
-        token=apikey,
-        tracker_api=server,
-    )
+def test_no_resolved_timestamp():
+    collector = setup_jira_collector()
 
     issue_fields = {
         "key": "EXAMPLE-1",
@@ -312,13 +382,8 @@ def test_no_resolved_timestamp(server, username, apikey):
     assert resolution_timestamp is None
 
 
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
-def test_custom_resolved_timestamp(server, username, apikey):
-    collector = JiraFailureCollector(
-        username=username,
-        token=apikey,
-        tracker_api=server,
-    )
+def test_custom_resolved_timestamp():
+    collector = setup_jira_collector()
 
     issue_fields = {
         "key": "EXAMPLE-1",
@@ -340,13 +405,8 @@ def test_custom_resolved_timestamp(server, username, apikey):
     assert int(resolution_timestamp) == 1652395843  # type: ignore
 
 
-@pytest.mark.parametrize(JIRA_PARAMETERS, JIRA_VALUES)
-def test_resolutiondate_timestamp(server, username, apikey):
-    collector = JiraFailureCollector(
-        username=username,
-        token=apikey,
-        tracker_api=server,
-    )
+def test_resolutiondate_timestamp():
+    collector = setup_jira_collector()
 
     issue_fields = {
         "key": "EXAMPLE-1",

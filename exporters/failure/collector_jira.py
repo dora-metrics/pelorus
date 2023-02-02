@@ -41,6 +41,26 @@ NON_EXISTING_PROJECT_ERROR_END = "' does not exist for the field 'project'."
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
+def remove_quotes(text: str) -> str:
+    """
+    Remove surroundings single (or double) quotes from text
+
+    Parameters
+    ----------
+    text : str
+        Text to remove quotes from.
+
+    Returns
+    -------
+    str
+        text without surroundings single (or double) quotes, if it does have
+        surroundings quotes; otherwise, return the text without changing it.
+    """
+    if text[0] == text[-1] and text.startswith(("'", '"')):
+        return text[1:-1]
+    return text
+
+
 @define(kw_only=True)
 class JiraFailureCollector(AbstractFailureCollector):
     """JIRA implementation of a FailureCollector."""
@@ -111,18 +131,31 @@ class JiraFailureCollector(AbstractFailureCollector):
             Filtered query string, if there is at least one existing project;
             else, an empty string.
         """
+        non_existing_projects = {
+            line.replace(NON_EXISTING_PROJECT_ERROR_START, "").replace(
+                NON_EXISTING_PROJECT_ERROR_END, ""
+            )
+            for line in error_text.splitlines()
+        }
         if self.projects:
-            non_existing_projects = {
-                line.replace(NON_EXISTING_PROJECT_ERROR_START, "").replace(
-                    NON_EXISTING_PROJECT_ERROR_END, ""
-                )
-                for line in error_text.splitlines()
-            }
             _projects = '","'.join(self.projects.difference(non_existing_projects))
+            if _projects:
+                return f'{DEFAULT_JQL_SEARCH_QUERY} AND project in ("{_projects}")'
+            return ""
+        matcher = "project in ("
+        start_index = self.jql_query_string.find(matcher) + len(matcher)
+        end_index = self.jql_query_string.find(")", start_index)
+        _projects = self.jql_query_string[start_index:end_index]
+        _projects_parsed = ",".join(
+            {remove_quotes(project) for project in _projects.split(",")}.difference(
+                non_existing_projects
+            )
+        )
+        if _projects_parsed:
             return (
-                f'{DEFAULT_JQL_SEARCH_QUERY} AND project in ("{_projects}")'
-                if _projects
-                else ""
+                self.jql_query_string[:start_index]
+                + _projects_parsed
+                + self.jql_query_string[end_index:]
             )
         return ""
 
