@@ -18,7 +18,6 @@ def image_collector(openshift_client: DynamicClient) -> ImageCommitCollector:
     return cast(ImageCommitCollector, collector)
 
 
-EXPECTED_TIME_STR = "Tue Jan 03 22:53:46 2023 +0000"
 EXPECTED_TIMESTAMP = int(1672786426.076646)
 
 
@@ -36,6 +35,4 @@ def test_image_collector(image_collector: ImageCommitCollector):
     assert len(metrics) == 2
 
     for metric in metrics:
-        assert metric.commit_time == EXPECTED_TIME_STR
-        assert metric.commit_timestamp is not None
-        assert int(metric.commit_timestamp) == EXPECTED_TIMESTAMP
+        assert metric.commit_timestamp == EXPECTED_TIMESTAMP
