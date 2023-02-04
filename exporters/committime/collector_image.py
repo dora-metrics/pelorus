@@ -119,13 +119,13 @@ class ImageCommitCollector(AbstractCommitCollector):
 
         if not commit_time_str:
             commit_time_str = self._get_commit_time_from_annotations(image)
-
-        # TODO: make the source names more descriptive / accurate
-        missing.append(
-            MissingFieldWithMultipleSourcesError(
-                "commit_time", [COMMIT_TIME_DOCKER_LABEL, self.date_annotation_name]
+        else:
+            # TODO: make the source names more descriptive / accurate
+            missing.append(
+                MissingFieldWithMultipleSourcesError(
+                    "commit_time", [COMMIT_TIME_DOCKER_LABEL, self.date_annotation_name]
+                )
             )
-        )
 
         commit_hash = docker_labels and docker_labels.commit_hash
 

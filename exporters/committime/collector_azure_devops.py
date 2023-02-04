@@ -40,9 +40,6 @@ class AzureDevOpsCommitCollector(AbstractGitCommitCollector):
 
         logging.debug("metric.repo_project %s", commit_input.repo.project)
 
-        # Fill in with your personal access token and org URL
-        # personal_access_token = 'YOURPAT'
-        # organization_url = 'https://dev.azure.com/YOURORG'
         personal_access_token = self.token
         organization_url = self.git_api.url
 

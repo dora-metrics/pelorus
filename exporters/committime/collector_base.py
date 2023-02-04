@@ -419,7 +419,6 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
         else:
             return True
 
-    # TODO: datetime
     def _get_commit_timestamp(self, input_: CommitInfo) -> Optional[datetime]:
         """
         Check the cache for the commit_time.

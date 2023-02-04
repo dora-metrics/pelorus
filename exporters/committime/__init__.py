@@ -107,7 +107,7 @@ class CommitInfo(NamedTuple):
 
 @attrs.define
 class CommitMetric:
-    name: str = attrs.field()
+    name: str
     namespace: str = attrs.field(kw_only=True)
 
     commit_hash: str = attrs.field(kw_only=True)
