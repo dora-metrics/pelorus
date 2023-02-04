@@ -184,7 +184,7 @@ class ImageCommitCollector(AbstractCommitCollector):
                 src_name="OpenShift dynamic Image",
                 target_name="image info",
             )
-            for image in images
+            for image in images.items
         ]
 
         images_by_app = self._get_openshift_obj_by_app(images)
