@@ -62,7 +62,6 @@ class GiteaCommitCollector(AbstractGitCommitCollector):
         response = self.session.get(url, auth=(self.username, self.token))
         logging.info("response %s", response)
         if response.status_code != 200:
-            # This will occur when trying to make an API call to non-Github
             logging.warning(
                 "Unable to retrieve commit time for hash: %s, url: %s. Got http code: %s",
                 hash,

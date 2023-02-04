@@ -61,7 +61,7 @@ class AzureDevOpsCommitCollector(AbstractGitCommitCollector):
             logging.warning(
                 "Unable to retrieve commit time for hash: %s, url: %s. Got http code: %s",
                 commit_input.commit_hash,
-                commit_input.repo_url,
+                commit_input.repo.url,
                 commit.message,
             )
             return None

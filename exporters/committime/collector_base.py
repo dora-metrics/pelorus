@@ -33,7 +33,7 @@ from committime import CommitInfo, CommitMetric, GitRepo
 from pelorus.config import env_vars
 from pelorus.config.converters import comma_separated, pass_through
 from pelorus.deserialization import deserialize, nested, retain_source
-from pelorus.utils import Url, get_nested
+from pelorus.utils import Url
 from pelorus.utils.openshift_utils import CommonResourceInstance, R
 
 # Custom annotations env for the Build
@@ -255,6 +255,8 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
             jenkins_builds = [
                 build for build in builds if build.strategy == "JenkinsPipeline"
             ]
+            # TODO: do we actually care about the strategy type itself?
+            # If the data is present, then who cares? Duck typing, just like python.
             code_builds = [
                 build
                 for build in builds
@@ -493,9 +495,9 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
         )
 
         if build_config and (
-            git_uri := get_nested(build_config, "spec.source.git.uri", default=None)
+            git_uri := deserialize(build_config, BuildConfigGitUri).git_uri
         ):
-            git_uri = str(build_config.spec.source.git.uri)
+            # TODO: why does this add `.git` ?
             if not git_uri.endswith(".git"):
                 git_uri += ".git"
 
@@ -508,3 +510,10 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
             return git_uri
 
         return None
+
+
+@attrs.frozen
+class BuildConfigGitUri:
+    git_uri: Optional[str] = attrs.field(
+        default=None, metadata=nested("spec.source.git.uri")
+    )

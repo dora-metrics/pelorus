@@ -101,14 +101,8 @@ class CommitInfo(NamedTuple):
     This allows us to handle things more consistently.
     """
 
-    # TODO: add back in optional data for logging context?
-
     repo: GitRepo
     commit_hash: str
-
-    @property
-    def repo_url(self) -> Optional[str]:
-        return self.repo.url if self.repo else None
 
 
 @attrs.define
@@ -122,6 +116,7 @@ class CommitMetric:
 
     image_hash: str = attrs.field(kw_only=True)
 
+    # TODO: move to collector_image
     _ANNOTATION_MAPPING = dict(
         repo_url="io.openshift.build.source-location",
         commit_hash="io.openshift.build.commit.id",

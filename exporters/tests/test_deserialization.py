@@ -17,9 +17,6 @@ from pelorus.deserialization import (
     retain_source,
 )
 
-# TODO: test with kubernetes.dynamic.resource.ResourceField
-# TODO: test retaining source
-
 
 @define
 class AttrsTestClass:

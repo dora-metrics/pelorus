@@ -66,7 +66,6 @@ class Version1(APIVersion):
         )
 
     def timestamp_from_api(self, info: CommitInfo, api_response: dict) -> datetime:
-        ...
         # API V1 uses unix time
         commit_timestamp = api_response["committerTimestamp"]
 
@@ -75,18 +74,6 @@ class Version1(APIVersion):
 
         timestamp = datetime.fromtimestamp(converted_timestamp, tz=timezone.utc)
         return timestamp
-
-        # logging.debug(
-        #     "API v1 returned sha: %s, timestamp: %s (%s)",
-        #     metric.commit_hash,
-        #     timestamp,
-        #     converted_timestamp,
-        # )
-        # # set the timestamp in the metric
-        # metric.commit_timestamp = converted_timestamp
-
-        # # convert the time stamp to datetime and set in metric
-        # metric.commit_time = timestamp.isoformat()
 
 
 class Version2(APIVersion):
@@ -111,17 +98,6 @@ class Version2(APIVersion):
         commit_time = api_response["date"]
         timestamp = parse_tz_aware(commit_time, _DATETIME_FORMAT)
         return timestamp
-
-        # logging.debug(
-        #     "API v2 returned sha: %s, timestamp: %s (%s)",
-        #     metric.commit_hash,
-        #     timestamp,
-        #     commit_time,
-        # )
-        # # set the commit time from the API
-        # metric.commit_time = commit_time
-        # # set the timestamp after conversion
-        # metric.commit_timestamp = timestamp.timestamp()
 
 
 _SUPPORTED_API_VERSIONS = (Version2(), Version1())
@@ -218,7 +194,7 @@ class BitbucketCommitCollector(AbstractGitCommitCollector):
                 ),
                 dict(
                     project=info.repo.name,
-                    repo=info.repo_url,
+                    repo=info.repo.url,
                     commit=info.commit_hash,
                     response=response.text,
                 ),
@@ -233,7 +209,7 @@ class BitbucketCommitCollector(AbstractGitCommitCollector):
                 ),
                 dict(
                     project=info.repo.name,
-                    repo=info.repo_url,
+                    repo=info.repo.url,
                     commit=info.commit_hash,
                     http_err=e,
                 ),
