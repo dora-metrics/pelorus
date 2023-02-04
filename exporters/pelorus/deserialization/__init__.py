@@ -98,7 +98,7 @@ PRIMITIVE_TYPES: tuple[type, ...] = (int, float, str, bool)
 def nested(path: Union[str, Sequence[str]]) -> dict[str, Sequence[str]]:
     """
     Put the nested data path in a metadata dict.
-    Like get_nested, use a list if a path segment has a dot in it.
+    Like get_nested, use a sequence (e.g. list) if a path segment has a dot in it.
     """
     return {_NESTED_PATH_KEY: split_path(path)}
 
@@ -130,19 +130,20 @@ def _type_has_getitem(type_: type) -> bool:
 
 # region: attrs fixes
 
-# type annotations can be represented as the types themselves, or as strings.
-# attrs seems to use strings for fields in inherited classes, which can break
-# things for us. This may be a bug that has to be fixed for them.
-# Until then, here's a small alternative.
-
 
 def _is_attrs_class(cls: type) -> TypeGuard[type["attr.AttrsInstance"]]:
     """
-    Return the class if it is an attrs class, else None.
+    Validate that the given class is an attrs class.
 
     This exists because `attrs.has` is not a proper TypeGuard.
     """
     return attrs.has(cls)
+
+
+# type annotations can be represented as the types themselves, or as strings.
+# attrs seems to use strings for fields in inherited classes, which can break
+# things for us. This may be a bug that has to be fixed for them.
+# Until then, here's a small alternative.
 
 
 class Field(NamedTuple):

@@ -128,15 +128,30 @@ def format_path(path: Sequence[str]) -> str:
     """
     Format a path for readability.
     >>> assert format_path("foo.bar".split(".")) == "foo.bar"
-    >>> assert format_path(["foo", "has.dots", "bar"]) == "foo[has.dots].bar"
+    >>> assert format_path(["foo", "has.dots", "bar"]) == 'foo["has.dots"].bar'
     """
-    formatted = ""
-    for part in path:
+
+    def _format_parts():
+        parts = iter(path)
+
+        # the first part does not have a leading dot
+        part = next(parts, None)
+
+        if part is None:
+            return
+
         if "." in part:
-            formatted += f"[{part}]"
+            yield f'["{part}"]'
         else:
-            formatted += f".{part}"
-    return formatted
+            yield part
+
+        for part in parts:
+            if "." in part:
+                yield f'["{part}"]'
+            else:
+                yield f".{part}"
+
+    return "".join(_format_parts())
 
 
 @attrs.frozen
