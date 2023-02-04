@@ -32,10 +32,11 @@ def test_gitrepo_parsing(url: str, protocol: str, fqdn: str, project_name: str):
     assert repo.protocol == protocol
     assert repo.fqdn == fqdn
 
-    if fqdn != "dev.azure.com":  # azure does not have groups
-        assert repo.group is not None
-    else:
+    if fqdn == "dev.azure.com":
+        # azure does not have groups
         assert repo.group is None
+    else:
+        assert repo.group is not None
 
     assert repo.project == project_name
 

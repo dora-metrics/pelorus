@@ -210,8 +210,6 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
         metrics = []
         for namespace in watched_namespaces:
             # Initialized variables
-            builds = []
-            builds_by_app = {}
             app_label = self.app_label
             logging.debug(
                 "Searching for builds with label: %s in namespace: %s"
@@ -222,7 +220,9 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
                 api_version="build.openshift.io/v1", kind="Build"
             )
             # only use builds that have the app label
-            builds = v1_builds.get(namespace=namespace, label_selector=app_label)
+            openshift_builds = v1_builds.get(
+                namespace=namespace, label_selector=app_label
+            )
 
             builds = [
                 deserialize(
@@ -231,7 +231,7 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
                     src_name="OpenShift dynamic Build",
                     target_name="build info",
                 )
-                for build in builds.items
+                for build in openshift_builds.items
             ]
 
             builds_by_app = self._get_openshift_obj_by_app(builds)
@@ -442,7 +442,7 @@ class AbstractGitCommitCollector(AbstractCommitCollector):
                 logging.warning(
                     "Failed to get timestamp for commit %s at %s",
                     input_.commit_hash,
-                    input_.repo_url,
+                    input_.repo.url,
                 )
             else:
                 # Add the timestamp to the cache
