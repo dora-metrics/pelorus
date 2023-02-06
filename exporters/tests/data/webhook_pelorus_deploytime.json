@@ -1,0 +1,6 @@
+{
+  "app": "mongo-todolist",
+  "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
+  "namespace": "mongo-persistent",
+  "timestamp": 1557933657
+}
