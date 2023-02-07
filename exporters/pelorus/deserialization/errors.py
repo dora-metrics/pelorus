@@ -144,6 +144,7 @@ class DeserializationErrors(ExceptionGroup[DeserializationError], Deserializatio
 
         Similar behavior to `ExceptionGroup.split`.
         """
+
         # these can technically never be none at the same time, but the caller
         # has to handle it as if that's possible anyway.
         def matches(err):

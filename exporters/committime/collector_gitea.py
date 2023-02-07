@@ -18,7 +18,6 @@ DEFAULT_GITEA_API = Url.parse("https://try.gitea.io")
 
 @define(kw_only=True)
 class GiteaCommitCollector(AbstractCommitCollector):
-
     session: requests.Session = field(factory=requests.Session, init=False)
 
     # overrides with default

@@ -234,7 +234,6 @@ class Url(urllib3.util.Url):
 
     @classmethod
     def parse(cls, url: str):
-
         parsed = urllib3.util.parse_url(url)
 
         if parsed.scheme is None:

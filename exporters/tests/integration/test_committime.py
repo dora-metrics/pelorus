@@ -89,7 +89,6 @@ class CommitMetricEssentials:
 
 @pytest.mark.mockoon
 def test_github_provider(github_collector: GitHubCommitCollector):
-
     actual = [
         CommitMetricEssentials.from_commit_metric(cm)
         for cm in github_collector.generate_metrics()
