@@ -100,7 +100,8 @@ pushd "${destination_dir}" || exit 2
     operator-sdk create api --helm-chart="${source_dir}" || exit 2
 
     # Correct operator version, to be latest +1
-    OPERATOR_VERSION=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq .tags[].name | head -1 | sed -e 's|\"||g')
+    OPERATOR_VERSIONS=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq ".tags[] | select(.end_ts == null) | .name" | sed -e 's|\"||g' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' -o | sort --reverse)
+    OPERATOR_VERSION=$(echo "$OPERATOR_VERSIONS" | head -1 )
     echo "INFO: Current operator version: ${OPERATOR_VERSION}"
 
     if [ -z ${operator_ver+x} ]; then
@@ -119,7 +120,7 @@ pushd "${destination_dir}" || exit 2
     IMAGE_TAG_BASE="quay.io/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}"
     echo "INFO: Setting IMAGE_TAG_BASE to ${IMAGE_TAG_BASE}"
     sed -i "s#IMAGE_TAG_BASE ?=.*#IMAGE_TAG_BASE ?= ${IMAGE_TAG_BASE}#g" Makefile || exit 2
-    
+
     # Generate kustomize files. This is similar to the first command from
     # Make bundle, except we do want to have non-interactive version
     echo "INFO: Generating kustomize manifests files"
@@ -163,7 +164,10 @@ elif [ "$(ls -A "${patches_dir}/bundle-patches"/*.diff 2>/dev/null)" ]; then
         done
 fi
 
-# Print operator versions
+echo "INFO: Adding replaces and skips entries to ${source_dir}${destination_dir}/bundle/manifests/charts.pelorus.konveyor.io_pelorus.yaml"
+set -e
+$SCRIPT_DIR/specify_operator_update.py $NEW_OPERATOR_VERSION $destination_dir $OPERATOR_VERSIONS
+
 echo "INFO: Current operator version: ${OPERATOR_VERSION}"
 echo "INFO: New operator version: ${NEW_OPERATOR_VERSION}"
 
