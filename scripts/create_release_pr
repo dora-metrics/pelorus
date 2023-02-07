@@ -37,7 +37,7 @@ PELORUS_CHART="charts/pelorus/Chart.yaml"
 PELORUS_EXPORTERS_CHART="charts/pelorus/subcharts/exporters/Chart.yaml"
 OPERATORS_CHART="charts/operators/Chart.yaml"
 
-INSTALL_DOC="docs/Install.md"
+INSTALL_DOC="docs/Development.md"
 
 TRUE=1
 FALSE=0
@@ -111,8 +111,10 @@ else
   sed -i "s/^version:.*/version: $NEXT_CHART_VER/g" "$PELORUS_CHART"
 fi
 
-# Update branch in the Install documentation
-sed -i "s/--branch v.* /--branch v$V_MAJOR.$V_MINOR.$V_PATCH /g" "$INSTALL_DOC"
+# Update branch in the Development documentation
+sed -i "s/\(release number, for example \`\).*\(\`\.\)/\1v$V_MAJOR.$V_MINOR.$V_PATCH\2/g" "$INSTALL_DOC"
+sed -i "s/\(image_tag: \).*\( # Specific release\)/\1v$V_MAJOR.$V_MINOR.$V_PATCH\2/g" "$INSTALL_DOC"
+
 
 if [[ $major ]]; then
   printf "\nIMPORTANT:\n\t Do include \"major release\" text in the first line of your commit message, or label your PR with: \"major\"\n\n"
