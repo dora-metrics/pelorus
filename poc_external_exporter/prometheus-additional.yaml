@@ -1,0 +1,3 @@
+- job_name: "test"
+  static_configs:
+  - targets: ["node.demo.do.prometheus.io"]
