@@ -128,7 +128,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 ],
                 my_metric.commit_timestamp,
             )
-            yield commit_metric
+        yield commit_metric
 
     def _get_watched_namespaces(self) -> set[str]:
         watched_namespaces = self.namespaces
