@@ -274,8 +274,26 @@ This will:
 - install required CLI tools such as helm, oc, tkn and ct, promtool, conftest (inside .venv/bin)
 - install required python runtime and test dependencies
 - install the exporters package
-- set up git hooks for formatting and linting checks
+- set up pre-commit hooks
 - configure `git blame` to ignore large revisions that just changed formatting
+
+##### Pre-commit
+
+[pre-commit](https://pre-commit.com/) is configured automatically when running `make dev-env`.
+
+To configure it manually, run
+```shell
+pre-commit install
+```
+
+To test it, run
+```shell
+pre-commit run --all-files
+```
+
+To bypass pre-commit checks, pass the `--no-verify` (`-n`) flag to `git commit` command.
+
+pre-commit configuration in [`.pre-commit-config.yaml`](https://github.com/konveyor/pelorus/blob/master/.pre-commit-config.yaml) file.
 
 #### IDE Setup (VSCode)
 
@@ -505,6 +523,7 @@ Stand up the local server by running
 ```
 mkdocs serve
 ```
+To stop it, run `CTRL+C`.
 
 If an error with `KeyError: 'Regular'` appears when testing the the documentation, run
 ```

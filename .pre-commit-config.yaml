@@ -1,0 +1,46 @@
+repos:
+  - repo: local
+    hooks:
+    - id: chart-lint
+      name: Linting Charts with Chart Testing
+      entry: make chart-lint
+      pass_filenames: false
+      files: ^charts/
+      language: system
+    - id: shellcheck
+      name: 🐚 📋 Linting shell scripts with shellcheck
+      entry: make shellcheck
+      pass_filenames: false
+      types: [shell]
+      language: system
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+    - id: isort
+      args:
+      - --check
+      - --diff
+  - repo: https://github.com/psf/black
+    rev: 22.6.0
+    hooks:
+    - id: black
+      args:
+      - --check
+      - --diff
+  - repo: https://github.com/klen/pylama
+    rev: 8.4.1
+    hooks:
+    - id: pylama
+      name: 🐍 🦙 Linting with pylama
+      additional_dependencies:
+      - toml
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+    - id: check-added-large-files
+    # - id: end-of-file-fixer
+    # - id: trailing-whitespace
+
+ci:
+  autofix_commit_msg: 🎨 pre-commit auto format
+  autoupdate_commit_msg: ⬆ pre-commit auto update

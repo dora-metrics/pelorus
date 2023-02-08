@@ -27,9 +27,7 @@ SHELLCHECK=$(shell which shellcheck)
 SHELL_SCRIPTS=demo/demo-tekton.sh \
        scripts/create_release_pr \
        scripts/install_dev_tools \
-       scripts/pre-commit \
        scripts/run-mockoon-tests \
-       scripts/setup-pre-commit-hook \
        scripts/run-pelorus-e2e-tests
 
 .PHONY: default
@@ -73,8 +71,9 @@ git-blame:
 		git config blame.ignoreRevsFile .git-blame-ignore-revs; \
 	fi
 
-.git/hooks/pre-commit: scripts/pre-commit
-	./scripts/setup-pre-commit-hook
+pre-commit-setup: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	pre-commit install
 
 ## cli_dev_tools: install all necessary CLI dev tools
 .PHONY: cli_dev_tools
@@ -100,7 +99,7 @@ endif
 
 ## dev-env: set up everything needed for development (install tools, set up virtual environment, git configuration)
 dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
-         .git/hooks/pre-commit system-doc-deps
+         pre-commit-setup
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
 
@@ -236,7 +235,7 @@ chart-check-bump: $(PELORUS_VENV)
 
 chart-lint: $(PELORUS_VENV) $(PELORUS_VENV)/bin/ct $(PELORUS_VENV)/bin/helm
 	. ${PELORUS_VENV}/bin/activate && \
-	ct lint --config ct.yaml
+	./scripts/chart-test.sh
 
 ifneq (, $(CHART_TEST))
 chart-lint-optional: chart-lint
@@ -245,9 +244,11 @@ chart-lint-optional:
 	$(warning chart test (ct) not installed, skipping)
 endif
 
-shellcheck:
-	@echo "🐚 📋 Linting shell scripts with shellcheck"
-	$(SHELLCHECK) $(SHELL_SCRIPTS)
+shellcheck: $(PELORUS_VENV) $(PELORUS_VENV)/bin/shellcheck
+	. ${PELORUS_VENV}/bin/activate && \
+	if [[ -z shellcheck ]]; then echo "Shellcheck is not installed" >&2; false; fi && \
+	echo "🐚 📋 Linting shell scripts with shellcheck" && \
+	shellcheck $(SHELL_SCRIPTS)
 
 ifneq (, $(SHELLCHECK))
 shellcheck-optional: shellcheck
@@ -259,6 +260,11 @@ endif
 ## doc-check: Check if there is any problem with the project documentation generation
 doc-check: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && mkdocs build --verbose --strict
+
+## pre-commit-all: Runs pre-commit library against all files of the project
+pre-commit-all: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	pre-commit run --all-files
 
 # Cleanup
 

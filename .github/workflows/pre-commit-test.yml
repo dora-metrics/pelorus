@@ -1,0 +1,42 @@
+name: Pre-commit test
+
+on:
+  push:
+    paths:
+      - '.pre-commit-config.yaml'
+      - '.github/workflows/pre-commit-test.yml'
+      - 'Makefile'
+
+  pull_request:
+    paths:
+      - '.pre-commit-config.yaml'
+      - '.github/workflows/pre-commit-test.yml'
+      - 'Makefile'
+
+jobs:
+  pre-commit-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        # with:
+          # fetch-depth: "0"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            **/requirements*.txt
+            pyproject.toml
+
+      - name: Install dependencies
+        run: make dev-env
+
+      - name: Test pre-commit
+        run: make pre-commit-all

@@ -282,3 +282,16 @@ if should_cli_be_installed "operator-sdk" "${cli_tools_arr[@]}" && \
       mv "${DWN_DIR}"/operator-sdk_* "${VENV}/bin/operator-sdk"
       chmod +x "${VENV}/bin/operator-sdk"
 fi
+
+# cli_shellcheck install
+if should_cli_be_installed "shellcheck" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${VENV}/bin/shellcheck")" ]; then
+      SHELLCHECK_URL=$("${SCRIPT_DIR}/get_tool_dl_url.py" shellcheck) \
+                    || cleanup_and_exit 2
+      echo "$SHELLCHECK_URL"
+      download_file_from_url "${SHELLCHECK_URL}" "${DWN_DIR}"
+      SHELLCHECK_PATH="${DWN_DIR}"/$(basename "${SHELLCHECK_URL}")
+      shellcheck_executable=$(tar -tJf "${SHELLCHECK_PATH}" | grep "/shellcheck")
+      tar -xJvf "${SHELLCHECK_PATH}" -C "${DWN_DIR}" "$shellcheck_executable"
+      cp "${DWN_DIR}/$shellcheck_executable" "${VENV}/bin/"
+fi
