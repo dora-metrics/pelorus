@@ -27,9 +27,10 @@ from jira.resources import Issue
 from prometheus_client.core import REGISTRY
 
 from failure import collector_jira
-from failure.collector_github import GithubAuthenticationError, GithubFailureCollector
+from failure.collector_github import GithubFailureCollector
 from failure.collector_jira import DEFAULT_JQL_SEARCH_QUERY, JiraFailureCollector
 from pelorus.config import load_and_log
+from pelorus.errors import FailureProviderAuthenticationError
 
 JIRA_SERVER = "https://pelorustest.atlassian.net"
 JIRA_USERNAME = os.environ.get("JIRA_USERNAME")
@@ -249,7 +250,7 @@ def get_test_data(file="/exporters/tests/data/github_issue.json"):
 
 @pytest.mark.integration
 def test_github_connection():
-    with pytest.raises(GithubAuthenticationError) as context_ex:
+    with pytest.raises(FailureProviderAuthenticationError) as context_ex:
         setup_github_collector()
     assert "Check the TOKEN: not authorized, invalid credentials" in str(
         context_ex.value
