@@ -140,8 +140,8 @@ class TokenAuth(requests.auth.AuthBase):
     Add token authentication to a requests Request or Session.
     """
 
-    def __init__(self, token: str):
-        self.auth_str = f"token {token}"
+    def __init__(self, token: str, is_pagerduty: bool = False):
+        self.auth_str = f"Token token={token}" if is_pagerduty else f"token {token}"
 
     def __call__(self, r: requests.PreparedRequest):
         r.headers["Authorization"] = self.auth_str

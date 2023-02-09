@@ -25,6 +25,7 @@ from failure.collector_base import AbstractFailureCollector, TrackerIssue
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.config.log import REDACT, log
+from pelorus.errors import FailureProviderAuthenticationError
 from pelorus.utils import TokenAuth, set_up_requests_session
 from provider_common.github import parse_datetime
 
@@ -35,17 +36,6 @@ from provider_common.github import parse_datetime
 # TODO Paginate results
 
 DEFAULT_GITHUB_ISSUE_LABEL = "bug"
-
-
-class GithubAuthenticationError(Exception):
-    """
-    Exception raised for authentication issues
-    """
-
-    auth_message = "Check the TOKEN: not authorized, invalid credentials"
-
-    def __init__(self, message=auth_message):
-        super().__init__(message)
 
 
 @define(kw_only=True)
@@ -112,7 +102,7 @@ class GithubFailureCollector(AbstractFailureCollector):
             return resp.json()
         except requests.HTTPError as e:
             if resp.status_code == requests.codes.unauthorized:
-                raise GithubAuthenticationError from e
+                raise FailureProviderAuthenticationError from e
             else:
                 raise
 
