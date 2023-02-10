@@ -25,10 +25,11 @@ from prometheus_client.core import REGISTRY
 import pelorus
 from failure.collector_github import GithubFailureCollector
 from failure.collector_jira import JiraFailureCollector
+from failure.collector_pagerduty import PagerdutyFailureCollector
 from failure.collector_servicenow import ServiceNowFailureCollector
 from pelorus.config import env_vars, load_and_log
 
-PROVIDER_TYPES = {"jira", "github", "servicenow"}
+PROVIDER_TYPES = {"jira", "github", "pagerduty", "servicenow"}
 
 
 @frozen
@@ -46,6 +47,8 @@ class FailureCollectorConfig:
             return load_and_log(ServiceNowFailureCollector)
         elif self.tracker_provider == "github":
             return load_and_log(GithubFailureCollector)
+        elif self.tracker_provider == "pagerduty":
+            return load_and_log(PagerdutyFailureCollector)
         else:
             raise ValueError(
                 "unknown tracker {self.tracker_provider}, but should be unreachable because of attrs"
