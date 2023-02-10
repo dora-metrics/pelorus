@@ -1,11 +1,15 @@
 # Installation
 
-There are three methods to deploy Pelorus:
+There are three methods to deploy Pelorus, plus there is an option to deploy Pelorus exporters only:
 
 First two are using Pelorus Operator that is available by default in the [Red Hat-provided community-operators catalog sources](https://docs.openshift.com/container-platform/4.11/operators/understanding/olm-rh-catalogs.html#olm-rh-catalogs_olm-rh-catalogs). This catalog is distributed as part of the OpenShift:
 
   * OpenShift [Web console](#openshift-web-console)
   * OpenShift [Command Line Tool](#openshift-command-line-tool)
+
+Deploying separate Pelorus exporters
+
+  * Helm3 charts to [deploy separate Pelorus exporters](#deploying-separate-pelorus-exporters)
 
 (Deprecated) Helm3 charts method is used for development of Pelorus only:
 
@@ -189,6 +193,95 @@ Verbose command to list Pelorus objects with their statuses, presenting successf
   $ oc get pelorus -n pelorus -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.conditions}{"\n"}{end}'
   pelorus-sample	[{"lastTransitionTime":"2023-01-10T14:12:56Z","status":"True","type":"Initialized"},{"lastTransitionTime":"2023-01-10T14:13:00Z","reason":"InstallSuccessful","status":"True","type":"Deployed"}]
   ```
+
+## Deploying separate Pelorus exporters
+
+It is valid scenario in which already existing Prometheus deployment may collect metrics from Pelorus exporters. In such case Pelorus exporter instances should be created separately and without it's OLM dependencies.
+
+For such scenario we will use Helm to deploy exporters in separate namespace or separate cluster and later use additional configuration of Prometheus to receive data from those exporters.
+
+>**Note:** It is not required to install Pelorus Operator to deploy separate Pelorus exporter(s).
+
+
+### Initial steps
+Please clone Pelorus repository and optionally create your desired namespace where you want the exporter(s) to be deployed. Those are the same steps as in the [Initial Deployment](#initial-deployment) up to the `helm install [...]`, which in this scenario will be different.
+
+### Exporter(s) configuration file
+The `yaml` configuration file for the separate Pelorus exporters should include **only** the `instances` section.
+
+The Exporter(s) configuration part of the `yaml` file is exactly the same as for other methods used to create Pelorus instance. Please refer to the [Pelorus Exporters Configuration Guide](configuration/PelorusExporters.md) for more information on exporters.
+
+Below is an example of such configuration file. It is important that all the `ConfigMaps` and `Secrets` are created in the namespace to which exporters will be deployed:
+
+```shell
+  $ cat > pelorus-sample-separate-exporters.yaml <<EOF
+  instances:
+    - app_name: deploytime-exporter
+      exporter_type: deploytime
+    - app_name: failuretime-exporter
+      enabled: false
+      env_from_configmaps:
+        - pelorus-config
+        - failuretime-config
+      env_from_secrets:
+        - jira-secret
+      exporter_type: failure
+    - app_name: committime-exporter
+      exporter_type: committime
+    - app_name: custom-exporter
+      exporter_type: committime
+      image_name: my.container.registry.io/pelorus/my-custom-exporter:latest
+      env_from_secrets:
+      - secret-credentials
+      env_from_configmaps:
+      - pelorus-config
+      - custom-exporter-config
+  EOF
+```
+
+>**Note:** As in above example one of the exporters is using custom exporter image, that will be used by Pelorus to calculate DORA metrics. For more information on the custom exporters please check the [Dev Guide](../Development.md#exporter-development).
+
+### Exporter(s) deployment
+To deploy Pelorus Exporter(s) in the `pelorus-sample` namespace using previously created configuration file `pelorus-sample-separate-exporters.yaml`, simply run from the Pelrous source code directory:
+
+```shell
+$ helm install custom-exporters-deployment charts/pelorus/subcharts/exporters --namespace pelorus-sample --values pelorus-sample-separate-exporters.yaml
+```
+
+>**Note:** To create another set of Pelorus exporters, either modify the configuration file and update the deployment within the same namespace or create new deployment in a new or separate namespace.
+
+### Accessing exporter
+Exporter is available as an http endpoint, to get it's `HOST/PORT`, that should be used with Prometheus configuration simply get the routes for a given namespace:
+```shell
+$ oc get routes -n pelorus-sample
+NAME                  HOST/PORT                                          PATH   SERVICES              PORT   TERMINATION   WILDCARD
+deploytime-exporter   deploytime-exporter-pelorus-sample.apps.<DOMAIN>          deploytime-exporter   http                 None
+failure               failure-pelorus-sample.apps.<DOMAIN>                      failure               http                 None
+custom-exporter       custom-exporter-pelorus-sample.apps.<DOMAIN>              custom-exporter       http                 None
+```
+
+### Updating Exporter(s) deployment
+It is possible to update the deployment of the Pelorus exporter(s) with updated configuration file, to do so, simply run `helm upgrade` with the same `custom-exporters-deployment` as used in the installation, as follows:
+
+```shell
+$ helm upgrade custom-exporters-deployment charts/pelorus/subcharts/exporters --namespace pelorus-sample --values new-pelorus-sample-separate-exporters.yaml
+```
+
+### Uninstalling Exporter(s) deployment
+
+Cleaning up the Pelorus exporter(s) is very simple. Just run the `helm uninstall` with the deployment NAME used previously:
+
+```shell
+$ helm uninstall custom-exporters-deployment --namespace pelorus-sample
+```
+
+To list all the deployments created by Helm in all namespaces, use:
+```shell
+$ helm list -A
+NAME          	NAMESPACE	            REVISION	UPDATED                                	STATUS  	CHART          	APP VERSION
+my-exporters    pelorus-sample      	1       	2023-02-09 13:08:55.577034402 +0100 CET	deployed	exporters-2.0.5
+exporters     	second-namespace    	1       	2023-02-09 14:23:33.854498266 +0100 CET	deployed	exporters-2.0.5
+```
 
 ## Helm Charts
 

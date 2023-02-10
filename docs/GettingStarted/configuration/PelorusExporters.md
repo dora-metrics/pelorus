@@ -171,7 +171,6 @@ custom_certs:
 ###### image_tag
 
 - **Required:** no
-    - Only applicable for development configuration, **do not use in production**
     - **Default Value:** stable
 - **Type:** string
 
@@ -182,10 +181,9 @@ custom_certs:
 ###### image_name
 
 - **Required:** no
-    - Only applicable for development configuration, **do not use in production**
 - **Type:** string
 
-: Used to deploy exporter with the user built images or pre-built images hosted in non default container image registry. The container image URI may be with or without `:tag` suffix. If no tag suffix is specified in the URI, [image_tag](#image_tag) is used.
+: Used to deploy exporter with the user built images (custom-exporter) or pre-built images hosted in non default container image registry. The container image URI may be with or without `:tag` suffix. If no tag suffix is specified in the URI, [image_tag](#image_tag) is used.
 
 : Check [Development guide](../../Development.md) for more information.
 
