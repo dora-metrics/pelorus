@@ -62,6 +62,8 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 | [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) | no | - |
 | [JIRA_RESOLVED_STATUS](#jira_resolved_status) | no | - |
 | [GITHUB_ISSUE_LABEL](#github_issue_label) | no | bug |
+| [PAGERDUTY_URGENCY](#pagerduty_urgency) | no | - |
+| [PAGERDUTY_PRIORITY](#pagerduty_priority) | no | - |
 
 ###### PROVIDER
 
@@ -69,7 +71,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
     - **Default Value:** jira
 - **Type:** string
 
-: Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`.
+: Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`, `pagerduty`.
 
 ###### LOG_LEVEL
 
@@ -162,6 +164,22 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 - **Type:** string
 
 : Defines a custom label to be used in GitHub issues to identify the ones to be monitored.
+
+###### PAGERDUTY_URGENCY
+
+- **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `pagerduty`
+- **Type:** string
+
+: Defines incidents urgencies (comma separated) to be monitored. By default, monitors all urgencies.
+
+###### PAGERDUTY_PRIORITY
+
+- **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `pagerduty`
+- **Type:** string
+
+: Defines incidents priorities (comma separated) to be monitored. By default, monitors all urgencies. To monitor incidents without priority, add **null** to this value.
 
 ## Configuring Jira
 

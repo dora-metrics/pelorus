@@ -58,6 +58,7 @@ Open an [issue](https://github.com/konveyor/pelorus/issues/new) or a pull reques
 
 - Jira :simple-jirasoftware:
 - GitHub :simple-github:
-- Service Now
+- ServiceNow
+- PagerDuty :simple-pagerduty:
 
 </font>
