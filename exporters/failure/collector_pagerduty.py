@@ -22,13 +22,11 @@ from attrs import define, field
 
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
 from pelorus.config import env_var_names, env_vars
+from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.config.log import REDACT, log
 from pelorus.errors import FailureProviderAuthenticationError
 from pelorus.timeutil import parse_tz_aware, second_precision
 from pelorus.utils import TokenAuth, set_up_requests_session
-
-DEFAULT_PAGERDUTY_URGENCY = "high"
-DEFAULT_PAGERDUTY_PRIORITY = None  # equivalent to null
 
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 
@@ -49,12 +47,16 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
 
     session: requests.Session = field(factory=requests.Session, init=False)
 
-    incident_urgency: str = field(
-        default=DEFAULT_PAGERDUTY_URGENCY, metadata=env_vars("PAGERDUTY_URGENCY")
+    incident_urgency: set[str] = field(
+        factory=set,
+        converter=comma_or_whitespace_separated(set),
+        metadata=env_vars("PAGERDUTY_URGENCY"),
     )
 
-    incident_priority: str = field(
-        default=DEFAULT_PAGERDUTY_PRIORITY, metadata=env_vars("PAGERDUTY_PRIORITY")
+    incident_priority: set[str] = field(
+        factory=set,
+        converter=comma_or_whitespace_separated(set),
+        metadata=env_vars("PAGERDUTY_PRIORITY"),
     )
 
     def __attrs_post_init__(self):
@@ -86,21 +88,29 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
                 raise FailureProviderAuthenticationError from error
             raise
 
+    def filter_by_urgency(self, urgency: str) -> bool:
+        if not self.incident_urgency:
+            return True
+        return urgency in self.incident_urgency
+
+    def filter_by_priority(self, priority: str) -> bool:
+        if not self.incident_priority:
+            return True
+        try:
+            return priority["summary"] in self.incident_priority
+        except TypeError:
+            return "null" in self.incident_priority
+
     def search_issues(self) -> list[TrackerIssue]:
         """
         To maintain consistency, we are call this function `search_issues`,
         but an `issue` in PagerDuty is called `incident`.
         """
         production_incidents = []
-        all_incidents = self.get_incidents()
-        if not all_incidents:
-            logging.debug("No issues were found")
-            return production_incidents
-        for incident in all_incidents:
-            is_production_bug = (
-                incident["urgency"] == self.incident_urgency
-                and incident["priority"] == self.incident_priority
-            )
+        for incident in self.get_incidents():
+            is_production_bug = self.filter_by_urgency(
+                incident["urgency"]
+            ) and self.filter_by_priority(incident["priority"])
 
             if is_production_bug:
                 created_at = incident["created_at"]
@@ -139,4 +149,7 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
                     incident["service"]["summary"],
                 )
                 production_incidents.append(tracker_issue)
+        if not production_incidents:
+            # TODO should be warning?
+            logging.debug("No issues were found")
         return production_incidents
