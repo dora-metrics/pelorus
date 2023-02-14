@@ -179,7 +179,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
     - Only applicable for [PROVIDER](#provider) set to `pagerduty`
 - **Type:** string
 
-: Defines incidents priorities (comma separated) to be monitored. By default, monitors all urgencies. To monitor incidents without priority, add **null** to this value.
+: Defines incidents priorities (comma separated) to be monitored. By default, monitors all priorities. To monitor incidents without priority, add **null** to this value.
 
 ## Configuring Jira
 
@@ -385,3 +385,23 @@ A custom field can be configure with the following steps:
 - Navigate to an existing Incident.
 - Use the upper left Menu and select Configure -> Form Layout.
 - Create a new field (String, Table or reference a List).
+
+## Configuring PagerDuty
+
+### Default workflow
+
+By default, Failure Time Exporter(s) configured to work with PagerDuty will:
+
+* Monitor all incidents in the domain of the token used to access it.
+
+* The application(s) monitored must have the same name of the service linked to the incident.
+
+* Incidents will be considered resolved when their statuses change to `Resolved`.
+
+### Custom workflow
+
+Failure Time Exporter(s) configured to work with PagerDuty can be easily adjusted to adapt to custom workflow(s), like:
+
+* Monitor issues of only specific urgencies, using [PAGERDUTY_URGENCY](#pagerduty_urgency).
+
+* Monitor issues of only specific priorities, using [PAGERDUTY_PRIORITY](#pagerduty_priority).
