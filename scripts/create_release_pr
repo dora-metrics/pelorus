@@ -33,9 +33,11 @@
 # Required to get the latest released tag
 PELORUS_API_URL="https://api.github.com/repos/konveyor/pelorus/releases/latest"
 BUILDCONFIG_PATH="charts/pelorus/charts/exporters/templates/_buildconfig.yaml"
+IMAGESTREAM_PATH="charts/pelorus/subcharts/exporters/templates/_imagestream_from_image.yaml"
 PELORUS_CHART="charts/pelorus/Chart.yaml"
 PELORUS_EXPORTERS_CHART="charts/pelorus/subcharts/exporters/Chart.yaml"
 OPERATORS_CHART="charts/operators/Chart.yaml"
+CHART_LOCK_FILE="charts/pelorus/Chart.lock"
 
 INSTALL_DOC="docs/Development.md"
 
@@ -49,61 +51,69 @@ function print_help() {
     printf "\n\tOptions:\n"
     printf "\t  -m\tbump major version (minor and patch will start at 0)\n"
     printf "\t  -i\tbump minor version (patch will start at 0)\n"
-    printf "\nExample: %s -v 1.6.14\n\n" "$0"
+    printf "\t  -v\tuse exact version\n"
+    printf "\nExample: %s -v 2.0.5\n\n" "$0"
 
     exit 0
 }
 
 ### Options
 OPTIND=1
-while getopts "h?mi" option; do
+while getopts "h?miv:" option; do
     case "$option" in
     h|\?) print_help;;
     m) major="$TRUE";;
     i) minor="$TRUE";;
+    v) exact_ver=$OPTARG;;
     esac
 done
+
+UPDATE_CHART_VERSIONS="$FALSE"
 
 if [[ $minor && $major ]]; then
     echo "-m and -i flags can not be used together"
     exit 2
 fi
 
-UPDATE_CHART_VERSIONS="$FALSE"
-LAST_RELEASED_TAG=$(curl -s "$PELORUS_API_URL" | jq -r '.tag_name')
+if [ -z ${exact_ver+x} ]; then
+  LAST_RELEASED_TAG=$(curl -s "$PELORUS_API_URL" | jq -r '.tag_name')
+  # shellcheck disable=SC2207
+  V_RELEASED=( $(echo "$LAST_RELEASED_TAG" | sed 's/v//g'  | tr ' . '  '  ') )
+  V_MAJOR=${V_RELEASED[0]}
+  V_MINOR=${V_RELEASED[1]}
+  V_PATCH=${V_RELEASED[2]}
 
-# shellcheck disable=SC2207
-V_RELEASED=( $(echo "$LAST_RELEASED_TAG" | sed 's/v//g'  | tr ' . '  '  ') )
-V_MAJOR=${V_RELEASED[0]}
-V_MINOR=${V_RELEASED[1]}
-V_PATCH=${V_RELEASED[2]}
-
-echo "Current version: $LAST_RELEASED_TAG"
-if [[ $major ]]; then
-  V_MAJOR=$(( V_MAJOR +  1 ))
-  V_MINOR="0"
-  V_PATCH="0"
-  UPDATE_CHART_VERSIONS="$TRUE"
-elif [[ $minor ]]; then
-  V_MINOR=$(( V_MINOR +  1 ))
-  V_PATCH="0"
-  UPDATE_CHART_VERSIONS="$TRUE"
+  echo "Current version: $LAST_RELEASED_TAG"
+  if [[ $major ]]; then
+    V_MAJOR=$(( V_MAJOR +  1 ))
+    V_MINOR="0"
+    V_PATCH="0"
+    UPDATE_CHART_VERSIONS="$TRUE"
+  elif [[ $minor ]]; then
+    V_MINOR=$(( V_MINOR +  1 ))
+    V_PATCH="0"
+    UPDATE_CHART_VERSIONS="$TRUE"
+  else
+    V_PATCH=$(( V_PATCH +  1 ))
+  fi
+  SEMVER="$V_MAJOR.$V_MINOR.$V_PATCH"
 else
-  V_PATCH=$(( V_PATCH +  1 ))
+  UPDATE_CHART_VERSIONS="$TRUE"
+  SEMVER="$exact_ver"
 fi
-
-NEW_VER="v$V_MAJOR.$V_MINOR.$V_PATCH"
-echo "Version to be released: v$V_MAJOR.$V_MINOR.$V_PATCH"
+echo "Version to be released: v$SEMVER"
+NEW_VER="v$SEMVER"
 
 # Sed to inject version between the quotes in the line containing:
 # .source_ref | default=""
 sed -i "/.source_ref | default/s/\"[^\"][^\"]*\"/\"$NEW_VER\"/" "$BUILDCONFIG_PATH"
 
 if [[ $UPDATE_CHART_VERSIONS == "$TRUE" ]]; then
-  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$PELORUS_CHART"
-  sed -i "s/^    version:.*/    version: \"v$V_MAJOR.$V_MINOR.$V_PATCH\"/g" "$PELORUS_CHART"
-  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$OPERATORS_CHART"
-  sed -i "s/^version:.*/version: $V_MAJOR.$V_MINOR.$V_PATCH/g" "$PELORUS_EXPORTERS_CHART"
+  sed -i "s/^version:.*/version: $SEMVER/g" "$PELORUS_CHART"
+  sed -i "s/^    version:.*/    version: \"v$SEMVER\"/g" "$PELORUS_CHART"
+  sed -i "s/^version:.*/version: $SEMVER/g" "$OPERATORS_CHART"
+  sed -i "s/^version:.*/version: $SEMVER/g" "$PELORUS_EXPORTERS_CHART"
+  sed -i "s/\({{ \.image_tag \| default \)\"[^\"]*\"\( \)\?/\1\"$SEMVER\"\2/g" "$IMAGESTREAM_PATH"
 else
   # Bump the "Z" in the pelorus Chart.yaml
   CHART_VER=$( grep ^version: "$PELORUS_CHART"|awk -F' ' '{ print $2 }' )
@@ -112,12 +122,16 @@ else
 fi
 
 # Update branch in the Development documentation
-sed -i "s/\(release number, for example \`\).*\(\`\.\)/\1v$V_MAJOR.$V_MINOR.$V_PATCH\2/g" "$INSTALL_DOC"
-sed -i "s/\(image_tag: \).*\( # Specific release\)/\1v$V_MAJOR.$V_MINOR.$V_PATCH\2/g" "$INSTALL_DOC"
+sed -i "s/\(release number, for example \`\).*\(\`\.\)/\1v$SEMVER\2/g" "$INSTALL_DOC"
+sed -i "s/\(image_tag: \).*\( # Specific release\)/\1v$SEMVER\2/g" "$INSTALL_DOC"
 
+# Remove chart lock file
+rm -f "${CHART_LOCK_FILE}"
 
 if [[ $major ]]; then
   printf "\nIMPORTANT:\n\t Do include \"major release\" text in the first line of your commit message, or label your PR with: \"major\"\n\n"
 elif [[ $minor ]]; then
   printf "\nIMPORTANT:\n\t Do include \"minor release\" text in the first line of your commit message, or label your PR with: \"minor\"\n\n"
+else
+  printf "\nIMPORTANT:\n\t If it's minor or major version change do include \"minor release\" or \"major release\" text in the first line of your commit message, or label your PR with: \"minor\" or \"major\" \n\n"
 fi

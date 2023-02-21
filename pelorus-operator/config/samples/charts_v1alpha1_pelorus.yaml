@@ -5,7 +5,6 @@ metadata:
 spec:
   # Default values copied from <project_dir>/helm-charts/pelorus/values.yaml
   exporters:
-    global: {}
     instances:
     - app_name: deploytime-exporter
       exporter_type: deploytime
