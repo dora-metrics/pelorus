@@ -25,10 +25,10 @@ from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.config.log import REDACT, log
 from pelorus.errors import FailureProviderAuthenticationError
-from pelorus.timeutil import parse_tz_aware, second_precision
+from pelorus.timeutil import parse_assuming_utc, second_precision
 from pelorus.utils import TokenAuth, set_up_requests_session
 
-_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
+_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 @define(kw_only=True)
@@ -118,10 +118,10 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
                 incident_id = incident["incident_number"]
                 title = incident["title"]
 
-                created_tz = parse_tz_aware(created_at, _DATETIME_FORMAT)
+                created_tz = parse_assuming_utc(created_at, _DATETIME_FORMAT)
                 created_ts = second_precision(created_tz).timestamp()
 
-                resolution_tz = parse_tz_aware(resolved_at, _DATETIME_FORMAT)
+                resolution_tz = parse_assuming_utc(resolved_at, _DATETIME_FORMAT)
                 resolution_ts = second_precision(resolution_tz).timestamp()
 
                 if resolution_ts > created_ts:
