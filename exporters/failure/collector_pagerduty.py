@@ -72,7 +72,7 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
 
     def get_incidents(self) -> list[dict]:
         logging.info("Getting incidents")
-        url = "https://api.pagerduty.com/incidents"
+        url = "https://api.pagerduty.com/incidents?date_range=all"
         headers = {
             "Accept": "application/vnd.pagerduty+json;version=2",
         }
@@ -147,6 +147,13 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
                     created_ts,
                     resolution_ts,
                     incident["service"]["summary"],
+                    # TODO another thing I thought: we could filter services
+                    # (did not think about a good use case for this) or have a
+                    # map like user inputs pairs of key values, like
+                    #    key1=value1,key2=value2
+                    # and then pelorus will put the app here as the value. Ex.:
+                    # the service is named "Incidents of production" but the app
+                    # is called "todolist", then we could map the incidents to the right app
                 )
                 production_incidents.append(tracker_issue)
         if not production_incidents:

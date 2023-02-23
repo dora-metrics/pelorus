@@ -392,11 +392,11 @@ A custom field can be configure with the following steps:
 
 By default, Failure Time Exporter(s) configured to work with PagerDuty will:
 
-* Monitor all incidents in the domain of the token used to access it.
+* Monitor all incidents in the domain of the token used to access it (PagerDuty's token handles all the information about credentials, including their URL, without using `SERVER`).
 
-* The application(s) monitored must have the same name of the service linked to the incident.
+* The application(s) monitored must have the same name of the service linked to the incident (PagerDuty does not have labels, this is how Pelorus links the incidents to each application without using `APP_LABEL`).
 
-* Incidents will be considered resolved when their statuses change to `Resolved`.
+* Incidents will be considered resolved when their statuses change to `Resolved` (Pelorus will not monitor alerts, but resolving all alerts of an incident, will resolve it. Suppressing alerts do not resolve them).
 
 ### Custom workflow
 
