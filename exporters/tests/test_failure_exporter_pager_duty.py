@@ -62,8 +62,9 @@ def test_pager_duty_search():
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 7
-    assert len([issue for issue in issues if issue.resolutiondate is None]) == 2
+    assert len(issues) == 57
+    assert len([issue for issue in issues if issue.resolutiondate is None]) == 52
+    assert len([issue for issue in issues if issue.resolutiondate]) == 5
 
 
 @pytest.mark.integration
@@ -73,14 +74,14 @@ def test_pager_duty_search():
 )
 def test_pager_duty_search_with_multiple_filters():
     collector = setup_pager_duty_collector(
-        PAGER_DUTY_TOKEN, incident_urgency="low,high", incident_priority="null,P3"
+        PAGER_DUTY_TOKEN, incident_urgency="low,high", incident_priority="P1,P3"
     )
 
     with nullcontext() as context:
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 6
+    assert len(issues) == 16
 
 
 @pytest.mark.integration
@@ -95,7 +96,7 @@ def test_pager_duty_search_with_priority_null():
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 6
+    assert len(issues) == 41
 
 
 @pytest.mark.integration
@@ -110,7 +111,7 @@ def test_pager_duty_search_with_priority_p1():
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 1
+    assert len(issues) == 16
 
 
 @pytest.mark.parametrize("priority", ["P2", "P3", "P4", "P5"])
@@ -157,7 +158,7 @@ def test_pager_duty_search_with_urgency_low():
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 1
+    assert len(issues) == 11
 
 
 @pytest.mark.integration
@@ -172,7 +173,7 @@ def test_pager_duty_search_with_urgency_high():
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 6
+    assert len(issues) == 46
 
 
 @pytest.mark.parametrize("urgency", ["wrong", "not_available"])

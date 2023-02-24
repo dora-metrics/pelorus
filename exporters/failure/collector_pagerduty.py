@@ -72,7 +72,7 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
 
     def get_incidents(self) -> list[dict]:
         logging.info("Getting incidents")
-        url = "https://api.pagerduty.com/incidents?date_range=all"
+        url = "https://api.pagerduty.com/incidents?date_range=all&limit=10000"
         headers = {
             "Accept": "application/vnd.pagerduty+json;version=2",
         }
