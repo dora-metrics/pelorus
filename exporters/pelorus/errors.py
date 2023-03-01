@@ -1,3 +1,4 @@
+# TODO this can be more generic, used by all exporters
 class FailureProviderAuthenticationError(Exception):
     """
     Exception raised for authentication issues

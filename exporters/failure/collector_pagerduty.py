@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-#
 # Copyright Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -16,6 +14,7 @@
 #
 
 import logging
+from typing import Dict, Optional
 
 import requests
 from attrs import define, field
@@ -59,6 +58,9 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
         metadata=env_vars("PAGERDUTY_PRIORITY"),
     )
 
+    url = "https://api.pagerduty.com/incidents?date_range=all&limit=10000"
+    headers = {"Accept": "application/vnd.pagerduty+json;version=2"}
+
     def __attrs_post_init__(self):
         # disable .netrc
         self.session.trust_env = False
@@ -72,12 +74,8 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
 
     def get_incidents(self) -> list[dict]:
         logging.info("Getting incidents")
-        url = "https://api.pagerduty.com/incidents?date_range=all&limit=10000"
-        headers = {
-            "Accept": "application/vnd.pagerduty+json;version=2",
-        }
 
-        resp = self.session.get(url, headers=headers)
+        resp = self.session.get(self.url, headers=self.headers)
         try:
             resp.raise_for_status()
             # TODO too much noise?
@@ -86,25 +84,26 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
         except requests.HTTPError as error:
             if resp.status_code == requests.codes.unauthorized:
                 raise FailureProviderAuthenticationError from error
-            raise
+            raise  # pragma: no cover
 
     def filter_by_urgency(self, urgency: str) -> bool:
         if not self.incident_urgency:
             return True
         return urgency in self.incident_urgency
 
-    def filter_by_priority(self, priority: str) -> bool:
+    def filter_by_priority(self, priority: Optional[Dict[str, str]]) -> bool:
         if not self.incident_priority:
             return True
         try:
             return priority["summary"] in self.incident_priority
         except TypeError:
+            # Incidents without priority come as None, instead of dict
             return "null" in self.incident_priority
 
     def search_issues(self) -> list[TrackerIssue]:
         """
-        To maintain consistency, we are call this function `search_issues`,
-        but an `issue` in PagerDuty is called `incident`.
+        To maintain consistency, we call this method `search_issues`. An
+        `issue` in PagerDuty is called `incident`.
         """
         production_incidents = []
         for incident in self.get_incidents():

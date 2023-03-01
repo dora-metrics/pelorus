@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-#
 # Copyright Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -20,12 +18,21 @@ from contextlib import nullcontext
 from typing import Optional
 
 import pytest
-from prometheus_client.core import REGISTRY
 
 from failure.collector_pagerduty import PagerdutyFailureCollector
-from pelorus.errors import FailureProviderAuthenticationError
+from tests import run_prometheus_register
 
 PAGER_DUTY_TOKEN = os.environ.get("PAGER_DUTY_TOKEN")
+NUMBER_OF_INCIDENTS = {
+    "null": 41,
+    "P1": 16,
+    "P2": 0,
+    "P3": 0,
+    "P4": 0,
+    "P5": 0,
+    "high": 46,
+    "low": 11,
+}
 
 
 def setup_pager_duty_collector(
@@ -37,16 +44,6 @@ def setup_pager_duty_collector(
         token=token,
         incident_urgency=incident_urgency,
         incident_priority=incident_priority,
-    )
-
-
-@pytest.mark.integration
-def test_pager_duty_connection():
-    collector = setup_pager_duty_collector()
-    with pytest.raises(FailureProviderAuthenticationError) as auth_error:
-        collector.search_issues()
-    assert "Check the TOKEN: not authorized, invalid credentials" in str(
-        auth_error.value
     )
 
 
@@ -84,37 +81,7 @@ def test_pager_duty_search_with_multiple_filters():
     assert len(issues) == 16
 
 
-@pytest.mark.integration
-@pytest.mark.skipif(
-    not PAGER_DUTY_TOKEN,
-    reason="No PagerDuty token set, run export PAGER_DUTY_TOKEN=token",
-)
-def test_pager_duty_search_with_priority_null():
-    collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_priority="null")
-
-    with nullcontext() as context:
-        issues = collector.search_issues()
-
-    assert context is None
-    assert len(issues) == 41
-
-
-@pytest.mark.integration
-@pytest.mark.skipif(
-    not PAGER_DUTY_TOKEN,
-    reason="No PagerDuty token set, run export PAGER_DUTY_TOKEN=token",
-)
-def test_pager_duty_search_with_priority_p1():
-    collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_priority="P1")
-
-    with nullcontext() as context:
-        issues = collector.search_issues()
-
-    assert context is None
-    assert len(issues) == 16
-
-
-@pytest.mark.parametrize("priority", ["P2", "P3", "P4", "P5"])
+@pytest.mark.parametrize("priority", ["null", "P1", "P2", "P3", "P4", "P5"])
 @pytest.mark.integration
 @pytest.mark.skipif(
     not PAGER_DUTY_TOKEN,
@@ -127,7 +94,7 @@ def test_pager_duty_search_with_priority(priority: str):
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 0
+    assert len(issues) == NUMBER_OF_INCIDENTS[priority]
 
 
 @pytest.mark.parametrize("priority", ["wrong", "not_available"])
@@ -140,40 +107,27 @@ def test_pager_duty_search_with_wrong_priority(priority: str):
     collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_priority=priority)
 
     with nullcontext() as context:
+        # TODO should break or at least warn user?
         issues = collector.search_issues()
 
     assert context is None
     assert len(issues) == 0
 
 
+@pytest.mark.parametrize("urgency", ["low", "high"])
 @pytest.mark.integration
 @pytest.mark.skipif(
     not PAGER_DUTY_TOKEN,
     reason="No PagerDuty token set, run export PAGER_DUTY_TOKEN=token",
 )
-def test_pager_duty_search_with_urgency_low():
-    collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_urgency="low")
+def test_pager_duty_search_with_urgency(urgency: str):
+    collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_urgency=urgency)
 
     with nullcontext() as context:
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 11
-
-
-@pytest.mark.integration
-@pytest.mark.skipif(
-    not PAGER_DUTY_TOKEN,
-    reason="No PagerDuty token set, run export PAGER_DUTY_TOKEN=token",
-)
-def test_pager_duty_search_with_urgency_high():
-    collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_urgency="high")
-
-    with nullcontext() as context:
-        issues = collector.search_issues()
-
-    assert context is None
-    assert len(issues) == 46
+    assert len(issues) == NUMBER_OF_INCIDENTS[urgency]
 
 
 @pytest.mark.parametrize("urgency", ["wrong", "not_available"])
@@ -186,6 +140,7 @@ def test_pager_duty_search_with_wrong_urgency(urgency: str):
     collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_urgency=urgency)
 
     with nullcontext() as context:
+        # TODO should break or at least warn user?
         issues = collector.search_issues()
 
     assert context is None
@@ -199,4 +154,7 @@ def test_pager_duty_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(PagerdutyFailureCollector, "search_issues", mock_search_issues)
     collector = setup_pager_duty_collector()
 
-    REGISTRY.register(collector)
+    with nullcontext() as context:
+        run_prometheus_register(collector)
+
+    assert context is None

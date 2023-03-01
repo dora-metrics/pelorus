@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-#
 # Copyright Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -24,13 +22,13 @@ from unittest import mock  # NOQA
 import pytest
 from jira.exceptions import JIRAError
 from jira.resources import Issue
-from prometheus_client.core import REGISTRY
 
 from failure import collector_jira
 from failure.collector_github import GithubFailureCollector
 from failure.collector_jira import DEFAULT_JQL_SEARCH_QUERY, JiraFailureCollector
 from pelorus.config import load_and_log
 from pelorus.errors import FailureProviderAuthenticationError
+from tests import run_prometheus_register
 
 JIRA_SERVER = "https://pelorustest.atlassian.net"
 JIRA_USERNAME = os.environ.get("JIRA_USERNAME")
@@ -198,7 +196,10 @@ def test_jira_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(JiraFailureCollector, "search_issues", mock_search_issues)
     collector = setup_jira_collector()
 
-    REGISTRY.register(collector)  # type: ignore
+    with nullcontext() as context:
+        run_prometheus_register(collector)
+
+    assert context is None
 
 
 def test_jira_exception_is_not_raised(monkeypatch: pytest.MonkeyPatch):
@@ -263,7 +264,11 @@ def test_github_prometheus_register(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(GithubFailureCollector, "search_issues", mock_search_issues)
     collector = setup_github_collector(monkeypatch)
-    REGISTRY.register(collector)  # type: ignore
+
+    with nullcontext() as context:
+        run_prometheus_register(collector)
+
+    assert context is None
 
 
 # has label bug and app_label
