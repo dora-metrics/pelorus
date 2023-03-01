@@ -13,60 +13,76 @@
 #    under the License.
 #
 
+import _thread
+import logging
 import os
+import threading
 from pathlib import Path
 from runpy import run_path
 from typing import Dict
 
+import pytest
+
 from failure.app import __file__ as app_file
+from pelorus.errors import FailureProviderAuthenticationError
 
-# import pytest
-
-
-# from pelorus.errors import FailureProviderAuthenticationError
-
-APP = Path(app_file).resolve().as_posix()
 PAGER_DUTY_TOKEN = os.environ.get("PAGER_DUTY_TOKEN")
 
 
-# TODO fix this end 2 end tests
 def run_app(arguments: Dict[str, str]) -> None:
-    """Run failure app object with desired enviroment variables."""
+    """
+    Run failure app object with desired environment variables.
+
+    If the app runs for more than 5 seconds, it is terminated (with a
+    KeyboardInterrupt)
+    """
     try:
+        logging.getLogger().disabled = False
         for key, value in arguments.items():
             os.environ[key] = value
-        run_path(APP, run_name="__main__")
+        timer = threading.Timer(5, _thread.interrupt_main)
+        timer.start()
+        try:
+            run_path(Path(app_file), run_name="__main__")
+        finally:
+            timer.cancel()
     finally:
         for key in arguments:
             del os.environ[key]
+        logging.getLogger().disabled = True
 
 
-# @pytest.mark.parametrize("provider", ["wrong", "git_hub", "GITHUB", "GitHub"])
-# @pytest.mark.integration
-# def test_app_invalid_provider(provider: str):
-#     with pytest.raises(ValueError) as error:
-#         run_app({"PROVIDER": provider})
+@pytest.mark.parametrize("provider", ["wrong", "git_hub", "GITHUB", "GitHub"])
+@pytest.mark.integration
+def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
+    with pytest.raises(ValueError):
+        run_app({"PROVIDER": provider})
 
-#     assert "'tracker_provider' must be in dict_keys" in str(error.value)
-
-
-# @pytest.mark.integration
-# def test_app_pagerduty_error():
-#     with pytest.raises(FailureProviderAuthenticationError) as auth_error:
-#         run_app({"PROVIDER": "pagerduty"})
-
-#     assert "Check the TOKEN: not authorized, invalid credentials" in str(
-#         auth_error.value
-#     )
+    # TODO shouldn't be 1?
+    # number of error logs
+    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
 
 
-# @pytest.mark.integration
-# @pytest.mark.skipif(
-#     not PAGER_DUTY_TOKEN,
-#     reason="No PagerDuty token set, run export PAGER_DUTY_TOKEN=token",
-# )
-# def test_app_pagerduty_success():
-#     with nullcontext() as context:
-#         run_app({"PROVIDER": "pagerduty", "TOKEN": PAGER_DUTY_TOKEN})
+@pytest.mark.integration
+def test_app_pagerduty_without_required_options(caplog: pytest.LogCaptureFixture):
+    with pytest.raises(FailureProviderAuthenticationError):
+        run_app({"PROVIDER": "pagerduty"})
 
-#     assert context is None
+    # number of error logs
+    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 1
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not PAGER_DUTY_TOKEN,
+    reason="No PagerDuty token set, run export PAGER_DUTY_TOKEN=token",
+)
+def test_app_pagerduty_with_required_options(caplog: pytest.LogCaptureFixture):
+    with pytest.raises(KeyboardInterrupt):
+        run_app({"PROVIDER": "pagerduty", "TOKEN": PAGER_DUTY_TOKEN})
+
+    captured_logs = caplog.record_tuples
+    # 9 informational, 5 resolution, 57 creation
+    assert len(captured_logs) == 71
+    # number of error logs
+    assert len([record for record in captured_logs if record[1] == 40]) == 0

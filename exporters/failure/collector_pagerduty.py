@@ -83,7 +83,9 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
             return resp.json()["incidents"]
         except requests.HTTPError as error:
             if resp.status_code == requests.codes.unauthorized:
+                logging.error(FailureProviderAuthenticationError.auth_message)
                 raise FailureProviderAuthenticationError from error
+            logging.error(error)  # pragma: no cover
             raise  # pragma: no cover
 
     def filter_by_urgency(self, urgency: str) -> bool:
