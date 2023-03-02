@@ -20,13 +20,13 @@ spec:
       name: {{ .image_name }}
     # .image_name is provided without tag
     {{- else }}
-      name: {{ .image_name }}:{{ .image_tag | default "2.0.7" }}
+      name: {{ .image_name }}:{{ .image_tag | default "v2.0.7" }}
     {{- end }}
 {{- else }}
-      name: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "2.0.7" }}
+      name: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.7" }}
 # .image_name
 {{- end }}
-    name: {{ .image_tag | default "2.0.7" }}
+    name: {{ .image_tag | default "stable" }}
     referencePolicy:
       type: Local
 # define
