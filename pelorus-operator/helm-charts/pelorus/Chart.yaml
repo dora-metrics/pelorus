@@ -2,8 +2,8 @@ apiVersion: v2
 dependencies:
 - name: exporters
   repository: file://./subcharts/exporters
-  version: v2.0.6
+  version: v2.0.7
 description: A Helm chart for Kubernetes
 name: pelorus
 type: application
-version: 2.0.6
+version: 2.0.7
