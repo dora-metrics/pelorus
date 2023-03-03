@@ -50,6 +50,7 @@ Some of the key outcomes we would like Pelorus help us measure are:
   -   # :simple-gitlab:
   -   # :simple-azuredevops:
   -   # :simple-jirasoftware:
+  -   # :simple-pagerduty:
 
   </div>
 </div>

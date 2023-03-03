@@ -62,6 +62,8 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 | [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) | no | - |
 | [JIRA_RESOLVED_STATUS](#jira_resolved_status) | no | - |
 | [GITHUB_ISSUE_LABEL](#github_issue_label) | no | bug |
+| [PAGERDUTY_URGENCY](#pagerduty_urgency) | no | - |
+| [PAGERDUTY_PRIORITY](#pagerduty_priority) | no | - |
 
 ###### PROVIDER
 
@@ -69,7 +71,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
     - **Default Value:** jira
 - **Type:** string
 
-: Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`.
+: Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`, `pagerduty`.
 
 ###### LOG_LEVEL
 
@@ -162,6 +164,22 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 - **Type:** string
 
 : Defines a custom label to be used in GitHub issues to identify the ones to be monitored.
+
+###### PAGERDUTY_URGENCY
+
+- **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `pagerduty`
+- **Type:** string
+
+: Defines incidents urgencies (comma separated) to be monitored. By default, monitors all urgencies.
+
+###### PAGERDUTY_PRIORITY
+
+- **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `pagerduty`
+- **Type:** string
+
+: Defines incidents priorities (comma separated) to be monitored. By default, monitors all priorities. To monitor incidents without priority, add **null** to this value.
 
 ## Configuring Jira
 
@@ -367,3 +385,23 @@ A custom field can be configure with the following steps:
 - Navigate to an existing Incident.
 - Use the upper left Menu and select Configure -> Form Layout.
 - Create a new field (String, Table or reference a List).
+
+## Configuring PagerDuty
+
+### Default workflow
+
+By default, Failure Time Exporter(s) configured to work with PagerDuty will:
+
+* Monitor all incidents in the domain of the token used to access it (PagerDuty's API Access Key manages both the API URL endpoint and the credentials information).
+
+* Incidents' service name must match the monitored application(s) name (PagerDuty does not have labels or tags, so this is not as flexible as it is for other providers).
+
+* Incidents will be considered resolved when their statuses change to `Resolved` (Pelorus will not monitor alerts, but resolving all alerts of an incident, will resolve it. Suppressing alerts do not resolve them).
+
+### Custom workflow
+
+Failure Time Exporter(s) configured to work with PagerDuty can be easily adjusted to adapt to custom workflow(s), like:
+
+* Monitor issues of only specific urgencies, using [PAGERDUTY_URGENCY](#pagerduty_urgency).
+
+* Monitor issues of only specific priorities, using [PAGERDUTY_PRIORITY](#pagerduty_priority).
