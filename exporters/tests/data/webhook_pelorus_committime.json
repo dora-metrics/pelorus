@@ -1,0 +1,7 @@
+{
+  "app": "mongo-todolist",
+  "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc",
+  "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
+  "namespace": "mongo-persistent",
+  "timestamp": 1557933657
+}

@@ -1,6 +1,7 @@
 # Needed by exporters/tests
 pytest
 pytest-cov
+pytest-asyncio
 
 # Used by bats in the conftests
 yq
@@ -25,3 +26,6 @@ yamale
 yamllint
 
 pre-commit
+
+# Required by TestClient
+httpx

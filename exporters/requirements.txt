@@ -18,3 +18,8 @@ jira                   # module jira
 pytz                   # module pytz
 requests               # module requests
 Pygithub               # module github
+
+# Webhook exporter
+fastapi
+uvicorn
+asyncio
