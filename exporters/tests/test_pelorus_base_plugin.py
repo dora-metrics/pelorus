@@ -39,13 +39,10 @@ from webhook.plugins.pelorus_handler_base import (
 
 
 @pytest.mark.parametrize(
-    "test_no,http_response,http_response_code",
-    [
-        (1, "Invalid Payload.", http.HTTPStatus.UNPROCESSABLE_ENTITY),
-        (2, "Invalid Payload.", "422"),
-    ],
+    "http_response,http_response_code",
+    [("Invalid Payload.", 422), ("Invalid Payload.", "422")],
 )
-def test_pelorus_webhook_valid_response(test_no, http_response, http_response_code):
+def test_pelorus_webhook_valid_response(http_response, http_response_code):
     """
     Test for the PelorusWebhookResponse class. The response code is a valid
     HTTPStatus code. The http_response is valid string, so the
@@ -58,22 +55,19 @@ def test_pelorus_webhook_valid_response(test_no, http_response, http_response_co
     )
 
     assert response.http_response == http_response
-    if test_no == 1:
-        assert response.http_response_code == http_response_code
-    if test_no == 2:
-        assert int(response.http_response_code) == int(http_response_code)
+    assert response.http_response_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.parametrize(
-    "test_no,http_response,http_response_code",
+    "http_response,http_response_code",
     [
-        (1, None, http.HTTPStatus.UNPROCESSABLE_ENTITY),
-        (2, "Invalid Payload.", 99),
-        (3, "Invalid Payload.", 601),
-        (4, "Invalid Payload.", None),
+        (None, http.HTTPStatus.UNPROCESSABLE_ENTITY),
+        ("Invalid Payload.", 99),
+        ("Invalid Payload.", 601),
+        ("Invalid Payload.", None),
     ],
 )
-def test_pelorus_webhook_invalid_response(test_no, http_response, http_response_code):
+def test_pelorus_webhook_invalid_response(http_response, http_response_code):
     """
     Negative test for the PelorusWebhookResponse class.
     The response code must be a valid and http_response must be valid string.
@@ -173,7 +167,7 @@ def test_check_can_handle_methods():
     know what payload data can it handle.
     """
 
-    # user_agent_str = "Pelorus-Webhook/"
+    # user_agent_str set to "Pelorus-Webhook/"
     assert WithUserAgentWebhookPlugin.can_handle("Pelorus-Webhook/")
     assert WithUserAgentWebhookPlugin.can_handle("Pelorus-Webhook/suffix")
     assert not WithUserAgentWebhookPlugin.can_handle("")
