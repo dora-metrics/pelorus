@@ -60,7 +60,7 @@ spec:
 
             {{- if and (not .source_ref) (not .source_url) }}
             - name: PELORUS_IMAGE_TAG
-              value: {{ .app_name }}:{{ .image_tag | default "stable" }}
+              value: {{ .app_name }}:{{ .image_tag | default "v2.0.7" }}
             {{- end }}
 
             {{- if .extraEnv }}
@@ -90,6 +90,8 @@ spec:
         {{- if or .source_ref .source_url }}
         name: {{ .app_name }}:latest
         {{- else }}
+        # default is an internal registry tag and must match the default from
+        # _imagestream_from_image.yaml
         name: {{ .app_name }}:{{ .image_tag | default "stable" }}
         {{- end }}
     type: ImageChange

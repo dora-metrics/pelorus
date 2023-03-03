@@ -51,7 +51,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.4
-    createdAt: "2023-03-02T13:39:53Z"
+    createdAt: "2023-03-02T21:50:29Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -160,6 +160,15 @@ spec:
           verbs:
           - '*'
         - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - secrets
+          - serviceaccounts
+          - services
+          verbs:
+          - '*'
+        - apiGroups:
           - rbac.authorization.k8s.io
           resources:
           - rolebindings
@@ -198,15 +207,6 @@ spec:
           - route.openshift.io
           resources:
           - routes
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          - secrets
-          - serviceaccounts
-          - services
           verbs:
           - '*'
         - apiGroups:
