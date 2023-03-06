@@ -149,6 +149,8 @@ If not defined specifically, exporters are using pre-built container images with
   * Quay repository for the [committime-exporter](https://quay.io/repository/pelorus/pelorus-committime-exporter)
   * Quay repository for the [failure-exporter](https://quay.io/repository/pelorus/pelorus-failure-exporter)
   * Quay repository for the [deploytime-exporter](https://quay.io/repository/pelorus/pelorus-deploytime-exporter)
+  * Quay repository for the [releasetime-exporter](https://quay.io/repository/pelorus/pelorus-releasetime-exporter)
+  * Quay repository for the [webhook-exporter](https://quay.io/repository/pelorus/pelorus-webhook-exporter)
 
 #### Pre-built Quay images
 

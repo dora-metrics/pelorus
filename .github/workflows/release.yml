@@ -48,10 +48,20 @@ jobs:
           registry_username: ${{ secrets.QUAY_USERNAME }}
           registry_password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Tag failure with released version
+      - name: Tag releasetime with released version
         uses: tinact/docker.image-retag@1.0.3
         with:
           image_name: ${{ env.imagenamespace }}/pelorus-releasetime-exporter
+          image_old_tag: ${{ github.sha }}
+          image_new_tag: ${{ env.releasetag }}
+          registry: ${{ env.imageregistry }}
+          registry_username: ${{ secrets.QUAY_USERNAME }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}
+
+    - name: Tag webhook with released version
+        uses: tinact/docker.image-retag@1.0.3
+        with:
+          image_name: ${{ env.imagenamespace }}/pelorus-webhook-exporter
           image_old_tag: ${{ github.sha }}
           image_new_tag: ${{ env.releasetag }}
           registry: ${{ env.imageregistry }}
