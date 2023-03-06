@@ -1,6 +1,6 @@
 --- config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml.original	2022-12-16 20:39:18.630409481 +0100
 +++ config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml	2022-12-16 20:39:03.674340069 +0100
-@@ -15,29 +15,77 @@
+@@ -15,29 +16,78 @@
    - name: v1alpha1
      schema:
        openAPIV3Schema:
@@ -80,6 +80,7 @@
 +              prometheus_storage_pvc_storageclass:
 +                description: Prometheus Persistent Volume storage class to be used.
 +                type: string
++            x-kubernetes-preserve-unknown-fields: true
            status:
              description: Status defines the observed state of Pelorus
              type: object
