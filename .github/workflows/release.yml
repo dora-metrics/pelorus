@@ -58,7 +58,7 @@ jobs:
           registry_username: ${{ secrets.QUAY_USERNAME }}
           registry_password: ${{ secrets.QUAY_PASSWORD }}
 
-    - name: Tag webhook with released version
+      - name: Tag webhook with released version
         uses: tinact/docker.image-retag@1.0.3
         with:
           image_name: ${{ env.imagenamespace }}/pelorus-webhook-exporter
