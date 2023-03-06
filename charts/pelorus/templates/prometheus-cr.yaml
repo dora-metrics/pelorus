@@ -35,9 +35,9 @@ spec:
   ruleSelector: {}
   serviceAccountName: pelorus-prometheus
   serviceMonitorSelector: {}
-{{- if .Values.extra_prometheus_hosts}}
+{{- if or .Values.federated_prometheus_hosts .Values.external_prometheus_hosts }}
   additionalScrapeConfigs:
-    name: additional-scrape-configs
+    name: pelorus-prometheus-additional-scrape-configs
     key: prometheus-additional.yml
 {{- end }}
 {{- if .Values.custom_ca }}
