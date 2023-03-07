@@ -61,6 +61,7 @@ nav:
         - Deploy Time: GettingStarted/configuration/ExporterDeploytime.md
         - Commit Time: GettingStarted/configuration/ExporterCommittime.md
         - Failure Time: GettingStarted/configuration/ExporterFailure.md
+        - Webhook: GettingStarted/configuration/ExporterWebhook.md
       - Production best practices: GettingStarted/configuration/ProductionBestPractice.md
       - NooBaa for Long Term Storage: GettingStarted/configuration/Noobaa.md
     - Examples: GettingStarted/Examples.md

@@ -163,6 +163,10 @@ During Pelorus Helm deployment or update time user have option to specify the im
 ```yaml
 exporters:
   instances:
+  - app_name: webhook-exporter
+    exporter_type: webhook
+    image_type: latest
+
   - app_name: committime-github
     exporter_type: comittime
     image_tag: latest # Newest image from the last merged source code
@@ -211,6 +215,9 @@ Example of such exporter instances are below:
 ```yaml
 exporters:
   instances:
+  - app_name: webhook-exporter
+    exporter_type: webhook
+
   - app_name: committime-github
     exporter_type: comittime
     image_name: my.container.registry.io/pelorus/my-committime-exporter:latest # :stable would be used if no :latest was specified
@@ -404,8 +411,17 @@ Running an exporter on your local machine should follow this process:
 
 At this point, your exporter should be available at http://localhost:8080
 
-    curl http://localhost:8080
+    curl http://localhost:8080/metrics
 
+7. (Optional) Webhook exporter
+
+Webhook type exporter has an additional URL target http://localhost:8080/pelorus/webhook, that allows to receive POST data, for example using curl:
+
+    # Sample JSON payload files are in the exporters/tests/data directory
+    $ cd exporters/tests/data/
+
+    # JSON with payload (-d flag) must match the event type (-H "X-Pelorus-Event" flag):
+    $ curl -X POST http://localhost:8080/pelorus/webhook -d @./webhook_pelorus_failure_created.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: failure"
 
 ## Testing Pull Requests
 
