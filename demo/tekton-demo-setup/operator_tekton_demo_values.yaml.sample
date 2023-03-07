@@ -43,7 +43,6 @@ spec:
           value: <your_git_org>/pelorus
         - name: APP_LABEL
           value: production_issue/name
-  extra_prometheus_hosts: null
   openshift_prometheus_basic_auth_pass: changeme
   openshift_prometheus_htpasswd_auth: 'internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM='
   prometheus_retention: 1y

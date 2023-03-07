@@ -165,7 +165,6 @@ See the [Pelorus Exporters Configuration Guide](configuration/PelorusExporters.m
           exporter_type: failure
         - app_name: committime-exporter
           exporter_type: committime
-    extra_prometheus_hosts: null
     openshift_prometheus_basic_auth_pass: changeme
     openshift_prometheus_htpasswd_auth: 'internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM='
     prometheus_retention: 1y

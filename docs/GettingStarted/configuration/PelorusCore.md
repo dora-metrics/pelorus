@@ -54,7 +54,8 @@ spec:
 | [prometheus_storage_pvc_storageclass](#prometheus_storage_pvc_storageclass) | no | `gp2` |
 | [openshift_prometheus_htpasswd_auth](#openshift_prometheus_htpasswd_auth)  | no | `internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=` |
 | [openshift_prometheus_basic_auth_pass](#openshift_prometheus_basic_auth_pass) | no | `changeme` |
-| [[extra_prometheus_hosts]](#extra_prometheus_hosts) | no | - |
+| [[federated_prometheus_hosts]](#federated_prometheus_hosts) | no | - |
+| [[external_prometheus_hosts]](#external_prometheus_hosts) | no | - |
 | [thanos_version](#thanos_version) | no | `v0.28.0` |
 | [bucket_access_point](#bucket_access_point) | no | - |
 | [bucket_access_key](#bucket_access_key) | no | - |
@@ -142,20 +143,23 @@ $ htpasswd -nbs internal <my-secret-password>
 
 ### Multiple Prometheus
 
-By default Pelorus gathers the data from the Prometheus instance deployed in the same cluster in which it is running. To collect data across multiple OpenShift clusters additional Prometheus hosts have to be configured. To do this `extra_prometheus_hosts` configuration option is used.
+By default, Pelorus gathers the data from the Prometheus instance deployed in the same cluster in which it is running. To collect data across multiple OpenShift clusters, additional Prometheus scrape hosts have to be configured. To do this `federated_prometheus_hosts` and `external_prometheus_hosts` configuration options are used.
 
-###### extra_prometheus_hosts
+###### federated_prometheus_hosts
 
 - **Required:** no
 - **Type:** list
 
-It is a list that consists of three configuration items per additional Prometheus host:
+It is a list that consists of three configuration items per additional [Federation](https://prometheus.io/docs/prometheus/latest/federation/) host:
 : * id - a description of the prometheus host (this will be used as a label to select metrics in the federated instance).
 : * hostname - the fully qualified domain name or ip address of the host with the extra Prometheus instance
 : * password - the password used for the `internal` basic auth account (this is provided by the k8s metrics prometheus instances in a secret).
+
+Prometheus will scrape data from `/federate` endpoint.
+
 : Example:
 ```yaml
-extra_prometheus_hosts:
+federated_prometheus_hosts:
 - id: "ci-1"
   hostname: "prometheus-k8s-openshift-monitoring.apps.ci-1.example.com"
   password: "<redacted>"
@@ -163,6 +167,27 @@ extra_prometheus_hosts:
 - id: "ci-2"
   hostname: "prometheus-k8s-openshift-monitoring.apps.ci-2.example.com"
   password: "<redacted>"
+```
+
+###### external_prometheus_hosts
+
+- **Required:** no
+- **Type:** list
+
+It is a list that consists of three configuration items per additional scrape host:
+: * id - a description of the scrape host
+: * hostname - the fully qualified domain name or ip address of the host
+
+Prometheus will scrape data from `/metrics` endpoint.
+
+: Example:
+```yaml
+external_prometheus_hosts:
+- id: "prometheus-node"
+  hostname: "node.demo.do.prometheus.io"
+
+- id: "webhook"
+  hostname: "webhook.example.com"
 ```
 
 ## Grafana
