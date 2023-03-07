@@ -16,13 +16,13 @@ $ python exporters/webhook/app.py
 To send some data you can use simple curl:
 ```shell
 $ cd exporters/tests/data
-$ curl -X POST http://localhost:8000/pelorus/webhook -d @./webhook_pelorus_committime.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: committime"
-$ curl -X POST http://localhost:8000/pelorus/webhook -d @./webhook_pelorus_deploytime.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: deploytime"
-$ curl -X POST http://localhost:8000/pelorus/webhook -d @./webhook_pelorus_failure_created.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: failure"
-$ curl -X POST http://localhost:8000/pelorus/webhook -d @./webhook_pelorus_failure_resolved.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: failure"
+$ curl -X POST http://localhost:8080/pelorus/webhook -d @./webhook_pelorus_committime.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: committime"
+$ curl -X POST http://localhost:8080/pelorus/webhook -d @./webhook_pelorus_deploytime.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: deploytime"
+$ curl -X POST http://localhost:8080/pelorus/webhook -d @./webhook_pelorus_failure_created.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: failure"
+$ curl -X POST http://localhost:8080/pelorus/webhook -d @./webhook_pelorus_failure_resolved.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: failure"
 ```
 
-Navigate to the endpoint [http://localhost:8000/metrics](http://localhost:8000/metrics), you should see all the metrics collected:
+Navigate to the endpoint [http://localhost:8080/metrics](http://localhost:8080/metrics), you should see all the metrics:
 ```
 # HELP commit_timestamp Commit timestamp
 # TYPE commit_timestamp gauge

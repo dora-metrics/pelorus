@@ -15,6 +15,7 @@ Pelorus is composed of the following open source components.
     * Commit Time
     * Deploy Time
     * Failure
+    * Webhook
 
 ### Prometheus and Grafana
 
@@ -24,7 +25,7 @@ Pelorus is built on top of [Prometheus](https://prometheus.io/) and [Grafana](ht
 
 ### Pelorus Exporters
 
-An [exporter](https://prometheus.io/docs/instrumenting/exporters/) is a Prometheus concept of a bot that gathers and exposes data. Pelorus uses the exporter framework to build integrations with a myriad of common IT systems from which we can then gather the relevant data for our dashboards.
+An [exporter](https://prometheus.io/docs/instrumenting/exporters/) is a Prometheus concept of a bot that gathers and exposes data. Pelorus uses the exporter framework to build integrations with a myriad of common IT systems from which we can then gather the relevant data for our dashboards. `Webhook` is a special type of exporter that uses `push` method to receive data from 3rd party systems and exposes it to the Prometheus.
 
 
 ## Multi-Cluster Architecture (Production)

@@ -196,3 +196,21 @@ spec:
           - name: JIRA_RESOLVED_STATUS
             value: DONE
 ```
+
+## Webhook exporter only
+
+In this example, Pelorus will receive data from the external systems without making any API calls to OpenShift nor external providers.
+
+```yaml
+apiVersion: charts.pelorus.konveyor.io/v1alpha1
+kind: Pelorus
+metadata:
+  name: webhook-example-deployment
+spec:
+  exporters:
+    instances:
+      - app_name: my-webhook-exporter
+        exporter_type: webhook
+```
+
+With such configuration, the webhook service will be listening for the POST json data.
