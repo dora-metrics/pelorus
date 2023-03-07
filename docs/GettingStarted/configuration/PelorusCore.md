@@ -177,7 +177,6 @@ federated_prometheus_hosts:
 It is a list that consists of three configuration items per additional scrape host:
 : * id - a description of the scrape host
 : * hostname - the fully qualified domain name or ip address of the host
-: * password - TODO check if it needed!
 
 Prometheus will scrape data from `/metrics` endpoint.
 
