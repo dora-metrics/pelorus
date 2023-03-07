@@ -61,7 +61,7 @@ class TestInMemoryMetric:
         [
             (
                 "todolist",
-                "timestamp_str",
+                "1678269658",
                 "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
                 "mynamespace",
                 "5379bad65a3f83853a75aabec9e0e43c75fd18fc",
@@ -105,7 +105,7 @@ class TestInMemoryMetric:
             labels=metric_labels,
         )
 
-        assert query_result == timestamp
+        assert str(query_result) == timestamp
 
 
 def test_all_models_have_prometheus_mappings():

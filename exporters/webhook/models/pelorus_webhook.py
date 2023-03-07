@@ -42,14 +42,16 @@ class PelorusPayload(BaseModel):
 
     Attributes:
         app (str): Application name.
-        timestamp (str): Timestamp of the event. This is different from the
-                         time when the webhook could have been received.
+        timestamp (int): 10 digit EPOCH timestamp of the event. This
+                         is different from the time when the webhook
+                         could have been received. The date value must
+                         be between 1.1.2010 and 1.1.2060
     """
 
     # Even if we consider git project name as app, it still should be below 100
     app: str = Field(max_length=200)
-    # ISO 8601 is 19 chars long, so don't expect any format can be longer then 50 chars
-    timestamp: str = Field(max_length=50)
+
+    timestamp: int = Field(None, ge=1262307661, le=2840144461)
 
     def get_metric_model_name(self) -> str:
         return type(self).__name__

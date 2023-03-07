@@ -34,7 +34,7 @@ from webhook.models.pelorus_webhook import (
 
 test_payload = {
     "app": "todolist",
-    "timestamp": "timestamp_str",
+    "timestamp": "1678269658",
 }
 test_deploy = {
     **test_payload,
@@ -62,8 +62,8 @@ class FakePelorusPayload(BaseModel):
 @pytest.mark.parametrize(
     "app,timestamp",
     [
-        (123456, "timestamp_str"),
-        ("todolist", 123456),
+        (123456, 1678269658),
+        ("todolist", "1678269658"),
     ],
 )
 def test_pelorus_payload_success(app, timestamp):
@@ -77,6 +77,28 @@ def test_pelorus_payload_success(app, timestamp):
     """
     payload = PelorusPayload(app=app, timestamp=timestamp)
     assert payload.get_metric_model_name() == "PelorusPayload"
+
+
+@pytest.mark.parametrize(
+    "app,timestamp",
+    [
+        (123456, 123457890),
+        ("todolist", "123456789"),
+        ("todolist", "123456789"),
+        ("todolist", 12345678901),
+        ("todolist", "Mon Mar 6 15:31:32 2023 +0100"),
+        ("todolist", 1262307660),
+        ("todolist", 2840144462),
+    ],
+)
+def test_pelorus_wrong_timestamp(app, timestamp):
+    """
+    Test for the wrong timestamp of the PelorusPayload class.
+    The timestamp should be a valid EPOCH format, which is
+    10 digit number.
+    """
+    with pytest.raises(ValidationError):
+        PelorusPayload(app=app, timestamp=timestamp)
 
 
 @pytest.mark.parametrize(
