@@ -250,9 +250,10 @@ The Pelorus chart supports deploying a [Thanos](https://thanos.io/) instance for
 ###### custom_ca
 
 - **Required:** no
-- **Type:** 'true' string or commented out for 'false'
+    - **Default Value:** false
+- **Type:** boolean
 
-: Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true` we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.11/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki).
+: Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs). If `true`, we will load the custom via the [certificate injection method](https://docs.openshift.com/container-platform/4.11/networking/configuring-a-custom-pki.html#certificate-injection-using-operators_configuring-a-custom-pki).
 
 ## Deploying Across Multiple Clusters
 

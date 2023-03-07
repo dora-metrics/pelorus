@@ -35,36 +35,22 @@ prometheus_retention_size: 1GB
 
 exporters:
   instances:
-  - app_name: deploytime-exporter
-    exporter_type: deploytime
-    # env_from_configmaps:
-    # - pelorus-config
-    # - deploytime-config
+    - app_name: deploytime-exporter
+      exporter_type: deploytime
 
-  - app_name: failuretime-exporter
-    exporter_type: failure
-    enabled: false
-    env_from_configmaps:
-    - pelorus-config
-    - failuretime-config
-    env_from_secrets:
-    - jira-secret
+    - app_name: failuretime-exporter
+      exporter_type: failure
 
-  - app_name: committime-exporter
-    exporter_type: committime
-#    env_from_configmaps:
-#    - pelorus-config
-#    - committime-config
-#    env_from_secrets:
-#    - github-secret
+    - app_name: committime-exporter
+      exporter_type: committime
 
 # Experimental GitHub releasetime exporter
-#  - app_name: releasetime-exporter
-#    env_from_configmaps:
-#    - pelorus-config
-#    - releasetime-config
-#    env_from_secrets:
-#    - github-secret
-#    extraEnv:
-#    - name: APP_FILE
-#      value: extra/releasetime/app.py
+#     - app_name: releasetime-exporter
+#       env_from_configmaps:
+#         - pelorus-config
+#         - releasetime-config
+#       env_from_secrets:
+#         - github-secret
+#       extraEnv:
+#         - name: APP_FILE
+#           value: extra/releasetime/app.py
