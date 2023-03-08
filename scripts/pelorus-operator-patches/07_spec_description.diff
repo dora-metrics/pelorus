@@ -132,9 +132,9 @@
 +                            DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
 +                            Exporter git reference or branch.
 +                          type: string
-+                required:
-+                  - app_name
-+                  - exporter_type
++                      required:
++                        - app_name
++                        - exporter_type
 +              prometheus_retention:
 +                description: >-
 +                  Prometheus Retention time. More information:
