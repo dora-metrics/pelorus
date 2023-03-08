@@ -1,6 +1,6 @@
 --- config/manifests/bases/pelorus-operator.clusterserviceversion.yaml.original	2022-12-15 17:01:35.384242008 +0100
 +++ config/manifests/bases/pelorus-operator.clusterserviceversion.yaml	2022-12-15 17:01:46.425296201 +0100
-@@ -4,39 +4,111 @@
+@@ -4,39 +21,128 @@
    annotations:
      alm-examples: '[]'
      capabilities: Basic Install
@@ -25,6 +25,23 @@
 +      kind: Pelorus
 +      name: pelorus.charts.pelorus.konveyor.io
 +      version: v1alpha1
++      specDescriptors:
++      - path: exporters
++      - path: prometheus_retention
++      - path: prometheus_retention_size
++      - path: prometheus_storage
++      - path: prometheus_storage_pvc_capacity
++      - path: prometheus_storage_pvc_storageclass
++      - path: federated_prometheus_hosts
++      - path: external_prometheus_hosts
++      - path: openshift_prometheus_htpasswd_auth
++      - path: openshift_prometheus_basic_auth_pass
++      - path: thanos_version
++      - path: bucket_access_point
++      - path: bucket_access_key
++      - path: bucket_secret_access_key
++      - path: thanos_bucket_name
++      - path: custom_ca
 +  description: |
 +    Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 +
