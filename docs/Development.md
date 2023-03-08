@@ -2,7 +2,7 @@
 
 We appreciate your interest in contributing to Pelorus! Use this guide to help you get up and running.
 
-There are three main tracks of Pelorus development to consider.
+There are three main tracks of Pelorus development to consider. Any development changes that affect the design or introduce new functionality must be documented through an Architectural Design Record [submission](#how-to-propose-a-new-adr).
 
 1. [Deployment Automation](#contributing-to-deployment-automation)
 This track mostly involves testing, fixing, and updating our Helm chart(s) to streamline the installation and configuration experience. Knowledge of Helm, OpenShift, Operators and Prometheus configuration is assumed for this work.
@@ -10,6 +10,68 @@ This track mostly involves testing, fixing, and updating our Helm chart(s) to st
 This is where we take the raw data we've collected and turn it into actionable visual representations that will help IT organizations make important decisions. Knowledge of Grafana and PromQL is required for contribution here.
 3. [Exporter Development](#exporter-development)
 This track is focused around the development of custom [Prometheus exporters](https://prometheus.io/docs/instrumenting/writing_exporters/) to gather the information we need in order to calculate our core metrics. Python development experience is assumed.
+
+## Architectural Decision Records
+
+Architectural Decision Records (ADRs) let us keep a record of the development choices we made, the context of the problem, and why we picked the solution we did.
+
+Our ADRs are kept in the [ADRs directory](https://github.com/konveyor/pelorus/tree/master/docs/adr/) following the [agreed upon format](./adr/0001-record-architecture-decisions.md).
+
+### ADR template
+
+Our ADR template is sourced from the [adr-tools-python](https://bitbucket.org/tinkerer_/adr-tools-python/), and it comprises a few sections. `CAPITAL` words will be replaced by the tooling with generated values:
+
+```markdown
+# NUMBER. TITLE
+
+Date: DATE
+
+## Status
+
+STATUS
+
+## Context
+
+The issue motivating this decision, and any context that influences or constrains the decision.
+(Why): Describes the current situation and why you made this decision or thought it necessary—some variations explicitly break out an "alternatives covered" section to ensure all considerations get recorded.
+
+## Decision
+
+The change that we're proposing or have agreed to implement.
+(What/How): Describes the what and how of the choice.
+
+## Consequences
+
+What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated. List positive and negative aspects.
+```
+
+### How to propose a new ADR
+
+Within the Pelorus GitHub fork directory:
+
+1. Set up the dev environment
+
+        make dev-env
+
+2. Activate your virtual environment
+
+        . .venv/bin/activate
+
+3. Use the adr-new tool to create new ADR
+
+        adr-new "Title of an ADR"
+
+4. (Optional) If your new ADR is superseding an old ADR, use command as in the following example where `"My new ADR title"` is superseding ADR with number `0002`:
+
+        adr-new -s 0002 "My new ADR title"
+
+5. Modify newly created ADR file in the `docs/adr/` directory
+
+6. Open a PR with it. Discuss in the PR.
+
+7. Make the implementation PRs dependent on the ADRs PR
+
+       To ensure the implementation's pull request is merged **after** the ADR's PR it is recommended to add `Depends on: #ADR_PULL_REQUEST_NUMBER` as the first comment on the implementation PRs. Please follow the [dpulls](https://www.dpulls.com/docs#/dependencies) for more information.
 
 ## Contributing to Deployment Automation
 

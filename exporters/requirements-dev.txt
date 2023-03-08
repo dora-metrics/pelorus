@@ -29,3 +29,6 @@ pre-commit
 
 # Required by TestClient
 httpx
+
+# Managing Architecture Decision Records
+adr-tools-python
