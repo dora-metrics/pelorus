@@ -69,7 +69,7 @@
 +                            Exporter type as in the:
 +                            https://pelorus.readthedocs.io/en/latest/Configuration/#configuring-exporters-overview
 +                          type: string
-+                          enum: [deploytime, committime, failure]
++                          enum: [deploytime, committime, failure, webhook]
 +                        env_from_secrets:
 +                          description: >-
 +                            Secret name(s) with secrets used by the exporter
