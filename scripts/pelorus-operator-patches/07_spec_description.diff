@@ -1,6 +1,6 @@
 --- config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml.original	2022-12-16 20:39:18.630409481 +0100
 +++ config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml	2022-12-16 20:39:03.674340069 +0100
-@@ -15,29 +142,204 @@
+@@ -15,29 +149,211 @@
    - name: v1alpha1
      schema:
        openAPIV3Schema:
@@ -112,6 +112,8 @@
 +                              map_name:
 +                                description: 'ConfigMap name created from Certificate file.'
 +                                type: string
++                            required:
++                              - map_name
 +                        image_tag:
 +                          description: >-
 +                            DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
@@ -171,6 +173,9 @@
 +                     password:
 +                       description: 'the password used for the `internal` basic auth account (this is provided by the k8s metrics prometheus instances in a secret)'
 +                       type: string
++                  required:
++                    - id
++                    - hostname
 +              external_prometheus_hosts:
 +                description: 'List of aditional external scrape hosts'
 +                type: array
@@ -183,6 +188,8 @@
 +                     hostname:
 +                       description: 'the fully qualified domain name or ip address of the external scrape host'
 +                       type: string
++                  required:
++                    - hostname
 +              openshift_prometheus_htpasswd_auth:
 +                description: Credentials for the internal user that are used by Grafana to communicate with the Prometheus instance deployed by Pelorus.
 +                type: string
