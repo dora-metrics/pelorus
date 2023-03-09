@@ -44,33 +44,33 @@
 +      - path: exporters.instances.[0].source_url
 +      - path: exporters.instances.[0].source_ref
 +      - path: external_prometheus_hosts
-+        description: External Exporters
++        displayName: External Exporters
 +      - path: prometheus_retention
 +      - path: prometheus_retention_size
 +      - path: prometheus_storage
-+        description: Prometheus Persistent Storage (PVC)
++        displayName: Prometheus Persistent Storage (PVC)
 +      - path: prometheus_storage_pvc_capacity
-+        description: Prometheus PVC Capacity
++        displayName: Prometheus PVC Capacity
 +      - path: prometheus_storage_pvc_storageclass
-+        description: Prometheus PVC Storageclass
++        displayName: Prometheus PVC Storageclass
 +      - path: federated_prometheus_hosts
-+        description: Prometheus Federated Hosts
++        displayName: Prometheus Federated Hosts
 +      - path: openshift_prometheus_htpasswd_auth
-+        description: Prometheus Internal Auth (htpasswd)
++        displayName: Prometheus Internal Auth (htpasswd)
 +      - path: openshift_prometheus_basic_auth_pass
-+        description: Prometheus Internal Auth (basic auth)
++        displayName: Prometheus Internal Auth (basic auth)
 +      - path: thanos_bucket_name
-+        description: Thanos S3 Bucket Name
++        displayName: Thanos S3 Bucket Name
 +      - path: bucket_access_point
-+        description: Thanos S3 Access Point
++        displayName: Thanos S3 Access Point
 +      - path: bucket_access_key
-+        description: Thanos S3 Access Key
++        displayName: Thanos S3 Access Key
 +      - path: bucket_secret_access_key
-+        description: Thanos S3 Secret Access Key
++        displayName: Thanos S3 Secret Access Key
 +      - path: thanos_version
-+        description: Thanos Quay Image Tag
++        displayName: Thanos Quay Image Tag
 +      - path: custom_ca
-+        description: CA Certificate Injection
++        displayName: CA Certificate Injection
 +  description: |
 +    Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 +
