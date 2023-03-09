@@ -1,6 +1,6 @@
 --- config/manifests/bases/pelorus-operator.clusterserviceversion.yaml.original	2022-12-15 17:01:35.384242008 +0100
 +++ config/manifests/bases/pelorus-operator.clusterserviceversion.yaml	2022-12-15 17:01:46.425296201 +0100
-@@ -4,39 +4,111 @@
+@@ -4,39 +56,163 @@
    annotations:
      alm-examples: '[]'
      capabilities: Basic Install
@@ -25,6 +25,58 @@
 +      kind: Pelorus
 +      name: pelorus.charts.pelorus.konveyor.io
 +      version: v1alpha1
++      specDescriptors:
++      - path: exporters.instances.[0].app_name
++        displayName: Exporter Instance Name
++      - path: exporters.instances.[0].exporter_type
++      - path: exporters.instances.[0].env_from_secrets.[0]
++        x-descriptors:
++        - urn:alm:descriptor:io.kubernetes:Secret
++      - path: exporters.instances.[0].env_from_configmaps.[0]
++        displayName: Env From ConfigMap
++        x-descriptors:
++        - urn:alm:descriptor:io.kubernetes:ConfigMap
++      - path: exporters.instances.[0].extraEnv
++      - path: exporters.instances.[0].enabled
++      - path: exporters.instances.[0].custom_certs.[0].map_name
++        x-descriptors:
++        - urn:alm:descriptor:io.kubernetes:ConfigMap
++      - path: exporters.instances.[0].image_tag
++      - path: exporters.instances.[0].image_name
++      - path: exporters.instances.[0].source_url
++      - path: exporters.instances.[0].source_ref
++      - path: external_prometheus_hosts
++        displayName: External Exporters
++      - path: external_prometheus_hosts[0].id
++        displayName: External Exporter name
++      - path: prometheus_retention
++      - path: prometheus_retention_size
++      - path: prometheus_storage
++        displayName: Prometheus Persistent Storage (PVC)
++      - path: prometheus_storage_pvc_capacity
++        displayName: Prometheus PVC Capacity
++      - path: prometheus_storage_pvc_storageclass
++        displayName: Prometheus PVC Storageclass
++      - path: federated_prometheus_hosts
++        displayName: Prometheus Federated Hosts
++      - path: federated_prometheus_hosts[0].id
++        displayName: Federated Exporter name
++      - path: openshift_prometheus_htpasswd_auth
++        displayName: Prometheus Internal Auth (htpasswd)
++      - path: openshift_prometheus_basic_auth_pass
++        displayName: Grafana Datasource Internal Auth (basic auth)
++      - path: thanos_bucket_name
++        displayName: Thanos S3 Bucket Name
++      - path: bucket_access_point
++        displayName: Thanos S3 Access Point
++      - path: bucket_access_key
++        displayName: Thanos S3 Access Key
++      - path: bucket_secret_access_key
++        displayName: Thanos S3 Secret Access Key
++      - path: thanos_version
++        displayName: Thanos Quay Image Tag
++      - path: custom_ca
++        displayName: CA Certificate Injection
 +  description: |
 +    Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 +

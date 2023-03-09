@@ -1,6 +1,6 @@
 --- config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml.original	2022-12-16 20:39:18.630409481 +0100
 +++ config/crd/bases/charts.pelorus.konveyor.io_pelorus.yaml	2022-12-16 20:39:03.674340069 +0100
-@@ -15,29 +42,104 @@
+@@ -15,29 +139,201 @@
    - name: v1alpha1
      schema:
        openAPIV3Schema:
@@ -47,18 +47,86 @@
 -            x-kubernetes-preserve-unknown-fields: true
 +            properties:
 +              exporters:
-+                description: >-
-+                  References configuration for the Pelorus exporters. More
-+                  info about exporters configuration:
-+                  https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusExporters/
-+
-+                    Example:
-+                      instances:
-+                        - app_name: < instance_name >
-+                          enabled: < won't be created if set to false >
-+                          exporter_type: < deploytime, committime, failure >
++                description: Configure Pelorus exporters' References.
 +                type: object
-+                x-kubernetes-preserve-unknown-fields: true
++                properties:
++                  instances:
++                    type: array
++                    items:
++                      type: object
++                      properties:
++                        app_name:
++                          description: Must consist of lower case alphanumeric characters or '-'.
++                          type: string
++                        exporter_type:
++                          description: >-
++                            Exporter type as in the:
++                            https://pelorus.readthedocs.io/en/latest/Configuration/#configuring-exporters-overview
++                          type: string
++                          enum: [deploytime, committime, failure, webhook]
++                        env_from_secrets:
++                          description: Secret name(s) with configuration used by the exporter instance.
++                          type: array
++                          items:
++                            type: string
++                        env_from_configmaps:
++                          description: ConfigMap name(s) with configuration used by the exporter instance.
++                          type: array
++                          items:
++                            type: string
++                        extraEnv:
++                          description: List of Name and Value pairs used to configure the exporter instance.
++                          type: array
++                          items:
++                            type: object
++                            properties:
++                              name:
++                                description: 'Option name.'
++                                type: string
++                              value:
++                                description: 'Option value.'
++                                type: string
++                            required:
++                              - name
++                              - value
++                        enabled:
++                          description: If set to false, exporter instance won't be created.
++                          type: boolean
++                          default: true
++                        custom_certs:
++                          description: ConfigMap name(s) with custom CA certificates.
++                          type: array
++                          items:
++                            type: object
++                            properties:
++                              map_name:
++                                description: 'ConfigMap name created from Certificate file.'
++                                type: string
++                            required:
++                              - map_name
++                        image_tag:
++                          description: >-
++                            DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
++                            Exporter image tag.
++                          type: string
++                        image_name:
++                          description: >-
++                            DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
++                            Exporter image name, with registry.
++                          type: string
++                        source_url:
++                          description: >-
++                            DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
++                            Exporter git source code.
++                          type: string
++                        source_ref:
++                          description: >-
++                            DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
++                            Exporter git reference or branch.
++                          type: string
++                      required:
++                        - app_name
++                        - exporter_type
 +              prometheus_retention:
 +                description: >-
 +                  Prometheus Retention time. More information:
@@ -81,32 +149,61 @@
 +                description: Prometheus Persistent Volume storage class to be used.
 +                type: string
 +              federated_prometheus_hosts:
-+                description: 'List of aditional Federation hosts'
++                description: 'List of additional Federation hosts.'
 +                type: array
 +                items:
 +                  type: object
 +                  properties:
 +                     id:
-+                       description: 'Description of the Federation host (this will be used as a label to select metrics in the federated instance)'
++                       description: Must consist of lower case alphanumeric characters or '-'.
 +                       type: string
 +                     hostname:
-+                       description: 'the fully qualified domain name or ip address of the Federation host'
++                       description: 'The fully qualified domain name or IP Address of the Prometheus Federation host.'
 +                       type: string
 +                     password:
-+                       description: 'the password used for the `internal` basic auth account (this is provided by the k8s metrics prometheus instances in a secret)'
++                       description: 'The federated Prometheus "basic auth" password.'
 +                       type: string
++                  required:
++                    - id
++                    - hostname
 +              external_prometheus_hosts:
-+                description: 'List of aditional external scrape hosts'
++                description: 'List of additional external scrape hosts.'
 +                type: array
 +                items:
 +                  type: object
 +                  properties:
 +                     id:
-+                       description: 'Description of external scrape host'
++                       description: Must consist of lower case alphanumeric characters or '-'.
 +                       type: string
 +                     hostname:
-+                       description: 'the fully qualified domain name or ip address of the external scrape host'
++                       description: 'The fully qualified domain name or IP Address of the external scrape host'
 +                       type: string
++                  required:
++                    - hostname
++              openshift_prometheus_htpasswd_auth:
++                description: Credentials for the internal user that are used by Grafana to communicate with the Prometheus and Thanos deployed by Pelorus. Must match the "Grafana Datasource Internal Auth (basic auth)".
++                type: string
++              openshift_prometheus_basic_auth_pass:
++                description: Password for Grafana to communicate with the Prometheus datasource. Must match the "Prometheus Internal Auth (htpasswd)".
++                type: string
++              thanos_version:
++                description: DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION Thanos version from the Official Thanos podman image.
++                type: string
++              bucket_access_point:
++                description: S3 named network endpoint that is used to perform S3 object operations.
++                type: string
++              bucket_access_key:
++                description: S3 Access Key ID.
++                type: string
++              bucket_secret_access_key:
++                description: S3 Secret Access Key.
++                type: string
++              thanos_bucket_name:
++                description: S3 bucket name.
++                type: string
++              custom_ca:
++                description: Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs).
++                type: boolean
            status:
              description: Status defines the observed state of Pelorus
              type: object
