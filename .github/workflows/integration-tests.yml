@@ -1,18 +1,9 @@
 name: Integration Tests
 on:
-  push:
-    paths:
-      - 'exporters/**'
-      - 'pyproject.toml'
-      - '.github/workflows/integration-tests.yml'
-      - 'Makefile'
-
-  pull_request:
-    paths:
-      - 'exporters/**'
-      - 'pyproject.toml'
-      - '.github/workflows/integration-tests.yml'
-      - 'Makefile'
+  workflow_run:
+    workflows: ["Pre Integration Tests"]
+    types:
+      - completed
 
 jobs:
   integration-test:
@@ -22,23 +13,26 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10', '3.11']
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: |
-            **/requirements*.txt
-            pyproject.toml
 
-      - name: Install dependencies
-        run: make dev-env
+      - name: Download Artifact Docs
+        uses: dawidd6/action-download-artifact@v2.24.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: pre-integration-tests.yml
+          run_id: ${{ github.event.workflow_run.id }}
+          name: builded-code-${{ matrix.python-version }}
+          path: ./
+
+      - name: Unzip builded code
+        run:
+          unzip builded-code-${{ matrix.python-version }}.zip
+          rm -f builded-code-${{ matrix.python-version }}.zip
 
       - name: Run integration-test
         env:
-          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
-          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          PAGER_DUTY_TOKEN: ${{ secrets.PAGER_DUTY_TOKEN }}
         run: make integration-tests
