@@ -40,20 +40,37 @@ function print_help() {
     printf "\t  -d\tpath to EMPTY destination folder, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_DIR}"
     printf "\t  -p\tpath to DIR with operator patches to be applied, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_PATCHES_DIR}"
     printf "\t  -v\toperator version to be used in a format x.y.z. If not set z+1 is used.\n"
+    printf "\t  -o\tQuay user/org name, default to pelorus, which is the production storage.\n"
     exit 0
 }
 
 ### Options
 OPTIND=1
-while getopts "s:d:p:h?v:" option; do
+while getopts "s:d:p:h?v:o:" option; do
     case "$option" in
     h|\?) print_help;;
     s)    source_dir=$OPTARG;;
     d)    destination_dir=$OPTARG;;
     p)    patches_dir=$OPTARG;;
     v)    operator_ver=$OPTARG;;
+    o)    quay_user=$OPTARG;;
     esac
 done
+
+# Check preconditions
+if ! oc auth can-i '*' '*' --all-namespaces &> /dev/null; then
+    echo "You must be logged in to a OpenShift cluster as a user with cluster-admin permissions to run this script."
+    echo "This avoids RBAC problems. More info: https://sdk.operatorframework.io/docs/building-operators/helm/tutorial/#prerequisites"
+    exit 1
+fi
+if ! oc get crd grafanas.integreatly.org &> /dev/null; then
+    echo "Grafana CRD not found."
+    exit 1
+fi
+if ! oc get crd prometheuses.monitoring.coreos.com &> /dev/null; then
+    echo "Prometheus CRD not found."
+    exit 1
+fi
 
 if [ -z ${source_dir+x} ]; then
     source_dir="${DEFAULT_PELORUS_CHARTS_DIR}"
@@ -63,6 +80,9 @@ if [ -z ${destination_dir+x} ]; then
 fi
 if [ -z ${patches_dir+x} ]; then
     patches_dir="${DEFAULT_PELORUS_OPERATOR_PATCHES_DIR}"
+fi
+if [ -n "${quay_user}" ]; then
+    OPERATOR_ORG_NAME="${quay_user}"
 fi
 
 echo "INFO: Source directory: ${source_dir}"

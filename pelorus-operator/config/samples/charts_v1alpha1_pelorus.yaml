@@ -10,16 +10,9 @@ spec:
     - app_name: deploytime-exporter
       exporter_type: deploytime
     - app_name: failuretime-exporter
-      enabled: false
-      env_from_configmaps:
-      - pelorus-config
-      - failuretime-config
-      env_from_secrets:
-      - jira-secret
       exporter_type: failure
     - app_name: committime-exporter
       exporter_type: committime
-  extra_prometheus_hosts: null
   openshift_prometheus_basic_auth_pass: changeme
   openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
   prometheus_retention: 1y
