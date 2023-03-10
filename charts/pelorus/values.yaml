@@ -40,9 +40,13 @@ exporters:
 
     - app_name: failuretime-exporter
       exporter_type: failure
+      enabled: false
 
     - app_name: committime-exporter
       exporter_type: committime
+
+    - app_name: webhook-exporter
+      exporter_type: webhook
 
 # Experimental GitHub releasetime exporter
 #     - app_name: releasetime-exporter

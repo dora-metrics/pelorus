@@ -10,9 +10,12 @@ spec:
     - app_name: deploytime-exporter
       exporter_type: deploytime
     - app_name: failuretime-exporter
+      enabled: false
       exporter_type: failure
     - app_name: committime-exporter
       exporter_type: committime
+    - app_name: webhook-exporter
+      exporter_type: webhook
   openshift_prometheus_basic_auth_pass: changeme
   openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
   prometheus_retention: 1y

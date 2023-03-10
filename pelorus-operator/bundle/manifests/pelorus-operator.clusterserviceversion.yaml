@@ -20,11 +20,16 @@ metadata:
                 },
                 {
                   "app_name": "failuretime-exporter",
+                  "enabled": false,
                   "exporter_type": "failure"
                 },
                 {
                   "app_name": "committime-exporter",
                   "exporter_type": "committime"
+                },
+                {
+                  "app_name": "webhook-exporter",
+                  "exporter_type": "webhook"
                 }
               ]
             },
@@ -42,7 +47,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.5
-    createdAt: "2023-03-10T12:28:30Z"
+    createdAt: "2023-03-10T15:45:43Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -203,6 +208,12 @@ spec:
           verbs:
           - '*'
         - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreams
+          verbs:
+          - '*'
+        - apiGroups:
           - monitoring.coreos.com
           resources:
           - prometheuses
@@ -244,12 +255,6 @@ spec:
           - grafanadashboards
           - grafanadatasources
           - grafanas
-          verbs:
-          - '*'
-        - apiGroups:
-          - image.openshift.io
-          resources:
-          - imagestreams
           verbs:
           - '*'
         - apiGroups:
