@@ -9,5 +9,5 @@ spec:
   name: prometheus
   source: community-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: prometheusoperator.0.47.0
+  startingCSV: prometheusoperator.{{ .Values.prometheus_subscription_version }}
 
