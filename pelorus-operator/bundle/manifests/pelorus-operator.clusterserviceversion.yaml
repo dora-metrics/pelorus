@@ -21,22 +21,18 @@ metadata:
                 {
                   "app_name": "failuretime-exporter",
                   "enabled": false,
-                  "env_from_configmaps": [
-                    "pelorus-config",
-                    "failuretime-config"
-                  ],
-                  "env_from_secrets": [
-                    "jira-secret"
-                  ],
                   "exporter_type": "failure"
                 },
                 {
                   "app_name": "committime-exporter",
                   "exporter_type": "committime"
+                },
+                {
+                  "app_name": "webhook-exporter",
+                  "exporter_type": "webhook"
                 }
               ]
             },
-            "extra_prometheus_hosts": null,
             "openshift_prometheus_basic_auth_pass": "changeme",
             "openshift_prometheus_htpasswd_auth": "internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=",
             "prometheus_retention": "1y",
@@ -50,16 +46,16 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    containerImage: quay.io/pelorus/pelorus-operator:0.0.4
-    createdAt: "2023-03-02T21:50:29Z"
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.5
+    createdAt: "2023-03-10T15:45:43Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
-    operators.operatorframework.io/builder: operator-sdk-v1.26.1
+    operators.operatorframework.io/builder: operator-sdk-v1.27.0
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
     repository: https://github.com/konveyor/pelorus/
     support: Pelorus Community
-  name: pelorus-operator.v0.0.4
+  name: pelorus-operator.v0.0.5
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -70,6 +66,58 @@ spec:
       displayName: Pelorus
       kind: Pelorus
       name: pelorus.charts.pelorus.konveyor.io
+      specDescriptors:
+      - displayName: Exporter Instance Name
+        path: exporters.instances.[0].app_name
+      - path: exporters.instances.[0].exporter_type
+      - path: exporters.instances.[0].env_from_secrets.[0]
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes:Secret
+      - displayName: Env From ConfigMap
+        path: exporters.instances.[0].env_from_configmaps.[0]
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes:ConfigMap
+      - path: exporters.instances.[0].extraEnv
+      - path: exporters.instances.[0].enabled
+      - path: exporters.instances.[0].custom_certs.[0].map_name
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes:ConfigMap
+      - path: exporters.instances.[0].image_tag
+      - path: exporters.instances.[0].image_name
+      - path: exporters.instances.[0].source_url
+      - path: exporters.instances.[0].source_ref
+      - displayName: External Exporters
+        path: external_prometheus_hosts
+      - displayName: External Exporter name
+        path: external_prometheus_hosts[0].id
+      - path: prometheus_retention
+      - path: prometheus_retention_size
+      - displayName: Prometheus Persistent Storage (PVC)
+        path: prometheus_storage
+      - displayName: Prometheus PVC Capacity
+        path: prometheus_storage_pvc_capacity
+      - displayName: Prometheus PVC Storageclass
+        path: prometheus_storage_pvc_storageclass
+      - displayName: Prometheus Federated Hosts
+        path: federated_prometheus_hosts
+      - displayName: Federated Exporter name
+        path: federated_prometheus_hosts[0].id
+      - displayName: Prometheus Internal Auth (htpasswd)
+        path: openshift_prometheus_htpasswd_auth
+      - displayName: Grafana Datasource Internal Auth (basic auth)
+        path: openshift_prometheus_basic_auth_pass
+      - displayName: Thanos S3 Bucket Name
+        path: thanos_bucket_name
+      - displayName: Thanos S3 Access Point
+        path: bucket_access_point
+      - displayName: Thanos S3 Access Key
+        path: bucket_access_key
+      - displayName: Thanos S3 Secret Access Key
+        path: bucket_secret_access_key
+      - displayName: Thanos Quay Image Tag
+        path: thanos_version
+      - displayName: CA Certificate Injection
+        path: custom_ca
       version: v1alpha1
   description: |
     Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
@@ -160,6 +208,26 @@ spec:
           verbs:
           - '*'
         - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreams
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheuses
+          - prometheusrules
+          - servicemonitors
+          verbs:
+          - '*'
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - '*'
+        - apiGroups:
           - ""
           resources:
           - configmaps
@@ -187,26 +255,6 @@ spec:
           - grafanadashboards
           - grafanadatasources
           - grafanas
-          verbs:
-          - '*'
-        - apiGroups:
-          - image.openshift.io
-          resources:
-          - imagestreams
-          verbs:
-          - '*'
-        - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - prometheuses
-          - prometheusrules
-          - servicemonitors
-          verbs:
-          - '*'
-        - apiGroups:
-          - route.openshift.io
-          resources:
-          - routes
           verbs:
           - '*'
         - apiGroups:
@@ -358,7 +406,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/pelorus/pelorus-operator:0.0.4
+                image: quay.io/pelorus/pelorus-operator:0.0.5
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -460,9 +508,10 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.4
-  replaces: pelorus-operator.v0.0.3
+  version: 0.0.5
+  replaces: pelorus-operator.v0.0.4
   skips:
+    - pelorus-operator.v0.0.4
     - pelorus-operator.v0.0.3
     - pelorus-operator.v0.0.2
     - pelorus-operator.v0.0.1

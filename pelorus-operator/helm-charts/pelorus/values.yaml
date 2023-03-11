@@ -5,7 +5,8 @@
 # to reset password: htpasswd -s -b -n internal changeme
 openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
 openshift_prometheus_basic_auth_pass: changeme
-extra_prometheus_hosts:
+# federated_prometheus_hosts:
+# external_prometheus_hosts:
 
 # Uncomment this if your cluster serves privately signed certificates
 # custom_ca: true
@@ -34,36 +35,26 @@ prometheus_retention_size: 1GB
 
 exporters:
   instances:
-  - app_name: deploytime-exporter
-    exporter_type: deploytime
-    # env_from_configmaps:
-    # - pelorus-config
-    # - deploytime-config
+    - app_name: deploytime-exporter
+      exporter_type: deploytime
 
-  - app_name: failuretime-exporter
-    exporter_type: failure
-    enabled: false
-    env_from_configmaps:
-    - pelorus-config
-    - failuretime-config
-    env_from_secrets:
-    - jira-secret
+    - app_name: failuretime-exporter
+      exporter_type: failure
+      enabled: false
 
-  - app_name: committime-exporter
-    exporter_type: committime
-#    env_from_configmaps:
-#    - pelorus-config
-#    - committime-config
-#    env_from_secrets:
-#    - github-secret
+    - app_name: committime-exporter
+      exporter_type: committime
+
+    - app_name: webhook-exporter
+      exporter_type: webhook
 
 # Experimental GitHub releasetime exporter
-#  - app_name: releasetime-exporter
-#    env_from_configmaps:
-#    - pelorus-config
-#    - releasetime-config
-#    env_from_secrets:
-#    - github-secret
-#    extraEnv:
-#    - name: APP_FILE
-#      value: extra/releasetime/app.py
+#     - app_name: releasetime-exporter
+#       env_from_configmaps:
+#         - pelorus-config
+#         - releasetime-config
+#       env_from_secrets:
+#         - github-secret
+#       extraEnv:
+#         - name: APP_FILE
+#           value: extra/releasetime/app.py
