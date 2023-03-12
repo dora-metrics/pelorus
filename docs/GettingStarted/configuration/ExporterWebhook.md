@@ -175,7 +175,7 @@ $ curl -X POST <Webhook route URI>/pelorus/webhook \
        -H "User-Agent: Pelorus-Webhook/test" \
        -H "X-Pelorus-Event: committime" \
        -H "Content-Type: application/json" \
-       -d ./mongo_committime.json
+       -d @./mongo_committime.json
 ```
 
 ```shell
@@ -183,7 +183,7 @@ $ curl -X POST <Webhook route URI>/pelorus/webhook \
        -H "User-Agent: Pelorus-Webhook/test" \
        -H "X-Pelorus-Event: deploytime" \
        -H "Content-Type: application/json" \
-       -d ./mongo_deploytime.json
+       -d @./mongo_deploytime.json
 ```
 
 ```shell
@@ -191,7 +191,7 @@ $ curl -X POST <Webhook route URI>/pelorus/webhook \
        -H "User-Agent: Pelorus-Webhook/test" \
        -H "X-Pelorus-Event: failure" \
        -H "Content-Type: application/json" \
-       -d ./mongo_production_failure.json
+       -d @./mongo_production_failure.json
 ```
 
 ```shell
@@ -199,5 +199,5 @@ $ curl -X POST <Webhook route URI>/pelorus/webhook \
        -H "User-Agent: Pelorus-Webhook/test" \
        -H "X-Pelorus-Event: failure" \
        -H "Content-Type: application/json" \
-       -d ./mongo_production_failure_resolved.json
+       -d @./mongo_production_failure_resolved.json
 ```
