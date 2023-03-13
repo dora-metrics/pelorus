@@ -163,7 +163,12 @@ async def get_handler(user_agent: str) -> Optional[Type[PelorusWebhookPlugin]]:
 
 
 # TODO App Module
-app = FastAPI(title="Pelorus Webhook receiver")
+app = FastAPI(
+    title="Pelorus Webhook receiver",
+    openapi_url=None,
+    docs_url=None,
+    redoc_url=None,
+)
 
 
 @app.post(
@@ -214,7 +219,7 @@ async def pelorus_webhook(
     )
 
 
-@app.get("/metrics", response_class=PlainTextResponse)
+@app.get("/{path:path}", response_class=PlainTextResponse)
 async def metrics():
     return generate_latest()
 
