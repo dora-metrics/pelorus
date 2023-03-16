@@ -33,7 +33,7 @@ oc get all -n pelorus
 ***Note*** pause to allow the install to fully complete.
 
 ## Pelorus configuration
-1. Make a copy of [the values.yaml file in the pelorus repo](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) ([raw link for curl-ing](https://raw.githubusercontent.com/konveyor/pelorus/master/charts/pelorus/values.yaml)) and save it to /var/tmp/values.yaml
+1. Make a copy of [the values.yaml file in the pelorus repo](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/values.yaml) ([raw link for curl-ing](https://raw.githubusercontent.com/dora-metrics/pelorus/master/charts/pelorus/values.yaml)) and save it to /var/tmp/values.yaml
 ```
 cp charts/pelorus/values.yaml /var/tmp/
 ```
@@ -51,7 +51,7 @@ exporters:
     - name: NAMESPACES
       value: mongo-persistent
     source_ref: master
-    source_url: https://github.com/konveyor/pelorus.git
+    source_url: https://github.com/dora-metrics/pelorus.git
   - app_name: committime-exporter
     source_context_dir: exporters/
     extraEnv:
@@ -60,7 +60,7 @@ exporters:
     - name: LOG_LEVEL
       value: DEBUG
     source_ref: master
-    source_url: https://github.com/konveyor/pelorus.git
+    source_url: https://github.com/dora-metrics/pelorus.git
 ```
 3. [Documentation regarding values.yaml can be found on our readthedocs page.](https://pelorus.readthedocs.io/en/latest/Configuration/)
   Apply the updated values for Pelorus by executing:
@@ -113,7 +113,7 @@ You should now see at least one measurement for "Lead time for Change" and "Depl
 
 1. Fork the Pelorus git repo
 To develop a Pelorus exporter please fork the Pelorus git source and branch
-  * Fork [the pelorus repo](https://github.com/konveyor/pelorus) to https://github.com/your_org/pelorus
+  * Fork [the pelorus repo](https://github.com/dora-metrics/pelorus) to https://github.com/your_org/pelorus
 
 2. If you have forked Pelorus to a private git repository
 Create a GitHub Personal Access Token and store it as a secret in Openshift:

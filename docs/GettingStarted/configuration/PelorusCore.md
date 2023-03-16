@@ -8,7 +8,7 @@ Each Pelorus Core configuration option must be placed under `spec` in the Peloru
 
 ```yaml
 kind: Pelorus
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 metadata:
   name: pelorus-pelorus-instance
   namespace: pelorus
@@ -26,7 +26,7 @@ Configuration part of the Pelorus object YAML file, with some non-default option
 
 ```yaml
 kind: Pelorus
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 metadata:
   name: pelorus-instance
   namespace: pelorus

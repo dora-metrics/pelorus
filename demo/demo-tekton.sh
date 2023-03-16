@@ -130,7 +130,7 @@ fi
 # FOUND_COMMITTIME=false
 # Check if Pelorus is deployed on the cluster and monitors
 # required namespace or default one, which means all of them
-# COMMITTIME_EXPORTERS=$(oc get pod -n pelorus -l pelorus.konveyor.io/exporter-type=committime --field-selector=status.phase==Running --no-headers -o custom-columns=":metadata.name")
+# COMMITTIME_EXPORTERS=$(oc get pod -n pelorus -l pelorus.dora-metrics.io/exporter-type=committime --field-selector=status.phase==Running --no-headers -o custom-columns=":metadata.name")
 # for committime_exporter in $COMMITTIME_EXPORTERS;
 # do
 #  committime_namespaces=$(oc exec -n pelorus "${committime_exporter}" -- printenv NAMESPACES)

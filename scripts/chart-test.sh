@@ -2,7 +2,7 @@
 
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
 
-GIT_REPO=konveyor/pelorus.git
+GIT_REPO=dora-metrics/pelorus.git
 REMOTE=origin
 ORIGIN=$(git remote show origin)
 

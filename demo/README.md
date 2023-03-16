@@ -10,7 +10,7 @@ The details of each build type and the steps required to support Pelorus can be 
 
 * Install the Pelorus operator, using the installation [documentation](../docs/GettingStarted/Installation.md)
 
-* Fork the [konveyor/pelorus](https://github.com/konveyor/pelorus) git repository to your github organization.
+* Fork the [dora-metrics/pelorus](https://github.com/dora-metrics/pelorus) git repository to your github organization.
 
 * Add or configure your github-secret with your Github token:
 ```

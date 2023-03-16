@@ -11,6 +11,4 @@ related to #<!-- issue number -->
 
 ## Testing Instructions
 
-Please include any additional commands or pointers in addition to our [standard PR testing process](https://pelorus.readthedocs.io/en/latest/Development/#testing-pull-requests).
-
-@redhat-cop/mdt
+<!-- Please include any additional commands or pointers in addition to our [standard PR testing process](https://pelorus.readthedocs.io/en/latest/Development/#testing-pull-requests) -->

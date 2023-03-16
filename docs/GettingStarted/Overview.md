@@ -30,7 +30,7 @@ Pelorus is composed of Prometheus, Grafana and exporters. It can be easily deplo
 
 List of providers supported by Pelorus.
 
-Open an [issue](https://github.com/konveyor/pelorus/issues/new) or a pull request to add support for additional providers!
+Open an [issue](https://github.com/dora-metrics/pelorus/issues/new) or a pull request to add support for additional providers!
 
 ### Deployment
 

@@ -17,7 +17,7 @@
 
 OPERATOR_PROJECT_NAME=pelorus-operator
 OPERATOR_ORG_NAME=pelorus
-OPERATOR_PROJECT_DOMAIN=pelorus.konveyor.io
+OPERATOR_PROJECT_DOMAIN=pelorus.dora-metrics.io
 
 # Get the full absolute path to the script. Needed while calling the script
 # via various partial paths or sourcing the file from shell
@@ -120,7 +120,7 @@ pushd "${destination_dir}" || exit 2
     operator-sdk create api --helm-chart="${source_dir}" || exit 2
 
     # Correct operator version, to be latest +1
-    OPERATOR_VERSIONS=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq ".tags[] | select(.end_ts == null) | .name" | sed -e 's|\"||g' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' -o | sort --reverse)
+    OPERATOR_VERSIONS=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq ".tags[] | select(.end_ts == null) | .name" | sed -e 's|\"||g' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' -o | sort -t. -nrk1,1 -nrk2,2 -nrk3,3)
     OPERATOR_VERSION=$(echo "$OPERATOR_VERSIONS" | head -1 )
     echo "INFO: Current operator version: ${OPERATOR_VERSION}"
 
@@ -184,7 +184,7 @@ elif [ "$(ls -A "${patches_dir}/bundle-patches"/*.diff 2>/dev/null)" ]; then
         done
 fi
 
-echo "INFO: Adding replaces and skips entries to ${source_dir}${destination_dir}/bundle/manifests/charts.pelorus.konveyor.io_pelorus.yaml"
+echo "INFO: Adding replaces and skips entries to ${source_dir}${destination_dir}/bundle/manifests/charts.pelorus.dora-metrics.io_pelorus.yaml"
 set -e
 $SCRIPT_DIR/specify_operator_update.py $NEW_OPERATOR_VERSION $destination_dir $OPERATOR_VERSIONS
 

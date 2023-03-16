@@ -15,7 +15,7 @@ This track is focused around the development of custom [Prometheus exporters](ht
 
 Architectural Decision Records (ADRs) let us keep a record of the development choices we made, the context of the problem, and why we picked the solution we did.
 
-Our ADRs are kept in the [ADRs directory](https://github.com/konveyor/pelorus/tree/master/docs/adr/) following the [agreed upon format](./adr/0001-record-architecture-decisions.md).
+Our ADRs are kept in the [ADRs directory](https://github.com/dora-metrics/pelorus/tree/master/docs/adr/) following the [agreed upon format](./adr/0001-record-architecture-decisions.md).
 
 ### ADR template
 
@@ -81,15 +81,15 @@ See the [Install guide](GettingStarted/Installation.md) for more details on that
 
 Currently we have two charts:
 
-1. The [operators](https://github.com/konveyor/pelorus/blob/master/charts/operators/) chart installs the community operators on which Pelorus depends.
+1. The [operators](https://github.com/dora-metrics/pelorus/blob/master/charts/operators/) chart installs the community operators on which Pelorus depends.
     * [Prometheus Operator](https://operatorhub.io/operator/prometheus)
     * [Grafana Operator](https://operatorhub.io/operator/grafana-operator)
-2. The [pelorus](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/) chart manages the Pelorus stack, which includes:
+2. The [pelorus](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/) chart manages the Pelorus stack, which includes:
     * Prometheus
     * Thanos
     * Grafana
     * A set of Grafana Dashboards and Datasources
-    * The Pelorus exporters, managed in an [exporter](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
+    * The Pelorus exporters, managed in an [exporter](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
 
 We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `make chart-lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
 
@@ -104,7 +104,7 @@ We have provided scripts that can test when a version bump is needed and do the 
 
 You can check all chart versions and bump them if needed with a script that compares upstream pelorus repository with the changes in a fork. To do so ensure your upstream repository is added to your fork by:
 
-    $ git remote add upstream https://github.com/konveyor/pelorus.git
+    $ git remote add upstream https://github.com/dora-metrics/pelorus.git
     $ git pull
     $ make chart-check-bump
 
@@ -216,9 +216,9 @@ If not defined specifically, exporters are using pre-built container images with
 
 #### Pre-built Quay images
 
-Each Pelorus GitHub pull request that is [merged](https://github.com/konveyor/pelorus/pulls?q=is%3Apr+is%3Amerged) results in a new set of images that are tagged with the GitHub commit hash, for example `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/konveyor/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31). The newest merged commit results in additional image tag `latest`.
+Each Pelorus GitHub pull request that is [merged](https://github.com/dora-metrics/pelorus/pulls?q=is%3Apr+is%3Amerged) results in a new set of images that are tagged with the GitHub commit hash, for example `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31). The newest merged commit results in additional image tag `latest`.
 
-Each new Pelorus [release](https://github.com/konveyor/pelorus/releases) results in a new set of images that are tagged with the release number, for example `v2.0.8`. At the same time when release is made a `stable` tag is updated to point to the latest released version of the images.
+Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in a new set of images that are tagged with the release number, for example `v2.0.8`. At the same time when release is made a `stable` tag is updated to point to the latest released version of the images.
 
 During Pelorus Helm deployment or update time user have option to specify the image tag for each exporter instance individually. Example below shows two different tags for the commit time exporter and two tags for the failure exporter.
 
@@ -302,7 +302,7 @@ exporters:
 
 #### Source-to-image (S2I)
 
-By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/konveyor/pelorus/releases) Pelorus.
+By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/dora-metrics/pelorus/releases) Pelorus.
 
 Example of such exporter instances are below:
 
@@ -311,7 +311,7 @@ exporters:
   instances:
   - app_name: committime-github
     exporter_type: comittime
-    source_url: https://github.com/konveyor/pelorus.git
+    source_url: https://github.com/dora-metrics/pelorus.git
     source_ref: refs/pull/567/head # References not merged GitHub pull request number 567
     env_from_secrets:
     - github-credentials
@@ -364,7 +364,7 @@ pre-commit run --all-files
 
 To bypass pre-commit checks, pass the `--no-verify` (`-n`) flag to `git commit` command.
 
-pre-commit configuration in [`.pre-commit-config.yaml`](https://github.com/konveyor/pelorus/blob/master/.pre-commit-config.yaml) file.
+pre-commit configuration in [`.pre-commit-config.yaml`](https://github.com/dora-metrics/pelorus/blob/master/.pre-commit-config.yaml) file.
 
 #### IDE Setup (VSCode)
 
@@ -491,7 +491,7 @@ The following are notes and general steps for testing Pull Requests for specific
 
 To checkout PR we recommend using [GitHub CLI](https://cli.github.com/), which simplifies process of pulling PRs.
 
-Ensure you have [Pelorus](https://github.com/konveyor/pelorus) GitHub project Forked into your GitHub user space.
+Ensure you have [Pelorus](https://github.com/dora-metrics/pelorus) GitHub project Forked into your GitHub user space.
 
 #### <a id="checkout"></a>
 Checkout the PR on top of your fork.
@@ -502,7 +502,7 @@ Checkout the PR on top of your fork.
 
     # If asked:
     # ? Which should be the base repository, select:
-    # > konveyor/pelorus
+    # > dora-metrics/pelorus
 
 
 ### Dashboard Changes
@@ -592,7 +592,7 @@ Pelorus release versions follow SemVer versioning conventions. Change of the ver
 
 2. Propose Pull Request to the project github repository. Ensure that the PR is labeled with "minor" or "major" if one was created.
 
-3. After PR is merged on the [Pelorus releases](https://github.com/konveyor/pelorus/releases) page, click edit on the latest **Draft**.
+3. After PR is merged on the [Pelorus releases](https://github.com/dora-metrics/pelorus/releases) page, click edit on the latest **Draft**.
     * Click **Publish Release**.
 
 ## Testing the Docs
@@ -611,7 +611,7 @@ rm -rf .cache && mkdocs serve
 ```
 to fix it.
 
-The mkdocs config is controlled by the `mkdocs.yml` file in the root of this project. All of the documents that will be served are in the [/docs](https://github.com/konveyor/pelorus/tree/master/docs) folder.
+The mkdocs config is controlled by the `mkdocs.yml` file in the root of this project. All of the documents that will be served are in the [/docs](https://github.com/dora-metrics/pelorus/tree/master/docs) folder.
 
 To generate diagrams images, run
 ```

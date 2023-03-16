@@ -29,7 +29,7 @@
 
 
 ## Pelorus configuration
-1. Make a copy of [the values.yaml file in the pelorus repo](https://github.com/konveyor/pelorus/blob/master/charts/pelorus/values.yaml) ([raw link for curl-ing](https://raw.githubusercontent.com/konveyor/pelorus/master/charts/pelorus/values.yaml)) and save it to /var/tmp/values.yaml
+1. Make a copy of [the values.yaml file in the pelorus repo](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/values.yaml) ([raw link for curl-ing](https://raw.githubusercontent.com/dora-metrics/pelorus/master/charts/pelorus/values.yaml)) and save it to /var/tmp/values.yaml
 ```
 cp charts/pelorus/values.yaml /var/tmp/
 ```

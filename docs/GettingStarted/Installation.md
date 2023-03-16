@@ -145,7 +145,7 @@ See the [Pelorus Exporters Configuration Guide](configuration/PelorusExporters.m
   ```shell
   $ cat > pelorus-sample-instance.yaml <<EOF
   kind: Pelorus
-  apiVersion: charts.pelorus.konveyor.io/v1alpha1
+  apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
   metadata:
     name: pelorus-sample
     namespace: pelorus
@@ -292,15 +292,15 @@ When Pelorus gets installed via helm charts, the first deploys the operators on 
 
 To begin, clone Pelorus repository. To do so, you can run
 ```
-git clone https://github.com/konveyor/pelorus.git
+git clone https://github.com/dora-metrics/pelorus.git
 ```
 which will download the latest code of Pelorus.
 
 To download a stable version, run
 ```
-git clone --depth 1 --branch <TAG> https://github.com/konveyor/pelorus.git
+git clone --depth 1 --branch <TAG> https://github.com/dora-metrics/pelorus.git
 ```
-changing **TAG** by one of [Pelorus versions](https://github.com/konveyor/pelorus/tags).
+changing **TAG** by one of [Pelorus versions](https://github.com/dora-metrics/pelorus/tags).
 
 Change the current directory to `pelorus`, by running
 ```

@@ -11,7 +11,7 @@ parameters:
     value: basic-python-tekton
   - name: PROJECT_URI
     description: "Project URI with the python-demo"
-    value: https://github.com/konveyor/pelorus
+    value: https://github.com/dora-metrics/pelorus
   - name: PROJECT_REF
     description: "Project ref with the python-demo"
     value: master

@@ -68,7 +68,7 @@ For this demo we will need to prepare a configuration file that will be used in 
 Let's create the Pelorus Configuration file and save it under the `pelorus-quickstart.yaml` file. Please adjust the `<your_github_api_token>` and `<your_org>`:
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: pelorus-quickstart

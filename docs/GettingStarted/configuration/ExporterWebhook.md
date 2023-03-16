@@ -15,7 +15,7 @@ It's important to note that the webhook exporter performs validation of the payl
 The webhook exporter configuration option must be placed under `spec.exporters.instances` in the Pelorus configuration object YAML file as in the example, with a non-default [LOG_LEVEL](#log_level) option:
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: example-configuration
