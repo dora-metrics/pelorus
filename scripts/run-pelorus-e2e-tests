@@ -100,14 +100,24 @@ function print_help() {
     printf "\tStartup:\n"
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
-    printf "\t  -b\tbranch of the mig-demo-apps\n"
-    printf "\t  -f\tvalues filename passed to the Pelorus deployment from the todolist-mongo-go project\n"
-    printf "\t  -o\tgithub organization of the mig-demo-apps\n"
-    printf "\t  -d\tpath to virtualenv DIR\n"
-    printf "\t  -s\tpath to DIR with secrets files (used in prow CI)\n"
-    printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"
-    printf "\t  -t\tenable Thanos with s3 bucket\n"
+    printf "\t  -o\tgithub organization of the mig-demo-apps. By default, konveyor\n"
+    printf "\t  -b\tbranch of the mig-demo-apps. By default, master\n"
+    printf "\t  -f\tvalues filename of the mig-demo-apps. By default, values.yaml\n"
+    printf "\t  -d\tpath to Python virtual environment DIR. By default, the project's one\n"
+    printf "\t  -s\t(USED ONLY IN PROW CI) path to DIR with secrets files. For local runs, run 'export SECRET_NAME=VALUE'\n"
+    printf "\t  -t\tenable Thanos (long term persistent storage) tests with s3 bucket\n"
     printf "\t  -c\tpath to DIR with secrets files for s3 bucket\n"
+    printf "\t  -e\tenable exporter tests (comma separated). Examples:\n"
+    printf "\t\t  -e failure\n"
+    printf "\t\t  -e gitlab_committime,jira_committime\n"
+    printf "\t\tavailable options:\n"
+    printf "\t\t  failure - GitHub issue tracker - REQUIRES 'TOKEN=YOUR_GITHUB_TOKEN' SECRET\n"
+    printf "\t\t  gitlab_committime - GitLab git provider - REQUIRES 'GITLAB_API_TOKEN=YOUR_GITLAB_TOKEN' SECRET\n"
+    printf "\t\t  gitea_committime - Gitea git provider - REQUIRES 'GITEA_API_TOKEN=YOUR_GITEA_TOKEN' SECRET\n"
+    printf "\t\t  bitbucket_committime - Bitbucket git provider - REQUIRES 'BITBUCKET_API_USER=YOUR_BITBUCKET_USER' AND 'BITBUCKET_API_TOKEN=YOUR_BITBUCKET_TOKEN' SECRETS\n"
+    printf "\t\t  azure-devops-committime - Azure devops git provider - REQUIRES 'AZURE_DEVOPS_USER=YOUR_AZURE_DEVOPS_USER' AND 'AZURE_DEVOPS_TOKEN=YOUR_AZURE_DEVOPS_TOKEN' SECRETS\n"
+    printf "\t\t  jira_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
+    printf "\t\t  jira_custom_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
     # TODO add help
 
     exit 0
@@ -131,6 +141,7 @@ ENABLE_FAIL_EXP=false
 ENABLE_GITLAB_COM_EXP=false
 ENABLE_GITEA_COM_EXP=false
 ENABLE_BITBUCKET_COM_EXP=false
+ENABLE_AZURE_DEVOPS_COM_EXP=false
 ENABLE_JIRA_FAIL_EXP=false
 ENABLE_JIRA_CUSTOM_FAIL_EXP=false
 ENABLE_PAGERDUTY_FAIL_EXP=false
@@ -176,6 +187,7 @@ if [ -n "${enable_exporters}" ]; then
     echo ",$enable_exporters," | grep -q ",gitlab_committime," && ENABLE_GITLAB_COM_EXP=true && echo "Enabling Gitlab committime exporter"
     echo ",$enable_exporters," | grep -q ",gitea_committime," && ENABLE_GITEA_COM_EXP=true && echo "Enabling Gitea committime exporter"
     echo ",$enable_exporters," | grep -q ",bitbucket_committime," && ENABLE_BITBUCKET_COM_EXP=true && echo "Enabling Bitbucket committime exporter"
+    echo ",$enable_exporters," | grep -q ",azure-devops-committime," && ENABLE_AZURE_DEVOPS_COM_EXP=true && echo "Enabling Azure devops committime exporter"
     echo ",$enable_exporters," | grep -q ",jira_committime," && ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
     echo ",$enable_exporters," | grep -q ",jira_custom_committime," && ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
     echo ",$enable_exporters," | grep -q ",pagerduty_failure," && ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
@@ -470,6 +482,28 @@ if [ "${ENABLE_BITBUCKET_COM_EXP}" == true ]; then
     BINARY_BUILDS_NAMESPACES+=("${build_ns}")
     build_uri="https://bitbucket.org/michalpryc/pelorus-bitbucket"
     build_hash="e2c4ef00468dfc10aad1bd2d4c9d470160a7f471"
+    "${BINARY_BUILD_SCRIPT}" -n "${build_ns}" -b "${build_ns}-todolist" -u "${build_uri}" -s "${build_hash}"
+fi
+
+# enable Azure devops committime exporter
+if [ "${ENABLE_AZURE_DEVOPS_COM_EXP}" == true ]; then
+    secret_configured=$(create_k8s_secret azure-devops-secret AZURE_DEVOPS_TOKEN AZURE_DEVOPS_USER)
+    secret_exit=$?
+    echo "${secret_configured}"
+    if [[ $secret_exit != 0 ]]; then
+        exit 1
+    fi
+    # uncomment the Azure devops committime exporter in ci_values.yaml
+    if [[ "$secret_configured" == *true ]]; then
+        sed -i.bak "s/#azure-devops-committime@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus Azure devops committime exporter has been enabled"
+    fi
+
+    # namespace must match one from ci_values.yaml
+    build_ns="azure-devops-binary"
+    BINARY_BUILDS_NAMESPACES+=("${build_ns}")
+    build_uri="https://dev.azure.com/matews1943/test-pelorus/_git/test-pelorus"
+    build_hash="5b65e1230f9df517bb38979f8e7743928d715973"
     "${BINARY_BUILD_SCRIPT}" -n "${build_ns}" -b "${build_ns}-todolist" -u "${build_uri}" -s "${build_hash}"
 fi
 
