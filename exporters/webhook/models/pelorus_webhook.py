@@ -51,7 +51,7 @@ class PelorusPayload(BaseModel):
     # Even if we consider git project name as app, it still should be below 100
     app: str = Field(max_length=200)
 
-    timestamp: int = Field(None, ge=1262307661, le=2840144461)
+    timestamp: int = Field(ge=1262307661, le=2840144461)
 
     def get_metric_model_name(self) -> str:
         return type(self).__name__

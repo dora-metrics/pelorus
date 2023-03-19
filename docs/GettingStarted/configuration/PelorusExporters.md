@@ -1,10 +1,11 @@
 An **exporter** is a data collector application that pulls data from various tools and exposes it such that it can be consumed by Pelorus dashboards. Each exporter gets deployed individually alongside the core Pelorus stack.
 
-There are currently three **exporter** types:
+There are currently four **exporter** types:
 
 - [Deploy time](ExporterDeploytime.md)
 - [Commit time](ExporterCommittime.md)
 - [Failure](ExporterFailure.md)
+- [Webhook](ExporterWebhook.md)
 
 
 Each exporter configuration option must be placed under `spec.exporters.instances` in the Pelorus configuration object YAML file as in the example:
