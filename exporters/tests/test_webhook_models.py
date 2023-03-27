@@ -89,6 +89,9 @@ def test_pelorus_payload_success(app, timestamp):
         ("todolist", "Mon Mar 6 15:31:32 2023 +0100"),
         ("todolist", 1262307660),
         ("todolist", 2840144462),
+        ("todolist", None),
+        ("todolist", [1678269658]),
+        ("todolist", 123.456),
     ],
 )
 def test_pelorus_wrong_timestamp(app, timestamp):
