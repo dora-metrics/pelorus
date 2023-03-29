@@ -39,7 +39,7 @@ If you are interested in contributing to the Pelorus project, please review our 
 Our support policy can be found in the [Upstream Support statement](docs/UpstreamSupport.md)
 
 ## Code of Conduct
-Refer to dora-metrics's Code of Conduct [here](https://github.com/dora-metrics/community/blob/main/CODE_OF_CONDUCT.md).
+Refer to dora-metrics's Code of Conduct [here](./CODE_OF_CONDUCT.md).
 
 ## License
 
