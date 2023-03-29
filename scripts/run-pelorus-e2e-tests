@@ -108,6 +108,7 @@ function print_help() {
     printf "\t  -e\tenable exporter <comma_list>. e.g. failure\n"
     printf "\t  -t\tenable Thanos with s3 bucket\n"
     printf "\t  -c\tpath to DIR with secrets files for s3 bucket\n"
+    # TODO add help
 
     exit 0
 }
@@ -132,6 +133,7 @@ ENABLE_GITEA_COM_EXP=false
 ENABLE_BITBUCKET_COM_EXP=false
 ENABLE_JIRA_FAIL_EXP=false
 ENABLE_JIRA_CUSTOM_FAIL_EXP=false
+ENABLE_PAGERDUTY_FAIL_EXP=false
 ENABLE_THANOS=false
 
 # Used for cleanup to ensure created binary builds can be safely deleted
@@ -176,6 +178,7 @@ if [ -n "${enable_exporters}" ]; then
     echo ",$enable_exporters," | grep -q ",bitbucket_committime," && ENABLE_BITBUCKET_COM_EXP=true && echo "Enabling Bitbucket committime exporter"
     echo ",$enable_exporters," | grep -q ",jira_committime," && ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
     echo ",$enable_exporters," | grep -q ",jira_custom_committime," && ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
+    echo ",$enable_exporters," | grep -q ",pagerduty_failure," && ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
 fi
 
 if [ -z "${demo_branch}" ]; then
@@ -499,6 +502,21 @@ if [ "${ENABLE_JIRA_CUSTOM_FAIL_EXP}" == true ]; then
     if [[ "$secret_configured" == *true ]]; then
         sed -i.bak "s/#jira-custom-failure@//g" "${DWN_DIR}/ci_values.yaml"
         echo "The pelorus JIRA custom failure exporter has been enabled"
+    fi
+fi
+
+# enable PagerDuty committime exporter
+if [ "${ENABLE_PAGERDUTY_FAIL_EXP}" == true ]; then
+    secret_configured=$(create_k8s_secret pagerduty-secret PAGER_DUTY_TOKEN)
+    secret_exit=$?
+    echo "${secret_configured}"
+    if [[ $secret_exit != 0 ]]; then
+        exit 1
+    fi
+    # uncomment the PagerDuty failure exporter in ci_values.yaml
+    if [[ "$secret_configured" == *true ]]; then
+        sed -i.bak "s/#pagerduty_failure@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus PagerDuty failure exporter has been enabled"
     fi
 fi
 
