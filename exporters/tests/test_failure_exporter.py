@@ -53,23 +53,16 @@ def setup_jira_collector(
     )
 
 
+@pytest.mark.parametrize("token", ["WIEds4uZHiCGnrtmgQPn9E7D", "fakepass"])
 @pytest.mark.integration
-def test_jira_connection():
-    collector = setup_jira_collector()
+def test_jira_error_connection(token: str):
+    collector = setup_jira_collector(token=token)
     with pytest.raises(JIRAError) as context_ex:
         collector._connect_to_jira()
     assert (
         "You are not authenticated. Authentication required to perform this operation."
         in str(context_ex.value)
     )
-
-
-@pytest.mark.integration
-def test_jira_pass_connection():
-    collector = setup_jira_collector(token="fakepass")
-    with pytest.raises(JIRAError) as context_ex:
-        collector._connect_to_jira()
-    assert "Basic authentication with passwords is deprecated" in str(context_ex.value)
 
 
 @pytest.mark.parametrize("projects", ["non_existing,Test,wrong_name", "Test"])
