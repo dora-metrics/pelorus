@@ -96,8 +96,6 @@ There are additional options available when the [PROVIDER](#provider) type is se
 | [LOG_LEVEL](#log_level) | no | `INFO` |
 | [APP_LABEL](#app_label) | no | `app.kubernetes.io/name` |
 | [PELORUS_DEFAULT_KEYWORD](#pelorus_default_keyword) | no | `default` |
-| [COMMIT_HASH_ANNOTATION](#commit_hash_annotation) | no | `io.openshift.build.commit.id` |
-| [COMMIT_REPO_URL_ANNOTATION](#commit_repo_url_annotation) | no | `io.openshift.build.source-location` |
 | [PROVIDER](#provider) | no | `git` |
 
 ###### LOG_LEVEL
@@ -123,22 +121,6 @@ There are additional options available when the [PROVIDER](#provider) type is se
 - **Type:** string
 
 : Used only when configuring instance using ConfigMap. It is the ConfigMap value that represents `default` value. If specified it's used in other data values to indicate "Default Value" should be used.
-
-###### COMMIT_HASH_ANNOTATION
-
-- **Required:** no
-    - **Default Value:** io.openshift.build.commit.id
-- **Type:** string
-
-: Annotation name associated with the Build from which hash is used to calculate commit time.
-
-###### COMMIT_REPO_URL_ANNOTATION
-
-- **Required:** no
-    - **Default Value:** io.openshift.build.source-location
-- **Type:** string
-
-: Annotation name associated with the Build from which GIT repository URL is used to calculate commit time.
 
 ###### PROVIDER
 
@@ -201,13 +183,11 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
 ###### GIT_API
 
 - **Required:** yes
-    - Only applicable for [PROVIDER](#provider) value: `git` or unset
+    - Only applicable for [GIT_PROVIDER](#git_provider) value: `github` (or unset), `gitea` or `azure-devops`
     - **Default Value:**
         - `api.github.com` for `github` [GIT_PROVIDER](#git_provider)
         - `dev.azure.com` for `azure-devops` [GIT_PROVIDER](#git_provider)
         - `try.gitea.io` for `gitea` [GIT_PROVIDER](#git_provider)
-        - **unset** for `gitlab` [GIT_PROVIDER](#git_provider)
-        - **unset** for `bitbucket` [GIT_PROVIDER](#git_provider)
 - **Type:** string
 
 : GitHub, Gitea or Azure DevOps API FQDN. This allows the override for Enterprise users.
@@ -218,8 +198,26 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
 
 | Variable | Required | Default Value |
 |----------|----------|---------------|
-| [COMMIT_DATE_ANNOTATION](#api_user) | no | `io.openshift.build.commit.date` |
-| [COMMIT_DATE_FORMAT](#token) | no | `%a %b %d %H:%M:%S %Y %z` |
+| [COMMIT_HASH_ANNOTATION](#commit_hash_annotation) | no | `io.openshift.build.commit.id` |
+| [COMMIT_REPO_URL_ANNOTATION](#commit_repo_url_annotation) | no | `io.openshift.build.source-location` |
+| [COMMIT_DATE_ANNOTATION](#commit_date_annotation) | no | `io.openshift.build.commit.date` |
+| [COMMIT_DATE_FORMAT](#commit_date_format) | no | `%a %b %d %H:%M:%S %Y %z` |
+
+###### COMMIT_HASH_ANNOTATION
+
+- **Required:** no
+    - **Default Value:** io.openshift.build.commit.id
+- **Type:** string
+
+: Annotation name associated with the Build from which hash is used to calculate commit time.
+
+###### COMMIT_REPO_URL_ANNOTATION
+
+- **Required:** no
+    - **Default Value:** io.openshift.build.source-location
+- **Type:** string
+
+: Annotation name associated with the Build from which GIT repository URL is used to calculate commit time.
 
 ###### COMMIT_DATE_ANNOTATION
 

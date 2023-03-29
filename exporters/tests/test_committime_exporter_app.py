@@ -75,7 +75,7 @@ def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
 
 @pytest.mark.parametrize("provider", ["wrong", "git_hub", "GITHUB", "GitHub"])
 @pytest.mark.integration
-def test_app_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFixture):
+def test_app_git_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFixture):
     with pytest.raises(ValueError):
         mocked_commit_time_exporter.run_app({"GIT_PROVIDER": provider})
 
@@ -86,7 +86,7 @@ def test_app_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFixtur
 
 # TODO mock kubernetes/OpenShift objects so a call to azure API is made
 # @pytest.mark.integration
-# def test_app_azure_devops_without_required_options(caplog: pytest.LogCaptureFixture):
+# def test_app_git_azure_devops_without_required_options(caplog: pytest.LogCaptureFixture):
 #     run_app({"GIT_PROVIDER": "azure-devops"})
 
 #     # number of error logs
@@ -94,7 +94,7 @@ def test_app_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFixtur
 
 
 @pytest.mark.integration
-def test_app_azure_devops(caplog: pytest.LogCaptureFixture):
+def test_app_git_azure_devops(caplog: pytest.LogCaptureFixture):
     mocked_exporter = mocked_commit_time_exporter.run_app(
         {
             "GIT_PROVIDER": "azure-devops",
@@ -105,14 +105,6 @@ def test_app_azure_devops(caplog: pytest.LogCaptureFixture):
 
     assert "app_label='app.kubernetes.io/name'" in caplog.text
     assert mocked_exporter.app_label == "app.kubernetes.io/name"
-    assert "hash_annotation_name='io.openshift.build.commit.id'" in caplog.text
-    assert mocked_exporter.hash_annotation_name == "io.openshift.build.commit.id"
-    assert (
-        "repo_url_annotation_name='io.openshift.build.source-location'" in caplog.text
-    )
-    assert (
-        mocked_exporter.repo_url_annotation_name == "io.openshift.build.source-location"
-    )
     assert "provider='git'" in caplog.text
     assert "git_provider='azure-devops'" in caplog.text
     assert isinstance(mocked_exporter, AzureDevOpsCommitCollector)
@@ -129,18 +121,16 @@ def test_app_azure_devops(caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_with_all_options(caplog: pytest.LogCaptureFixture):
+def test_app_git_with_all_options(caplog: pytest.LogCaptureFixture):
     mocked_exporter = mocked_commit_time_exporter.run_app(
         {
             "LOG_LEVEL": "DEBUG",
             "APP_LABEL": "custom",
             # TODO how to test?
             "PELORUS_DEFAULT_KEYWORD": "another",
-            "COMMIT_HASH_ANNOTATION": "annotation",
-            "COMMIT_REPO_URL_ANNOTATION": "repo url",
             "PROVIDER": "git",
             "GIT_PROVIDER": "azure-devops",
-            "NAMESPACES": "oi",
+            "NAMESPACES": "test1",
             "API_USER": "fake_user",
             "TOKEN": "fake_token",
             "GIT_API": "custom.io",
@@ -149,10 +139,6 @@ def test_app_with_all_options(caplog: pytest.LogCaptureFixture):
 
     assert "app_label='custom'" in caplog.text
     assert mocked_exporter.app_label == "custom"
-    assert "hash_annotation_name='annotation'" in caplog.text
-    assert mocked_exporter.hash_annotation_name == "annotation"
-    assert "repo_url_annotation_name='repo url'" in caplog.text
-    assert mocked_exporter.repo_url_annotation_name == "repo url"
     assert "provider='git'" in caplog.text
     assert "git_provider='azure-devops'" in caplog.text
     assert isinstance(mocked_exporter, AzureDevOpsCommitCollector)
@@ -162,9 +148,9 @@ def test_app_with_all_options(caplog: pytest.LogCaptureFixture):
     assert mocked_exporter.token == "fake_token"
     assert "git_api='custom.io'" in caplog.text
     assert mocked_exporter.git_api.url == "https://custom.io"
-    assert "Watching namespaces: {'oi'}" in caplog.text
+    assert "Watching namespaces: {'test1'}" in caplog.text
     assert len(mocked_exporter.namespaces) == 1
-    assert "oi" in mocked_exporter.namespaces
+    assert "test1" in mocked_exporter.namespaces
     # number of error logs
     assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
 
@@ -179,6 +165,7 @@ def test_app_image(caplog: pytest.LogCaptureFixture):
 
     assert "app_label='app.kubernetes.io/name'" in caplog.text
     assert mocked_exporter.app_label == "app.kubernetes.io/name"
+    assert "provider='image'" in caplog.text
     assert "hash_annotation_name='io.openshift.build.commit.id'" in caplog.text
     assert mocked_exporter.hash_annotation_name == "io.openshift.build.commit.id"
     assert (
@@ -187,7 +174,6 @@ def test_app_image(caplog: pytest.LogCaptureFixture):
     assert (
         mocked_exporter.repo_url_annotation_name == "io.openshift.build.source-location"
     )
-    assert "provider='image'" in caplog.text
     assert "date_annotation_name='io.openshift.build.commit.date'" in caplog.text
     assert mocked_exporter.date_annotation_name == "io.openshift.build.commit.date"
     assert "date_format='%a %b %d %H:%M:%S %Y %z'" in caplog.text
@@ -214,11 +200,11 @@ def test_app_image_with_all_options(caplog: pytest.LogCaptureFixture):
 
     assert "app_label='another.one'" in caplog.text
     assert mocked_exporter.app_label == "another.one"
+    assert "provider='image'" in caplog.text
     assert "hash_annotation_name='custom annotation'" in caplog.text
     assert mocked_exporter.hash_annotation_name == "custom annotation"
     assert "repo_url_annotation_name='custom repo url'" in caplog.text
     assert mocked_exporter.repo_url_annotation_name == "custom repo url"
-    assert "provider='image'" in caplog.text
     assert "date_annotation_name='custom date annotation'" in caplog.text
     assert mocked_exporter.date_annotation_name == "custom date annotation"
     assert "date_format='custom format'" in caplog.text

@@ -128,16 +128,6 @@ class GitCommittimeConfig:
 
     app_label: str = pelorus.DEFAULT_APP_LABEL
 
-    hash_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
-        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
-    )
-
-    repo_url_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
-        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
-    )
-
     tls_verify: bool = field(
         default=pelorus.DEFAULT_TLS_VERIFY, converter=attrs.converters.to_bool
     )
@@ -164,8 +154,6 @@ class GitCommittimeConfig:
                 token=self.token,
                 namespaces=self.namespaces,
                 app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
             )
         if git_provider == "github":
             if self.git_api:
@@ -179,8 +167,6 @@ class GitCommittimeConfig:
                 namespaces=self.namespaces,
                 tls_verify=self.tls_verify,
                 app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
                 **api,
             )
         if git_provider == "bitbucket":
@@ -191,8 +177,6 @@ class GitCommittimeConfig:
                 namespaces=self.namespaces,
                 tls_verify=self.tls_verify,
                 app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
             )
         if git_provider == "gitea":
             if self.git_api:
@@ -205,8 +189,6 @@ class GitCommittimeConfig:
                 token=self.token,
                 namespaces=self.namespaces,
                 app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
                 **api,
             )
         if git_provider == "azure-devops":
@@ -220,8 +202,6 @@ class GitCommittimeConfig:
                 token=self.token,
                 namespaces=self.namespaces,
                 app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
                 **api,
             )
 
