@@ -24,13 +24,13 @@ from tests import run_prometheus_register
 
 PAGER_DUTY_TOKEN = os.environ.get("PAGER_DUTY_TOKEN")
 NUMBER_OF_INCIDENTS = {
-    "null": 41,
+    "null": 42,
     "P1": 16,
     "P2": 0,
     "P3": 0,
     "P4": 0,
     "P5": 0,
-    "high": 46,
+    "high": 47,
     "low": 11,
 }
 
@@ -59,8 +59,8 @@ def test_pager_duty_search():
         issues = collector.search_issues()
 
     assert context is None
-    assert len(issues) == 57
-    assert len([issue for issue in issues if issue.resolutiondate is None]) == 52
+    assert len(issues) == 58
+    assert len([issue for issue in issues if issue.resolutiondate is None]) == 53
     assert len([issue for issue in issues if issue.resolutiondate]) == 5
 
 

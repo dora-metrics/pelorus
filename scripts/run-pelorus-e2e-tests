@@ -107,7 +107,8 @@ function print_help() {
     printf "\t  -s\t(USED ONLY IN PROW CI) path to DIR with secrets files. For local runs, run 'export SECRET_NAME=VALUE'\n"
     printf "\t  -t\tenable Thanos (long term persistent storage) tests with s3 bucket\n"
     printf "\t  -c\tpath to DIR with secrets files for s3 bucket\n"
-    printf "\t  -e\tenable exporter tests (comma separated). Examples:\n"
+    printf "\t  -a\tenable all exporter tests \n"
+    printf "\t  -e\tenable selected exporter tests (comma separated). Examples:\n"
     printf "\t\t  -e failure\n"
     printf "\t\t  -e gitlab_committime,jira_committime\n"
     printf "\t\tavailable options:\n"
@@ -118,7 +119,7 @@ function print_help() {
     printf "\t\t  azure-devops-committime - Azure devops git provider - REQUIRES 'AZURE_DEVOPS_USER=YOUR_AZURE_DEVOPS_USER' AND 'AZURE_DEVOPS_TOKEN=YOUR_AZURE_DEVOPS_TOKEN' SECRETS\n"
     printf "\t\t  jira_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
     printf "\t\t  jira_custom_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
-    # TODO add help
+    printf "\t\t  pagerduty_failure - PagerDuty issue tracker - REQUIRES 'PAGER_DUTY_TOKEN=YOUR_PAGER_DUTY_TOKEN' SECRET\n"
 
     exit 0
 }
@@ -146,11 +147,12 @@ ENABLE_JIRA_FAIL_EXP=false
 ENABLE_JIRA_CUSTOM_FAIL_EXP=false
 ENABLE_PAGERDUTY_FAIL_EXP=false
 ENABLE_THANOS=false
+ENABLE_ALL_EXPORTERS=false
 
 # Used for cleanup to ensure created binary builds can be safely deleted
 BINARY_BUILDS_NAMESPACES=()
 
-while getopts "h?b:d:s:o:f:e:tc:" option; do
+while getopts "h?b:d:s:o:f:ae:tc:" option; do
     case "$option" in
     h|\?) print_help;;
     b)    demo_branch=$OPTARG;;
@@ -159,6 +161,7 @@ while getopts "h?b:d:s:o:f:e:tc:" option; do
     d)    venv_dir=$OPTARG;;
     s)    secrets_dir=$OPTARG;;
     e)    enable_exporters=$OPTARG;;
+    a)    ENABLE_ALL_EXPORTERS=true;;
     t)    ENABLE_THANOS=true;;
     c)    s3_secrets_dir=$OPTARG;;
     esac
@@ -191,6 +194,17 @@ if [ -n "${enable_exporters}" ]; then
     echo ",$enable_exporters," | grep -q ",jira_committime," && ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
     echo ",$enable_exporters," | grep -q ",jira_custom_committime," && ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
     echo ",$enable_exporters," | grep -q ",pagerduty_failure," && ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
+fi
+
+if [ "${ENABLE_ALL_EXPORTERS}" == true ]; then
+    ENABLE_FAIL_EXP=true && echo "Enabling Failure exporter"
+    ENABLE_GITLAB_COM_EXP=true && echo "Enabling Gitlab committime exporter"
+    ENABLE_GITEA_COM_EXP=true && echo "Enabling Gitea committime exporter"
+    ENABLE_BITBUCKET_COM_EXP=true && echo "Enabling Bitbucket committime exporter"
+    # TODO ENABLE_AZURE_DEVOPS_COM_EXP=true && echo "Enabling Azure devops committime exporter"
+    ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
+    ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
+    ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
 fi
 
 if [ -z "${demo_branch}" ]; then

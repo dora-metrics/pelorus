@@ -57,7 +57,7 @@ def test_app_pagerduty_with_required_options(caplog: pytest.LogCaptureFixture):
     )
 
     captured_logs = caplog.record_tuples
-    # 9 informational, 5 resolution, 57 creation
-    assert len(captured_logs) == 71
+    # 9 informational, 5 resolution, 58 creation
+    assert len(captured_logs) == 72
     # number of error logs
     assert len([record for record in captured_logs if record[1] == 40]) == 0
