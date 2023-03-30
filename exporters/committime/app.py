@@ -62,16 +62,6 @@ class ImageCommittimeConfig:
 
     app_label: str = pelorus.DEFAULT_APP_LABEL
 
-    hash_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
-        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
-    )
-
-    repo_url_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
-        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
-    )
-
     # Used to convert time and date found in the
     # Docker Label io.openshift.build.commit.date
     # or annotation for the Image
@@ -82,6 +72,18 @@ class ImageCommittimeConfig:
     date_annotation_name: str = field(
         default=CommitMetric._ANNOTATION_MAPPIG["commit_time"],
         metadata=env_vars(COMMIT_DATE_ANNOTATION_ENV),
+    )
+
+    # TODO hash_annotation_name and repo_url_annotation_name seem to be
+    # unnecessary
+    hash_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
+    )
+
+    repo_url_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
+        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
     )
 
     def make_collector(self) -> AbstractCommitCollector:
@@ -98,9 +100,9 @@ class ImageCommittimeConfig:
             username="",
             token="",
             app_label=self.app_label,
+            date_annotation_name=self.date_annotation_name,
             hash_annotation_name=self.hash_annotation_name,
             repo_url_annotation_name=self.repo_url_annotation_name,
-            date_annotation_name=self.date_annotation_name,
         )
 
 
@@ -132,6 +134,18 @@ class GitCommittimeConfig:
         default=pelorus.DEFAULT_TLS_VERIFY, converter=attrs.converters.to_bool
     )
 
+    # TODO hash_annotation_name and repo_url_annotation_name seem to be
+    # unnecessary
+    hash_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
+    )
+
+    repo_url_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
+        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
+    )
+
     def __attrs_post_init__(self):
         if not (self.username and self.token):
             logging.warning(
@@ -154,6 +168,8 @@ class GitCommittimeConfig:
                 token=self.token,
                 namespaces=self.namespaces,
                 app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
             )
         if git_provider == "github":
             if self.git_api:
@@ -167,6 +183,8 @@ class GitCommittimeConfig:
                 namespaces=self.namespaces,
                 tls_verify=self.tls_verify,
                 app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
                 **api,
             )
         if git_provider == "bitbucket":
@@ -177,6 +195,8 @@ class GitCommittimeConfig:
                 namespaces=self.namespaces,
                 tls_verify=self.tls_verify,
                 app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
             )
         if git_provider == "gitea":
             if self.git_api:
@@ -189,6 +209,8 @@ class GitCommittimeConfig:
                 token=self.token,
                 namespaces=self.namespaces,
                 app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
                 **api,
             )
         if git_provider == "azure-devops":
@@ -202,6 +224,8 @@ class GitCommittimeConfig:
                 token=self.token,
                 namespaces=self.namespaces,
                 app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
                 **api,
             )
 

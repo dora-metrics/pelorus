@@ -76,6 +76,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     commit_dict: dict[str, Optional[float]] = field(factory=dict, init=False)
 
+    # TODO hash_annotation_name and repo_url_annotation_name seem to be
+    # unnecessary
     hash_annotation_name: str = field(
         default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
         metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),

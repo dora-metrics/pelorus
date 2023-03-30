@@ -105,6 +105,14 @@ def test_app_git_azure_devops(caplog: pytest.LogCaptureFixture):
 
     assert "app_label='app.kubernetes.io/name'" in caplog.text
     assert mocked_exporter.app_label == "app.kubernetes.io/name"
+    assert "hash_annotation_name='io.openshift.build.commit.id'" in caplog.text
+    assert mocked_exporter.hash_annotation_name == "io.openshift.build.commit.id"
+    assert (
+        "repo_url_annotation_name='io.openshift.build.source-location'" in caplog.text
+    )
+    assert (
+        mocked_exporter.repo_url_annotation_name == "io.openshift.build.source-location"
+    )
     assert "provider='git'" in caplog.text
     assert "git_provider='azure-devops'" in caplog.text
     assert isinstance(mocked_exporter, AzureDevOpsCommitCollector)
@@ -128,6 +136,8 @@ def test_app_git_with_all_options(caplog: pytest.LogCaptureFixture):
             "APP_LABEL": "custom",
             # TODO how to test?
             "PELORUS_DEFAULT_KEYWORD": "another",
+            "COMMIT_HASH_ANNOTATION": "annotation",
+            "COMMIT_REPO_URL_ANNOTATION": "repo url",
             "PROVIDER": "git",
             "GIT_PROVIDER": "azure-devops",
             "NAMESPACES": "test1",
@@ -139,6 +149,10 @@ def test_app_git_with_all_options(caplog: pytest.LogCaptureFixture):
 
     assert "app_label='custom'" in caplog.text
     assert mocked_exporter.app_label == "custom"
+    assert "hash_annotation_name='annotation'" in caplog.text
+    assert mocked_exporter.hash_annotation_name == "annotation"
+    assert "repo_url_annotation_name='repo url'" in caplog.text
+    assert mocked_exporter.repo_url_annotation_name == "repo url"
     assert "provider='git'" in caplog.text
     assert "git_provider='azure-devops'" in caplog.text
     assert isinstance(mocked_exporter, AzureDevOpsCommitCollector)
