@@ -485,6 +485,56 @@ Webhook type exporter has an additional URL target http://localhost:8080/pelorus
     # JSON with payload (-d flag) must match the event type (-H "X-Pelorus-Event" flag):
     $ curl -X POST http://localhost:8080/pelorus/webhook -d @./webhook_pelorus_failure_created.json -H "Content-Type: application/json" -H "User-Agent: Pelorus-Webhook/test" -H "X-Pelorus-Event: failure"
 
+## Operator Development
+
+To create a new version (or candidate) of Pelorus operator you must be logged into `podman` (`podman login` command) and `OpenShift` (`oc login` command) and then run
+```
+rm -rf pelorus-operator && mkdir pelorus-operator && scripts/create_pelorus_operator
+```
+This will update `pelorus-operator` folder with the updates.
+
+Then, run
+```
+cd pelorus-operator
+make podman-build
+make bundle-build
+make podman-push
+make bundle-push
+```
+This will publish Pelorus operator images to [quay.io](https://quay.io/organization/pelorus).
+
+To deploy it to OpenShift marketplace, a pullrequest must be created in [Openshift Community Operators repository](https://github.com/redhat-openshift-ecosystem/community-operators-prod). The Pelorus operator source code that is deployed to OpenShift marketplace is stored in [`operators/pelorus-operator/`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/tree/main/operators/pelorus-operator) folder.
+
+### API specification
+
+Operator uses OpenAPI Specification under the rugs. This is useful when we want to add field validations, for example.
+
+Helpful links for understanding Operator API specification:
+
+- [https://swagger.io/docs/specification/about/](https://swagger.io/docs/specification/about/)
+- [https://sdk.operatorframework.io/docs/olm-integration/generation/](https://sdk.operatorframework.io/docs/olm-integration/generation/)
+
+### UI rendering
+
+OpenShift allows custom UI rendering for Operator form view.
+
+Helpful links for understanding OpenShift UI rendering:
+
+- [https://github.com/openshift/console/blob/master/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md](https://github.com/openshift/console/blob/master/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md)
+- [https://cloud.redhat.com/blog/openshift-4-2-declarative-dynamic-ui-for-your-operator](https://cloud.redhat.com/blog/openshift-4-2-declarative-dynamic-ui-for-your-operator)
+
+### Testing
+
+To test it out from image, run
+```
+operator-sdk run bundle quay.io/pelorus/pelorus-operator-bundle:<TAG> --namespace pelorus
+```
+
+To clean it up, run
+```
+operator-sdk cleanup pelorus-operator --namespace pelorus
+```
+
 ## Testing Pull Requests
 
 The following are notes and general steps for testing Pull Requests for specific types of changes.
