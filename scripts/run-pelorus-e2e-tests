@@ -131,7 +131,7 @@ PELORUS_NAMESPACE="${PELORUS_NAMESPACE}"
 function ogn() { printf "oc get --namespace %s $*\n" "${PELORUS_NAMESPACE}"; oc get --namespace "${PELORUS_NAMESPACE}" "$@"; }
 function ogns() { printf "oc get --namespace %s svc $*\n" "${PELORUS_NAMESPACE}"; oc get --namespace "${PELORUS_NAMESPACE}" svc "$@"; }
 function ornds() { printf "oc rollout status --namespace %s deployments $*\n" "${PELORUS_NAMESPACE}"; oc rollout status --namespace ${PELORUS_NAMESPACE} deployments "$@"; }
-function owpr() { printf "oc wait pod --for=condition=Ready -n %s -l pelorus.konveyor.io/exporter-type=$*\n" "${PELORUS_NAMESPACE}"; oc wait pod --for=condition=Ready -n ${PELORUS_NAMESPACE} -l pelorus.konveyor.io/exporter-type="$*"; }
+function owpr() { printf "oc wait pod --for=condition=Ready -n %s -l pelorus.dora-metrics.io/exporter-type=$*\n" "${PELORUS_NAMESPACE}"; oc wait pod --for=condition=Ready -n ${PELORUS_NAMESPACE} -l pelorus.dora-metrics.io/exporter-type="$*"; }
 function owr() { printf "oc wait --for=condition=Ready -n %s $*\n" "${PELORUS_NAMESPACE}"; oc wait --for=condition=Ready -n ${PELORUS_NAMESPACE} "$*"; }
 set +a
 
@@ -626,7 +626,7 @@ retry 10m 10s oc wait pod --for=condition=Ready -n mongo-persistent -l app=todol
 # Ugly, but let's check if this improves CI
 sleep 60
 
-for exporter_pod in $(oc get pods -n pelorus  -l 'pelorus.konveyor.io/exporter-type in (committime,failure,deploytime)' -o name);
+for exporter_pod in $(oc get pods -n pelorus  -l 'pelorus.dora-metrics.io/exporter-type in (committime,failure,deploytime)' -o name);
 do
     retry 5m 5s owr "$exporter_pod"
 done

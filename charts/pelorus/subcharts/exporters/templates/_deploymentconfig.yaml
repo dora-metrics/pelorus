@@ -23,7 +23,7 @@ spec:
         app: {{ .app_name }}
         deploymentconfig: {{ .app_name }}
         application: {{ .app_name }}
-        pelorus.konveyor.io/exporter-type: {{ .exporter_type | default "generic-exporter" }}
+        pelorus.dora-metrics.io/exporter-type: {{ .exporter_type | default "generic-exporter" }}
     spec:
       serviceAccount: pelorus-exporter
       volumes:

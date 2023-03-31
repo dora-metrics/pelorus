@@ -18,7 +18,7 @@ spec:
     contextDir: {{ .source_context_dir | default "exporters/" }}
     git:
       ref: {{ .source_ref | default "v2.0.8" }}
-      uri: {{ .source_url | default "https://github.com/konveyor/pelorus.git"}}
+      uri: {{ .source_url | default "https://github.com/dora-metrics/pelorus.git"}}
     type: Git
   strategy:
     sourceStrategy:

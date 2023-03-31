@@ -7,7 +7,7 @@ Failure Time Exporter may be deployed with one of the [supported Issues Trackers
 Each Failure time exporter configuration option must be placed under `spec.exporters.instances` in the Pelorus configuration object YAML file as in the example:
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: example-configuration
@@ -24,7 +24,7 @@ spec:
 Configuration part of the Failure time exporter YAML file, with some non-default options:
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: example-configuration

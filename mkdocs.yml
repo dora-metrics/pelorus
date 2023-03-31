@@ -1,8 +1,8 @@
 site_name: Pelorus Docs
 site_url: https://pelorus.readthedocs.io/en/latest/
 site_description: Metrics that matter
-repo_name: konveyor/pelorus
-repo_url: https://github.com/konveyor/pelorus
+repo_name: dora-metrics/pelorus
+repo_url: https://github.com/dora-metrics/pelorus
 theme:
   name: material
   logo: img/icon-white.png

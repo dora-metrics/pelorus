@@ -31,7 +31,7 @@
 # repository.
 
 # Required to get the latest released tag
-PELORUS_API_URL="https://api.github.com/repos/konveyor/pelorus/releases/latest"
+PELORUS_API_URL="https://api.github.com/repos/dora-metrics/pelorus/releases/latest"
 BUILDCONFIG_PATH="charts/pelorus/charts/exporters/templates/_buildconfig.yaml"
 IMAGESTREAM_PATH="charts/pelorus/subcharts/exporters/templates/_imagestream_from_image.yaml"
 PELORUS_CHART="charts/pelorus/Chart.yaml"

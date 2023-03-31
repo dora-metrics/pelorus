@@ -47,7 +47,7 @@ A production configuration example of the Pelorus configuration object YAML:
 
 ```yaml
 kind: Pelorus
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 metadata:
   name: pelorus-production
   namespace: pelorus

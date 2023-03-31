@@ -1,9 +1,9 @@
 ![Pelorus](docs/img/Logo-Pelorus-A-Standard-RGB_smaller.png)
 
-![](https://github.com/redhat-cop/pelorus/workflows/Pylama/badge.svg)
-![](https://github.com/redhat-cop/pelorus/workflows/Unit%20Tests/badge.svg)
-![](https://github.com/redhat-cop/pelorus/workflows/Conftest/badge.svg)
-![](https://github.com/redhat-cop/pelorus/workflows/Chart%20Lint/badge.svg)
+[![Python Linting](https://github.com/dora-metrics/pelorus/actions/workflows/python-linting.yml/badge.svg)](https://github.com/dora-metrics/pelorus/actions)
+[![Unit tests](https://github.com/dora-metrics/pelorus/actions/workflows/unittests.yml/badge.svg)](https://github.com/dora-metrics/pelorus/actions)
+[![Conftest](https://github.com/dora-metrics/pelorus/actions/workflows/conftest.yml/badge.svg)](https://github.com/dora-metrics/pelorus/actions)
+[![Chart Lint](https://github.com/dora-metrics/pelorus/actions/workflows/chart-lint.yml/badge.svg)](https://github.com/dora-metrics/pelorus/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
@@ -39,7 +39,7 @@ If you are interested in contributing to the Pelorus project, please review our 
 Our support policy can be found in the [Upstream Support statement](docs/UpstreamSupport.md)
 
 ## Code of Conduct
-Refer to Konveyor's Code of Conduct [here](https://github.com/konveyor/community/blob/main/CODE_OF_CONDUCT.md).
+Refer to dora-metrics's Code of Conduct [here](./CODE_OF_CONDUCT.md).
 
 ## License
 

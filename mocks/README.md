@@ -13,7 +13,7 @@ First, you will need to install a container engine like [Podman](https://podman.
 Then clone this repository and execute the following command to startup the mock server.
 
 ```sh
-$ git clone https://github.com/konveyor/pelorus.git
+$ git clone https://github.com/dora-metrics/pelorus.git
 ```
 
 ```sh

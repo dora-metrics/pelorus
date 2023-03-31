@@ -11,7 +11,7 @@ There are currently four **exporter** types:
 Each exporter configuration option must be placed under `spec.exporters.instances` in the Pelorus configuration object YAML file as in the example:
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: example-configuration
@@ -28,7 +28,7 @@ Configuration part of the Pelorus object YAML file, with some non-default option
 
 ```yaml
 kind: Pelorus
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 metadata:
   name: pelorus-instance
   namespace: pelorus
@@ -235,7 +235,7 @@ Then, add
         - example-secret
 [...]
 ```
-to the exporter configuration. If no `metadata.namespace` is added to Secret file, you must run the command with the namespace you want to apply it. For example, `oc apply -f secret.yaml -n pelorus`. More [examples Secret files](https://github.com/konveyor/pelorus/tree/master/charts/secrets).
+to the exporter configuration. If no `metadata.namespace` is added to Secret file, you must run the command with the namespace you want to apply it. For example, `oc apply -f secret.yaml -n pelorus`. More [examples Secret files](https://github.com/dora-metrics/pelorus/tree/master/charts/secrets).
 
 1. To create a secret named **other-secret** in **pelorus** namespace, with the
 
@@ -286,7 +286,7 @@ Then, add
         - example-config
 [...]
 ```
-to the exporter configuration. If no `metadata.namespace` is added to ConfigMap file, you must run the command with the namespace you want to apply it. For example, `oc apply -f config.yaml -n pelorus`. More [examples ConfigMap files](https://github.com/konveyor/pelorus/tree/master/charts/configmaps).
+to the exporter configuration. If no `metadata.namespace` is added to ConfigMap file, you must run the command with the namespace you want to apply it. For example, `oc apply -f config.yaml -n pelorus`. More [examples ConfigMap files](https://github.com/dora-metrics/pelorus/tree/master/charts/configmaps).
 
 1. To create a ConfigMap named **example-for-all** in **pelorus** namespace, that will be used by multiple exporters, with the option **LOG_LEVEL** with value **DEBUG**, using the file **config.yaml**
 ```yaml

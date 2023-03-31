@@ -39,7 +39,7 @@ Pelorus configuration object YAML file with three `committime` exporters:
   - Third exporter is using [image](#using-commit-time-with-images) to gather commit date which was used for the deployment directly from the Image annotation `myapp.build.commit.date` that uses date format `%a %b %d %H:%M:%S %Y %z`. This annotation has to be provided by 3rd party systems such as different flavour CI systems. This exporter does not query any external API endpoint.
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: sample-pelorus-deployment
@@ -285,14 +285,14 @@ oc start-build "bc/${NAME}" --from-file=./app.py --follow -n "${NS}"
 oc get builds -n "${NS}"
 oc -n "${NS}" annotate build "${NAME}-1" --overwrite \
 io.openshift.build.commit.id=7810f2a85d5c89cb4b17e9a3208a311af65338d8 \
-io.openshift.build.source-location=http://github.com/konveyor/pelorus
+io.openshift.build.source-location=http://github.com/dora-metrics/pelorus
 
 oc -n "${NS}" new-app "${NAME}" -l "app.kubernetes.io/name=${NAME}"
 ```
 
 ### Additional Examples
 
-There are many ways to build and deploy applications in OpenShift. Additional examples of how to annotate builds such that Pelorus will properly discover the commit metadata can be found in the  [Pelorus tekton demo](https://github.com/konveyor/pelorus/tree/master/demo)
+There are many ways to build and deploy applications in OpenShift. Additional examples of how to annotate builds such that Pelorus will properly discover the commit metadata can be found in the  [Pelorus tekton demo](https://github.com/dora-metrics/pelorus/tree/master/demo)
 
 ## Annotations, Docker Labels and Image support
 

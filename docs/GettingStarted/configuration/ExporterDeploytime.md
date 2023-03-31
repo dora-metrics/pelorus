@@ -18,7 +18,7 @@ Pelorus configuration object YAML file with three exporters, each typeof `deploy
   ```
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: sample-pelorus-deployment

@@ -22,7 +22,7 @@ In this example, Pelorus will monitor only one application, where:
     * Pelorus will consider monitored issues to be resolved when their status change to **DONE**.
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: bitbucket-jira-example-configuration
@@ -86,7 +86,7 @@ In this example, Pelorus will monitor only one application, where:
     * Pelorus will consider monitored issues to be resolved when they are closed.
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: github-example-configuration
@@ -150,7 +150,7 @@ In this example, Pelorus will monitor two applications, where:
     * Pelorus will consider monitored issues to be resolved when their status change to **DONE**.
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: github-bitbucket-jira-example-configuration
@@ -202,7 +202,7 @@ spec:
 In this example, Pelorus will receive data from the external systems without making any API calls to OpenShift nor external providers.
 
 ```yaml
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: webhook-example-deployment
