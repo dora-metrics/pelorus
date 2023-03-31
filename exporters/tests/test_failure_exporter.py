@@ -178,6 +178,40 @@ def test_jira_search_with_wrong_jql():
     assert len(issues) == 0
 
 
+@mock.patch("failure.collector_jira.JIRA")
+def test_basic_auth_connect_to_jira(jira_mock):
+    jira_client_mock = mock.MagicMock()
+    jira_mock.return_value = jira_client_mock
+
+    collector = JiraFailureCollector(
+        tracker_api="https://my.jira.server.com", username="user", token="token"
+    )
+    jira_client = collector._connect_to_jira()
+    jira_client_mock.session.assert_called_once()
+
+    jira_mock.assert_called_once_with(
+        options={"server": "https://my.jira.server.com"}, basic_auth=("user", "token")
+    )
+    assert jira_client == jira_client_mock
+
+
+@mock.patch("failure.collector_jira.JIRA")
+def test_token_auth_connect_to_jira(jira_mock):
+    jira_client_mock = mock.MagicMock()
+    jira_mock.return_value = jira_client_mock
+
+    collector = JiraFailureCollector(
+        tracker_api="https://my.jira.server.com", token="token"
+    )
+    jira_client = collector._connect_to_jira()
+    jira_client_mock.session.assert_called_once()
+
+    jira_mock.assert_called_once_with(
+        options={"server": "https://my.jira.server.com"}, token_auth="token"
+    )
+    assert jira_client == jira_client_mock
+
+
 def test_jira_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     def mock_search_issues(self):
         return []
