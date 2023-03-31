@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Optional
 
 import attr
@@ -48,6 +49,7 @@ class CommitMetric:
     __repo_name = attr.field(default=None, init=False)
     __repo_project = attr.field(default=None, init=False)
     __repo_port = attr.field(default=None, init=False)
+    __azure_project = attr.field(default=None, init=False)
 
     committer: Optional[str] = attr.field(default=None, kw_only=True)
     commit_hash: Optional[str] = attr.field(default=None, kw_only=True)
@@ -124,12 +126,55 @@ class CommitMetric:
 
         return url
 
+    @property
+    def azure_project(self):
+        return self.__azure_project
+
     def __parse_repourl(self):
         """Parse the repo_url into individual pieces"""
         logging.debug("repo url = %s", self.__repo_url)
         if self.__repo_url is None:
             return
-        parsed = giturlparse.parse(self.__repo_url)
+        # http://user@dev.azure.com:8080/organization/project/_git/repository/
+        regex = re.compile(
+            r"^(?P<protocol>https?)\://"
+            r"((?P<user>[a-zA-Z0-9_-]+)@)?"
+            r"(?P<resource>[a-z0-9_.-]*)"
+            r"[:/]*"
+            r"(?P<port>[\d]+){0,1}"
+            r"(?P<pathname>\/"
+            r"(?P<owner>[\w\-\.]+)\/"
+            r"(?P<azure_project>[\w\-\.]+)\/\_git\/"
+            r"(?P<name>[\w\-\.]+)\/?)$"
+        )
+        match = regex.search(self.__repo_url)
+        # git@ssh.dev.azure.com:v3/organization/project/repository/
+        regex_ssh = re.compile(
+            r"^git@(?P<resource>"
+            r"(?P<protocol>\w+)\.[a-z0-9_.-]*\:v3)"
+            r"[:/]*"
+            r"(?P<port>[\d]+){0,1}"
+            r"(?P<pathname>\/"
+            r"(?P<owner>[\w\-\.]+)\/"
+            r"(?P<azure_project>[\w\-\.]+)\/"
+            r"(?P<name>[\w\-\.]+)\/?)$"
+        )
+        match_ssh = regex_ssh.search(self.__repo_url)
+        if match_ssh:
+            match = match_ssh
+        if match:
+            regex_group = match.groupdict()
+            self.__azure_project = regex_group.pop("azure_project")
+            pre_parsed = {
+                "protocols": giturlparse.parse(self.__repo_url).protocols or ["ssh"],
+                "href": self.__repo_url,
+                "user": None,
+                "owner": None,
+            }
+            pre_parsed.update(regex_group)
+            parsed = giturlparse.parser.Parsed(**pre_parsed)
+        else:
+            parsed = giturlparse.parse(self.__repo_url)
         logging.debug("Parsed: %s", parsed)
         if len(parsed.protocols) > 0 and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
             raise ValueError("Unsupported protocol %s", parsed.protocols[0])

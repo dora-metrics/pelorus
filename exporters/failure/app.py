@@ -23,6 +23,7 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
+from failure.collector_base import AbstractFailureCollector
 from failure.collector_github import GithubFailureCollector
 from failure.collector_jira import JiraFailureCollector
 from failure.collector_pagerduty import PagerdutyFailureCollector
@@ -49,14 +50,20 @@ class FailureCollectorConfig:
         return load_and_log(PROVIDER_TYPES[self.tracker_provider])
 
 
-if __name__ == "__main__":
-    # TODO refactor: create function, all exporters have same structure
+def set_up() -> AbstractFailureCollector:
+    # TODO refactor: all exporters have same structure
     pelorus.setup_logging()
 
     config = load_and_log(FailureCollectorConfig)
     collector = config.create()
 
     REGISTRY.register(collector)
+    return collector
+
+
+if __name__ == "__main__":
+    set_up()
+    # TODO refactor: create function, all exporters have same structure
     start_http_server(8080)
 
     while True:

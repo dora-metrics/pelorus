@@ -14,7 +14,7 @@ requests               # module requests
 
 
 # Failure exporter
-jira                   # module jira
+jira == 3.4.1          # module jira - Related issue https://github.com/dora-metrics/pelorus/issues/902
 pytz                   # module pytz
 requests               # module requests
 Pygithub               # module github

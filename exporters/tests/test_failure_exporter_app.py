@@ -13,50 +13,24 @@
 #    under the License.
 #
 
-import _thread
-import logging
 import os
-import threading
-from pathlib import Path
-from runpy import run_path
-from typing import Dict
 
 import pytest
 
-from failure.app import __file__ as app_file
+from failure.app import set_up
 from pelorus.errors import FailureProviderAuthenticationError
+from tests import MockExporter
 
 PAGER_DUTY_TOKEN = os.environ.get("PAGER_DUTY_TOKEN")
 
-
-def run_app(arguments: Dict[str, str]) -> None:
-    """
-    Run failure app object with desired environment variables.
-
-    If the app runs for more than 5 seconds, it is terminated (with a
-    KeyboardInterrupt)
-    """
-    try:
-        logging.getLogger().disabled = False
-        for key, value in arguments.items():
-            os.environ[key] = value
-        timer = threading.Timer(5, _thread.interrupt_main)
-        timer.start()
-        try:
-            run_path(Path(app_file), run_name="__main__")
-        finally:
-            timer.cancel()
-    finally:
-        for key in arguments:
-            del os.environ[key]
-        logging.getLogger().disabled = True
+mocked_failure_exporter = MockExporter(set_up=set_up)
 
 
 @pytest.mark.parametrize("provider", ["wrong", "git_hub", "GITHUB", "GitHub"])
 @pytest.mark.integration
 def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
     with pytest.raises(ValueError):
-        run_app({"PROVIDER": provider})
+        mocked_failure_exporter.run_app({"PROVIDER": provider})
 
     # TODO shouldn't be 1?
     # number of error logs
@@ -66,7 +40,7 @@ def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
 @pytest.mark.integration
 def test_app_pagerduty_without_required_options(caplog: pytest.LogCaptureFixture):
     with pytest.raises(FailureProviderAuthenticationError):
-        run_app({"PROVIDER": "pagerduty"})
+        mocked_failure_exporter.run_app({"PROVIDER": "pagerduty"})
 
     # number of error logs
     assert len([record for record in caplog.record_tuples if record[1] == 40]) == 1
@@ -78,8 +52,9 @@ def test_app_pagerduty_without_required_options(caplog: pytest.LogCaptureFixture
     reason="No PagerDuty token set, run export PAGER_DUTY_TOKEN=token",
 )
 def test_app_pagerduty_with_required_options(caplog: pytest.LogCaptureFixture):
-    with pytest.raises(KeyboardInterrupt):
-        run_app({"PROVIDER": "pagerduty", "TOKEN": PAGER_DUTY_TOKEN})
+    mocked_failure_exporter.run_app(
+        {"PROVIDER": "pagerduty", "TOKEN": PAGER_DUTY_TOKEN}
+    )
 
     captured_logs = caplog.record_tuples
     # 9 informational, 5 resolution, 57 creation

@@ -15,6 +15,8 @@ from committime import CommitMetric
 from committime.collector_azure_devops import AzureDevOpsCommitCollector
 from committime.collector_base import (
     COMMIT_DATE_ANNOTATION_ENV,
+    COMMIT_HASH_ANNOTATION_ENV,
+    COMMIT_REPO_URL_ANNOTATION_ENV,
     AbstractCommitCollector,
 )
 from committime.collector_bitbucket import BitbucketCommitCollector
@@ -58,6 +60,8 @@ class CommittimeTypeConfig:
 class ImageCommittimeConfig:
     kube_client: DynamicClient = field(metadata=no_env_vars())
 
+    app_label: str = pelorus.DEFAULT_APP_LABEL
+
     # Used to convert time and date found in the
     # Docker Label io.openshift.build.commit.date
     # or annotation for the Image
@@ -68,6 +72,18 @@ class ImageCommittimeConfig:
     date_annotation_name: str = field(
         default=CommitMetric._ANNOTATION_MAPPIG["commit_time"],
         metadata=env_vars(COMMIT_DATE_ANNOTATION_ENV),
+    )
+
+    # TODO hash_annotation_name and repo_url_annotation_name seem to be
+    # unnecessary
+    hash_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
+    )
+
+    repo_url_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
+        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
     )
 
     def make_collector(self) -> AbstractCommitCollector:
@@ -83,6 +99,10 @@ class ImageCommittimeConfig:
             date_format=self.date_format,
             username="",
             token="",
+            app_label=self.app_label,
+            date_annotation_name=self.date_annotation_name,
+            hash_annotation_name=self.hash_annotation_name,
+            repo_url_annotation_name=self.repo_url_annotation_name,
         )
 
 
@@ -108,8 +128,22 @@ class GitCommittimeConfig:
         validator=attrs.validators.in_(PROVIDER_CLASSES_BY_NAME.keys()),
     )
 
+    app_label: str = pelorus.DEFAULT_APP_LABEL
+
     tls_verify: bool = field(
         default=pelorus.DEFAULT_TLS_VERIFY, converter=attrs.converters.to_bool
+    )
+
+    # TODO hash_annotation_name and repo_url_annotation_name seem to be
+    # unnecessary
+    hash_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
+    )
+
+    repo_url_annotation_name: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
+        metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
     )
 
     def __attrs_post_init__(self):
@@ -133,6 +167,9 @@ class GitCommittimeConfig:
                 username=self.username,
                 token=self.token,
                 namespaces=self.namespaces,
+                app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
             )
         if git_provider == "github":
             if self.git_api:
@@ -145,6 +182,9 @@ class GitCommittimeConfig:
                 token=self.token,
                 namespaces=self.namespaces,
                 tls_verify=self.tls_verify,
+                app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
                 **api,
             )
         if git_provider == "bitbucket":
@@ -154,6 +194,9 @@ class GitCommittimeConfig:
                 token=self.token,
                 namespaces=self.namespaces,
                 tls_verify=self.tls_verify,
+                app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
             )
         if git_provider == "gitea":
             if self.git_api:
@@ -165,15 +208,25 @@ class GitCommittimeConfig:
                 username=self.username,
                 token=self.token,
                 namespaces=self.namespaces,
+                app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
                 **api,
             )
         if git_provider == "azure-devops":
+            if self.git_api:
+                api = dict(git_api=self.git_api)
+            else:
+                api = {}
             return AzureDevOpsCommitCollector(
                 kube_client=self.kube_client,
                 username=self.username,
                 token=self.token,
                 namespaces=self.namespaces,
-                git_api=self.git_api,
+                app_label=self.app_label,
+                hash_annotation_name=self.hash_annotation_name,
+                repo_url_annotation_name=self.repo_url_annotation_name,
+                **api,
             )
 
         raise ValueError(
@@ -181,7 +234,8 @@ class GitCommittimeConfig:
         )  # should be unreachable
 
 
-if __name__ == "__main__":
+def set_up() -> AbstractCommitCollector:
+    # TODO refactor: all exporters have same structure
     pelorus.setup_logging()
     provider_config = load_and_log(CommittimeTypeConfig)
 
@@ -199,6 +253,12 @@ if __name__ == "__main__":
     collector = config.make_collector()
 
     REGISTRY.register(collector)
+    return collector
+
+
+if __name__ == "__main__":
+    set_up()
+    # TODO refactor: create function, all exporters have same structure
     start_http_server(8080)
 
     while True:

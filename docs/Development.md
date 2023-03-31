@@ -608,14 +608,40 @@ For testing changes to the helm chart, you should just follow the [standard inst
 * All expected pods are running and healthy
 * Any expected behavior changes mentioned in the PR can be observed.
 
-A different way is to simply run e2e-tests against your cluster, to do so, **ENSURE** your pelorus namespace is either not existing or no resources are within that namespace.
+A different way is to simply run e2e-tests against your cluster. To do so, first export the necessary secrets to run the script, by running
+```shell
+export TOKEN=<YOUR_GITHUB_TOKEN>
+export GITLAB_API_TOKEN=<YOUR_GITLAB_TOKEN>
+export GITEA_API_TOKEN=<YOUR_GITEA_TOKEN>
+export BITBUCKET_API_USER=<YOUR_BITBUCKET_USER>
+export BITBUCKET_API_TOKEN=<YOUR_BITBUCKET_TOKEN>
+export JIRA_USER=<YOUR_JIRA_USER>
+export JIRA_TOKEN=<YOUR_JIRA_TOKEN>
+```
 
-    ​export KUBECONFIG=/path/to/kubeconfig_file
-    # DANGEROUS as this will remove your previously deployed pelorus instance
-    oc delete namespace pelorus
-    make e2e-tests
-    # Check if command ran without failures
-    echo $?
+Then, log in to your OpenShift cluster and **ENSURE** your pelorus namespace does not exist (if it exist, you can delete it running `oc delete namespace pelorus`), and run
+```
+make e2e-tests
+```
+which is an alias to `./scripts/run-pelorus-e2e-tests -o konveyor -e failure,gitlab_committime,gitea_committime,bitbucket_committime,jira_committime,jira_custom_committime -t`
+
+To run e2e-tests from current branch, first create a PR in Pelorus project for it and export the necessary environment variables to run the script, by running
+```
+export REPO_NAME=pelorus
+export PULL_NUMBER=THE_PR_NUMBER
+```
+
+For more information, run
+```
+./scripts/run-pelorus-e2e-tests -h
+```
+
+To delete the objects created by the script, run
+```
+curl https://raw.githubusercontent.com/konveyor/mig-demo-apps/master/apps/todolist-mongo-go/mongo-persistent.yaml | oc delete -f -
+helm uninstall pelorus --namespace pelorus
+helm uninstall operators --namespace pelorus
+```
 
 You can do some rudimentary linting with `make chart-lint`.
 

@@ -39,13 +39,17 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
                 "Skipping non Azure DevOps server, found %s" % (git_server)
             )
         logging.debug("metric.repo_project %s" % (metric.repo_project))
-        logging.debug("metric.git_api %s", self.git_api)  # TODO: metric, not self
+        logging.debug("metric.git_server %s" % (metric.git_server))
 
         # Fill in with your personal access token and org URL
         # personal_access_token = 'YOURPAT'
         # organization_url = 'https://dev.azure.com/YOURORG'
         personal_access_token = self.token
-        organization_url = self.git_api.url
+        organization_url = (
+            self.git_api.url + "/" + metric.repo_group
+            if metric.repo_group and "/" + metric.repo_group not in self.git_api.url
+            else self.git_api.url
+        )
 
         # Create a connection to the org
         credentials = BasicAuthentication("", personal_access_token)
@@ -57,7 +61,9 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         commit = git_client.get_commit(
             commit_id=metric.commit_hash,
             repository_id=metric.repo_project,
-            project=metric.repo_project,
+            project=metric.azure_project
+            if metric.azure_project
+            else metric.repo_project,
         )
 
         timestamp: datetime = commit.committer.date

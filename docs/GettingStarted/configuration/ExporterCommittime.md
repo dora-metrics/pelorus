@@ -201,13 +201,11 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
 ###### GIT_API
 
 - **Required:** yes
-    - Only applicable for [PROVIDER](#provider) value: `git` or unset
+    - Only applicable for [GIT_PROVIDER](#git_provider) value: `github` (or unset), `gitea` or `azure-devops`
     - **Default Value:**
         - `api.github.com` for `github` [GIT_PROVIDER](#git_provider)
         - `dev.azure.com` for `azure-devops` [GIT_PROVIDER](#git_provider)
         - `try.gitea.io` for `gitea` [GIT_PROVIDER](#git_provider)
-        - **unset** for `gitlab` [GIT_PROVIDER](#git_provider)
-        - **unset** for `bitbucket` [GIT_PROVIDER](#git_provider)
 - **Type:** string
 
 : GitHub, Gitea or Azure DevOps API FQDN. This allows the override for Enterprise users.
@@ -218,8 +216,8 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
 
 | Variable | Required | Default Value |
 |----------|----------|---------------|
-| [COMMIT_DATE_ANNOTATION](#api_user) | no | `io.openshift.build.commit.date` |
-| [COMMIT_DATE_FORMAT](#token) | no | `%a %b %d %H:%M:%S %Y %z` |
+| [COMMIT_DATE_ANNOTATION](#commit_date_annotation) | no | `io.openshift.build.commit.date` |
+| [COMMIT_DATE_FORMAT](#commit_date_format) | no | `%a %b %d %H:%M:%S %Y %z` |
 
 ###### COMMIT_DATE_ANNOTATION
 
