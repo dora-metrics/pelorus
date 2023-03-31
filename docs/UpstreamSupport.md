@@ -24,7 +24,7 @@ with out CI integration will have an associated Github issue in CI status and St
 | Bitbucket | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-bitbucket+) | [Integration CI present](#integration-in-ci) |
 | Gitlab | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-gitlab) | [Integration CI present](#integration-in-ci) |
 | Gitea | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-gitea) | [Integration CI present](#integration-in-ci) |
-| Azure DevOps | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-azure-devops) | [todo](https://github.com/dora-metrics/pelorus/issues/569) |
+| Azure DevOps | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-azure-devops) | [Integration CI present](#integration-in-ci) |
 
 ### **Failure Exporter**
 
