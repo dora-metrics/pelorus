@@ -113,16 +113,19 @@ e2e-tests-dev-env: $(PELORUS_VENV)
 
 # Release
 
-.PHONY: release minor-release major-release
-
-release:
-	./scripts/create_release_pr
-
-minor-release:
-	./scripts/create_release_pr -i
+.PHONY:  major-release minor-release release rc-release
 
 major-release:
-	./scripts/create_release_pr -m
+	./scripts/create_release_pr -x
+
+minor-release:
+	./scripts/create_release_pr -y
+
+release:
+	./scripts/create_release_pr -z
+
+rc-release:
+	./scripts/create_release_pr -n
 
 .PHONY: mockoon-tests
 mockoon-tests: $(PELORUS_VENV)
