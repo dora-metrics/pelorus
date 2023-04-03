@@ -1,0 +1,53 @@
+name: build_push_exporters
+
+inputs:
+  image: 
+    required: true
+  builder_image:
+    required: true
+  s2i_log_level:
+    required: true
+  quay_imageregistry:
+    required: true
+  quay_imagenamespace:
+    required: true
+  quay_username:
+    required: true
+  quay_password:
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set Image version
+      shell: bash
+      run: |
+        IMG_VER=$(grep quay.io charts/pelorus/subcharts/exporters/templates/_imagestream_from_image.yaml | grep -oP '(?<=default ")[^"]+')
+        echo "Image version: $IMG_VER"
+        echo "VERSION=$IMG_VER" >> $GITHUB_ENV
+
+    # Setup S2i and Build container image
+    - name: Setup and Build
+      id: build-exporter
+      uses: redhat-actions/s2i-build@v2
+      with:
+        image: ${{ inputs.image }}
+        path_context: 'exporters'
+        builder_image: ${{ inputs.builder_image }}
+        tags: latest ${{ github.sha }}
+        log_level: ${{ inputs.s2i_log_level }}
+
+    - name: Tag exporter image with additional version tag
+      shell: bash
+      run: |
+        docker tag ${{ steps.build-exporter.outputs.image }}:${{ github.sha }} ${{ steps.build-exporter.outputs.image }}:${{ env.VERSION }}
+
+    # Push Image to Quay registry
+    - name: Push To Quay Action
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ steps.build-exporter.outputs.image }}
+        tags: ${{ steps.build-exporter.outputs.tags }} ${{ env.VERSION }}
+        registry: ${{ inputs.quay_imageregistry }}/${{ inputs.quay_imagenamespace }}
+        username: ${{ inputs.quay_username }}
+        password: ${{ inputs.quay_password }}
