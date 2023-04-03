@@ -103,10 +103,16 @@ class JiraFailureCollector(AbstractFailureCollector):
         """Connect to JIRA instance which may be cloud based or self-hosted."""
         try:
             # Connect to JIRA
-            jira_client = JIRA(
-                options={"server": self.tracker_api},
-                basic_auth=(self.username, self.token),
-            )
+            if not self.username:
+                jira_client = JIRA(
+                    options={"server": self.tracker_api},
+                    token_auth=self.token,
+                )
+            else:
+                jira_client = JIRA(
+                    options={"server": self.tracker_api},
+                    basic_auth=(self.username, self.token),
+                )
             # Ensure connection was performed
             jira_client.session()
             return jira_client

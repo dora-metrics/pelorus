@@ -53,7 +53,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 | [PROVIDER](#provider) | no | `jira` |
 | [LOG_LEVEL](#log_level) | no | `INFO` |
 | [SERVER](#server) | yes | - |
-| [API_USER](#api_user) | yes | - |
+| [API_USER](#api_user) | no | - |
 | [TOKEN](#token) | yes | - |
 | [APP_LABEL](#app_label) | no | `app.kubernetes.io/name` |
 | [APP_FIELD](#app_field) | no | `u_application` |
@@ -91,8 +91,9 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 
 ###### API_USER
 
-- **Required:** yes
+- **Required:** no `jira`; yes for `servicenow`
     - Only applicable for [PROVIDER](#provider) set to `jira` or `servicenow`
+    - Required for the [PROVIDER](#provider) `servicenow`
 - **Type:** string
 
 : Issue Tracker provider username.
@@ -100,6 +101,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 ###### TOKEN
 
 - **Required:** yes
+    - For the `jira` [PROVIDER](#provider) Personal Access Token (PATs) is used if API_USERNAME is not provided
 - **Type:** string
 
 : Issue Tracker provider API Token.
