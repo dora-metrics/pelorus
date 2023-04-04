@@ -64,6 +64,8 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 | [GITHUB_ISSUE_LABEL](#github_issue_label) | no | bug |
 | [PAGERDUTY_URGENCY](#pagerduty_urgency) | no | - |
 | [PAGERDUTY_PRIORITY](#pagerduty_priority) | no | - |
+| [AZURE_DEVOPS_TYPE](#azure_devops_type) | no | - |
+| [AZURE_DEVOPS_PRIORITY](#azure_devops_priority) | no | - |
 
 ###### PROVIDER
 
@@ -71,7 +73,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
     - **Default Value:** jira
 - **Type:** string
 
-: Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`, `pagerduty`.
+: Set the Issue Tracker provider for the failure exporter. One of `jira`, `github`, `servicenow`, `pagerduty`, `azure-devops`.
 
 ###### LOG_LEVEL
 
@@ -84,10 +86,10 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 ###### SERVER
 
 - **Required:** yes
-    - Only applicable for [PROVIDER](#provider) set to `jira` or `servicenow`
+    - Only applicable for [PROVIDER](#provider) set to `jira`, `servicenow` or `azure-devops`
 - **Type:** string
 
-: URL to the Jira or ServiceNow Server.
+: URL to the Jira, ServiceNow or Azure DevOps Server.
 
 ###### API_USER
 
@@ -109,7 +111,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 ###### APP_LABEL
 
 - **Required:** no
-    - Only applicable for [PROVIDER](#provider) set to `jira` or `github`
+    - Only applicable for [PROVIDER](#provider) set to `jira`, `github` or `azure-devops`
     - **Default Value:** app.kubernetes.io/name
 - **Type:** string
 
@@ -127,12 +129,14 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 ###### PROJECTS
 
 - **Required:** no
-    - Only applicable for [PROVIDER](#provider) set to `jira` or `github`
+    - Only applicable for [PROVIDER](#provider) set to `jira`, `github` or `azure-devops`
 - **Type:** comma separated list of strings
 
 : * Used by Jira to define which projects (keys or names) to monitor. Value is ignored if [JIRA_JQL_SEARCH_QUERY](#jira_jql_search_query) is defined.
 
 : * Used by GitHub to define which repositories' issues to monitor.
+
+: * Used by Azure DevOps to define which projects (by names) to monitor.
 
 ###### PELORUS_DEFAULT_KEYWORD
 
@@ -182,6 +186,22 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 - **Type:** string
 
 : Defines incidents priorities (comma separated) to be monitored. By default, monitors all priorities. To monitor incidents without priority, add **null** to this value.
+
+###### AZURE_DEVOPS_TYPE
+
+- **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `azure-devops`
+- **Type:** string
+
+: Defines work items types (comma separated) to be monitored. By default, monitors all types.
+
+###### AZURE_DEVOPS_PRIORITY
+
+- **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `azure-devops`
+- **Type:** int
+
+: Defines work items priorities (comma separated) to be monitored. By default, monitors all priorities.
 
 ## Configuring Jira
 
@@ -407,3 +427,29 @@ Failure Time Exporter(s) configured to work with PagerDuty can be easily adjuste
 * Monitor issues of only specific urgencies, using [PAGERDUTY_URGENCY](#pagerduty_urgency).
 
 * Monitor issues of only specific priorities, using [PAGERDUTY_PRIORITY](#pagerduty_priority).
+
+## Configuring Azure DevOps
+
+### Default workflow
+
+By default, Failure Time Exporter(s) configured to work with Azure DevOps will:
+
+* Monitor all work items in all projects that live in Azure DevOps URL passed through [SERVER](#server) (that the token passed through [TOKEN](#token) has access to).
+
+* Use the `app.kubernetes.io/name=app_name` work item tag, where **app_name** is the name of one of the applications being monitored.
+
+    > **NOTE:** Work items without such tag are collected with the application name set to **unknown**.
+
+* Work items will be considered resolved when their states change to `Done`.
+
+### Custom workflow
+
+Failure Time Exporter(s) configured to work with Azure DevOps can be easily adjusted to adapt to custom workflow(s), like:
+
+* Monitor work items of only specific projects within Azure DevOps URL, using [PROJECTS](#projects).
+
+* Use a custom work item tag for getting the name of one of the applications being monitored , using [APP_LABEL](#app_label).
+
+* Monitor work items of only specific type, using [AZURE_DEVOPS_TYPE](#azure_devops_type).
+
+* Monitor work items of only specific priorities, using [AZURE_DEVOPS_PRIORITY](#azure_devops_priority).

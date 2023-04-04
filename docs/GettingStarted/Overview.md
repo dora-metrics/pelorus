@@ -60,5 +60,6 @@ Open an [issue](https://github.com/dora-metrics/pelorus/issues/new?assignees=&la
 - GitHub :simple-github:
 - ServiceNow
 - PagerDuty :simple-pagerduty:
+- Azure DevOps :simple-azuredevops:
 
 </font>

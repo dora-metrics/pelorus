@@ -55,12 +55,6 @@ rules:
 - verbs:
   - "*"
   apiGroups:
-  - "route.openshift.io"
-  resources:
-  - "routes"
-- verbs:
-  - "*"
-  apiGroups:
   - ""
   resources:
   - "configmaps"
@@ -102,5 +96,11 @@ rules:
   - "prometheuses"
   - "prometheusrules"
   - "servicemonitors"
+- verbs:
+  - "*"
+  apiGroups:
+  - "route.openshift.io"
+  resources:
+  - "routes"
 
 #+kubebuilder:scaffold:rules
