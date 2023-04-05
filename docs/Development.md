@@ -617,18 +617,19 @@ export BITBUCKET_API_USER=<YOUR_BITBUCKET_USER>
 export BITBUCKET_API_TOKEN=<YOUR_BITBUCKET_TOKEN>
 export JIRA_USER=<YOUR_JIRA_USER>
 export JIRA_TOKEN=<YOUR_JIRA_TOKEN>
+export PAGER_DUTY_TOKEN=<YOUR_PAGER_DUTY_TOKEN>
 ```
 
 Then, log in to your OpenShift cluster and **ENSURE** your pelorus namespace does not exist (if it exist, you can delete it running `oc delete namespace pelorus`), and run
 ```
 make e2e-tests
 ```
-which is an alias to `./scripts/run-pelorus-e2e-tests -o konveyor -e failure,gitlab_committime,gitea_committime,bitbucket_committime,jira_committime,jira_custom_committime -t`
+which is an alias to `./scripts/run-pelorus-e2e-tests -o konveyor -a -t`
 
 To run e2e-tests from current branch, first create a PR in Pelorus project for it and export the necessary environment variables to run the script, by running
-```
+```shell
 export REPO_NAME=pelorus
-export PULL_NUMBER=THE_PR_NUMBER
+export PULL_NUMBER=<THE_PR_NUMBER>
 ```
 
 For more information, run
