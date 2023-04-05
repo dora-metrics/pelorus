@@ -185,7 +185,7 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
 ###### API_USER
 
 - **Required:** yes
-    - Only applicable for [PROVIDER](#provider) value: `git` or unset
+    - Only applicable for [GIT_PROVIDER](#git_provider) value: `github`, `bitbucket`, `gitea` or `gitlab`
 - **Type:** string
 
 : GIT API username.
