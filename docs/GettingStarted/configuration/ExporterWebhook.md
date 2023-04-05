@@ -49,7 +49,15 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 
 | Variable | Required | Default Value |
 |----------|----------|---------------|
+| [SECRET_TOKEN](#secret_token) | no | - |
 | [LOG_LEVEL](#log_level) | no | `INFO` |
+
+###### SECRET_TOKEN
+
+- **Required:** no
+- **Type:** string
+
+: Set the secret token to ensure that the webhook receives only the intended payload. This secret token is used by the sender of the payload to calclate hash signature, which then is included with the headers of each request as `X-Hub-Signature-256`. Please refer to the [Securing Webhook](#securing-webhook) section for examples.
 
 ###### LOG_LEVEL
 
@@ -107,6 +115,8 @@ For the Header X-Pelorus-Event: `failure`
 
 
 ## Example usage
+
+### Sending non-secure payload
 
 You can easily send a POST request using [Curl](https://curl.se) directly from the shell. You can store the payload data in a file or pass it as an argument to [Curl](https://curl.se). Below is an example of sending several requests to cover the lifecycle of an application:
 
@@ -200,4 +210,53 @@ $ curl -X POST <Webhook route URI>/pelorus/webhook \
        -H "X-Pelorus-Event: failure" \
        -H "Content-Type: application/json" \
        -d @./mongo_production_failure_resolved.json
+```
+
+### Securing payload
+
+In order to ensure the security of your webhook payload, it is important to configure your webhook exporter to use a [SECRET_TOKEN](#secret_token).
+
+This token value is necessary to calculate the SHA256 hash signature and include it in the headers of each request with the 'X-Hub-Signature-256' POST header.
+
+You may utilize your own tools to calculate the signature, the following example uses two **shell** methods to do so.
+
+ - the first method uses `echo -n` together with `openssl` CLI
+
+```shell
+$ export PELORUS_METRIC_FILE="./mongo_committime.json"
+$ export SECRET_TOKEN="My Secret Token"
+$ SHA256_HASH_SIGNATURE=$(echo -n $(cat "${PELORUS_METRIC_FILE}") | openssl dgst -sha256 -hmac "${SECRET_TOKEN}"| cut -d ' ' -f 2)
+
+# Check calculated token:
+$ echo "${SHA256_HASH_SIGNATURE}"
+29a4606fccb6976cd43cb8a6cf210d402294e08fffda86f87c96fdb39d9fbc3c
+```
+
+ - the second method uses `jq` together with `openssl` CLI
+
+```shell
+$ export PELORUS_METRIC_FILE="./mongo_committime.json"
+$ export SECRET_TOKEN="My Secret Token"
+$ SHA256_HASH_SIGNATURE=$(jq -c "" "${PELORUS_METRIC_FILE}" | openssl dgst -sha256 -hmac "${SECRET_TOKEN}"| cut -d ' ' -f 2)
+
+# Check calculated token:
+$ echo "${SHA256_HASH_SIGNATURE}"
+9f6140a622159a4e1d379603afe6a0d288d45bc9ad99943c29ec77e3f2cf1cee
+
+```
+
+   > **NOTE:** It is worth noting that the SHA256 signatures are different in the above example, but the Pelorus webhook accepts both. This is because the Pelorus uses best effort to match the payload hash based on its content, ignoring new lines and json separators, that may vary depending on the tooling used to calculate payload signatures.
+
+
+Sending the payload from the directory where `*.json` files are with inclusion of the calculated SHA256 value:
+
+```shell
+$ curl -X POST <Webhook route URI>/pelorus/webhook \
+       -H "User-Agent: Pelorus-Webhook/test" \
+       -H "X-Pelorus-Event: committime" \
+       -H "Content-Type: application/json" \
+       -d @./mongo_committime.json
+       -H "X-Hub-Signature-256: sha256=${SHA256_HASH_SIGNATURE}"
+
+{"http_response":"Webhook Received","http_response_code":200}
 ```

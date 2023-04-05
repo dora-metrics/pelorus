@@ -96,15 +96,20 @@ class PelorusWebhookPlugin(ABC):
     Attributes:
         handshake_headers: (Headers): Headers that are received by the webhook.
         request: (Request): The request object associated with the webhook.
+        secret: Optional[str]: Webhook secret, if provided header must contain
+                               X-Hub-Signature-256 signature.
     """
 
     user_agent_str = None
 
-    def __init__(self, handshake_headers: Headers, request: Request) -> None:
+    def __init__(
+        self, handshake_headers: Headers, request: Request, secret: Optional[str] = None
+    ) -> None:
         super().__init__()
         self.headers = handshake_headers
         self.request = request
         self.payload_data = None
+        self.secret = secret
 
     @abstractmethod
     async def _handshake(self, headers: Headers) -> Awaitable[bool]:

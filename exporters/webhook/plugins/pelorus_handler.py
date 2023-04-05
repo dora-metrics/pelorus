@@ -14,9 +14,12 @@
 #    under the License.
 #
 
+import hashlib
+import hmac
 import http
+import json
 import logging
-from typing import Any, Awaitable
+from typing import Any, Awaitable, Dict
 
 from pydantic import ValidationError, parse_obj_as
 from typing_extensions import override
@@ -35,8 +38,92 @@ from .pelorus_handler_base import (
     HTTPException,
     PelorusWebhookPlugin,
     PelorusWebhookResponse,
-    Request,
 )
+
+
+def _verify_payload_signature(
+    secret: bytes, signature_secret: str, json_payload_data: Dict[str, str]
+) -> bool:
+    """
+    This function attempts to match the hash of a payload to its data,
+    with the understanding that the input JSON may be formatted slightly
+    differently, such as having different separators or newlines.
+
+    Any change to a single character in the sender's JSON input will
+    change its hash signature. Therefore, on the webhook side,
+    this function attempts to ignore separators and newline characters
+    in order to match the incoming hash using variations of those formats
+    that do not affect the payload data.
+
+    To illustrate this point, consider the following variations of
+    the same JSON input, which are actually equivalent:
+
+    {"data": "value", "data2": "value2"}
+    {"data":"value","data2":"value2"}
+    {"data":"value", "data2":"value2"}
+    {"data" :"value","data2" :"value2"}
+    {"data" :"value", "data2" :"value2"}
+    {"data": "value", "data2": "value2"}\n
+    {"data":"value","data2":"value2"}\n
+    {"data":"value", "data2":"value2"}\n
+    {"data" :"value","data2" :"value2"}\n
+    {"data" :"value", "data2" :"value2"}\n
+    { "data": "value", "data2": "value2" }
+    { "data":"value","data2":"value2" }
+    { "data":"value", "data2":"value2" }
+    { "data" :"value","data2" :"value2" }
+    { "data" :"value", "data2" :"value2" }
+    { "data": "value", "data2": "value2" }\n
+    { "data":"value","data2":"value2" }\n
+    { "data":"value", "data2":"value2" }\n
+    { "data" :"value","data2" :"value2" }\n
+    { "data" :"value", "data2" :"value2" }\n
+
+    Returns:
+        bool: True when the matching hash was found, False otherwise
+    """
+
+    separator_formats = [
+        (", ", ": "),
+        (",", ":"),
+        (", ", ":"),
+        (",", " :"),
+        (", ", " :"),
+    ]
+    additional_transformation = [
+        "extra_spaces_no_newline",
+        "extra_spaces_newline",
+        "no_extra_spaces_no_newline",
+        "no_extra_spaces_newline",
+    ]
+
+    for separator in separator_formats:
+        for transformation in additional_transformation:
+            # no_extra_spaces_no_newline - default
+            payload_json_string = json.dumps(
+                json_payload_data, separators=separator, indent=None
+            )
+            payload_json_string = payload_json_string.rstrip("\n")
+
+            if transformation == "extra_spaces_no_newline":
+                payload_json_string = "{ " + payload_json_string[1:-1] + " }"
+            elif transformation == "extra_spaces_newline":
+                payload_json_string = "{ " + payload_json_string[1:-1] + " }"
+                payload_json_string = payload_json_string + "\n"
+            elif transformation == "no_extra_spaces_newline":
+                payload_json_string = payload_json_string + "\n"
+
+            encoded_payload = payload_json_string.encode("utf-8")
+
+            sha256_signature = (
+                "sha256="
+                + hmac.new(secret, encoded_payload, hashlib.sha256).hexdigest()
+            )
+
+            # "X-Hub-Signature-256: sha256=<SHA256_VALUE>"
+            if hmac.compare_digest(sha256_signature, signature_secret):
+                return True
+    return False
 
 
 class PelorusWebhookHandler(PelorusWebhookPlugin):
@@ -71,16 +158,12 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
             "namespace": "mongo-persistent",
             "timestamp": 1557933657
         }
-
-    Attributes:
-        handshake_headers: (Headers): Headers that are received by the webhook.
-        request: (Request): The request object associated with the webhook.
     """
 
     user_agent_str = "Pelorus-Webhook/"
 
-    def __init__(self, handshake_headers: Headers, request: Request) -> None:
-        super().__init__(handshake_headers, request)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.payload_headers = None
 
     def _pelorus_committime(payload) -> CommitTimePelorusPayload:
@@ -117,10 +200,17 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
             bool: True when the handshake based on the headers were success
 
         Raises:
-            HTTPException: headers were properly validated by pydantic
+            HTTPException: headers were improper - validated by pydantic
+                           handler were configured with signature, but no
+                           signature was found in the headers.
         """
         try:
             self.payload_headers = parse_obj_as(PelorusDeliveryHeaders, headers)
+            if self.secret and not self.payload_headers.x_hub_signature_256:
+                raise HTTPException(
+                    status_code=http.HTTPStatus.BAD_REQUEST,
+                    detail="Non existing signature.",
+                )
             return issubclass(type(self.payload_headers), PelorusDeliveryHeaders)
         except ValidationError as ex:
             logging.error(headers)
@@ -149,6 +239,17 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
         """
         if self.payload_headers and self.payload_headers.event_type:
             try:
+                if self.secret:
+                    if not _verify_payload_signature(
+                        self.secret.encode("utf-8"),
+                        self.payload_headers.x_hub_signature_256,
+                        json_payload_data,
+                    ):
+                        raise HTTPException(
+                            status_code=http.HTTPStatus.BAD_REQUEST,
+                            detail="Invalid signature.",
+                        )
+
                 data = self.handler_functions[self.payload_headers.event_type](
                     json_payload_data
                 )
