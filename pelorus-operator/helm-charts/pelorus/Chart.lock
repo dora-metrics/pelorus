@@ -1,6 +1,6 @@
 dependencies:
 - name: exporters
   repository: file://./subcharts/exporters
-  version: 2.0.8
-digest: sha256:e85d32a997154187035655535a048c186de9e2fd4df332b7178e4f23abd92ff5
-generated: "2023-03-10T12:45:37.338975782-03:00"
+  version: 2.0.9
+digest: sha256:59ec3b73f9ab32e86238964b232cf541f2fc6be8f40350670cbe4642a36e39d0
+generated: "2023-04-06T11:43:04.264116764+02:00"

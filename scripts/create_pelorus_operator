@@ -31,13 +31,16 @@ DEFAULT_PELORUS_CHARTS_DIR="${SCRIPT_DIR}/${DEFAULT_PELORUS_CHARTS_SUBDIR}/"
 DEFAULT_PELORUS_OPERATOR_DIR="${SCRIPT_DIR}/../pelorus-operator/"
 DEFAULT_PELORUS_OPERATOR_PATCHES_DIR="${SCRIPT_DIR}/pelorus-operator-patches/"
 
+TRUE=1
+
 function print_help() {
     printf "\nUsage: %s [OPTION]\n\n" "$0"
     printf "\tStartup:\n"
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
     printf "\t  -s\tpath to source pelorus helm charts folder, default: %s\n" "${DEFAULT_PELORUS_CHARTS_DIR}"
-    printf "\t  -d\tpath to EMPTY destination folder, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_DIR}"
+    printf "\t  -d\tpath to destination folder, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_DIR}"
+    printf "\t  -f\tforce, removes destination folder that must be named pelorus-operator before proceeding\n"
     printf "\t  -p\tpath to DIR with operator patches to be applied, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_PATCHES_DIR}"
     printf "\t  -v\toperator version to be used in a format x.y.z. If not set z+1 is used.\n"
     printf "\t  -o\tQuay user/org name, default to pelorus, which is the production storage.\n"
@@ -46,7 +49,7 @@ function print_help() {
 
 ### Options
 OPTIND=1
-while getopts "s:d:p:h?v:o:" option; do
+while getopts "fs:d:p:h?v:o:" option; do
     case "$option" in
     h|\?) print_help;;
     s)    source_dir=$OPTARG;;
@@ -54,6 +57,7 @@ while getopts "s:d:p:h?v:o:" option; do
     p)    patches_dir=$OPTARG;;
     v)    operator_ver=$OPTARG;;
     o)    quay_user=$OPTARG;;
+    f)    force="$TRUE";;
     esac
 done
 
@@ -100,6 +104,15 @@ fi
 if [ ! -d "${source_dir}" ]; then
 	echo "ERROR: Source directory ${source_dir} does not exists."
     exit 2
+fi
+
+
+# Check if the destination directory path ends with /pelorus-operator/
+if [[ "${destination_dir}" == *"/pelorus-operator/" && $force ]]; then
+    echo "INFO: Removing operator directory: ${destination_dir}"
+    rm -rf "${destination_dir}"
+    echo "INFO: Creating new operator directory: ${destination_dir}"
+    mkdir "${destination_dir}"
 fi
 
 # Check if destination directory is empty and exists
@@ -154,7 +167,7 @@ elif [ "$(ls -A "${patches_dir}"/*.diff 2>/dev/null)" ]; then
     echo "INFO: Found patches in ${patches_dir}."
     for patch_file in "${patches_dir}"/*.diff; do
         echo "INFO: Applying patch ${patch_file}"
-        patch -d "${destination_dir}" -p0 < "${patch_file}"
+        patch -d "${destination_dir}" -p0 < "${patch_file}" || exit 2
     done
 fi
 
@@ -180,7 +193,7 @@ elif [ "$(ls -A "${patches_dir}/bundle-patches"/*.diff 2>/dev/null)" ]; then
         echo "INFO: Found bundle patches in ${patches_dir}/bundle-patches."
         for patch_file in "${patches_dir}"/bundle-patches/*.diff; do
             echo "INFO: Applying bundle patch ${patch_file}"
-            patch -d "${destination_dir}" -p0 < "${patch_file}"
+            patch -d "${destination_dir}" -p0 < "${patch_file}" || exit 2
         done
 fi
 

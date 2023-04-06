@@ -1,5 +1,5 @@
---- config/rbac/kustomization.yaml.original
-+++ config/rbac/kustomization.yaml
+--- config/rbac/kustomization.yaml.original		2023-04-06 10:51:58.252397321 +0200
++++ config/rbac/kustomization.yaml	2023-04-06 11:07:11.076162392 +0200
 @@ -7,6 +7,8 @@ resources:
  - service_account.yaml
  - role.yaml
@@ -9,8 +9,8 @@
  - leader_election_role.yaml
  - leader_election_role_binding.yaml
  # Comment the following 4 lines if you want to disable
---- /dev/null	2022-10-24 10:19:28.874279599 +0200
-+++ config/rbac/pelorus_manager_role.yaml	2022-12-09 23:19:02.166199096 +0100
+--- /dev/null	2023-03-27 08:53:50.880018007 +0200
++++ config/rbac/pelorus_manager_role.yaml	2023-04-06 11:07:11.077162391 +0200
 @@ -0,0 +1,104 @@
 +apiVersion: rbac.authorization.k8s.io/v1
 +kind: ClusterRole
@@ -116,8 +116,8 @@
 +  - list
 +  - watch
 +
---- /dev/null
-+++ config/rbac/pelorus_role_binding.yaml
+--- /dev/null	2023-03-27 08:53:50.880018007 +0200
++++ config/rbac/pelorus_role_binding.yaml	2023-04-06 11:07:11.077162391 +0200
 @@ -0,0 +1,12 @@
 +apiVersion: rbac.authorization.k8s.io/v1
 +kind: ClusterRoleBinding

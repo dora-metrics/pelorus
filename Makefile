@@ -123,6 +123,7 @@ minor-release:
 
 release:
 	./scripts/create_release_pr -z
+	./scripts/create_pelorus_operator -f
 
 rc-release:
 	./scripts/create_release_pr -n

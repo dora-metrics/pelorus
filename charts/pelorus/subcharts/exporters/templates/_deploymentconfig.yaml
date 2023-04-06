@@ -60,7 +60,7 @@ spec:
 
             {{- if and (not .source_ref) (not .source_url) }}
             - name: PELORUS_IMAGE_TAG
-              value: {{ .app_name }}:{{ .image_tag | default "v2.0.9-rc.1" }}
+              value: {{ .app_name }}:{{ .image_tag | default "v2.0.9" }}
             {{- end }}
 
             {{- if .extraEnv }}

@@ -23,7 +23,7 @@ spec:
         app: {{ .app_name }}
         deploymentconfig: {{ .app_name }}
         application: {{ .app_name }}
-        pelorus.konveyor.io/exporter-type: {{ .exporter_type | default "generic-exporter" }}
+        pelorus.dora-metrics.io/exporter-type: {{ .exporter_type | default "generic-exporter" }}
     spec:
       serviceAccount: pelorus-exporter
       volumes:
@@ -60,7 +60,7 @@ spec:
 
             {{- if and (not .source_ref) (not .source_url) }}
             - name: PELORUS_IMAGE_TAG
-              value: {{ .app_name }}:{{ .image_tag | default "v2.0.7" }}
+              value: {{ .app_name }}:{{ .image_tag | default "v2.0.9" }}
             {{- end }}
 
             {{- if .extraEnv }}

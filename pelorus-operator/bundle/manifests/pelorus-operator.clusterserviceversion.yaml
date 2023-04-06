@@ -5,7 +5,7 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "charts.pelorus.konveyor.io/v1alpha1",
+          "apiVersion": "charts.pelorus.dora-metrics.io/v1alpha1",
           "kind": "Pelorus",
           "metadata": {
             "name": "pelorus-sample"
@@ -46,16 +46,16 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    containerImage: quay.io/pelorus/pelorus-operator:0.0.5
-    createdAt: "2023-03-10T15:45:43Z"
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.6
+    createdAt: "2023-04-06T09:43:08Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
-    operators.operatorframework.io/builder: operator-sdk-v1.27.0
+    operators.operatorframework.io/builder: operator-sdk-v1.28.0
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
-    repository: https://github.com/konveyor/pelorus/
+    repository: https://github.com/dora-metrics/pelorus/
     support: Pelorus Community
-  name: pelorus-operator.v0.0.5
+  name: pelorus-operator.v0.0.6
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -65,7 +65,7 @@ spec:
         requested workflow
       displayName: Pelorus
       kind: Pelorus
-      name: pelorus.charts.pelorus.konveyor.io
+      name: peloruses.charts.pelorus.dora-metrics.io
       specDescriptors:
       - displayName: Exporter Instance Name
         path: exporters.instances.[0].app_name
@@ -148,18 +148,18 @@ spec:
 
     ## Contributing to Pelorus
 
-    If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found in the [contribution guide](https://github.com/konveyor/pelorus/blob/master/CONTRIBUTING.md)
+    If you are interested in contributing to the Pelorus project, please review our Contribution guide which can be found in the [contribution guide](https://github.com/dora-metrics/pelorus/blob/master/CONTRIBUTING.md)
 
     ## Statement of Support
 
-    Our support policy can be found in the [Upstream Support statement](https://github.com/konveyor/pelorus/blob/master/docs/UpstreamSupport.md)
+    Our support policy can be found in the [Upstream Support statement](https://github.com/dora-metrics/pelorus/blob/master/docs/UpstreamSupport.md)
 
     ## Code of Conduct
-    Refer to Konveyor's Code of Conduct [here](https://github.com/konveyor/community/blob/main/CODE_OF_CONDUCT.md).
+    Refer to dora-metrics's Code of Conduct [here](https://github.com/dora-metrics/pelorus/blob/master/CODE_OF_CONDUCT.md).
 
     ## License
 
-    This repository is licensed under the terms of [Apache-2.0 License](https://raw.githubusercontent.com/konveyor/pelorus/master/LICENSE).
+    This repository is licensed under the terms of [Apache-2.0 License](https://raw.githubusercontent.com/dora-metrics/pelorus/master/LICENSE).
   displayName: Pelorus Operator
   icon:
   - base64data: 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
@@ -187,11 +187,11 @@ spec:
           verbs:
           - create
         - apiGroups:
-          - charts.pelorus.konveyor.io
+          - charts.pelorus.dora-metrics.io
           resources:
-          - pelorus
-          - pelorus/status
-          - pelorus/finalizers
+          - peloruses
+          - peloruses/status
+          - peloruses/finalizers
           verbs:
           - create
           - delete
@@ -205,6 +205,20 @@ spec:
           resources:
           - clusterrolebindings
           - clusterroles
+          verbs:
+          - '*'
+        - apiGroups:
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          verbs:
+          - '*'
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - grafanadashboards
+          - grafanadatasources
+          - grafanas
           verbs:
           - '*'
         - apiGroups:
@@ -241,20 +255,6 @@ spec:
           resources:
           - rolebindings
           - roles
-          verbs:
-          - '*'
-        - apiGroups:
-          - apps.openshift.io
-          resources:
-          - deploymentconfigs
-          verbs:
-          - '*'
-        - apiGroups:
-          - integreatly.org
-          resources:
-          - grafanadashboards
-          - grafanadatasources
-          - grafanas
           verbs:
           - '*'
         - apiGroups:
@@ -406,7 +406,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/pelorus/pelorus-operator:0.0.5
+                image: quay.io/pelorus/pelorus-operator:0.0.6
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -492,7 +492,7 @@ spec:
   - name: Pelorus Getting Started
     url: https://pelorus.readthedocs.io/en/latest/GettingStarted/Overview/
   - name: Pelorus GIT repository
-    url: https://github.com/konveyor/pelorus/
+    url: https://github.com/dora-metrics/pelorus/
   maintainers:
   - email: kgranger@redhat.com
     name: Kevin Granger
@@ -508,9 +508,10 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.5
-  replaces: pelorus-operator.v0.0.4
+  version: 0.0.6
+  replaces: pelorus-operator.v0.0.5
   skips:
+    - pelorus-operator.v0.0.5
     - pelorus-operator.v0.0.4
     - pelorus-operator.v0.0.3
     - pelorus-operator.v0.0.2

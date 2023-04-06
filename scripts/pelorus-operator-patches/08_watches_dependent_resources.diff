@@ -1,5 +1,5 @@
---- watches.yaml.original	2023-01-18 17:44:32.236167254 +0100
-+++ watches.yaml	2023-01-18 17:44:48.578216943 +0100
+--- watches.yaml.original	2023-04-06 10:52:01.069396488 +0200
++++ watches.yaml	2023-04-06 11:17:45.916013863 +0200
 @@ -3,4 +3,5 @@
    version: v1alpha1
    kind: Pelorus
