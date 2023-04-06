@@ -1,5 +1,5 @@
---- config/default/manager_auth_proxy_patch.yaml.original	2022-11-27 15:30:36.807768486 +0100
-+++ config/default/manager_auth_proxy_patch.yaml	2022-11-27 15:30:52.728823695 +0100
+--- config/default/manager_auth_proxy_patch.yaml.original	2023-04-06 10:51:58.253397321 +0200
++++ config/default/manager_auth_proxy_patch.yaml	2023-04-06 11:12:44.620084332 +0200
 @@ -25,29 +25,6 @@
                    values:
                      - linux
@@ -10,7 +10,7 @@
 -          capabilities:
 -            drop:
 -              - "ALL"
--        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.0
+-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.1
 -        args:
 -        - "--secure-listen-address=0.0.0.0:8443"
 -        - "--upstream=http://127.0.0.1:8080/"

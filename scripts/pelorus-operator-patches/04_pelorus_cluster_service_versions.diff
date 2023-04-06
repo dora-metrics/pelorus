@@ -1,5 +1,5 @@
---- config/manifests/bases/pelorus-operator.clusterserviceversion.yaml.original	2022-12-15 17:01:35.384242008 +0100
-+++ config/manifests/bases/pelorus-operator.clusterserviceversion.yaml	2022-12-15 17:01:46.425296201 +0100
+--- config/manifests/bases/pelorus-operator.clusterserviceversion.yaml.original	2023-04-06 10:52:03.307395826 +0200
++++ config/manifests/bases/pelorus-operator.clusterserviceversion.yaml	2023-04-06 11:10:50.652110991 +0200
 @@ -4,39 +56,163 @@
    annotations:
      alm-examples: '[]'

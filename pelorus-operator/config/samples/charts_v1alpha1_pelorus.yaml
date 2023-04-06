@@ -1,4 +1,4 @@
-apiVersion: charts.pelorus.konveyor.io/v1alpha1
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
 metadata:
   name: pelorus-sample

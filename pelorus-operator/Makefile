@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.5
+VERSION ?= 0.0.6
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -28,7 +28,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # This variable is used to construct full image tags for bundle and catalog images.
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# pelorus.konveyor.io/pelorus-operator-bundle:$VERSION and pelorus.konveyor.io/pelorus-operator-catalog:$VERSION.
+# pelorus.dora-metrics.io/pelorus-operator-bundle:$VERSION and pelorus.dora-metrics.io/pelorus-operator-catalog:$VERSION.
 IMAGE_TAG_BASE ?= quay.io/pelorus/pelorus-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
@@ -146,7 +146,7 @@ ifeq (,$(shell which helm-operator 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p $(dir $(HELM_OPERATOR)) ;\
-	curl -sSLo $(HELM_OPERATOR) https://github.com/operator-framework/operator-sdk/releases/download/v1.27.0/helm-operator_$(OS)_$(ARCH) ;\
+	curl -sSLo $(HELM_OPERATOR) https://github.com/operator-framework/operator-sdk/releases/download/v1.28.0/helm-operator_$(OS)_$(ARCH) ;\
 	chmod +x $(HELM_OPERATOR) ;\
 	}
 else

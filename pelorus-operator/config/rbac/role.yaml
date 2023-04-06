@@ -29,14 +29,14 @@ rules:
   - create
 
 ##
-## Rules for charts.pelorus.konveyor.io/v1alpha1, Kind: Pelorus
+## Rules for charts.pelorus.dora-metrics.io/v1alpha1, Kind: Pelorus
 ##
 - apiGroups:
-  - charts.pelorus.konveyor.io
+  - charts.pelorus.dora-metrics.io
   resources:
-  - pelorus
-  - pelorus/status
-  - pelorus/finalizers
+  - peloruses
+  - peloruses/status
+  - peloruses/finalizers
   verbs:
   - create
   - delete
@@ -52,6 +52,20 @@ rules:
   resources:
   - "clusterrolebindings"
   - "clusterroles"
+- verbs:
+  - "*"
+  apiGroups:
+  - "apps.openshift.io"
+  resources:
+  - "deploymentconfigs"
+- verbs:
+  - "*"
+  apiGroups:
+  - "integreatly.org"
+  resources:
+  - "grafanadashboards"
+  - "grafanadatasources"
+  - "grafanas"
 - verbs:
   - "*"
   apiGroups:
@@ -88,19 +102,5 @@ rules:
   resources:
   - "rolebindings"
   - "roles"
-- verbs:
-  - "*"
-  apiGroups:
-  - "apps.openshift.io"
-  resources:
-  - "deploymentconfigs"
-- verbs:
-  - "*"
-  apiGroups:
-  - "integreatly.org"
-  resources:
-  - "grafanadashboards"
-  - "grafanadatasources"
-  - "grafanas"
 
 #+kubebuilder:scaffold:rules

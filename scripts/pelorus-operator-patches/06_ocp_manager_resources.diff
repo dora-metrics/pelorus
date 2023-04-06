@@ -1,5 +1,5 @@
---- config/manager/manager.yaml.original	2022-12-09 12:27:40.476668121 +0100
-+++ config/manager/manager.yaml	2022-12-09 12:27:59.770764191 +0100
+--- config/manager/manager.yaml.original	2023-04-06 10:51:58.253397321 +0200
++++ config/manager/manager.yaml	2023-04-06 11:14:11.972063902 +0200
 @@ -92,10 +92,8 @@
          # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
          resources:

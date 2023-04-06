@@ -2,13 +2,13 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: pelorus.charts.pelorus.konveyor.io
+  name: peloruses.charts.pelorus.dora-metrics.io
 spec:
-  group: charts.pelorus.konveyor.io
+  group: charts.pelorus.dora-metrics.io
   names:
     kind: Pelorus
     listKind: PelorusList
-    plural: pelorus
+    plural: peloruses
     singular: pelorus
   scope: Namespaced
   versions:
