@@ -15,6 +15,7 @@
 #
 
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, Field, validator
 
@@ -33,6 +34,28 @@ class PelorusMetricSpec(str, Enum):
 class PelorusDeliveryHeaders(BaseModel):
     # https://docs.pydantic.dev/usage/models/
     event_type: PelorusMetricSpec = Field(example="committime", alias="x-pelorus-event")
+
+    # This is HMAC-SHA256 represented by 'sha256=' prefix followed by hexadecimal
+    # 64 characters (32 bytes x 2 hex digits per byte).
+    # Note the "HTTP Message Signatures" specification, however it's draft:
+    # https://datatracker.ietf.org/doc/draft-ietf-httpbis-message-signatures/
+    x_hub_signature_256: Optional[str] = Field(alias="x-hub-signature-256")
+
+    @validator("x_hub_signature_256", pre=True, always=True)
+    def validate_x_hub_signature_256(cls, value):
+        if value is not None:
+            try:
+                algorithm, signature = value.split("=", 1)
+                if algorithm != "sha256":
+                    raise ValueError("Signature should use sha256 algorithm")
+                if not signature or len(signature) != 64:
+                    raise ValueError(
+                        "Signature should be in format 'sha256=' followed by 64 characters"
+                    )
+                int(signature, 16)
+            except (TypeError, ValueError):
+                raise
+        return value
 
 
 class PelorusPayload(BaseModel):

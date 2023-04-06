@@ -15,6 +15,8 @@
 #
 
 
+import hashlib
+import hmac
 import http
 import json
 from unittest.mock import AsyncMock, patch
@@ -31,7 +33,10 @@ from webhook.models.pelorus_webhook import (
     PelorusMetricSpec,
     PelorusPayload,
 )
-from webhook.plugins.pelorus_handler import PelorusWebhookHandler
+from webhook.plugins.pelorus_handler import (
+    PelorusWebhookHandler,
+    _verify_payload_signature,
+)
 from webhook.plugins.pelorus_handler_base import Headers, HTTPException
 
 
@@ -244,3 +249,64 @@ async def test_pelorus_receive_pelorus_payload_error(headers, json_payload):
         await handler._receive_pelorus_payload(json_payload_data)
     assert http_exception.value.detail == "Invalid payload."
     assert http_exception.value.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+@pytest.mark.parametrize(
+    "json_payload_data_bytes",
+    [
+        b'{"data": "value", "data2": "value2"}',
+        b'{"data":"value","data2":"value2"}',
+        b'{"data":"value", "data2":"value2"}',
+        b'{"data" :"value","data2" :"value2"}',
+        b'{"data" :"value", "data2" :"value2"}',
+        b'{ "data": "value", "data2": "value2" }',
+        b'{ "data":"value","data2":"value2" }',
+        b'{ "data":"value", "data2":"value2" }',
+        b'{ "data" :"value","data2" :"value2" }',
+        b'{ "data" :"value", "data2" :"value2" }',
+        b'{"data": "value", "data2": "value2"}\n',
+        b'{"data":"value","data2":"value2"}\n',
+        b'{"data":"value", "data2":"value2"}\n',
+        b'{"data" :"value","data2" :"value2"}\n',
+        b'{"data" :"value", "data2" :"value2"}\n',
+        b'{ "data": "value", "data2": "value2" }\n',
+        b'{ "data":"value","data2":"value2" }\n',
+        b'{ "data":"value", "data2":"value2" }\n',
+        b'{ "data" :"value","data2" :"value2" }\n',
+        b'{ "data" :"value", "data2" :"value2" }\n',
+    ],
+)
+def test_verify_payload_signature_different_json(json_payload_data_bytes):
+    """
+    Verifies if the json payload was properly verified based on provided json string.
+
+    Even if the string of the payload format is different we should still find a match as the
+    format does not really affect it's content.
+    """
+    json_payload_data = {"data": "value", "data2": "value2"}
+    secret = b"My Secret"
+    calculated_hash = (
+        "sha256="
+        + hmac.new(secret, json_payload_data_bytes, hashlib.sha256).hexdigest()
+    )
+
+    assert _verify_payload_signature(secret, calculated_hash, json_payload_data) is True
+
+
+@pytest.mark.parametrize(
+    "secret,expected_signature,json_payload_data",
+    [
+        (
+            b"MySecret",
+            "sha256=f1dbf8a5d2aa74fb479c6bab52d80e947c66c98c131bb2fcfe97a6912623b05d",
+            {"data": "value", "data2": "value2"},
+        ),
+    ],
+)
+def test_verify_payload_not_matching_hash(
+    secret, expected_signature, json_payload_data
+):
+    assert (
+        _verify_payload_signature(secret, expected_signature, json_payload_data)
+        is False
+    )

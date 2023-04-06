@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional, Type
 
+from attr import field, frozen
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import PlainTextResponse
 from prometheus_client import Counter, generate_latest
@@ -94,10 +95,13 @@ webhook_received = Counter("webhook_received_total", "Number of received webhook
 webhook_processed = Counter("webhook_processed_total", "Number of processed webhooks")
 
 
-class WebhookCommitCollector(pelorus.AbstractPelorusExporter):
+@frozen
+class WebhookCollector(pelorus.AbstractPelorusExporter):
     """
-    Base class for a WebHook Commit time collector.
+    Base class for a WebHook collector.
     """
+
+    secret_token: str = field(default=None)
 
     def collect(self) -> PelorusGaugeMetricFamily:
         yield in_memory_commit_metrics
@@ -148,13 +152,6 @@ def allowed_hosts(request: Request) -> bool:
     return True
 
 
-# TODO what is this?
-# This should be our env/secret from env
-# Plus it's dependent on the service itself. e.g. github may use different secret
-# https://towardsdev.com/build-a-webhook-endpoint-with-fastapi-d14bf1b1d55d
-SECRET_TOKEN = None
-
-
 async def get_handler(user_agent: str) -> Optional[Type[PelorusWebhookPlugin]]:
     for handler in plugins.values():
         if handler.can_handle(user_agent):
@@ -169,6 +166,10 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None,
 )
+
+
+def _get_hash_token() -> str:
+    return collector.secret_token
 
 
 @app.post(
@@ -202,7 +203,7 @@ async def pelorus_webhook(
             detail="Unsupported request.",
         )
 
-    handler = webhook_handler(request.headers, request)
+    handler = webhook_handler(request.headers, request, secret=_get_hash_token())
     handshake = await handler.handshake()
     if not handshake:
         raise HTTPException(
@@ -231,7 +232,8 @@ if __name__ == "__main__":
 
     load_plugins()
 
-    collector = load_and_log(WebhookCommitCollector)
+    collector = load_and_log(WebhookCollector)
+
     REGISTRY.register(collector)
 
     uvicorn.run(app, host="0.0.0.0", port=8080)
