@@ -116,7 +116,7 @@ function print_help() {
     printf "\t\t  gitlab_committime - GitLab git provider - REQUIRES 'GITLAB_API_TOKEN=YOUR_GITLAB_TOKEN' SECRET\n"
     printf "\t\t  gitea_committime - Gitea git provider - REQUIRES 'GITEA_API_TOKEN=YOUR_GITEA_TOKEN' SECRET\n"
     printf "\t\t  bitbucket_committime - Bitbucket git provider - REQUIRES 'BITBUCKET_API_USER=YOUR_BITBUCKET_USER' AND 'BITBUCKET_API_TOKEN=YOUR_BITBUCKET_TOKEN' SECRETS\n"
-    printf "\t\t  azure-devops-committime - Azure devops git provider - REQUIRES 'AZURE_DEVOPS_USER=YOUR_AZURE_DEVOPS_USER' AND 'AZURE_DEVOPS_TOKEN=YOUR_AZURE_DEVOPS_TOKEN' SECRETS\n"
+    printf "\t\t  azure-devops-committime - Azure devops git provider - REQUIRES 'AZURE_DEVOPS_TOKEN=YOUR_AZURE_DEVOPS_TOKEN' SECRET\n"
     printf "\t\t  jira_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
     printf "\t\t  jira_custom_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
     printf "\t\t  pagerduty_failure - PagerDuty issue tracker - REQUIRES 'PAGER_DUTY_TOKEN=YOUR_PAGER_DUTY_TOKEN' SECRET\n"
@@ -201,7 +201,7 @@ if [ "${ENABLE_ALL_EXPORTERS}" == true ]; then
     ENABLE_GITLAB_COM_EXP=true && echo "Enabling Gitlab committime exporter"
     ENABLE_GITEA_COM_EXP=true && echo "Enabling Gitea committime exporter"
     ENABLE_BITBUCKET_COM_EXP=true && echo "Enabling Bitbucket committime exporter"
-    # TODO ENABLE_AZURE_DEVOPS_COM_EXP=true && echo "Enabling Azure devops committime exporter"
+    ENABLE_AZURE_DEVOPS_COM_EXP=true && echo "Enabling Azure devops committime exporter"
     ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
     ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
     ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
@@ -501,7 +501,7 @@ fi
 
 # enable Azure devops committime exporter
 if [ "${ENABLE_AZURE_DEVOPS_COM_EXP}" == true ]; then
-    secret_configured=$(create_k8s_secret azure-devops-secret AZURE_DEVOPS_TOKEN AZURE_DEVOPS_USER)
+    secret_configured=$(create_k8s_secret azure-devops-secret AZURE_DEVOPS_TOKEN)
     secret_exit=$?
     echo "${secret_configured}"
     if [[ $secret_exit != 0 ]]; then
