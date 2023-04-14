@@ -13,6 +13,7 @@ import pelorus
 from deploytime import DeployTimeMetric
 from pelorus.config import load_and_log, no_env_vars
 from pelorus.config.converters import comma_separated
+from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date
 
 supported_replica_objects = {"ReplicaSet", "ReplicationController"}
 
@@ -37,39 +38,41 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
             "Deployment timestamp",
             labels=["namespace", "app", "image_sha"],
         )
-        deployment_active_metric = GaugeMetricFamily(
-            "deployment_active",
-            "Active deployments in cluster",
-            labels=["namespace", "app", "image_sha"],
-        )
+
+        number_of_dropped = 0
 
         for m in metrics:
-            logging.info(
-                "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
-                m.namespace,
-                m.name,
-                m.image_sha,
-                m.deploy_time_timestamp,
-                m.deploy_time,
+            if not is_out_of_date(str(m.deploy_time_timestamp)):
+                logging.info(
+                    "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
+                    m.namespace,
+                    m.name,
+                    m.image_sha,
+                    m.deploy_time_timestamp,
+                    m.deploy_time,
+                )
+                deploy_timestamp_metric.add_metric(
+                    [m.namespace, m.name, m.image_sha],
+                    m.deploy_time_timestamp,
+                    timestamp=m.deploy_time_timestamp,
+                )
+            else:
+                number_of_dropped += 1
+                logging.debug(
+                    "Deployment too old to be collected: deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
+                    m.namespace,
+                    m.name,
+                    m.image_sha,
+                    m.deploy_time_timestamp,
+                    m.deploy_time_timestamp,
+                )
+        if number_of_dropped:
+            logging.debug(
+                "Number of deployments that are older then %smin and won't be collected: %s",
+                METRIC_TIMESTAMP_THRESHOLD_MINUTES,
+                number_of_dropped,
             )
-            deploy_timestamp_metric.add_metric(
-                [m.namespace, m.name, m.image_sha],
-                m.deploy_time_timestamp,
-                timestamp=m.deploy_time_timestamp,
-            )
-            logging.info(
-                "Collected deployment_active{namespace=%s, app=%s, image=%s} %s (%s)",
-                m.namespace,
-                m.name,
-                m.image_sha,
-                m.deploy_time_timestamp,
-                m.deploy_time,
-            )
-            deployment_active_metric.add_metric(
-                [m.namespace, m.name, m.image_sha],
-                m.deploy_time_timestamp,
-            )
-        return (deploy_timestamp_metric, deployment_active_metric)
+        yield deploy_timestamp_metric
 
     def get_and_log_namespaces(self) -> set[str]:
         """

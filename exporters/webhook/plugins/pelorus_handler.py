@@ -260,7 +260,9 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
                 logging.error(self.payload_headers)
                 logging.error(json_payload_data)
                 logging.error(ex)
+                error_fields = ",".join(ex.errors()[0].get("loc"))
+                error_str = ex.errors()[0].get("msg")
                 raise HTTPException(
                     status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
-                    detail="Invalid payload.",
+                    detail=f"Invalid payload: {error_str}: {error_fields}",
                 )

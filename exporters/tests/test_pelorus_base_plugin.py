@@ -299,8 +299,7 @@ async def test_handshake():
             "app": "mongo-todolist",
             "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc",
             "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
-            "namespace": "mongo-persistent",
-            "timestamp": "1557933657"
+            "namespace": "mongo-persistent"
         }""",
     ],
 )
@@ -316,7 +315,9 @@ async def test_proper_receive_metric(json_payload):
         "webhook.plugins.pelorus_handler_base.PelorusWebhookPlugin._receive",
         new_callable=AsyncMock,
     ) as mock_receive:
-        mock_receive.return_value = json.loads(json_payload)
+        payload_data = json.loads(json_payload)
+        payload_data["timestamp"] = int(time.time())
+        mock_receive.return_value = payload_data
         plugin = UserAgentWebhookPlugin(None, request=None)
         metric_data = await plugin.receive()
         assert issubclass(type(metric_data), PelorusMetric)

@@ -85,15 +85,19 @@ When sending an HTTP POST request to the webhook's configured URL endpoint, the 
 ##### deploytime
 For the Header X-Pelorus-Event: `deploytime`
 
+> **NOTE:** To align with the nature of Prometheus, it is required that the deploytime event being sent to the webhook exporter should not have occurred more than 30 minutes prior to the time of sending.
+
 | Key         | Type     | Description |
 |-------------|----------|---------------|
 | `app`       | `string` | Monitored application name |
 | `image_sha` | `string` | Image SHA used for deployment. Must be prefixed with the `sha256:` followed by 64 characters of small letters and numbers |
 | `namespace` | `string` | OpenShift namespace to which application was deployed |
-| `timestamp` | `int`    | EPOCH timestamp representing event occurrence. Allowed format: `10 digit int`|
+| `timestamp` | `int`    | EPOCH timestamp must be within the last 30 minutes. Allowed format: `10 digit int`|
 
 ##### committime
 For the Header X-Pelorus-Event: `committime`
+
+> **NOTE:** Committime event must be sent to the webhook exporter prior to it's related deploytime event.
 
 | Key           | Type     | Description |
 | ------------- |----------|-------------|
@@ -123,7 +127,7 @@ You can easily send a POST request using [Curl](https://curl.se) directly from t
 * Our application:
     * is named **`mongo-todolist`** in OpenShift.
     * is deployed to the **`mongo-persistent`** namespace.
-    * deployment happened at (EPOCH): **`1678106205`**
+    * deployment happened 10 minutes ago (EPOCH): **`$ date -d '10 min ago' +%s`**
 
     * the container image used for the deployment has SHA **`af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d`**
 

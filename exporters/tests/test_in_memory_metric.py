@@ -15,6 +15,7 @@
 #
 
 
+import time
 from unittest import mock
 
 import pytest
@@ -27,6 +28,8 @@ from webhook.store.in_memory_metric import (
     _pelorus_metric_to_dict,
     pelorus_metric_to_prometheus,
 )
+
+CURRENT_TIMESTAMP = int(time.time())
 
 metric_labels = list(_pelorus_metric_to_dict(CommitTimePelorusPayload).values())
 
@@ -61,7 +64,7 @@ class TestInMemoryMetric:
         [
             (
                 "todolist",
-                "1678269658",
+                str(CURRENT_TIMESTAMP),
                 "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
                 "mynamespace",
                 "5379bad65a3f83853a75aabec9e0e43c75fd18fc",
