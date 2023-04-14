@@ -1,0 +1,41 @@
+name: Make a new Release
+description: Used by developers of the Pelorus project
+title: Release of Pelorus Operator version <VERSION>
+body:
+  - type: markdown
+    attributes:
+      value: Follow the steps presented in this issue to make a Pelorus release!
+  - type: textarea
+    attributes:
+      label: Release steps
+      description: Steps to be followed
+      value: |
+        - [ ] Update and review GitHub release body in https://github.com/dora-metrics/pelorus/releases
+        - [ ] Test Pelorus Operator
+          - [ ] In PR created in our side
+          - [ ] In PR of https://github.com/redhat-openshift-ecosystem/community-operators-prod
+        - [ ] Pelorus Operator in OpenShift Marketplace
+        - [ ] GitHub release
+        - [ ] Send message notification to interested parties
+
+            ><mention command> 🎉🎉 Pelorus Operator v<VERSION> is now available in the OpenShift Marketplace 🎉🎉
+            >
+            >Kindly take a moment to review the release notes which can be found at https://github.com/dora-metrics/pelorus/releases/tag/v<VERSION>
+
+            - [ ] Slack channels - mention command: `@channel`
+              - [ ] Internal Red Hat `forum-mig-pelorus`
+              - [ ] External red Hat `dora-metrics-pelorus`
+            - [ ] Google groups - mention command: `@all`
+              - [ ] Metrics Driven Transformation
+              - [ ] pelorus-dev
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Code of Conduct
+      description: |
+        By submitting this issue, you agree to follow our
+        [Code of Conduct](https://github.com/dora-metrics/pelorus/blob/master/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow Pelorus's Code of Conduct
+          required: true

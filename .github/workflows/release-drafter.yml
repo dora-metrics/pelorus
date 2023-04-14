@@ -5,14 +5,10 @@ on:
     branches:
       - master
 
-  # pull_request required to auto label PRs
-  pull_request:
-    types: [opened, reopened, synchronize]
-
 jobs:
   release_drafter:
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@master
+      - uses: release-drafter/release-drafter@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

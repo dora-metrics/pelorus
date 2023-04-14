@@ -8,14 +8,13 @@ categories:
   - title: '🐛 Bug Fixes'
     labels:
       - 'kind/bug'
-      - 'bug'
       - 'fix'
-  - title: '🛠️ Misc. Improvements'
-    label: 'maintenance'
   - title: '📖 Documentation'
     labels:
       - 'docs'
       - 'kind/documentation'
+  - title: '🛠️ Misc. Improvements'
+    label: 'maintenance'
   - title: '🔡 Other changes'
   - title: '📦 Operator Updates'
     label: 'compatibility'
@@ -39,17 +38,6 @@ version-resolver:
     labels:
       - 'patch'
   default: patch
-
-autolabeler:
-  - label: 'docs'
-    files:
-      - '*.md'
-  - label: 'major'
-    title:
-      - '/major release/i'
-  - label: 'minor'
-    title:
-      - '/minor release/i'
 
 template: |
   ## Changes
