@@ -14,6 +14,7 @@
 #    under the License.
 #
 
+import time
 from contextlib import nullcontext
 from secrets import choice
 from string import ascii_letters
@@ -32,9 +33,11 @@ from webhook.models.pelorus_webhook import (
 
 # TODO no tests for PelorusDeliveryHeaders
 
+CURRENT_TIMESTAMP = int(time.time())
+
 test_payload = {
     "app": "todolist",
-    "timestamp": "1678269658",
+    "timestamp": CURRENT_TIMESTAMP,
 }
 test_deploy = {
     **test_payload,
@@ -60,13 +63,13 @@ class FakePelorusPayload(BaseModel):
 
 
 @pytest.mark.parametrize(
-    "app,timestamp",
+    "app",
     [
-        (123456, 1678269658),
-        ("todolist", "1678269658"),
+        123456,
+        "todolist",
     ],
 )
-def test_pelorus_payload_success(app, timestamp):
+def test_pelorus_payload_success(app):
     """
     Test for the base PelorusPayload class. This class is inherited
     by every other payload classes and contains only two required
@@ -75,7 +78,7 @@ def test_pelorus_payload_success(app, timestamp):
     Checks the validations of the app and timestamp fields for various
     conditions.
     """
-    payload = PelorusPayload(app=app, timestamp=timestamp)
+    payload = PelorusPayload(app=app, timestamp=CURRENT_TIMESTAMP)
     assert payload.get_metric_model_name() == "PelorusPayload"
 
 

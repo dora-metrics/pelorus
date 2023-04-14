@@ -90,7 +90,7 @@ For the Header X-Pelorus-Event: `deploytime`
 | `app`       | `string` | Monitored application name |
 | `image_sha` | `string` | Image SHA used for deployment. Must be prefixed with the `sha256:` followed by 64 characters of small letters and numbers |
 | `namespace` | `string` | OpenShift namespace to which application was deployed |
-| `timestamp` | `int`    | EPOCH timestamp representing event occurrence. Allowed format: `10 digit int`|
+| `timestamp` | `int`    | EPOCH timestamp representing event occurrence. Must be not older then 30min from now. Allowed format: `10 digit int`|
 
 ##### committime
 For the Header X-Pelorus-Event: `committime`
@@ -101,7 +101,7 @@ For the Header X-Pelorus-Event: `committime`
 | `commit_hash` | `string` | Source code GIT SHA-1 used to build the image represented by the `image_sha`. Must be either 7 or 40 characters long |
 | `image_sha`   | `string` | Image SHA used for deployment. Must be prefixed with the `sha256:` followed by 64 characters of small letters and numbers |
 | `namespace`   | `string` | OpenShift namespace to which application was deployed |
-| `timestamp`   | `int`    | EPOCH timestamp representing event occurrence. Allowed format: `10 digit int`|
+| `timestamp`   | `int`    | EPOCH timestamp representing event occurrence. Must be not older then 30min from now. Allowed format: `10 digit int`|
 
 ##### failure
 For the Header X-Pelorus-Event: `failure`
@@ -111,7 +111,7 @@ For the Header X-Pelorus-Event: `failure`
 | `app`           | `string` | Monitored application name |
 | `failure_id`    | `string` | Unique string representation of an failure  |
 | `failure_event` | `string` | Information about failure event. Allowed string values: `created` or `resolved` |
-| `timestamp`     | `int`    | EPOCH timestamp representing event occurrence. Allowed format: `10 digit int`|
+| `timestamp`     | `int`    | EPOCH timestamp representing event occurrence. Must be not older then 30min from now. Allowed format: `10 digit int`|
 
 
 ## Example usage
@@ -119,6 +119,8 @@ For the Header X-Pelorus-Event: `failure`
 ### Sending non-secure payload
 
 You can easily send a POST request using [Curl](https://curl.se) directly from the shell. You can store the payload data in a file or pass it as an argument to [Curl](https://curl.se). Below is an example of sending several requests to cover the lifecycle of an application:
+
+  > **NOTE:** To align with the nature of Prometheus, it is required that the event being sent to the webhook exporter should not have occurred more than 30 minutes prior to the time of sending.
 
 * Our application:
     * is named **`mongo-todolist`** in OpenShift.

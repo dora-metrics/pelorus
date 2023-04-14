@@ -15,7 +15,10 @@
 #
 
 
+import hashlib
+import hmac
 import json
+import time
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
@@ -30,12 +33,27 @@ client = TestClient(app)
 
 TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
 
+WEBHOOK_ENDPOINT = "/pelorus/webhook"
+
+SECRET_TOKEN = "My Secret Token"
+CURRENT_TIMESTAMP = int(time.time())
+
 
 @pytest.fixture
 def webhook_data_payload(post_request_json_file):
     with open(TEST_DATA_DIR / post_request_json_file) as f:
         data = json.load(f)
-    return data
+        # Ensure timestamp is not an old one
+        data["timestamp"] = CURRENT_TIMESTAMP
+        calculated_hash = (
+            "sha256="
+            + hmac.new(
+                SECRET_TOKEN.encode("utf-8"),
+                json.dumps(data).encode("utf-8"),
+                hashlib.sha256,
+            ).hexdigest()
+        )
+    return data, calculated_hash
 
 
 headers_data = {
@@ -51,7 +69,7 @@ def test_pelorus_webhook_no_headers(webhook_data_payload):
     preconditions to establish communication should fail.
     """
 
-    webhook_response = client.post("/pelorus/webhook", json=webhook_data_payload)
+    webhook_response = client.post(WEBHOOK_ENDPOINT, json=webhook_data_payload[0])
 
     assert webhook_response.status_code == HTTPStatus.PRECONDITION_FAILED
     assert webhook_response.text == '{"detail":"Unsupported request."}'
@@ -80,8 +98,8 @@ def test_pelorus_webhook_post_data_no_secret(webhook_data_payload, event_type):
         mocked_get_hash.return_value = None
 
         webhook_response = client.post(
-            "/pelorus/webhook",
-            json=webhook_data_payload,
+            WEBHOOK_ENDPOINT,
+            json=webhook_data_payload[0],
             headers=headers_data,
         )
 
@@ -117,11 +135,11 @@ def test_pelorus_webhook_post_data_wrong_x_signature_mismatch(
     load_plugins()
 
     with patch("webhook.app._get_hash_token") as mocked_get_hash:
-        mocked_get_hash.return_value = "My Secret Token"
+        mocked_get_hash.return_value = SECRET_TOKEN
 
         webhook_response = client.post(
-            "/pelorus/webhook",
-            json=webhook_data_payload,
+            WEBHOOK_ENDPOINT,
+            json=webhook_data_payload[0],
             headers=headers_data,
         )
 
@@ -160,11 +178,11 @@ def test_pelorus_webhook_post_data_wrong_x_signature_format(
     load_plugins()
 
     with patch("webhook.app._get_hash_token") as mocked_get_hash:
-        mocked_get_hash.return_value = "My Secret Token"
+        mocked_get_hash.return_value = SECRET_TOKEN
 
         webhook_response = client.post(
-            "/pelorus/webhook",
-            json=webhook_data_payload,
+            WEBHOOK_ENDPOINT,
+            json=webhook_data_payload[0],
             headers=headers_data,
         )
 
@@ -191,11 +209,11 @@ def test_pelorus_webhook_post_data_missing_x_signature(
     load_plugins()
 
     with patch("webhook.app._get_hash_token") as mocked_get_hash:
-        mocked_get_hash.return_value = "My Secret Token"
+        mocked_get_hash.return_value = SECRET_TOKEN
 
         webhook_response = client.post(
-            "/pelorus/webhook",
-            json=webhook_data_payload,
+            WEBHOOK_ENDPOINT,
+            json=webhook_data_payload[0],
             headers=headers_data,
         )
 
@@ -204,53 +222,45 @@ def test_pelorus_webhook_post_data_missing_x_signature(
 
 
 @pytest.mark.parametrize(
-    "post_request_json_file, event_type, hash_signature",
+    "post_request_json_file, event_type",
     [
         (
             "webhook_pelorus_committime.json",
             "committime",
-            "sha256=3ce994968588a4d69f8732b1cde8c1d3581b38ce7bd97275ed9b0f61a1f2fc78",
         ),
         (
             "webhook_pelorus_deploytime.json",
             "deploytime",
-            "sha256=bba6199207705f85437a94348b9e4dcc17ee66f81a754ec72c3f36b6808a534f",
         ),
         (
             "webhook_pelorus_failure_created.json",
             "failure",
-            "sha256=44082cdb4d7b95c11e401d44cec949918b472e9a44becb5b7ee7d2b21a6428f0",
         ),
         (
             "webhook_pelorus_failure_resolved.json",
             "failure",
-            "sha256=2b7d9028fef8110ceff83492e35c938f8ac9b7851bc2307d8bd5ba7f3c3c48f9",
         ),
     ],
 )
-def test_pelorus_webhook_post_data_x_signature_secret(
-    webhook_data_payload, event_type, hash_signature
-):
+def test_pelorus_webhook_post_data_x_signature_secret(webhook_data_payload, event_type):
     """
     Proper post data for different metrics.
     Secret token is configured and expected to be sent together with the payload.
-    sha256 for the relevant images calculated using (example for webhook_pelorus_failure_resolved):
-      $ jq -c "" ./webhook_pelorus_failure_resolved.json | openssl dgst -sha256 -hmac "My Secret Token"
-      SHA2-256(stdin)= 2b7d9028fef8110ceff83492e35c938f8ac9b7851bc2307d8bd5ba7f3c3c48f9
-
     """
 
+    payload, sha_hash = webhook_data_payload
+
     headers_data["X-Pelorus-Event"] = event_type
-    headers_data["X-Hub-Signature-256"] = hash_signature
+    headers_data["X-Hub-Signature-256"] = sha_hash
 
     load_plugins()
 
     with patch("webhook.app._get_hash_token") as mocked_get_hash:
-        mocked_get_hash.return_value = "My Secret Token"
+        mocked_get_hash.return_value = SECRET_TOKEN
 
         webhook_response = client.post(
-            "/pelorus/webhook",
-            json=webhook_data_payload,
+            WEBHOOK_ENDPOINT,
+            json=payload,
             headers=headers_data,
         )
 
@@ -267,9 +277,11 @@ def test_pelorus_webhook_too_large_payload(webhook_data_payload):
     Check for the case where payload is too large.
     """
 
-    webhook_data_payload["data"] = "some payload" * 10000
+    payload = webhook_data_payload[0]
 
-    webhook_response = client.post("/pelorus/webhook", json=webhook_data_payload)
+    payload["data"] = "some payload" * 10000
+
+    webhook_response = client.post(WEBHOOK_ENDPOINT, json=payload)
 
     assert webhook_response.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
     assert webhook_response.text == '{"detail":"Content length too big."}'

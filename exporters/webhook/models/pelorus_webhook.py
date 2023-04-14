@@ -14,6 +14,7 @@
 #    under the License.
 #
 
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional
 
@@ -44,17 +45,14 @@ class PelorusDeliveryHeaders(BaseModel):
     @validator("x_hub_signature_256", pre=True, always=True)
     def validate_x_hub_signature_256(cls, value):
         if value is not None:
-            try:
-                algorithm, signature = value.split("=", 1)
-                if algorithm != "sha256":
-                    raise ValueError("Signature should use sha256 algorithm")
-                if not signature or len(signature) != 64:
-                    raise ValueError(
-                        "Signature should be in format 'sha256=' followed by 64 characters"
-                    )
-                int(signature, 16)
-            except (TypeError, ValueError):
-                raise
+            algorithm, signature = value.split("=", 1)
+            if algorithm != "sha256":
+                raise ValueError("Signature should use sha256 algorithm")
+            if not signature or len(signature) != 64:
+                raise ValueError(
+                    "Signature should be in format 'sha256=' followed by 64 characters"
+                )
+            int(signature, 16)
         return value
 
 
@@ -68,13 +66,21 @@ class PelorusPayload(BaseModel):
         timestamp (int): 10 digit EPOCH timestamp of the event. This
                          is different from the time when the webhook
                          could have been received. The date value must
-                         be between 1.1.2010 and 1.1.2060
+                         be between 1.1.2010 and 1.1.2060 and must be
+                         not older then 30min from now.
     """
 
     # Even if we consider git project name as app, it still should be below 100
     app: str = Field(max_length=200)
 
     timestamp: int = Field(ge=1262307661, le=2840144461)
+
+    @validator("timestamp")
+    def accepted_timestamp_therashold(cls, v):
+        timestamp_datetime = datetime.fromtimestamp(v)
+        if timestamp_datetime < datetime.now() - timedelta(minutes=30):
+            raise ValueError("Timestamp cannot be older than 30 minutes")
+        return v
 
     def get_metric_model_name(self) -> str:
         return type(self).__name__

@@ -117,12 +117,15 @@ async def prometheus_metric(received_metric: PelorusMetric):
 
     if received_metric_type == PelorusMetricSpec.COMMIT_TIME:
         in_memory_commit_metrics.add_metric(
-            metric.commit_hash, prometheus_metric, metric.timestamp
+            metric.commit_hash,
+            prometheus_metric,
+            metric.timestamp,
+            timestamp=metric.timestamp,
         )
     elif received_metric_type == PelorusMetricSpec.DEPLOY_TIME:
         metric_id = f"{metric.app}{metric.timestamp}"
         in_memory_deploy_timestamp_metric.add_metric(
-            metric_id, prometheus_metric, metric.timestamp
+            metric_id, prometheus_metric, metric.timestamp, timestamp=metric.timestamp
         )
     elif received_metric_type == PelorusMetricSpec.FAILURE:
         failure_type = metric.failure_event
@@ -130,11 +133,17 @@ async def prometheus_metric(received_metric: PelorusMetric):
 
         if failure_type == FailurePelorusPayload.FailureEvent.CREATED:
             in_memory_failure_creation_metric.add_metric(
-                metric_id, prometheus_metric, metric.timestamp
+                metric_id,
+                prometheus_metric,
+                metric.timestamp,
+                timestamp=metric.timestamp,
             )
         elif failure_type == FailurePelorusPayload.FailureEvent.RESOLVED:
             in_memory_failure_resolution_metric.add_metric(
-                metric_id, prometheus_metric, metric.timestamp
+                metric_id,
+                prometheus_metric,
+                metric.timestamp,
+                timestamp=metric.timestamp,
             )
         else:
             logging.error(f"Failure Metric {metric} can not be stored")
