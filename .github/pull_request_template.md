@@ -1,6 +1,5 @@
-## Describe the behavior changes introduced in this PR
+- [ ] I have read [Pelorus Contributing guidelines](https://github.com/dora-metrics/pelorus/blob/master/CONTRIBUTING.md)
 
-<!-- Write this section if Pull Request has linked issues -->
 ## Linked Issues
 
 <!-- Use this if merging should auto-close an issue, one issue per line -->
@@ -8,6 +7,10 @@ resolves #<!-- issue number -->
 
 <!-- Use this if merging should NOT auto-close an issue, one issue per line -->
 related to #<!-- issue number -->
+
+## Description
+
+<!-- Please provide a meaningful description to your PR. Adding its goals and what have you worked on to achieve them is a great way to understand it -->
 
 ## Testing Instructions
 

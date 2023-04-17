@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask us a question 😄
+    url: https://github.com/dora-metrics/pelorus/discussions
+    about: Feel free to ask (and answer!) questions here.
