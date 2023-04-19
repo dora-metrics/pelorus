@@ -46,7 +46,7 @@ function print_help() {
     printf "\t  -b\tbinary build app name\n"
     printf "\t  -u\tgit uri to be used for annotation\n"
     printf "\t  -s\tgit commit hash to be used for annotation\n"
-  
+
     exit 0
 }
 
@@ -60,7 +60,7 @@ while getopts "h?cb:n:u:s:" option; do
     b)    s_build_app_name=$OPTARG;;
     u)    s_git_uri=$OPTARG;;
     s)    s_git_hash=$OPTARG;;
-    
+
     esac
 done
 
@@ -70,7 +70,6 @@ fi
 
 if [ "${s_cleanup}" == true ]; then
     cleanup_and_exit
-    exit 0
 fi
 
 # build_app_name is not required for cleanup, however we do need
@@ -90,9 +89,9 @@ oc new-build --namespace="${s_build_namespace}" python --name="${s_build_app_nam
 oc label --namespace="${s_build_namespace}" bc "${s_build_app_name}" app.kubernetes.io/name="${s_build_app_name}"
 
 # To ensure ./app.py is found
-pushd "$(dirname "$0")"
+pushd "$(dirname "$0")" || exit 1
 oc start-build --namespace="${s_build_namespace}" bc/"${s_build_app_name}" --from-file=./app.py --follow
-popd
+popd || exit 1
 
 set -x
 oc annotate build --namespace="${s_build_namespace}" "${s_build_app_name}"-1 --overwrite \
