@@ -89,9 +89,11 @@ oc new-build --namespace="${s_build_namespace}" python --name="${s_build_app_nam
 oc label --namespace="${s_build_namespace}" bc "${s_build_app_name}" app.kubernetes.io/name="${s_build_app_name}"
 
 # To ensure ./app.py is found
-pushd "$(dirname "$0")" || exit 1
+# shellcheck disable=SC2164
+pushd "$(dirname "$0")"
 oc start-build --namespace="${s_build_namespace}" bc/"${s_build_app_name}" --from-file=./app.py --follow
-popd || exit 1
+# shellcheck disable=SC2164
+popd
 
 set -x
 oc annotate build --namespace="${s_build_namespace}" "${s_build_app_name}"-1 --overwrite \
