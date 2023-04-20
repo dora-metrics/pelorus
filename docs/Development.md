@@ -489,7 +489,7 @@ Webhook type exporter has an additional URL target http://localhost:8080/pelorus
 
 To create a new version (or candidate) of Pelorus operator you must be logged into `podman` (`podman login` command) and `OpenShift` (`oc login` command) and then run
 ```
-rm -rf pelorus-operator && mkdir pelorus-operator && scripts/create_pelorus_operator
+rm -rf pelorus-operator && mkdir pelorus-operator && scripts/create_pelorus_operator.sh
 ```
 This will update `pelorus-operator` folder with the updates.
 
@@ -625,7 +625,7 @@ Then, log in to your OpenShift cluster and **ENSURE** your pelorus namespace doe
 ```
 make e2e-tests
 ```
-which is an alias to `./scripts/run-pelorus-e2e-tests -o konveyor -a -t`
+which is an alias to `./scripts/run-pelorus-e2e-tests.sh -o konveyor -a -t`
 
 To run e2e-tests from current branch, first create a PR in Pelorus project for it and export the necessary environment variables to run the script, by running
 ```shell
@@ -635,7 +635,7 @@ export PULL_NUMBER=<THE_PR_NUMBER>
 
 For more information, run
 ```
-./scripts/run-pelorus-e2e-tests -h
+./scripts/run-pelorus-e2e-tests.sh -h
 ```
 
 To delete the objects created by the script, run
