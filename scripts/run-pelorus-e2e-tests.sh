@@ -27,6 +27,10 @@ PROW_S3_SECRETS_DIR="/var/run/konveyor/pelorus/pelorus-s3amazon/"
 # Binary build script
 BINARY_BUILD_SCRIPT="${SCRIPT_DIR}/e2e-tests-templates/build_binary_app.sh"
 
+# Needs to match the SECRET_TOKEN from the Pelorus configuration files
+WEBHOOK_SECRET_TOKEN="MySecretToken"
+WEBHOOK_EXPORTER_WITH_SECRET_NAME="webhook-secret-exporter"
+WEBHOOK_EXPORTER_NAME="webhook-exporter"
 
 # Used to download required files prior to running the job
 # Arguments:
@@ -120,6 +124,8 @@ function print_help() {
     printf "\t\t  jira_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
     printf "\t\t  jira_custom_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
     printf "\t\t  pagerduty_failure - PagerDuty issue tracker - REQUIRES 'PAGER_DUTY_TOKEN=YOUR_PAGER_DUTY_TOKEN' SECRET\n"
+    printf "\t\t  webhook - Webhook exporter\n"
+    printf "\t\t  webhook_with_secret - Webhook exporter with '%s' SECRET_TOKEN\n" "${WEBHOOK_SECRET_TOKEN}"
 
     exit 0
 }
@@ -147,6 +153,8 @@ ENABLE_JIRA_FAIL_EXP=false
 ENABLE_JIRA_CUSTOM_FAIL_EXP=false
 ENABLE_PAGERDUTY_FAIL_EXP=false
 ENABLE_THANOS=false
+WEBHOOK_EXP=false
+WEBHOOK_WITH_SECRET_EXP=false
 ENABLE_ALL_EXPORTERS=false
 
 # Used for cleanup to ensure created binary builds can be safely deleted
@@ -194,6 +202,8 @@ if [ -n "${enable_exporters}" ]; then
     echo ",$enable_exporters," | grep -q ",jira_committime," && ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
     echo ",$enable_exporters," | grep -q ",jira_custom_committime," && ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
     echo ",$enable_exporters," | grep -q ",pagerduty_failure," && ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
+    echo ",$enable_exporters," | grep -q ",webhook," && WEBHOOK_EXP=true && echo "Enabling Webhook exporter"
+    echo ",$enable_exporters," | grep -q ",webhook_with_secret," && WEBHOOK_WITH_SECRET_EXP=true && echo "Enabling Webhook exporter with '${WEBHOOK_SECRET_TOKEN}' SECRET_TOKEN"
 fi
 
 if [ "${ENABLE_ALL_EXPORTERS}" == true ]; then
@@ -205,6 +215,8 @@ if [ "${ENABLE_ALL_EXPORTERS}" == true ]; then
     ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
     ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
     ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
+    WEBHOOK_EXP=true && echo "Enabling Webhook exporter"
+    WEBHOOK_WITH_SECRET_EXP=true && echo "Enabling Webhook exporter with '${WEBHOOK_SECRET_TOKEN}' SECRET_TOKEN"
 fi
 
 if [ -z "${demo_branch}" ]; then
@@ -568,6 +580,21 @@ if [ "${ENABLE_PAGERDUTY_FAIL_EXP}" == true ]; then
     fi
 fi
 
+
+# enable Webhook exporter
+if [ "${WEBHOOK_EXP}" == true ]; then
+    # uncomment the Webhook exporter in ci_values.yaml
+    sed -i.bak "s/#webhook@//g" "${DWN_DIR}/ci_values.yaml"
+    echo "The pelorus Webhook exporter has been enabled"
+fi
+
+# enable Webhook exporter that is configured to use SECRET_TOKEN
+if [ "${WEBHOOK_WITH_SECRET_EXP}" == true ]; then
+    # uncomment the Webhook exporter in ci_values.yaml
+    sed -i.bak "s/#webhook_with_secret@//g" "${DWN_DIR}/ci_values.yaml"
+    echo "The pelorus Webhook exporter with '${WEBHOOK_SECRET_TOKEN}' SECRET_TOKEN has been enabled"
+fi
+
 echo "===== 2. Set up OpenShift resources ====="
 
 # We do check for the exit status, as we are not really interested in the
@@ -648,6 +675,58 @@ done
 # Test all deployed exporters
 
 echo "===== 3. Test Exporters ====="
+
+function send_payload() {
+    local exporter_name=$1
+    local secret_value="${2:-}"
+
+    webhook_route=$(oc get route "${exporter_name}" -n "${PELORUS_NAMESPACE}" --template='{{ .spec.host }}')
+
+    current_timestamp=$(date +%s)
+
+    header_user_agent="User-Agent: Pelorus-Webhook/e2e"
+    header_pelorus_event="X-Pelorus-Event: deploytime"
+    header_content="Content-Type: application/json"
+
+    payload_data=$(cat <<EOF
+{
+    "app": "mongo-todolist",
+    "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
+    "namespace": "mongo-persistent",
+    "timestamp": "$current_timestamp"
+}
+EOF
+    )
+
+    if [ -n "$secret_value" ]; then
+        SHA256_HASH_SIGNATURE=$(echo "${payload_data}" | tr -d '[:space:]' | openssl dgst -sha256 -hmac "${secret_value}"| cut -d ' ' -f 2)
+        header_secret_token="X-Hub-Signature-256: sha256=${SHA256_HASH_SIGNATURE}"
+        curl -X POST \
+            -H "$header_user_agent" \
+            -H "$header_pelorus_event" \
+            -H "$header_content" \
+            -H "$header_secret_token" \
+            -d "$payload_data" \
+            "${webhook_route}/pelorus/webhook"
+    else
+        curl -X POST \
+            -H "$header_user_agent" \
+            -H "$header_pelorus_event" \
+            -H "$header_content" \
+            -d "$payload_data" \
+            "${webhook_route}/pelorus/webhook"
+    fi
+}
+
+# Send some data to the Webhook exporter
+if [ "${WEBHOOK_EXP}" == true ]; then
+    send_payload "${WEBHOOK_EXPORTER_NAME}"
+fi
+
+# Send some data to the Webhook exporter with SECRET_TOKEN
+if [ "${WEBHOOK_WITH_SECRET_EXP}" == true ]; then
+    send_payload "${WEBHOOK_EXPORTER_WITH_SECRET_NAME}" "${WEBHOOK_SECRET_TOKEN}"
+fi
 
 any_exporter_failed=""
 exporters=$(oc get route -n "${PELORUS_NAMESPACE}"|grep "-exporter")
