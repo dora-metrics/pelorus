@@ -6,7 +6,7 @@ exceptiongroup         # module exceptiongroup
 typing-extensions      # module typing_extensions
 
 # Committime exporter
-azure-devops           # module azure
+azure-devops == 6.0.0b4 # module azure - Related issue https://github.com/dora-metrics/pelorus/issues/949
 git-url-parse          # module giturlparse
 jsonpath_ng            # module jsonpath_ng
 python-gitlab >= 2.4.0 # module gitlab
