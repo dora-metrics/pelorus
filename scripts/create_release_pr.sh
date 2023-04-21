@@ -224,7 +224,7 @@ if [ "$NO_VERSIONS" -ne 1 ]; then
   exit 1
 fi
 
-printf "\nIMPORTANT:\n\t Update the operator files using ./scripts/create_pelorus_operator script.\n\n"
+printf "\nIMPORTANT:\n\t Update the operator files using ./scripts/create_pelorus_operator.sh script.\n\n"
 
 if [[ $x_ver ]]; then
   printf "\nIMPORTANT:\n\t Do include \"major release\" text in the first line of your commit message, or label your PR with: \"major\"\n\n"

@@ -23,12 +23,6 @@ endif
 CHART_TEST=$(shell which ct)
 
 SHELLCHECK=$(shell which shellcheck)
-# Sync with .github/workflows/shellcheck.yaml
-SHELL_SCRIPTS=demo/demo-tekton.sh \
-       scripts/create_release_pr \
-       scripts/install_dev_tools \
-       scripts/run-mockoon-tests \
-       scripts/run-pelorus-e2e-tests
 
 .PHONY: default
 default: \
@@ -79,13 +73,13 @@ pre-commit-setup: $(PELORUS_VENV)
 .PHONY: cli_dev_tools
 cli_dev_tools: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-		./scripts/install_dev_tools -v $(PELORUS_VENV)
+		./scripts/install_dev_tools.sh -v $(PELORUS_VENV)
 
 
 # for installing a single CLI dev tool
 $(PELORUS_VENV)/bin/%: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-		./scripts/install_dev_tools -v $(PELORUS_VENV) -c $(notdir $@)
+		./scripts/install_dev_tools.sh -v $(PELORUS_VENV) -c $(notdir $@)
 
 # system-level doc requirements
 ifeq (Darwin, $(shell uname -s))
@@ -107,7 +101,7 @@ dev-env: $(PELORUS_VENV) cli_dev_tools exporters git-blame \
 ## e2e-tests-dev-env: set up environment required to run e2e tests
 e2e-tests-dev-env: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/install_dev_tools -v $(PELORUS_VENV) -c oc,helm
+	./scripts/install_dev_tools.sh -v $(PELORUS_VENV) -c oc,helm
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
 
@@ -116,22 +110,22 @@ e2e-tests-dev-env: $(PELORUS_VENV)
 .PHONY:  major-release minor-release release rc-release
 
 major-release:
-	./scripts/create_release_pr -x
+	./scripts/create_release_pr.sh -x
 
 minor-release:
-	./scripts/create_release_pr -y
+	./scripts/create_release_pr.sh -y
 
 release:
-	./scripts/create_release_pr -z
-	./scripts/create_pelorus_operator -f
+	./scripts/create_release_pr.sh -z
+	./scripts/create_pelorus_operator.sh -f
 
 rc-release:
-	./scripts/create_release_pr -n
+	./scripts/create_release_pr.sh -n
 
 .PHONY: mockoon-tests
 mockoon-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-mockoon-tests
+	./scripts/run-mockoon-tests.sh
 
 # End to end tests
 ## e2e-tests: installs pelorus, mongo-todolist and tests commit and deploy exporters
@@ -140,15 +134,15 @@ mockoon-tests: $(PELORUS_VENV)
 .PHONY: e2e-tests e2e-tests-scenario-1 e2e-tests-scenario-1
 e2e-tests: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-pelorus-e2e-tests -o konveyor -a -t
+	./scripts/run-pelorus-e2e-tests.sh -o konveyor -a -t
 
 e2e-tests-scenario-1: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-pelorus-e2e-tests -f "periodic/quay_images_latest.yaml" -o konveyor -a -t
+	./scripts/run-pelorus-e2e-tests.sh -f "periodic/quay_images_latest.yaml" -o konveyor -a -t
 
 e2e-tests-scenario-2: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/run-pelorus-e2e-tests -f "periodic/different_deployment_methods.yaml"
+	./scripts/run-pelorus-e2e-tests.sh -f "periodic/different_deployment_methods.yaml"
 
 # Integration tests
 ## integration-tests: pytest everything marked as integration
@@ -172,7 +166,7 @@ unit-tests: $(PELORUS_VENV)
 .PHONY: test-prometheusrules
 test-prometheusrules: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	./_test/test_prometheusrules
+	./_test/test_prometheusrules.sh
 
 # Conf tests
 ## conf-tests: execute _test/conftest.sh
@@ -191,19 +185,19 @@ format-check: $(PELORUS_VENV) black-check isort-check
 
 black: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	black exporters scripts docs
+	black .
 
 black-check: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	black --check exporters scripts docs
+	black --check .
 
 isort: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	isort exporters scripts docs
+	isort .
 
 isort-check: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	isort --check exporters scripts docs
+	isort --check .
 
 
 # Linting
@@ -233,9 +227,9 @@ typecheck: $(PELORUS_VENV)
 
 ## chart-check-bump: lint helm charts, attempting to bump their versions if required
 chart-check-bump: $(PELORUS_VENV)
-	./scripts/install_dev_tools -v $(PELORUS_VENV) -c ct && \
+	./scripts/install_dev_tools.sh -v $(PELORUS_VENV) -c ct && \
 	. ${PELORUS_VENV}/bin/activate && \
-	./scripts/chart-check-and-bump
+	./scripts/chart-check-and-bump.py
 
 chart-lint: $(PELORUS_VENV) $(PELORUS_VENV)/bin/ct $(PELORUS_VENV)/bin/helm
 	. ${PELORUS_VENV}/bin/activate && \
@@ -252,7 +246,7 @@ shellcheck: $(PELORUS_VENV) $(PELORUS_VENV)/bin/shellcheck
 	. ${PELORUS_VENV}/bin/activate && \
 	if [[ -z shellcheck ]]; then echo "Shellcheck is not installed" >&2; false; fi && \
 	echo "🐚 📋 Linting shell scripts with shellcheck" && \
-	shellcheck $(SHELL_SCRIPTS)
+	shellcheck $(shell find -name '*.sh' -type f | grep -v 'venv/\|git/\|.pytest_cache/\|htmlcov/\|_test/test_helper/\|_test/bats\|_test/conftest')
 
 ifneq (, $(SHELLCHECK))
 shellcheck-optional: shellcheck

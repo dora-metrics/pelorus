@@ -25,7 +25,7 @@ PROW_SECRETS_DIR="/var/run/konveyor/pelorus/pelorus-github/"
 PROW_S3_SECRETS_DIR="/var/run/konveyor/pelorus/pelorus-s3amazon/"
 
 # Binary build script
-BINARY_BUILD_SCRIPT="${SCRIPT_DIR}/e2e-tests-templates/build_binary_app"
+BINARY_BUILD_SCRIPT="${SCRIPT_DIR}/e2e-tests-templates/build_binary_app.sh"
 
 
 # Used to download required files prior to running the job

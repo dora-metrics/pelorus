@@ -2,11 +2,10 @@ name: Pylava
 on:
   pull_request:
     paths:
-      - 'exporters/**'
-      - 'scripts/**'
       - 'pyproject.toml'
       - '.github/workflows/python-linting.yml'
       - 'Makefile'
+      - '**.py'
 
 jobs:
   python-lint:
