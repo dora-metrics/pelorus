@@ -30,6 +30,41 @@ body:
         problem
     validations:
       required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: |
+        What steps were performed to reproduce the bug
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+      value: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Current behavior
+      description: |
+        Description of what current happens when performing the steps to reproduce
+      placeholder: |
+        Fell free to add images and other files that can help us understand the
+        current behavior
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: |
+        Description of what should happen when performing the steps to reproduce
+      placeholder: |
+        Fell free to add images and other files that can help us understand the
+        expected behavior
+    validations:
+      required: true
   - type: checkboxes
     attributes:
       label: Code of Conduct

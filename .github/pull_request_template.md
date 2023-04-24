@@ -8,6 +8,9 @@ resolves #<!-- issue number -->
 <!-- Use this if merging should NOT auto-close an issue, one issue per line -->
 related to #<!-- issue number -->
 
+<!-- Use this if this PR depends on another issue/PR -->
+depends on #<!-- issue number -->
+
 ## Description
 
 <!-- Please provide a meaningful description to your PR. Adding its goals and what have you worked on to achieve them is a great way to understand it -->

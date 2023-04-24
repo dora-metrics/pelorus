@@ -16,6 +16,26 @@ body:
         feature
     validations:
       required: true
+  - type: textarea
+    attributes:
+      label: How this will help you
+      description: |
+        How this new functionality will improve your experience using Pelorus?
+      placeholder: |
+        Fell free to add images and other files that can help us understand how
+        the new functionality will help you
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Feature priority
+      description: How soon do you need this new functionality?
+      options:
+        - ⏳ Low priority, it does not block me of using Pelorus
+        - ⌛ It will greatly improve my experience using Pelorus
+        - 🚨 As soon as possible, it block me of using Pelorus
+    validations:
+      required: true
   - type: checkboxes
     attributes:
       label: Code of Conduct
