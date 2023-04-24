@@ -18,29 +18,29 @@ Prow CI will run e2e tests that cover more scenarios and are more reliable.
 
 ### How
 
-- We will rewrite the e2e tests script in Python.
-    - easier to write and read it
-    - they will run against Pelorus operator (using test image) and not helm
+- We will improve the development (writing) and understanding (readability) of e2e tests script
+    - use frameworks where applicable to improve the code
+    - it will run against any Pelorus deployment (like Helm, Operator SDK, etc)
 
 - We will write better documentation on what e2e tests do (script help and read the docs).
     - more accessible to new developers of the Pelorus project
 
 - We will log only relevant information on tests run.
-    - Too much log information is not good to identify a simple error
+    - it should be easy to identify a simple error looking the logs
 
 - We will not use `mig-demo-apps` anymore.
     - make development faster (only one PR and everything in one repository)
     - do not use yaml files for different tests scenarios
         - use `image_name` option instead of `source_url` for faster runs (using test image)
-    - use the simplest application possible for tests (faster tests runs)
+    - use the simplest application possible (thinking about complexity and container size) for tests (faster tests runs)
 
 - New commits/deployments/issues will be created for each test scenario.
     - To address new approach of Pelorus metrics
 
-- We will have more tests scenarios:
-    - check each exporter `/metrics` endpoint
-    - check Grafana dashboards for each application
-    - webhook exporter tests
+- We will have more tests scenarios (all of them also for webhook exporter).
+    - The test scenarios will cover:
+        - check each exporter `/metrics` endpoint
+        - check Grafana dashboards for each application
 
 ## Consequences
 
