@@ -10,8 +10,9 @@ import sys
 from typing import Callable, Iterable, Literal, NamedTuple, cast
 
 import requests
+import semver
 
-GITHUB_RELEASE_TEMPLATE = "https://api.github.com/repos/{}/releases/latest"
+GITHUB_RELEASE_TEMPLATE = "https://api.github.com/repos/{}/releases"
 
 
 SUPPORTED_SYSTEMS = {"Linux", "Darwin"}
@@ -161,8 +162,28 @@ def get_latest_assets(repo: str) -> Iterable[ReleaseAsset]:
 
     body = response.json()
 
-    for asset in body["assets"]:
-        yield ReleaseAsset.from_json(asset)
+    highest_version = semver.VersionInfo(0, 0, 0)
+    latest_release = None
+
+    for release in body:
+        version_string = release["tag_name"]
+        if version_string.startswith("v"):
+            version_string = version_string[1:]
+        if version_string.endswith("+stringlabels"):
+            # Special case for Prometheus, where there are
+            # two different releases. We are interested in the
+            # one without stringlabels:
+            # https://prometheus.io/blog/2023/03/21/stringlabel/
+            continue
+        if semver.VersionInfo.is_valid(version_string):
+            version = semver.VersionInfo.parse(version_string)
+            if version > highest_version:
+                highest_version = version
+                latest_release = release
+
+    if latest_release:
+        for asset in latest_release["assets"]:
+            yield ReleaseAsset.from_json(asset)
 
 
 CLI_NAMES = {name.replace("_", "-") for name in Tool._member_names_} | {"oc"}
