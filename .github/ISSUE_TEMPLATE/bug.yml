@@ -1,0 +1,76 @@
+name: Report a bug
+description: Something is not working as expected? Tell us the problem
+labels: ["kind/bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for using Pelorus and reporting us back this problem, this helps
+        the project always improve!
+  - type: dropdown
+    attributes:
+      label: OpenShift version
+      description: In what version of OpenShift the problem ocurred?
+      options:
+        - Not related to OpenShift
+        - 4.10
+        - 4.11
+        - 4.12
+        - 4.13
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Problem description
+      description: |
+        Tell us what happened. The more info you provide, the faster the
+        problem can be fixed
+      placeholder: |
+        Fell free to add images and other files that can help us understand the
+        problem
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: |
+        What steps were performed to reproduce the bug
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+      value: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Current behavior
+      description: |
+        Description of what current happens when performing the steps to reproduce
+      placeholder: |
+        Fell free to add images and other files that can help us understand the
+        current behavior
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: |
+        Description of what should happen when performing the steps to reproduce
+      placeholder: |
+        Fell free to add images and other files that can help us understand the
+        expected behavior
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Code of Conduct
+      description: |
+        By submitting this issue, you agree to follow our
+        [Code of Conduct](https://github.com/dora-metrics/pelorus/blob/master/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow Pelorus's Code of Conduct
+          required: true

@@ -1,0 +1,47 @@
+name: Request a new feature
+description: New demands? Tell us what Pelorus could do to help you
+labels: ["kind/feature", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for using Pelorus and helping it always improve!
+  - type: textarea
+    attributes:
+      label: Feature description
+      description: |
+        Tell us what new functionality would you like Pelorus to have. The more
+        info you provide, the better we can address it
+      placeholder: |
+        Fell free to add images and other files that can help us understand the
+        feature
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: How this will help you
+      description: |
+        How this new functionality will improve your experience using Pelorus?
+      placeholder: |
+        Fell free to add images and other files that can help us understand how
+        the new functionality will help you
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Feature priority
+      description: How soon do you need this new functionality?
+      options:
+        - ⏳ Low priority, it does not block me of using Pelorus
+        - ⌛ It will greatly improve my experience using Pelorus
+        - 🚨 As soon as possible, it block me of using Pelorus
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Code of Conduct
+      description: |
+        By submitting this issue, you agree to follow our
+        [Code of Conduct](https://github.com/dora-metrics/pelorus/blob/master/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow Pelorus's Code of Conduct
+          required: true

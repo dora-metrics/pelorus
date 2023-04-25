@@ -2,9 +2,9 @@
 
 The Pelorus engineering team will provide `best-effort` level support for Pelorus on the currently latest and the latest previous released versions of Openshift.  More specifically if the latest released version of Openshift is `4.11`, the engineering team will accept [issues](https://github.com/dora-metrics/pelorus/issues) written for OpenShift `4.11` and `4.10`.
 
-* To file a bug please create a [Github issue](https://github.com/dora-metrics/pelorus/issues) with the label "kind/bug"
+* To file a bug, please create a [Bug issue](https://github.com/dora-metrics/pelorus/issues)
 
-* To file a feature request create a [Github issue](https://github.com/dora-metrics/pelorus/issues) with the label "kind/feature"
+* To file a feature request, please create a [Request a new feature issue](https://github.com/dora-metrics/pelorus/issues)
 
 * You may also consider opening a [discussion](https://github.com/dora-metrics/pelorus/discussions) thread to discuss any feature, bug, or enhancement prior to opening a Github issue.
 
