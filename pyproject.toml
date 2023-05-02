@@ -1,3 +1,64 @@
+[tool.poetry]
+name = "pelorus"
+version = "0.1.0" # we are not using it yet
+description = "Automate the measurement of organizational behavior"
+authors = [
+    "etsauer",
+    "KevinMGranger",
+    "mateusoliveira43",
+    "mpryc",
+    "weshayutin"
+]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+asyncio = "^3.4.3"
+attrs = "^23.1.0"
+azure-devops = "6.0.0b4"
+exceptiongroup = "^1.1.1"
+fastapi = "^0.95.1"
+git-url-parse = "^1.2.2"
+jira = "3.4.1"
+jsonpath-ng = "^1.5.3"
+openshift = "0.13.1"
+prometheus-client = "^0.16.0"
+pygithub = "^1.58.1"
+python-gitlab = ">=2.4.0" # change to ^?
+pytz = "^2023.3"
+requests = "^2.29.0"
+typing-extensions = "^4.5.0"
+uvicorn = "^0.22.0"
+
+[tool.poetry.group.dev.dependencies]
+adr-tools-python = "^1.0.3"
+black = "^23.3.0"
+httpx = "^0.24.0"
+isort = "^5.12.0"
+mkdocs = "^1.4.2"
+pre-commit = "^3.3.1"
+pylama = {version = "^8.4.0", extras = ["toml"]}
+pyright = "^1.1.305"
+pytest = "^7.3.1"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.0.0"
+semver = "^3.0.0"
+yamale = "^4.0.4"
+yamllint = "^1.31.0"
+yq = "^3.2.2"
+
+[tool.poetry.group.doc.dependencies]
+cairosvg = "^2.7.0"
+diagrams = "^0.23.3"
+mkdocs-material = "^9.1.9"
+mkdocs-redirects = "^1.2.0"
+pillow = "^9.5.0"
+pymdown-extensions = "^9.11"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.isort]
 profile = "black"
 src_paths = ["exporters" ,"scripts"]

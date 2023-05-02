@@ -295,3 +295,9 @@ if should_cli_be_installed "shellcheck" "${cli_tools_arr[@]}" && \
       tar -xJvf "${SHELLCHECK_PATH}" -C "${DWN_DIR}" "$shellcheck_executable"
       cp "${DWN_DIR}/$shellcheck_executable" "${VENV}/bin/"
 fi
+
+if should_cli_be_installed "poetry" "${cli_tools_arr[@]}" && \
+    ! [ -x "$(command -v "${DEFAULT_VENV}/bin/poetry")" ]; then
+        echo "é isso aqui ó $DEFAULT_VENV"
+        curl -sSL https://install.python-poetry.org | POETRY_HOME=$DEFAULT_VENV python3 -
+fi

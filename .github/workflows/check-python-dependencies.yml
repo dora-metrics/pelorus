@@ -1,0 +1,24 @@
+name: Check Python dependencies
+on:
+  pull_request:
+    paths:
+      - 'pyproject.toml'
+      - 'poetry.lock'
+
+jobs:
+  check-python-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: make dev-env
+
+      - name: Check if project's Python dependencies files are up to date
+        run: |
+          make update-requirements
+          test -z "$(git status --short)"
