@@ -24,7 +24,7 @@ body:
 
             - [ ] Slack channels - mention command: `@channel`
               - [ ] Internal Red Hat `forum-mig-pelorus`
-              - [ ] External red Hat `dora-metrics-pelorus`
+              - [ ] External Red Hat `dora-metrics-pelorus`
             - [ ] Google groups - mention command: `@all`
               - [ ] Metrics Driven Transformation
               - [ ] pelorus-dev
