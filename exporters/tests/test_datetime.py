@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, timezone
+from unittest import mock
 
 import pytest
 
 import provider_common.github as github
 from pelorus.timeutil import (
+    is_out_of_date,
     parse_assuming_utc,
     parse_guessing_timezone_DYNAMIC,
     parse_tz_aware,
@@ -135,3 +137,23 @@ def test_to_epoch_from_string_bad_value(timestamps):
 def test_to_epoch_from_string_bad_arg(timestamps):
     with pytest.raises(AttributeError):
         to_epoch_from_string(timestamps)
+
+
+@pytest.mark.parametrize(
+    "metric_timestamp, expected",
+    [
+        ("1681826783", True),  # 31 min before mocked_current_datetime
+        ("1681826843", False),  # 30 min before mocked_current_datetime
+        ("1681826903", False),  # 29 min before mocked_current_datetime
+        ("1681828643", False),  # 0 min before mocked_current_datetime
+        ("1681828645", False),  # 2 sec after mocked_current_datetime
+    ],
+)
+@mock.patch("pelorus.timeutil.datetime")
+def test_sample_too_old(mock_datetime, metric_timestamp, expected):
+    mocked_current_datetime = datetime.fromtimestamp(1681828643)
+
+    mock_datetime.now.return_value = mocked_current_datetime
+    mock_datetime.fromtimestamp = datetime.fromtimestamp
+
+    assert is_out_of_date(metric_timestamp) == expected

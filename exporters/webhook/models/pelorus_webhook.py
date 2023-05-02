@@ -19,6 +19,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, validator
 
+from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date
+
 
 class PelorusMetricSpec(str, Enum):
     """
@@ -44,17 +46,14 @@ class PelorusDeliveryHeaders(BaseModel):
     @validator("x_hub_signature_256", pre=True, always=True)
     def validate_x_hub_signature_256(cls, value):
         if value is not None:
-            try:
-                algorithm, signature = value.split("=", 1)
-                if algorithm != "sha256":
-                    raise ValueError("Signature should use sha256 algorithm")
-                if not signature or len(signature) != 64:
-                    raise ValueError(
-                        "Signature should be in format 'sha256=' followed by 64 characters"
-                    )
-                int(signature, 16)
-            except (TypeError, ValueError):
-                raise
+            algorithm, signature = value.split("=", 1)
+            if algorithm != "sha256":
+                raise ValueError("Signature should use sha256 algorithm")
+            if not signature or len(signature) != 64:
+                raise ValueError(
+                    "Signature should be in format 'sha256=' followed by 64 characters"
+                )
+            int(signature, 16)
         return value
 
 
@@ -68,7 +67,7 @@ class PelorusPayload(BaseModel):
         timestamp (int): 10 digit EPOCH timestamp of the event. This
                          is different from the time when the webhook
                          could have been received. The date value must
-                         be between 1.1.2010 and 1.1.2060
+                         be between 1.1.2010 and 1.1.2060.
     """
 
     # Even if we consider git project name as app, it still should be below 100
@@ -109,6 +108,9 @@ class DeployTimePelorusPayload(PelorusPayload):
     Deploy time Pelorus payload model, represents the deployment of
     an application.
 
+    Timestamp of the deployment time can not be older then the one defined in the
+    METRIC_TIMESTAMP_THRESHOLD_MINUTES.
+
     Attributes:
         image_sha (str): The container image SHA which was used for the
                          deployment.
@@ -118,6 +120,14 @@ class DeployTimePelorusPayload(PelorusPayload):
     image_sha: str = Field(regex=r"^sha256:[a-f0-9]{64}$")
     # rfc1035/rfc1123: An alphanumeric string, with a maximum length of 63 characters
     namespace: str = Field(max_length=63)
+
+    @validator("timestamp")
+    def accepted_timestamp_therashold(cls, v):
+        if is_out_of_date(str(v)):
+            raise ValueError(
+                f"Timestamp cannot be older than {METRIC_TIMESTAMP_THRESHOLD_MINUTES} minutes"
+            )
+        return v
 
 
 class CommitTimePelorusPayload(DeployTimePelorusPayload):
@@ -140,6 +150,10 @@ class CommitTimePelorusPayload(DeployTimePelorusPayload):
         raise ValueError(
             "Git SHA-1 hash must be either 7 (short) or 40 (long) characters long"
         )
+
+    @validator("timestamp")
+    def accepted_timestamp_therashold(cls, v):
+        return v
 
 
 class PelorusMetric(BaseModel):

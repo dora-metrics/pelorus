@@ -5,9 +5,12 @@ Note: `parse_assuming_utc`, `parse_tz_aware`, and `parse_guessing_timezone_DYNAM
 will _always_ produce timezone-aware objects,
 which are necessary for correctness with `astimezone(tz)`, `timestamp()`, and other methods.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 _ISO_ZULU_FMT = "%Y-%m-%dT%H:%M:%SZ"
+
+# Time after which metrics for the deploytime exporter will not be accepted
+METRIC_TIMESTAMP_THRESHOLD_MINUTES = 30
 
 
 def is_zone_aware(d: datetime) -> bool:
@@ -101,3 +104,14 @@ def to_iso(dt: datetime) -> str:
         )
 
     return dt.astimezone(timezone.utc).strftime(_ISO_ZULU_FMT)
+
+
+def is_out_of_date(timestring: str) -> bool:
+    """
+    Helper function, which allows to filter out metrics which are older then
+    the accepted time. This is to ensure Prometheus will not try to scrape too
+    old metrics.
+    """
+    return datetime.now() - to_epoch_from_string(timestring) > timedelta(
+        minutes=METRIC_TIMESTAMP_THRESHOLD_MINUTES
+    )

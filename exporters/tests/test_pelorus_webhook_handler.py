@@ -19,6 +19,7 @@ import hashlib
 import hmac
 import http
 import json
+import time
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -38,6 +39,8 @@ from webhook.plugins.pelorus_handler import (
     _verify_payload_signature,
 )
 from webhook.plugins.pelorus_handler_base import Headers, HTTPException
+
+CURRENT_TIMESTAMP = int(time.time())
 
 
 @pytest.mark.asyncio
@@ -66,27 +69,24 @@ async def test_pelorus_payload_ping_function():
             "app": "mongo-todolist",
             "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc",
             "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
-            "namespace": "mongo-persistent",
-            "timestamp": "1557933657"
-        }""",
+            "namespace": "mongo-persistent"
+            }""",
         ),
         (
             "failure",
             """{
             "app": "todolist",
             "failure_id": "Issue-1",
-            "failure_event": "created",
-            "timestamp": "1557933657"
-        }""",
+            "failure_event": "created"
+            }""",
         ),
         (
             "deploytime",
             """{
             "app": "todolist",
             "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
-            "namespace": "mongo-persistent",
-            "timestamp": "1557933657"
-        }""",
+            "namespace": "mongo-persistent"
+            }""",
         ),
     ],
 )
@@ -105,7 +105,9 @@ async def test_pelorus_payload_functions(event_type, json_payload):
         "webhook.plugins.pelorus_handler_base.Request.json",
         new_callable=AsyncMock,
     ) as mock_receive:
-        mock_receive.return_value = json.loads(json_payload)
+        json_data = json.loads(json_payload)
+        json_data["timestamp"] = CURRENT_TIMESTAMP
+        mock_receive.return_value = json_data
         mock_request = AsyncMock()
         mock_request.json = mock_receive
 
@@ -180,8 +182,7 @@ async def test_failed_handshake(header):
             "app": "mongo-todolist",
             "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc",
             "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
-            "namespace": "mongo-persistent",
-            "timestamp": "1557933657"
+            "namespace": "mongo-persistent"
             }""",
         ),
         (
@@ -189,8 +190,7 @@ async def test_failed_handshake(header):
             """{
             "app": "todolist",
             "failure_id": "Issue-1",
-            "failure_event": "created",
-            "timestamp": "1557933657"
+            "failure_event": "created"
             }""",
         ),
         (
@@ -198,8 +198,7 @@ async def test_failed_handshake(header):
             """{
             "app": "todolist",
             "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
-            "namespace": "mongo-persistent",
-            "timestamp": "1557933657"
+            "namespace": "mongo-persistent"
             }""",
         ),
     ],
@@ -212,6 +211,7 @@ async def test_pelorus_receive_pelorus_payload_success(headers, json_payload):
     """
     handler_headers = Headers(headers)
     json_payload_data = json.loads(json_payload)
+    json_payload_data["timestamp"] = CURRENT_TIMESTAMP
     handler = PelorusWebhookHandler(None, request=None)
     handler.payload_headers = parse_obj_as(PelorusDeliveryHeaders, handler_headers)
     pelorus_metric = await handler._receive_pelorus_payload(json_payload_data)
@@ -230,13 +230,6 @@ async def test_pelorus_receive_pelorus_payload_success(headers, json_payload):
             "wrong_payload": "1557933657"
             }""",
         ),
-        (
-            {"Content-Type": "application/json", "X-Pelorus-Event": "deploytime"},
-            """{
-            "app": "mongo-todolist",
-            "timestamp": "1557933657"
-            }""",
-        ),
     ],
 )
 @pytest.mark.asyncio
@@ -247,7 +240,34 @@ async def test_pelorus_receive_pelorus_payload_error(headers, json_payload):
     handler.payload_headers = parse_obj_as(PelorusDeliveryHeaders, handler_headers)
     with pytest.raises(HTTPException) as http_exception:
         await handler._receive_pelorus_payload(json_payload_data)
-    assert http_exception.value.detail == "Invalid payload."
+    assert http_exception.value.detail == "Invalid payload: field required: app"
+    assert http_exception.value.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+@pytest.mark.parametrize(
+    "headers,json_payload",
+    [
+        (
+            {"Content-Type": "application/json", "X-Pelorus-Event": "deploytime"},
+            """{
+            "app": "mongo-todolist",
+            "timestamp": "1557933657"
+            }""",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_pelorus_receive_pelorus_payload_timestamp_too_old(headers, json_payload):
+    handler_headers = Headers(headers)
+    json_payload_data = json.loads(json_payload)
+    handler = PelorusWebhookHandler(None, request=None)
+    handler.payload_headers = parse_obj_as(PelorusDeliveryHeaders, handler_headers)
+    with pytest.raises(HTTPException) as http_exception:
+        await handler._receive_pelorus_payload(json_payload_data)
+    assert (
+        http_exception.value.detail
+        == "Invalid payload: Timestamp cannot be older than 30 minutes: timestamp"
+    )
     assert http_exception.value.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
 

@@ -2,6 +2,8 @@
 
 The job of the deploy time exporter is to capture the timestamp at which a deployment event happen in a production environment.
 
+Deploytime exporter only collects deployment events that are less than 30 minutes old. Older deployments won't be included unless they have been already collected.
+
 > **NOTE:** In order for proper collection, we require that all objects (Pods, Deployments, replicaSets, etc) associated with a particular application be labelled with the same [APP_LABEL](#app_label), which by default is `app.kubernetes.io/name=<app_name>`, where `<app_name>` is the name of the application being monitored.
 
 ## Example
