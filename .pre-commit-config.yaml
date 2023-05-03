@@ -5,7 +5,7 @@ repos:
       name: Linting Charts with Chart Testing
       entry: make chart-lint
       pass_filenames: false
-      files: ^charts/
+      files: ^(charts|exporters)/
       language: system
     - id: shellcheck
       name: 🐚 📋 Linting shell scripts with shellcheck

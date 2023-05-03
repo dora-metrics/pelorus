@@ -7,7 +7,7 @@ on:
       - 'charts/**'
       - 'lintconf.yaml'
       - '.github/workflows/chart-lint.yml'
-      - 'exporters/requirements-dev.txt' # yamllint and yamale
+      - 'exporters/'
       - 'Makefile'
 
   pull_request:
@@ -17,7 +17,7 @@ on:
       - 'charts/**'
       - 'lintconf.yaml'
       - '.github/workflows/chart-lint.yml'
-      - 'exporters/requirements-dev.txt' # yamllint and yamale
+      - 'exporters/'
       - 'Makefile'
 
 jobs:
