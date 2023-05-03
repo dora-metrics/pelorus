@@ -23,12 +23,11 @@ git remote update upstream --prune &> /dev/null
 
 # TODO DEBUG
 echo DEBUG DEBUG DEBUG
-git rev-parse --abbrev-ref HEAD
-git --no-pager diff origin/HEAD --name-status exporters/
+git --no-pager diff $REMOTE/master --name-status exporters/
 echo DEBUG DEBUG DEBUG
 # TODO DEBUG
 
-if git status exporters | grep exporters &> /dev/null || git --no-pager diff origin/HEAD --name-status exporters/ | grep exporters &> /dev/null; then
+if git status exporters | grep exporters &> /dev/null || git --no-pager diff $REMOTE/master --name-status exporters/ | grep exporters &> /dev/null; then
   EXPORT_VERSION_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/exporters/setup.py &> /dev/null)"
   CURRENT_EXPORT_VERSION="$(grep '    version="' exporters/setup.py  | cut -c 14- | rev | cut -c 3- | rev)"
   if $EXPORT_VERSION_IN_MASTER | grep "$CURRENT_EXPORT_VERSION" &> /dev/null; then
