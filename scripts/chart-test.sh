@@ -3,8 +3,10 @@
 # Enforce version bump on exporters
 
 # TODO DEBUG
+echo DEBUG DEBUG DEBUG
 git rev-parse --abbrev-ref HEAD
 git --no-pager diff master... --name-status exporters/
+echo DEBUG DEBUG DEBUG
 # TODO DEBUG
 
 if git status exporters | grep exporters &> /dev/null || git --no-pager diff master... --name-status exporters/ | grep exporters &> /dev/null; then
