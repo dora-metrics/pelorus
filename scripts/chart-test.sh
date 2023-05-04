@@ -19,33 +19,21 @@ git config "remote.$REMOTE.fetch" "+refs/heads/*:refs/remotes/$REMOTE/*"
 git fetch "$REMOTE" --unshallow &> /dev/null
 git remote update upstream --prune &> /dev/null
 
-# Enforce version bump on exporters
-
-# TODO DEBUG
-echo DEBUG DEBUG DEBUG
-git --no-pager diff $REMOTE/master --name-status exporters/
-echo DEBUG DEBUG DEBUG
-# TODO DEBUG
+# Enforce chart version bump when exporters folder are touched
 
 if git status exporters | grep exporters &> /dev/null || git --no-pager diff $REMOTE/master --name-status exporters/ | grep exporters &> /dev/null; then
-  EXPORT_VERSION_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/exporters/setup.py &> /dev/null)"
-  CURRENT_EXPORT_VERSION="$(grep '    version="' exporters/setup.py  | cut -c 14- | rev | cut -c 3- | rev)"
-  if $EXPORT_VERSION_IN_MASTER | grep "$CURRENT_EXPORT_VERSION" &> /dev/null; then
-    # TODO breaks when updating from 2.0.10-rc.1 to 2.0.10, for example
-    echo "Exporters version needs a bump!"
-    exit 1
-  fi
-
-  CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml  | cut -c 10-)"
-  if [[ "$CURRENT_CHART_VERSION" != "$CURRENT_EXPORT_VERSION" ]]; then
-    echo "Exporters ($CURRENT_EXPORT_VERSION) and Charts ($CURRENT_CHART_VERSION) versions are not the same!"
+  CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml | cut -c 10-)"
+  CHART_FILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/charts/pelorus/Chart.yaml 2> /dev/null)"
+  CHART_VERSION_IN_MASTER=$(echo "$CHART_FILE_IN_MASTER" | grep '^version: ' | cut -c 10-)
+  if [ "$CHART_VERSION_IN_MASTER" == "$CURRENT_CHART_VERSION" ]; then
+    echo "ERROR: Exporters were modified, Charts need version bumping!"
     exit 1
   fi
 fi
 
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
 
-ct lint --remote "$REMOTE" --config ct.yaml
+ct lint --remote "$REMOTE" --config ct.yaml || exit 1
 
 # Verify the versions of the charts are the same across main charts and
 # the charts from pelorus-operator
