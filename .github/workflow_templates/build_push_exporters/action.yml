@@ -22,7 +22,7 @@ runs:
     - name: Set Image version
       shell: bash
       run: |
-        IMG_VER=$(grep quay.io charts/pelorus/subcharts/exporters/templates/_imagestream_from_image.yaml | grep -oP '(?<=default ")[^"]+')
+        IMG_VER=$(grep quay.io charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml | grep -oP '(?<=default ")[^"]+')
         echo "Image version: $IMG_VER"
         echo "VERSION=$IMG_VER" >> $GITHUB_ENV
 

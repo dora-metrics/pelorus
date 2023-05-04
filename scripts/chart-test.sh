@@ -34,6 +34,7 @@ fi
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
 
 ct lint --remote "$REMOTE" --config ct.yaml || exit 1
+rm charts/pelorus/charts/*.tgz
 
 # Verify the versions of the charts are the same across main charts and
 # the charts from pelorus-operator

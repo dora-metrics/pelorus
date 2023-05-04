@@ -244,7 +244,7 @@ Below is an example of such configuration file. It is important that all the `Co
 To deploy Pelorus Exporter(s) in the `pelorus-sample` namespace using previously created configuration file `pelorus-sample-separate-exporters.yaml`, simply run from the Pelrous source code directory:
 
 ```shell
-$ helm install custom-exporters-deployment charts/pelorus/subcharts/exporters --namespace pelorus-sample --values pelorus-sample-separate-exporters.yaml
+$ helm install custom-exporters-deployment charts/pelorus/charts/exporters --namespace pelorus-sample --values pelorus-sample-separate-exporters.yaml
 ```
 
 >**Note:** To create another set of Pelorus exporters, either modify the configuration file and update the deployment within the same namespace or create new deployment in a new or separate namespace.
@@ -263,7 +263,7 @@ custom-exporter       custom-exporter-pelorus-sample.apps.<DOMAIN>              
 It is possible to update the deployment of the Pelorus exporter(s) with updated configuration file, to do so, simply run `helm upgrade` with the same `custom-exporters-deployment` as used in the installation, as follows:
 
 ```shell
-$ helm upgrade custom-exporters-deployment charts/pelorus/subcharts/exporters --namespace pelorus-sample --values new-pelorus-sample-separate-exporters.yaml
+$ helm upgrade custom-exporters-deployment charts/pelorus/charts/exporters --namespace pelorus-sample --values new-pelorus-sample-separate-exporters.yaml
 ```
 
 ### Uninstalling Exporter(s) deployment
