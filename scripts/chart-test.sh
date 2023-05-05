@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# Runs chart-testing (ct CLI) with remote flag to avoid git errors
-
 GIT_REPO=dora-metrics/pelorus.git
 REMOTE=origin
 ORIGIN=$(git remote show origin)
@@ -21,7 +19,21 @@ git config "remote.$REMOTE.fetch" "+refs/heads/*:refs/remotes/$REMOTE/*"
 git fetch "$REMOTE" --unshallow &> /dev/null
 git remote update upstream --prune &> /dev/null
 
-ct lint --remote "$REMOTE" --config ct.yaml
+# Enforce chart version bump when exporters folder are touched
+
+if ! git --no-pager diff --quiet $REMOTE/master --name-status exporters/; then
+  CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml | cut -c 10-)"
+  CHART_FILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/charts/pelorus/Chart.yaml 2> /dev/null)"
+  CHART_VERSION_IN_MASTER=$(echo "$CHART_FILE_IN_MASTER" | grep '^version: ' | cut -c 10-)
+  if [ "$CHART_VERSION_IN_MASTER" == "$CURRENT_CHART_VERSION" ]; then
+    echo "ERROR: Exporters were modified, Charts need version bumping!"
+    exit 1
+  fi
+fi
+
+# Runs chart-testing (ct CLI) with remote flag to avoid git errors
+
+ct lint --remote "$REMOTE" --config ct.yaml || exit 1
 
 # Verify the versions of the charts are the same across main charts and
 # the charts from pelorus-operator
