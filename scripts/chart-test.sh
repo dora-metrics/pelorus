@@ -21,7 +21,7 @@ git remote update upstream --prune &> /dev/null
 
 # Enforce chart version bump when exporters folder are touched
 
-if git status exporters | grep exporters &> /dev/null || git --no-pager diff $REMOTE/master --name-status exporters/ | grep exporters &> /dev/null; then
+if ! git --no-pager diff --quiet $REMOTE/master --name-status exporters/; then
   CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml | cut -c 10-)"
   CHART_FILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/charts/pelorus/Chart.yaml 2> /dev/null)"
   CHART_VERSION_IN_MASTER=$(echo "$CHART_FILE_IN_MASTER" | grep '^version: ' | cut -c 10-)
