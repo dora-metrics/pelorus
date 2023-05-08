@@ -48,7 +48,6 @@ IMAGESTREAM_PATH="charts/pelorus/charts/exporters/templates/_imagestream_from_im
 PELORUS_CHART="charts/pelorus/Chart.yaml"
 PELORUS_EXPORTERS_CHART="charts/pelorus/charts/exporters/Chart.yaml"
 OPERATORS_CHART="charts/operators/Chart.yaml"
-CHART_LOCK_FILE="charts/pelorus/Chart.lock"
 
 INSTALL_DOC="docs/Development.md"
 
@@ -185,9 +184,6 @@ sed -i "/value/ s/\({{ \.image_tag \| default \)\"[^\"]*\"\( \)\?/\1\"v$SEMVER\"
 # Update branch in the Development documentation
 sed -i "s/\(release number, for example \`\).*\(\`\.\)/\1v$SEMVER\2/g" "$INSTALL_DOC"
 sed -i "s/\(image_tag: \).*\( # Specific release\)/\1v$SEMVER\2/g" "$INSTALL_DOC"
-
-# Remove chart lock file
-rm -f "${CHART_LOCK_FILE}"
 
 
 #### Verification if the changes were actually applied

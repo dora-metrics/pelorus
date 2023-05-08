@@ -46,8 +46,8 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    containerImage: quay.io/pelorus/pelorus-operator:0.0.7-rc.1
-    createdAt: "2023-05-04T17:42:27Z"
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.7-rc.2
+    createdAt: "2023-05-08T12:23:29Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -55,7 +55,7 @@ metadata:
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
     repository: https://github.com/dora-metrics/pelorus/
     support: Pelorus Community
-  name: pelorus-operator.v0.0.7-rc.1
+  name: pelorus-operator.v0.0.7-rc.2
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -208,14 +208,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - prometheuses
-          - prometheusrules
-          - servicemonitors
-          verbs:
-          - '*'
-        - apiGroups:
           - route.openshift.io
           resources:
           - routes
@@ -255,6 +247,14 @@ spec:
           - image.openshift.io
           resources:
           - imagestreams
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheuses
+          - prometheusrules
+          - servicemonitors
           verbs:
           - '*'
         - apiGroups:
@@ -406,7 +406,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/pelorus/pelorus-operator:0.0.7-rc.1
+                image: quay.io/pelorus/pelorus-operator:0.0.7-rc.2
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -508,7 +508,7 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.7-rc.1
+  version: 0.0.7-rc.2
   replaces: pelorus-operator.v0.0.6
   skips:
     - pelorus-operator.v0.0.6

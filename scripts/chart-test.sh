@@ -21,8 +21,8 @@ git remote update upstream --prune &> /dev/null
 
 # Enforce chart version bump when exporters folder are touched
 
+CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml | cut -c 10-)"
 if ! git --no-pager diff --quiet $REMOTE/master --name-status exporters/; then
-  CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml | cut -c 10-)"
   CHART_FILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/charts/pelorus/Chart.yaml 2> /dev/null)"
   CHART_VERSION_IN_MASTER=$(echo "$CHART_FILE_IN_MASTER" | grep '^version: ' | cut -c 10-)
   if [ "$CHART_VERSION_IN_MASTER" == "$CURRENT_CHART_VERSION" ]; then
@@ -35,6 +35,16 @@ fi
 
 ct lint --remote "$REMOTE" --config ct.yaml || exit 1
 rm charts/pelorus/charts/*.tgz
+
+if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml &> /dev/null; then
+  echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml differs!"
+  exit 1
+fi
+
+if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml &> /dev/null; then
+  echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml differs!"
+  exit 1
+fi
 
 # Verify the versions of the charts are the same across main charts and
 # the charts from pelorus-operator
