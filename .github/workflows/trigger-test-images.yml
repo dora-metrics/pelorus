@@ -20,8 +20,6 @@ jobs:
               '"pr_number":"${{ github.event.number }}",' \
               '"commit_hash":"${{ github.sha }}"}' > trigger-information.json
 
-      - run: helm --help
-
       - uses: actions/upload-artifact@v3
         with:
           name: trigger-information
