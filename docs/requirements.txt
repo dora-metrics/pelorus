@@ -1,6 +1,6 @@
 # Required by mkdocs material theme
 pymdown-extensions
-mkdocs-material
+mkdocs-material==9.1.9
 mkdocs-redirects
 
 # Social cards
