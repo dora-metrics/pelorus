@@ -541,6 +541,7 @@ export REPOSITORY=quay.io/pelorus
 export pr_type=opened
 export pr_number=NUMBER
 export commit_hash=HASH
+# download source to image executable https://github.com/openshift/source-to-image/releases
 s2i build exporters registry.access.redhat.com/ubi8/python-39 $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash --loglevel 2
 docker push $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash
 
@@ -560,11 +561,6 @@ sed -i "s,$CURRENT_OPERATOR_VERSION,$TEST_VERSION,g" Makefile
 sed -i "s,pelorus-operator,rc-pelorus-operator,g" Makefile
 find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
 find . -type f | xargs sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
-
-grep $TEST_OPERATOR_IMAGE bundle/manifests/pelorus-operator.clusterserviceversion.yaml
-grep $TEST_EXPORTER_IMAGE helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
-grep $TEST_VERSION Makefile
-grep rc-pelorus-operator Makefile
 
 helm dep update helm-charts/pelorus
 rm -r helm-charts/pelorus/charts/*.tgz

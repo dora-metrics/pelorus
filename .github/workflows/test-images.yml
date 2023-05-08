@@ -57,6 +57,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install helm
+        run: make dev-env
+
       - name: Build exporter test image
         id: build-exporter
         uses: redhat-actions/s2i-build@v2
@@ -94,15 +97,21 @@ jobs:
         working-directory: ./pelorus-operator
         run: |
           sed -i "s,$DEFAULT_OPERATOR_IMAGE,$TEST_OPERATOR_IMAGE,g" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
-          sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/subcharts/exporters/templates/_imagestream_from_image.yaml
-          find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$TEST_VERSION,g"
-          find . -type f | xargs sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
+          sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
+          sed -i "s,$CURRENT_CHART_VERSION,$TEST_VERSION,g" helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
+          sed -i "s,$CURRENT_OPERATOR_VERSION,$TEST_VERSION,g" Makefile
           sed -i "s,pelorus-operator,rc-pelorus-operator,g" Makefile
+          find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
+          find . -type f | xargs sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
 
           grep $TEST_OPERATOR_IMAGE bundle/manifests/pelorus-operator.clusterserviceversion.yaml
-          grep $TEST_EXPORTER_IMAGE helm-charts/pelorus/subcharts/exporters/templates/_imagestream_from_image.yaml
+          grep $TEST_EXPORTER_IMAGE helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
+          grep $TEST_EXPORTER_IMAGE helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
           grep $TEST_VERSION Makefile
           grep rc-pelorus-operator Makefile
+
+          helm dep update helm-charts/pelorus
+          rm -r helm-charts/pelorus/charts/*.tgz
 
       # TODO remove!!!
       - name: DEBUG
@@ -113,6 +122,7 @@ jobs:
         run: |
           make podman-build
           podman image ls -a | grep pr$pr_number-$commit_hash
+          podman image ls -a | grep rc-pelorus-operator
           make podman-push
 
       - name: Build and push operator bundle test image
@@ -120,6 +130,7 @@ jobs:
         run: |
           make bundle-build
           podman image ls -a | grep pr$pr_number-$commit_hash
+          podman image ls -a | grep rc-pelorus-operator-bundle
           make bundle-push
 
       # TODO delete old comments, just have the last on PR
