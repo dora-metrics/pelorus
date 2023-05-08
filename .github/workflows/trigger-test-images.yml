@@ -1,0 +1,26 @@
+name: Trigger test images
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'exporters/**'
+      - 'charts/**'
+      - 'pelorus-operator/**'
+      - '.github/workflows/trigger-test-images.yml'
+    types: [opened, reopened, synchronize, closed]
+
+jobs:
+  generate-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create json file
+        run: |
+          echo '{"pr_type":"${{ github.event.action }}",' \
+              '"pr_number":"${{ github.event.number }}",' \
+              '"commit_hash":"${{ github.sha }}"}' > trigger-information.json
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: trigger-information
+          path: ./trigger-information.json

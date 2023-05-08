@@ -1,0 +1,15 @@
+name: Comment in PR
+description: Comment a message in a specific PR
+inputs:
+  token:
+    description: Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}
+    required: true
+  pr_number:
+    description: The PR number
+    required: true
+  message:
+    description: The message to be commented
+    required: true
+runs:
+  using: docker
+  image: Dockerfile

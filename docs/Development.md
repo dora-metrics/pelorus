@@ -489,7 +489,7 @@ Webhook type exporter has an additional URL target http://localhost:8080/pelorus
 
 To create a new version (or candidate) of Pelorus operator you must be logged into `podman` (`podman login` command) and `OpenShift` (`oc login` command) and then run
 ```
-rm -rf pelorus-operator && mkdir pelorus-operator && scripts/create_pelorus_operator.sh
+scripts/create_pelorus_operator.sh -f
 ```
 This will update `pelorus-operator` folder with the updates.
 
@@ -534,6 +534,43 @@ To clean it up, run
 ```
 operator-sdk cleanup pelorus-operator --namespace pelorus
 ```
+
+During PRs, the CI builds a test image running
+```sh
+export REPOSITORY=quay.io/pelorus
+export pr_type=opened
+export pr_number=NUMBER
+export commit_hash=HASH
+# download source to image executable https://github.com/openshift/source-to-image/releases
+s2i build exporters registry.access.redhat.com/ubi8/python-39 $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash --loglevel 2
+docker push $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash
+
+cd pelorus-operator
+export TEST_VERSION=pr$pr_number-$commit_hash
+export CURRENT_OPERATOR_VERSION=$(grep "VERSION ?= " Makefile  | cut -c 12-)
+export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
+export DEFAULT_OPERATOR_IMAGE=$REPOSITORY/pelorus-operator:$CURRENT_OPERATOR_VERSION
+export TEST_OPERATOR_IMAGE=$REPOSITORY/rc-pelorus-operator:$TEST_VERSION
+export DEFAULT_EXPORTER_IMAGE="$REPOSITORY/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default \"v$CURRENT_CHART_VERSION\" }}"
+export TEST_EXPORTER_IMAGE="$REPOSITORY/rc-pelorus-exporter:{{ .image_tag | default \"v$TEST_VERSION\" }}"
+
+sed -i "s,$DEFAULT_OPERATOR_IMAGE,$TEST_OPERATOR_IMAGE,g" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
+sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
+sed -i "s,$CURRENT_CHART_VERSION,$TEST_VERSION,g" helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
+sed -i "s,$CURRENT_OPERATOR_VERSION,$TEST_VERSION,g" Makefile
+sed -i "s,pelorus-operator,rc-pelorus-operator,g" Makefile
+find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
+find . -type f | xargs sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
+
+helm dep update helm-charts/pelorus
+rm -r helm-charts/pelorus/charts/*.tgz
+
+make podman-build
+make bundle-build
+make podman-push
+make bundle-push
+```
+and comments on the PR how to use it.
 
 ## Testing Pull Requests
 
