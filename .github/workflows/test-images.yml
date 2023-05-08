@@ -71,7 +71,7 @@ jobs:
         with:
           image: ${{ steps.build-exporter.outputs.image }}
           tags: ${{ steps.build-exporter.outputs.tags }}
-          registry: $REPOSITORY
+          registry: $${{ env.REPOSITORY }}
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
@@ -87,10 +87,10 @@ jobs:
           TEST_VERSION: pr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
           CURRENT_OPERATOR_VERSION: $(grep "VERSION ?= " Makefile  | cut -c 12-)
           CURRENT_CHART_VERSION: "$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
-          DEFAULT_OPERATOR_IMAGE: $REPOSITORY/pelorus-operator:$CURRENT_OPERATOR_VERSION
-          TEST_OPERATOR_IMAGE: $REPOSITORY/rc-pelorus-operator:$TEST_VERSION
-          DEFAULT_EXPORTER_IMAGE: $REPOSITORY/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default \"v$CURRENT_CHART_VERSION\" }}
-          TEST_EXPORTER_IMAGE: $REPOSITORY/rc-pelorus-exporter:{{ .image_tag | default \"v$TEST_VERSION\" }}
+          DEFAULT_OPERATOR_IMAGE: ${{ env.REPOSITORY }}/pelorus-operator:${{ env.CURRENT_OPERATOR_VERSION }}
+          TEST_OPERATOR_IMAGE: ${{ env.REPOSITORY }}/rc-pelorus-operator:${{ env.TEST_VERSION }}
+          DEFAULT_EXPORTER_IMAGE: ${{ env.REPOSITORY }}/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default \"v${{ env.CURRENT_CHART_VERSION }}\" }}
+          TEST_EXPORTER_IMAGE: ${{ env.REPOSITORY }}/rc-pelorus-exporter:{{ .image_tag | default \"v${{ env.TEST_VERSION }}\" }}
         working-directory: ./pelorus-operator
         run: |
           sed -i "s,$DEFAULT_OPERATOR_IMAGE,$TEST_OPERATOR_IMAGE,g" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
@@ -112,13 +112,13 @@ jobs:
 
       # TODO remove!!!
       - name: DEBUG
-        run: git diff
+        run: git --no-pager diff
 
       - name: Build and push operator test image
         working-directory: ./pelorus-operator
         run: |
           make podman-build
-          podman image ls -a | grep pr$pr_number-$commit_hash
+          podman image ls -a | grep pr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
           podman image ls -a | grep rc-pelorus-operator
           make podman-push
 
@@ -126,7 +126,7 @@ jobs:
         working-directory: ./pelorus-operator
         run: |
           make bundle-build
-          podman image ls -a | grep pr$pr_number-$commit_hash
+          podman image ls -a | grep pr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
           podman image ls -a | grep rc-pelorus-operator-bundle
           make bundle-push
 
