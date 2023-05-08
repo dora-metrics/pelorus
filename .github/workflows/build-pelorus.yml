@@ -6,8 +6,6 @@ on:
       - master
     paths:
       - 'exporters/**'
-      - 'charts/pelorus/subcharts/exporters/templates/_buildconfig.yaml'
-      - 'charts/pelorus/subcharts/exporters/templates/_imagestream_from_image.yaml'
       - '.github/workflows/build-pelorus.yml'
 
 env:
