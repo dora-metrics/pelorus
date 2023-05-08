@@ -85,14 +85,15 @@ jobs:
       - name: Use test images in operator
         env:
           TEST_VERSION: pr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
-          CURRENT_OPERATOR_VERSION: $(grep "VERSION ?= " Makefile  | cut -c 12-)
-          CURRENT_CHART_VERSION: "$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
-          DEFAULT_OPERATOR_IMAGE: ${{ env.REPOSITORY }}/pelorus-operator:${{ env.CURRENT_OPERATOR_VERSION }}
-          TEST_OPERATOR_IMAGE: ${{ env.REPOSITORY }}/rc-pelorus-operator:${{ env.TEST_VERSION }}
-          DEFAULT_EXPORTER_IMAGE: ${{ env.REPOSITORY }}/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default \"v${{ env.CURRENT_CHART_VERSION }}\" }}
-          TEST_EXPORTER_IMAGE: ${{ env.REPOSITORY }}/rc-pelorus-exporter:{{ .image_tag | default \"v${{ env.TEST_VERSION }}\" }}
         working-directory: ./pelorus-operator
         run: |
+          export CURRENT_OPERATOR_VERSION="$(grep "VERSION ?= " Makefile  | cut -c 12-)"
+          export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
+          export DEFAULT_OPERATOR_IMAGE="${{ env.REPOSITORY }}/pelorus-operator:$CURRENT_OPERATOR_VERSION"
+          export TEST_OPERATOR_IMAGE="${{ env.REPOSITORY }}/rc-pelorus-operator:${{ env.TEST_VERSION }}"
+          export DEFAULT_EXPORTER_IMAGE="${{ env.REPOSITORY }}/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default \"v$CURRENT_CHART_VERSION\" }}"
+          export TEST_EXPORTER_IMAGE="${{ env.REPOSITORY }}/rc-pelorus-exporter:{{ .image_tag | default \"v${{ env.TEST_VERSION }}\" }}"
+
           sed -i "s,$DEFAULT_OPERATOR_IMAGE,$TEST_OPERATOR_IMAGE,g" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
           sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
           sed -i "s,$CURRENT_CHART_VERSION,$TEST_VERSION,g" helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
@@ -101,10 +102,10 @@ jobs:
           find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
           find . -type f | xargs sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
 
-          grep $TEST_OPERATOR_IMAGE bundle/manifests/pelorus-operator.clusterserviceversion.yaml
-          grep $TEST_EXPORTER_IMAGE helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
-          grep $TEST_EXPORTER_IMAGE helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
-          grep $TEST_VERSION Makefile
+          grep "$TEST_OPERATOR_IMAGE" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
+          grep "$TEST_EXPORTER_IMAGE" helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
+          grep "$TEST_VERSION" helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
+          grep "$TEST_VERSION" Makefile
           grep rc-pelorus-operator Makefile
 
           helm dep update helm-charts/pelorus
