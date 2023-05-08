@@ -24,3 +24,5 @@ jobs:
         with:
           name: trigger-information
           path: ./trigger-information.json
+
+# TODO remove
