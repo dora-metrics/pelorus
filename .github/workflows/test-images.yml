@@ -71,7 +71,7 @@ jobs:
         with:
           image: ${{ steps.build-exporter.outputs.image }}
           tags: ${{ steps.build-exporter.outputs.tags }}
-          registry: $${{ env.REPOSITORY }}
+          registry: ${{ env.REPOSITORY }}
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
