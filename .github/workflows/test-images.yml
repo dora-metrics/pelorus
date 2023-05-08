@@ -32,9 +32,9 @@ jobs:
       - name: Store variables
         id: variables
         run: |
-          echo pr_type=$(cat trigger-information.json | jq '.pr_type') >> "$GITHUB_OUTPUT"
-          echo pr_number=$(cat trigger-information.json | jq '.pr_number') >> "$GITHUB_OUTPUT"
-          echo commit_hash=$(cat trigger-information.json | jq '.commit_hash') >> "$GITHUB_OUTPUT"
+          echo pr_type=$(cat trigger-information.json | jq -r '.pr_type') >> "$GITHUB_OUTPUT"
+          echo pr_number=$(cat trigger-information.json | jq -r '.pr_number') >> "$GITHUB_OUTPUT"
+          echo commit_hash=$(cat trigger-information.json | jq -r '.commit_hash') >> "$GITHUB_OUTPUT"
 
   # TODO
   # delete-images:
