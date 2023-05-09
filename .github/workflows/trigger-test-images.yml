@@ -25,7 +25,6 @@ jobs:
     steps:
       - name: Create json file
         run: |
-          export GITHUB_SHORT_SHA=$(echo ${{ github.sha }} | cut -c 1-7)
           echo '{"pr_type":"${{ github.event.action }}",' \
               '"pr_number":"${{ github.event.number }}",' \
               '"commit_hash":"${{ needs.get-short-sha.outputs.sha }}"}' > trigger-information.json
