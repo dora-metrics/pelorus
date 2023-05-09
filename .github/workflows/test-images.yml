@@ -25,10 +25,6 @@ jobs:
           name: trigger-information
           path: ./
 
-      # TODO remove!!!
-      - name: DEBUG
-        run: cat trigger-information.json
-
       - name: Store variables
         id: variables
         run: |
@@ -111,10 +107,6 @@ jobs:
           helm dep update helm-charts/pelorus
           rm -r helm-charts/pelorus/charts/*.tgz
 
-      # TODO remove!!!
-      - name: DEBUG
-        run: git --no-pager diff
-
       - name: Build and push operator test image
         working-directory: ./pelorus-operator
         run: |
@@ -137,7 +129,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ needs.setup.outputs.pr_number }}
-          message: >
+          message: |
             Test images available! 🧪🚀 To test operator with them, run
             ```
             operator-sdk run bundle \

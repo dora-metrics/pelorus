@@ -18,11 +18,9 @@ jobs:
         run: |
           echo '{"pr_type":"${{ github.event.action }}",' \
               '"pr_number":"${{ github.event.number }}",' \
-              '"commit_hash":"${{ github.sha }}"}' > trigger-information.json
+              '"commit_hash":"$(echo ${{ github.sha }} | cut -c 1-7)"}' > trigger-information.json
 
       - uses: actions/upload-artifact@v3
         with:
           name: trigger-information
           path: ./trigger-information.json
-
-# TODO remove
