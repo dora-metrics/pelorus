@@ -11,15 +11,24 @@ on:
     types: [opened, reopened, synchronize, closed]
 
 jobs:
+  get-short-sha:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - id: sha
+        run: echo "sha=$(echo ${{ github.sha }} | cut -c 1-7)" >> "$GITHUB_OUTPUT"
+
   generate-jobs:
     runs-on: ubuntu-latest
+    needs: get-short-sha
     steps:
       - name: Create json file
         run: |
           export GITHUB_SHORT_SHA=$(echo ${{ github.sha }} | cut -c 1-7)
           echo '{"pr_type":"${{ github.event.action }}",' \
               '"pr_number":"${{ github.event.number }}",' \
-              '"commit_hash":"$GITHUB_SHORT_SHA"}' > trigger-information.json
+              '"commit_hash":"${{ needs.get-short-sha.outputs.sha }}"}' > trigger-information.json
 
       - uses: actions/upload-artifact@v3
         with:
