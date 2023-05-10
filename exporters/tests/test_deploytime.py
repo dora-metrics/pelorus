@@ -1,8 +1,9 @@
+import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
 from random import randrange
 from typing import Optional
-from unittest.mock import NonCallableMock
+from unittest.mock import NonCallableMock, patch
 
 import attrs
 import pytest
@@ -11,7 +12,7 @@ from openshift.dynamic.discovery import Discoverer  # type: ignore
 
 import pelorus
 from deploytime import DeployTimeMetric
-from deploytime.app import DeployTimeCollector, image_sha
+from deploytime.app import DeployTimeCollector
 from tests.openshift_mocks import (
     Container,
     ContainerStatus,
@@ -45,6 +46,7 @@ REPLICA_SET = "ReplicaSet"
 REP_CONTROLLER = "ReplicationController"
 UNKNOWN_OWNER_KIND = "UnknownOwnerKind"
 
+API_VERSION = "v1"
 FOO_REP = "foo_rc"
 FOO_REP_KIND = REP_CONTROLLER
 BAR_REP = "bar_rs"
@@ -55,18 +57,18 @@ QUUX_REP = "quux_rs"
 QUUX_REP_KIND = REPLICA_SET
 
 FOO_POD_SHAS = [
-    "sha256:b4465ee3a99034c395ad4296b251cbe8d12f1676a107e942f9f543a185d67b2b"
+    "myregistry/openshift/myimage@sha256:b4465ee3a99034c395ad4296b251cbe8d12f1676a107e942f9f543a185d67b2b"
 ]
 BAR_POD_SHAS = [
     "sha256:90663c4a9ac6cd3eb1889e1674dea13cdd4490adb70440a789acf70d4c0c2c75",
     "I am not a valid sha!",
 ]
 STATUS_CONTAINER_SHAS = [
-    "sha256:138516bdf532c621ab859e94531e77cb3eff23cf040ad0b4e32ea64c1a7b4419"
+    "myregistry/openshift/myimage@sha256:138516bdf532c621ab859e94531e77cb3eff23cf040ad0b4e32ea64c1a7b4419"
 ]
 BAZ_POD_SHAS = ["I'm not valid either but it'll never matter"]
 QUUX_POD_SHAS = [
-    "sha256:12257fefdca6298ecc4030468ba37663a57700e4d8061a5b1ca453cfe8339f59"
+    "myregistry/openshift/myimage@sha256:12257fefdca6298ecc4030468ba37663a57700e4d8061a5b1ca453cfe8339f59"
 ]
 # endregion
 
@@ -108,7 +110,9 @@ class DynClientMockData:
 
 def rc(
     kind: str,
+    api_version: str,
     name: str,
+    uid: str,
     namespace: str,
     app_label: str,
     creationTimestamp: datetime,
@@ -119,8 +123,10 @@ def rc(
     labels[APP_LABEL] = app_label
     return Replicator(
         kind=kind,
+        apiVersion=api_version,
         metadata=Metadata(
             name=name,
+            uid=uid,
             namespace=namespace,
             labels=labels,
             creationTimestamp=creationTimestamp,
@@ -132,18 +138,29 @@ def random_time() -> datetime:
     return datetime.now() - timedelta(hours=12) + timedelta(hours=randrange(0, 12))
 
 
+def random_uid() -> str:
+    return str(uuid.uuid4())
+
+
 def pod(
     namespace: str,
     owner_refs: list[OwnerRef],
     container_image_shas: list[str],
+    app_label: str,
+    labels: Optional[dict[str, str]] = None,
     status_image_shas: Optional[list[str]] = None,
 ):
     if status_image_shas is None:
         status_image_shas = container_image_shas
 
+    labels = labels or {}
+    labels[APP_LABEL] = app_label
     return Pod(
         metadata=Metadata(
-            name="unnamed", namespace=namespace, ownerReferences=owner_refs
+            name="unnamed",
+            namespace=namespace,
+            ownerReferences=owner_refs,
+            labels=labels,
         ),
         spec=PodSpec(containers=[Container(x) for x in container_image_shas]),
         status=PodStatus(
@@ -156,33 +173,67 @@ def pod(
 
 
 def test_generate_normal_case() -> None:
+    foo_rep_uid = random_uid()
+
     foo_rep = rc(
         FOO_REP_KIND,
+        API_VERSION,
         FOO_REP,
+        foo_rep_uid,
         FOO_NS,
         FOO_APP,
         random_time(),
         {FOO_LABEL: FOO_LABEL_VALUE},
     )
-    bar_rep = rc(BAR_REP_KIND, BAR_REP, BAR_NS, BAR_APP, random_time())
-    quux_rep = rc(QUUX_REP_KIND, QUUX_REP, QUUX_NS, QUUX_APP, random_time())
+    bar_rep_uid = random_uid()
+    bar_rep = rc(
+        BAR_REP_KIND, API_VERSION, BAR_REP, bar_rep_uid, BAR_NS, BAR_APP, random_time()
+    )
+    quux_rep_uid = random_uid()
+    quux_rep = rc(
+        QUUX_REP_KIND,
+        API_VERSION,
+        QUUX_REP,
+        quux_rep_uid,
+        QUUX_NS,
+        QUUX_APP,
+        random_time(),
+    )
 
     pods = [
-        pod(FOO_NS, [foo_rep.ref()], FOO_POD_SHAS),
-        pod(BAR_NS, [bar_rep.ref()], BAR_POD_SHAS),
+        pod(
+            FOO_NS, [foo_rep.ref()], FOO_POD_SHAS, FOO_APP, {FOO_LABEL: FOO_LABEL_VALUE}
+        ),
+        pod(BAR_NS, [bar_rep.ref()], BAR_POD_SHAS, BAR_APP),
         # case: pod with image sha only in status
         pod(
             QUUX_NS,
             [quux_rep.ref()],
             container_image_shas=["invalid format"],
+            app_label=QUUX_APP,
             status_image_shas=STATUS_CONTAINER_SHAS,
         ),
         # case: pod with unsupported rep kind
-        pod(FOO_NS, [OwnerRef(BAZ_REP_KIND, BAZ_REP)], FOO_POD_SHAS),
+        pod(
+            FOO_NS,
+            [OwnerRef(BAZ_REP_KIND, BAZ_REP, random_uid(), API_VERSION)],
+            FOO_APP,
+            FOO_POD_SHAS,
+        ),
         # case: pod references rep we don't have an entry for
-        pod(FOO_NS, [OwnerRef(FOO_REP_KIND, "Unknown Rep")], FOO_POD_SHAS),
+        pod(
+            FOO_NS,
+            [OwnerRef(FOO_REP_KIND, "Unknown Rep", random_uid(), API_VERSION)],
+            FOO_APP,
+            FOO_POD_SHAS,
+        ),
         # case: pod in NS we don't care about
-        pod(BAZ_NS, [OwnerRef(BAZ_REP_KIND, BAZ_REP)], BAZ_POD_SHAS),
+        pod(
+            BAZ_NS,
+            [OwnerRef(BAZ_REP_KIND, BAZ_REP, random_uid(), API_VERSION)],
+            BAZ_REP,
+            BAZ_POD_SHAS,
+        ),
     ]
 
     data = DynClientMockData(pods=pods, replicators=[foo_rep, bar_rep, quux_rep])
@@ -197,27 +248,25 @@ def test_generate_normal_case() -> None:
             namespace=FOO_NS,
             labels={FOO_LABEL: FOO_LABEL_VALUE, APP_LABEL: FOO_APP},
             deploy_time=foo_rep.metadata.creationTimestamp,
-            image_sha=FOO_POD_SHAS[0],
-        ),
-        DeployTimeMetric(
-            name=BAR_APP,
-            namespace=BAR_NS,
-            labels={APP_LABEL: BAR_APP},
-            deploy_time=bar_rep.metadata.creationTimestamp,
-            image_sha=BAR_POD_SHAS[0],
+            image_sha=FOO_POD_SHAS[0].split("@")[1],
         ),
         DeployTimeMetric(
             name=QUUX_APP,
             namespace=QUUX_NS,
             labels={APP_LABEL: QUUX_APP},
             deploy_time=quux_rep.metadata.creationTimestamp,
-            image_sha=STATUS_CONTAINER_SHAS[0],
+            image_sha=STATUS_CONTAINER_SHAS[0].split("@")[1],
         ),
     }
 
-    actual = set(collector.generate_metrics())
-
-    assert actual == expected
+    with patch("deploytime.app.get_owner_object_from_child") as owner_refs:
+        owner_refs.return_value = {
+            foo_rep_uid: foo_rep,
+            bar_rep_uid: bar_rep,
+            quux_rep_uid: quux_rep,
+        }
+        actual = set(collector.generate_metrics())
+        assert actual == expected
 
 
 @pytest.mark.xfail(reason="Bug with different rep kinds with same name and namespace")
@@ -267,10 +316,3 @@ def test_generate_reps_with_same_name() -> None:
     actual = list(collector.generate_metrics())
 
     assert actual == expected
-
-
-def test_image_sha() -> None:
-    SHA = "sha256:09d255154fe1e47b8d409130ae5db664d64a935b9845c5106d755b2837afa5ff"
-    assert image_sha(SHA) == SHA
-
-    assert image_sha("not a sha") is None

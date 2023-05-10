@@ -7,11 +7,14 @@ import attr
 class OwnerRef:
     kind: str
     name: str
+    uid: str
+    apiVersion: str
 
 
 @attr.define
 class Metadata:
     name: str
+    uid: Optional[str] = None
     namespace: Optional[str] = None
     ownerReferences: list[OwnerRef] = attr.Factory(list)
     labels: dict[str, str] = attr.Factory(dict)
@@ -49,10 +52,16 @@ class Pod:
 class Replicator:
     "Represents a ReplicationController or a ReplicaSet"
     kind: str
+    apiVersion: str
     metadata: Metadata
 
     def ref(self) -> OwnerRef:
-        return OwnerRef(kind=self.kind, name=self.metadata.name)
+        return OwnerRef(
+            kind=self.kind,
+            name=self.metadata.name,
+            uid=self.metadata.uid,
+            apiVersion=self.apiVersion,
+        )
 
 
 Item = TypeVar("Item")
