@@ -1,4 +1,4 @@
-name: Trigger test images
+name: Trigger test images (test)
 
 on:
   pull_request:
@@ -29,7 +29,15 @@ jobs:
               '"pr_number":"${{ github.event.number }}",' \
               '"commit_hash":"${{ needs.get-short-sha.outputs.sha }}"}' > trigger-information.json
 
-      - uses: actions/upload-artifact@v3
+      # - uses: actions/upload-artifact@v3
+      #   with:
+      #     name: trigger-information
+      #     path: ./trigger-information.json
+
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
-          name: trigger-information
-          path: ./trigger-information.json
+          ref: ${{ github.ref }}
+
+      - name: DEBUG
+        run: ls -1
