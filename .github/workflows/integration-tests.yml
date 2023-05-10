@@ -1,38 +1,59 @@
 name: Integration Tests
 on:
   workflow_run:
-    workflows: ["Pre Integration Tests"]
-    types:
-      - completed
+    workflows: [Trigger test images]
+    types: [completed]
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      branch_ref: ${{ steps.variables.outputs.branch_ref }}
+    steps:
+      - name: Download trigger information
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: trigger-test-images.yml
+          run_id: ${{ github.event.workflow_run.id }}
+          name: trigger-information
+          path: ./
+
+      - name: Store variables
+        id: variables
+        run: |
+          echo branch_ref=$(cat trigger-information.json | jq -r '.branch_ref') >> "$GITHUB_OUTPUT"
+
   integration-test:
     runs-on: ubuntu-latest
+    if: ${{ needs.setup.outputs.pr_type != 'closed' }}
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.9', '3.10', '3.11']
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.setup.outputs.branch_ref }}
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            **/requirements*.txt
+            pyproject.toml
 
-      - name: Download Artifact Docs
-        uses: dawidd6/action-download-artifact@v2.24.3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: pre-integration-tests.yml
-          run_id: ${{ github.event.workflow_run.id }}
-          name: builded-code-${{ matrix.python-version }}
-          path: ./
-
-      - name: Unzip builded code
-        run:
-          unzip builded-code-${{ matrix.python-version }}.zip
-          rm -f builded-code-${{ matrix.python-version }}.zip
+      - name: Install dependencies
+        run: make dev-env
 
       - name: Run integration-test
         env:
+          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
           PAGER_DUTY_TOKEN: ${{ secrets.PAGER_DUTY_TOKEN }}
+          AZURE_DEVOPS_TOKEN: ${{ secrets.AZURE_DEVOPS_TOKEN }}
         run: make integration-tests
