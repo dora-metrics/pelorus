@@ -36,6 +36,35 @@ def parse_assuming_utc(timestring: str, format: str) -> datetime:
         return parsed.replace(tzinfo=timezone.utc)
 
 
+def parse_assuming_utc_with_fallback(
+    timestring: str, format: str, format_fallback: str
+) -> datetime:
+    """
+    Parse timestring with fallback case.
+
+    Try to parse timestring (UTC only) with `format`, if it fails, try to parse
+    it again, using `format_fallback`.
+
+    Parameters
+    ----------
+    timestring : str
+        String to be parsed, in UTC format.
+    format : str
+        Default format.
+    format_fallback : str
+        Fallback format.
+
+    Returns
+    -------
+    datetime
+        Parsed timestring.
+    """
+    try:
+        return parse_assuming_utc(timestring, format)
+    except ValueError:
+        return parse_assuming_utc(timestring, format_fallback)
+
+
 def parse_tz_aware(timestring: str, format: str) -> datetime:
     """
     Parses a timestring that includes its timezone information.

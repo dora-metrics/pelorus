@@ -23,6 +23,7 @@ from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
 import pelorus
+from failure.collector_azure_devops import AzureDevOpsFailureCollector
 from failure.collector_base import AbstractFailureCollector
 from failure.collector_github import GithubFailureCollector
 from failure.collector_jira import JiraFailureCollector
@@ -35,6 +36,7 @@ PROVIDER_TYPES = {
     "github": GithubFailureCollector,
     "servicenow": ServiceNowFailureCollector,
     "pagerduty": PagerdutyFailureCollector,
+    "azure-devops": AzureDevOpsFailureCollector,
 }
 
 

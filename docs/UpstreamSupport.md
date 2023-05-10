@@ -34,6 +34,7 @@ with out CI integration will have an associated Github issue in CI status and St
 | GitHub  | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-github+)   | [Integration CI present](#integration-in-ci) |
 | Service Now | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-servicenow+) | [todo](https://github.com/dora-metrics/pelorus/issues/573) |
 | PagerDuty | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-pagerduty+) | [Integration CI present](#integration-in-ci) |
+| Azure DevOps  | [status link](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-azure-devops+)   | [Integration CI present](#integration-in-ci) |
 
 ### **Deploytime Exporter**
 |Backend |Known issues        |CI status    |

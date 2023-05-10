@@ -124,6 +124,7 @@ function print_help() {
     printf "\t\t  jira_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
     printf "\t\t  jira_custom_committime - Jira issue tracker - REQUIRES 'JIRA_USER=YOUR_JIRA_USER' AND 'JIRA_TOKEN=YOUR_JIRA_TOKEN' SECRETS\n"
     printf "\t\t  pagerduty_failure - PagerDuty issue tracker - REQUIRES 'PAGER_DUTY_TOKEN=YOUR_PAGER_DUTY_TOKEN' SECRET\n"
+    printf "\t\t  azure-devops_failure - Azure devops issue tracker - REQUIRES 'AZURE_DEVOPS_TOKEN=YOUR_AZURE_DEVOPS_TOKEN' SECRET\n"
     printf "\t\t  webhook - Webhook exporter\n"
     printf "\t\t  webhook_with_secret - Webhook exporter with '%s' SECRET_TOKEN\n" "${WEBHOOK_SECRET_TOKEN}"
 
@@ -152,6 +153,7 @@ ENABLE_AZURE_DEVOPS_COM_EXP=false
 ENABLE_JIRA_FAIL_EXP=false
 ENABLE_JIRA_CUSTOM_FAIL_EXP=false
 ENABLE_PAGERDUTY_FAIL_EXP=false
+ENABLE_AZURE_DEVOPS_FAIL_EXP=false
 ENABLE_THANOS=false
 WEBHOOK_EXP=false
 WEBHOOK_WITH_SECRET_EXP=false
@@ -202,6 +204,7 @@ if [ -n "${enable_exporters}" ]; then
     echo ",$enable_exporters," | grep -q ",jira_committime," && ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
     echo ",$enable_exporters," | grep -q ",jira_custom_committime," && ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
     echo ",$enable_exporters," | grep -q ",pagerduty_failure," && ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
+    echo ",$enable_exporters," | grep -q ",azure-devops_failure," && ENABLE_AZURE_DEVOPS_FAIL_EXP=true && echo "Enabling Azure devops failure exporter"
     echo ",$enable_exporters," | grep -q ",webhook," && WEBHOOK_EXP=true && echo "Enabling Webhook exporter"
     echo ",$enable_exporters," | grep -q ",webhook_with_secret," && WEBHOOK_WITH_SECRET_EXP=true && echo "Enabling Webhook exporter with '${WEBHOOK_SECRET_TOKEN}' SECRET_TOKEN"
 fi
@@ -215,6 +218,7 @@ if [ "${ENABLE_ALL_EXPORTERS}" == true ]; then
     ENABLE_JIRA_FAIL_EXP=true && echo "Enabling JIRA failure exporter"
     ENABLE_JIRA_CUSTOM_FAIL_EXP=true && echo "Enabling JIRA custom failure exporter"
     ENABLE_PAGERDUTY_FAIL_EXP=true && echo "Enabling PagerDuty failure exporter"
+    ENABLE_AZURE_DEVOPS_FAIL_EXP=true && echo "Enabling Azure devops failure exporter"
     WEBHOOK_EXP=true && echo "Enabling Webhook exporter"
     WEBHOOK_WITH_SECRET_EXP=true && echo "Enabling Webhook exporter with '${WEBHOOK_SECRET_TOKEN}' SECRET_TOKEN"
 fi
@@ -565,7 +569,7 @@ if [ "${ENABLE_JIRA_CUSTOM_FAIL_EXP}" == true ]; then
     fi
 fi
 
-# enable PagerDuty committime exporter
+# enable PagerDuty failure exporter
 if [ "${ENABLE_PAGERDUTY_FAIL_EXP}" == true ]; then
     secret_configured=$(create_k8s_secret pagerduty-secret PAGER_DUTY_TOKEN)
     secret_exit=$?
@@ -580,6 +584,20 @@ if [ "${ENABLE_PAGERDUTY_FAIL_EXP}" == true ]; then
     fi
 fi
 
+# enable Azure devops failure exporter
+if [ "${ENABLE_AZURE_DEVOPS_FAIL_EXP}" == true ]; then
+    secret_configured=$(create_k8s_secret azure-devops-secret AZURE_DEVOPS_TOKEN)
+    secret_exit=$?
+    echo "${secret_configured}"
+    if [[ $secret_exit != 0 ]]; then
+        exit 1
+    fi
+    # uncomment the Azure devops failure exporter in ci_values.yaml
+    if [[ "$secret_configured" == *true ]]; then
+        sed -i.bak "s/#azure-devops_failure@//g" "${DWN_DIR}/ci_values.yaml"
+        echo "The pelorus Azure devops failure exporter has been enabled"
+    fi
+fi
 
 # enable Webhook exporter
 if [ "${WEBHOOK_EXP}" == true ]; then

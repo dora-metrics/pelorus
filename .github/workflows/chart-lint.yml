@@ -3,21 +3,21 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'pelorus-operator/**'
+      - 'exporters/**'
       - 'charts/**'
-      - 'lintconf.yaml'
+      - 'pelorus-operator/**'
       - '.github/workflows/chart-lint.yml'
-      - 'exporters/'
+      - 'lintconf.yaml'
       - 'Makefile'
 
   pull_request:
     branches: [ master ]
     paths:
-      - 'pelorus-operator/**'
+      - 'exporters/**'
       - 'charts/**'
-      - 'lintconf.yaml'
+      - 'pelorus-operator/**'
       - '.github/workflows/chart-lint.yml'
-      - 'exporters/'
+      - 'lintconf.yaml'
       - 'Makefile'
 
 jobs:
