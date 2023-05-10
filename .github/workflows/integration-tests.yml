@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       branch_ref: ${{ steps.variables.outputs.branch_ref }}
+      pr_type: ${{ steps.variables.outputs.pr_type }}
     steps:
       - name: Download trigger information
         uses: dawidd6/action-download-artifact@v2
@@ -23,6 +24,7 @@ jobs:
         id: variables
         run: |
           echo branch_ref=$(cat trigger-information.json | jq -r '.branch_ref') >> "$GITHUB_OUTPUT"
+          echo pr_type=$(cat trigger-information.json | jq -r '.pr_type') >> "$GITHUB_OUTPUT"
 
   integration-test:
     runs-on: ubuntu-latest
