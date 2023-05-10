@@ -1,4 +1,4 @@
-name: Trigger test images (test)
+name: Trigger test images
 
 on:
   pull_request:
@@ -25,19 +25,12 @@ jobs:
     steps:
       - name: Create json file
         run: |
-          echo '{"pr_type":"${{ github.event.action }}",' \
+          echo '{"branch_ref":"${{ github.ref }}",' \
+              '"pr_type":"${{ github.event.action }}",' \
               '"pr_number":"${{ github.event.number }}",' \
               '"commit_hash":"${{ needs.get-short-sha.outputs.sha }}"}' > trigger-information.json
 
-      # - uses: actions/upload-artifact@v3
-      #   with:
-      #     name: trigger-information
-      #     path: ./trigger-information.json
-
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/upload-artifact@v3
         with:
-          ref: ${{ github.ref }}
-
-      - name: DEBUG
-        run: ls -1
+          name: trigger-information
+          path: ./trigger-information.json

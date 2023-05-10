@@ -12,6 +12,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
+      branch_ref: ${{ steps.variables.outputs.branch_ref }}
       pr_type: ${{ steps.variables.outputs.pr_type }}
       pr_number: ${{ steps.variables.outputs.pr_number }}
       commit_hash: ${{ steps.variables.outputs.commit_hash }}
@@ -28,6 +29,7 @@ jobs:
       - name: Store variables
         id: variables
         run: |
+          echo branch_ref=$(cat trigger-information.json | jq -r '.branch_ref') >> "$GITHUB_OUTPUT"
           echo pr_type=$(cat trigger-information.json | jq -r '.pr_type') >> "$GITHUB_OUTPUT"
           echo pr_number=$(cat trigger-information.json | jq -r '.pr_number') >> "$GITHUB_OUTPUT"
           echo commit_hash=$(cat trigger-information.json | jq -r '.commit_hash') >> "$GITHUB_OUTPUT"
@@ -52,6 +54,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.setup.outputs.branch_ref }}
 
       - name: Build exporter test image
         id: build-exporter
