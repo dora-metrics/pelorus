@@ -25,7 +25,8 @@ jobs:
     steps:
       - name: Create json file
         run: |
-          echo '{"pr_type":"${{ github.event.action }}",' \
+          echo '{"branch_ref":"${{ github.ref }}",' \
+              '"pr_type":"${{ github.event.action }}",' \
               '"pr_number":"${{ github.event.number }}",' \
               '"commit_hash":"${{ needs.get-short-sha.outputs.sha }}"}' > trigger-information.json
 
