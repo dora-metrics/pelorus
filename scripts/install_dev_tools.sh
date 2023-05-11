@@ -298,6 +298,5 @@ fi
 
 if should_cli_be_installed "poetry" "${cli_tools_arr[@]}" && \
     ! [ -x "$(command -v "${DEFAULT_VENV}/bin/poetry")" ]; then
-        echo "é isso aqui ó $DEFAULT_VENV"
-        curl -sSL https://install.python-poetry.org | POETRY_HOME=$DEFAULT_VENV python3 -
+        curl -sSL https://install.python-poetry.org | POETRY_HOME="$DEFAULT_VENV" python3 -
 fi

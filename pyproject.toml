@@ -2,13 +2,7 @@
 name = "pelorus"
 version = "0.1.0" # we are not using it yet
 description = "Automate the measurement of organizational behavior"
-authors = [
-    "etsauer",
-    "KevinMGranger",
-    "mateusoliveira43",
-    "mpryc",
-    "weshayutin"
-]
+authors = ["Pelorus community"]
 readme = "README.md"
 
 [tool.poetry.dependencies]

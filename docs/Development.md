@@ -82,6 +82,7 @@ The project uses [Poetry](https://python-poetry.org/) to manage the Python depen
 To add a Python dependency, run
 ```
 poetry add package_name
+make update-requirements
 ```
 This will add it to the required dependencies group. To add it to another group, use `-G` flag.
 
@@ -92,6 +93,7 @@ For more information, run `poetry add --help` or check [documentation](https://p
 To update a Python dependency, run
 ```
 poetry update package_name
+make update-requirements
 ```
 
 For more information, run `poetry update --help` or check [documentation](https://python-poetry.org/docs/cli/#update).
@@ -103,16 +105,10 @@ For more information, run `poetry update --help` or check [documentation](https:
 To remove a Python dependency, run
 ```
 poetry remove package_name
+make update-requirements
 ```
 
 For more information, run `poetry remove --help` or check [documentation](https://python-poetry.org/docs/cli/#remove).
-
-### Update requirements files
-
-To update Python requirements files of the project, after running Poetry add, update or remove command, run
-```
-make update-requirements
-```
 
 ## Contributing to Deployment Automation
 
