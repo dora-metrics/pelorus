@@ -30,7 +30,7 @@ theme:
     - navigation.tabs
     - navigation.top
     - navigation.instant
-  custom_dir: overrides
+  custom_dir: docs/custom
 extra_css:
   - stylesheets/extra.css
 markdown_extensions:
@@ -85,5 +85,3 @@ plugins:
            'Configuration.md': 'GettingStarted/configuration/PelorusCore.md'
            'Install.md': 'GettingStarted/configuration/ProductionBestPractice.md'
            'Demo.md': 'GettingStarted/QuickstartTutorial.md'
-watch:
-- overrides

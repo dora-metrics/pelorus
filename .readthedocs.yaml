@@ -1,9 +1,12 @@
 version: 2
 
+mkdocs:
+  configuration: mkdocs.yml
+
 build:
-  os: "ubuntu-20.04"
+  os: "ubuntu-22.04"
   tools:
-    python: "3.10"
+    python: "3.11"
   jobs:
     post_build:
       - find _readthedocs/html
@@ -12,6 +15,3 @@ build:
 python:
   install:
     - requirements: docs/requirements.txt
-
-mkdocs:
- configuration: mkdocs.yml

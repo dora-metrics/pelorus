@@ -264,6 +264,13 @@ pre-commit-all: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	pre-commit run --all-files
 
+## update-requirements: Updates project's Python dependencies files. Requires Poetry executable
+update-requirements: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	poetry export --format requirements.txt --output docs/requirements.txt --only doc && \
+	poetry export --format requirements.txt --output exporters/requirements-dev.txt --only dev && \
+	poetry export --format requirements.txt --output exporters/requirements.txt
+
 # Cleanup
 
 ## clean-dev-env: remove the virtual environment and clean up all .pyc files

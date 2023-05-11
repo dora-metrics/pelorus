@@ -73,6 +73,43 @@ Within the Pelorus GitHub fork directory:
 
        To ensure the implementation's pull request is merged **after** the ADR's PR it is recommended to add `Depends on: #ADR_PULL_REQUEST_NUMBER` as the first comment on the implementation PRs. Please follow the [dpulls](https://www.dpulls.com/docs#/dependencies) for more information.
 
+## Python dependencies
+
+The project uses [Poetry](https://python-poetry.org/) to manage the Python dependencies
+
+### Add a Python dependency
+
+To add a Python dependency, run
+```
+poetry add package_name
+make update-requirements
+```
+This will add it to the required dependencies group. To add it to another group, use `-G` flag.
+
+For more information, run `poetry add --help` or check [documentation](https://python-poetry.org/docs/cli/#add).
+
+### Update a Python dependency
+
+To update a Python dependency, run
+```
+poetry update package_name
+make update-requirements
+```
+
+For more information, run `poetry update --help` or check [documentation](https://python-poetry.org/docs/cli/#update).
+
+>**Note:** This should be CI responsibility.
+
+### Remove a Python dependency
+
+To remove a Python dependency, run
+```
+poetry remove package_name
+make update-requirements
+```
+
+For more information, run `poetry remove --help` or check [documentation](https://python-poetry.org/docs/cli/#remove).
+
 ## Contributing to Deployment Automation
 
 We use [Helm](https://helm.sh) to provide an automated deployment and configuration experience for Pelorus. We are always doing work to cover more and more complex use cases with our helm charts. In order to be able to effectively contribute to these charts, you'll need a cluster that satisfies all of the installation prerequisites for Pelorus.
