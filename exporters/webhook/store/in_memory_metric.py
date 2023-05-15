@@ -142,7 +142,6 @@ class PelorusGaugeMetricFamily(GaugeMetricFamily):
                 super().add_metric(*args, **kwargs)
                 self.added_metrics.add(metric_id)
 
-    # TODO: Needed?
     def __iter__(self, *args, **kwargs):
         with self.lock:
             for item in super().__iter__(*args, **kwargs):
