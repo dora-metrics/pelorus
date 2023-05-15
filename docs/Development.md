@@ -723,29 +723,59 @@ You can do some rudimentary linting with `make chart-lint`.
 
 We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.
 
-## Release Management Process
+## Versioning Process
 
-The following is a walkthrough of the process we follow to create and manage versioned releases of Pelorus.
-Pelorus release versions follow SemVer versioning conventions. Change of the version is managed via Makefile.
+Pelorus has the following versions
 
-1. Create Pelorus Pull Request with the release you're about to make.
+- [repository](https://github.com/dora-metrics/pelorus/releases)
+- [exporters](https://quay.io/organization/pelorus)
+- helm-charts
+    - [pelorus (and exporters subchart)](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/Chart.yaml)
+    - [operators](https://github.com/dora-metrics/pelorus/blob/master/charts/operators/Chart.yaml)
+- [operator](https://github.com/dora-metrics/pelorus/blob/master/pelorus-operator/bundle/manifests/pelorus-operator.clusterserviceversion.yaml#L511)
 
-    For PATCH version bump use:
+To simplify it, the repository, all exporters and all helm-charts versions are the same (which follow SemVer conventions) and each time one of them is bumped, the others are also bumped.
 
-        make release
+Pelorus versions should be bumped anytime a change to exporters code (`exporters` folder), or to helm-charts (`charts` folder) or even to operator code (`pelorus-operator` folder). This is enforced by the project CI.
 
-    For minor-release version:
+### update during development version
 
-        make minor-release
+After finishing a development change that modified any of the code that requires a version bump, run
+```
+make rc-release
+```
+to update the release candidate version.
 
-    For major-release version:
+### Create a release
 
-        make major-release
+To create a release on top of development changes, first create an issue for the release, using the [release issue template](https://github.com/dora-metrics/pelorus/issues/new?assignees=&labels=&projects=&template=release.yml&title=Release+of+Pelorus+Operator+version+%3CVERSION%3E).
 
-2. Propose Pull Request to the project github repository. Ensure that the PR is labeled with "minor" or "major" if one was created.
+Then, create a branch for the release you are about to make.
 
-3. After PR is merged on the [Pelorus releases](https://github.com/dora-metrics/pelorus/releases) page, click edit on the latest **Draft**.
-    * Click **Publish Release**.
+- If it is a PATCH version release, run
+    ```
+    make release
+    ```
+
+- If it is a MINOR version release, run
+    ```
+    make minor-release
+    ```
+
+- If it is a MAJOR version release, run
+    ```
+    make major-release
+    ```
+
+> A release pull request should only contain the changes from the respective make command
+
+Create the pull request, using the [release template](https://github.com/dora-metrics/pelorus/blob/master/.github/PULL_REQUEST_TEMPLATE/release_template.md).
+
+> If it a minor or major release, ensure that the pull Request is labeled with "minor" or "major" label.
+
+After the pull request is merged, on the [Pelorus releases](https://github.com/dora-metrics/pelorus/releases) page, click edit on the latest **Draft** and click **Publish Release** to make a GitHub release.
+
+To finish, review the PR opened by the CI in [community operators repository](https://github.com/redhat-openshift-ecosystem/community-operators-prod) and approve it to make the operator available in OpenShift marketplace.
 
 ## Testing the Docs
 

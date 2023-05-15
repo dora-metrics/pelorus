@@ -40,26 +40,42 @@ function print_help() {
     printf "\n\tOptions:\n"
     printf "\t  -s\tpath to source pelorus helm charts folder, default: %s\n" "${DEFAULT_PELORUS_CHARTS_DIR}"
     printf "\t  -d\tpath to destination folder, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_DIR}"
-    printf "\t  -f\tforce, removes destination folder that must be named pelorus-operator before proceeding\n"
     printf "\t  -p\tpath to DIR with operator patches to be applied, default: %s\n" "${DEFAULT_PELORUS_OPERATOR_PATCHES_DIR}"
-    printf "\t  -v\toperator version to be used in a format x.y.z. If not set z+1 is used.\n"
     printf "\t  -o\tQuay user/org name, default to pelorus, which is the production storage.\n"
+    printf "\t  -f\tforce, removes destination folder that must be named pelorus-operator before proceeding\n"
+    printf "\t  -x\tbump X part of the version (Y and Z are set to 0, so X.0.0)\n"
+    printf "\t  -y\tbump Y version (Z will start at 0, so X.Y.0)\n"
+    printf "\t  -z\tbump Z version (Z in the X.Y.Z)\n"
+    printf "\t  -n\tbump RC number (N in X.Y.Z-rc.N)\n"
     exit 0
 }
 
+OPTIONS_COUNTER=0
+
 ### Options
 OPTIND=1
-while getopts "fs:d:p:h?v:o:" option; do
+while getopts "fs:d:p:h?xyzno:" option; do
     case "$option" in
     h|\?) print_help;;
     s)    source_dir=$OPTARG;;
     d)    destination_dir=$OPTARG;;
     p)    patches_dir=$OPTARG;;
-    v)    operator_ver=$OPTARG;;
     o)    quay_user=$OPTARG;;
     f)    force="$TRUE";;
+    x)    x_ver="$TRUE"; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
+    y)    y_ver="$TRUE"; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
+    z)    z_ver="$TRUE"; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
+    n)    rc_ver="$TRUE"; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
     esac
 done
+
+if [ $OPTIONS_COUNTER -eq 0 ]; then
+    printf "\nERROR: No options were provided.\n"
+    exit 1
+elif [ $OPTIONS_COUNTER -gt 1 ]; then
+    printf "\nERROR: Provide only one option.\n"
+    exit 1
+fi
 
 # Check preconditions
 if ! oc auth can-i '*' '*' --all-namespaces &> /dev/null; then
@@ -106,7 +122,6 @@ if [ ! -d "${source_dir}" ]; then
     exit 2
 fi
 
-
 # Check if the destination directory path ends with /pelorus-operator/
 if [[ "${destination_dir}" == *"/pelorus-operator/" && $force ]]; then
     echo "INFO: Removing operator directory: ${destination_dir}"
@@ -136,19 +151,43 @@ pushd "${destination_dir}" || exit 2
     rm helm-charts/pelorus/charts/*.tgz
 
     # Correct operator version, to be latest +1
-    OPERATOR_VERSIONS=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" | jq ".tags[] | select(.end_ts == null) | .name" | sed -e 's|\"||g' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' -o | sort -t. -nrk1,1 -nrk2,2 -nrk3,3)
+    OPERATOR_VERSIONS=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" 2> /dev/null | jq ".tags[] | select(.end_ts == null) | .name" | sed -e 's|\"||g' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' -o | sort -t. -nrk1,1 -nrk2,2 -nrk3,3)
     OPERATOR_VERSION=$(echo "$OPERATOR_VERSIONS" | head -1 )
     echo "INFO: Current operator version: ${OPERATOR_VERSION}"
 
-    if [ -z ${operator_ver+x} ]; then
-        NEW_OPERATOR_VERSION=$(echo "${OPERATOR_VERSION}" | awk -F. -v OFS=. '{$NF += 1 ; print}')
-        # Case where operator was never in the repo
-        if [ "$NEW_OPERATOR_VERSION" -eq "1" ]; then
-          NEW_OPERATOR_VERSION=0.0.1
+    OPERATOR_MAKEFILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/pelorus-operator/Makefile 2> /dev/null)"
+    OPERATOR_VERSION_IN_MASTER=$(echo "$OPERATOR_MAKEFILE_IN_MASTER" | grep "VERSION ?= " | cut -c 12-)
+    # shellcheck disable=SC2207
+    CURRENT_VERSION_ARRAY=( $(echo "$OPERATOR_VERSION_IN_MASTER" | sed "s/-rc//g" | tr ' . '  '  ') )
+    V_X_VER=${CURRENT_VERSION_ARRAY[0]}
+    V_Y_VER=${CURRENT_VERSION_ARRAY[1]}
+    V_Z_VER=${CURRENT_VERSION_ARRAY[2]}
+    V_RC_VER=${CURRENT_VERSION_ARRAY[3]}
+
+    RC_SUFFIX=""
+    if [[ $x_ver ]]; then
+        V_X_VER=$(( V_X_VER +  1 ))
+        V_Y_VER="0"
+        V_Z_VER="0"
+    elif [[ $y_ver ]]; then
+        V_Y_VER=$(( V_Y_VER +  1 ))
+        V_Z_VER="0"
+    elif [[ $z_ver ]]; then
+        # Only bump the Z version if -rc.N was missing
+        # Otherwise remove the -rc.N as it's our next release
+        if [[ -z "${V_RC_VER}" ]]; then
+            V_Z_VER=$(( V_Z_VER +  1 ))
         fi
-    else
-        NEW_OPERATOR_VERSION="${operator_ver}"
+    elif [[ $rc_ver ]]; then
+        if [[ -z "${V_RC_VER}" ]]; then
+            # Start from the first RC number of the next Z release
+            V_RC_VER=1
+        else
+            V_RC_VER=$(( V_RC_VER +  1 ))
+        fi
+        RC_SUFFIX="-rc.${V_RC_VER}"
     fi
+    NEW_OPERATOR_VERSION="$V_X_VER.$V_Y_VER.$V_Z_VER$RC_SUFFIX"
 
     sed -i "s/VERSION ?= 0.0.1/VERSION ?= ${NEW_OPERATOR_VERSION}/g" Makefile || exit 2
 

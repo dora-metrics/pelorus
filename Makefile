@@ -111,16 +111,19 @@ e2e-tests-dev-env: $(PELORUS_VENV)
 
 major-release:
 	./scripts/create_release_pr.sh -x
+	./scripts/create_pelorus_operator.sh -f -x
 
 minor-release:
 	./scripts/create_release_pr.sh -y
+	./scripts/create_pelorus_operator.sh -f -y
 
 release:
 	./scripts/create_release_pr.sh -z
-	./scripts/create_pelorus_operator.sh -f
+	./scripts/create_pelorus_operator.sh -f -z
 
 rc-release:
 	./scripts/create_release_pr.sh -n
+	./scripts/create_pelorus_operator.sh -f -n
 
 .PHONY: mockoon-tests
 mockoon-tests: $(PELORUS_VENV)

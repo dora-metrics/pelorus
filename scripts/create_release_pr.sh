@@ -36,13 +36,11 @@
 #   |   v2.0.8-rc.4   |      -z       |       v2.0.8      |
 #   |     v2.0.8      |      -n       |     v2.0.9-rc.1   |
 #   |   v2.0.8-rc.4   |      -n       |     v2.0.8-rc.5   |
-#   |   v2.0.8-rc.4   | -v 4.1.2-rc.7 |     v4.1.2-rc.7   |
 
 # Required to get the latest released tag
 PELORUS_API_URL="https://api.github.com/repos/dora-metrics/pelorus"
 PELORUS_LATEST_API_URL="${PELORUS_API_URL}/releases/latest"
 PELORUS_MASTER_API_URL="${PELORUS_API_URL}/commits/master"
-# BUILDCONFIG_PATH="charts/pelorus/charts/exporters/templates/_buildconfig.yaml"
 DEPLOYMENTCONFIG_PATH="charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml"
 IMAGESTREAM_PATH="charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml"
 PELORUS_CHART="charts/pelorus/Chart.yaml"
@@ -62,8 +60,6 @@ function print_help() {
     printf "\t  -y\tbump Y version (Z will start at 0, so X.Y.0)\n"
     printf "\t  -z\tbump Z version (Z in the X.Y.Z)\n"
     printf "\t  -n\tbump RC number (N in X.Y.Z-rc.N)\n"
-    printf "\t  -v\tuse exact version\n"
-    printf "\nExample: %s -v 2.0.5-rc.3\n\n" "$0"
 
     exit 0
 }
@@ -72,14 +68,13 @@ OPTIONS_COUNTER=0
 
 ### Options
 OPTIND=1
-while getopts "h?xyznv:" option; do
+while getopts "h?xyzn" option; do
     case "$option" in
     h|\?) print_help;;
     x) x_ver="$TRUE"; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
     y) y_ver="$TRUE"; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
     z) z_ver="$TRUE"; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
     n) rc_ver="$TRUE"; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
-    v) exact_ver=$OPTARG; OPTIONS_COUNTER=$((OPTIONS_COUNTER + 1));;
     esac
 done
 
@@ -106,60 +101,56 @@ if ! git cat-file -e "$UPSTREAM_MASTER_SHA"; then
     exit 1
 fi
 
-# No exact version passed, calculating version
-if [ -z ${exact_ver+x} ]; then
-  LAST_RELEASED_TAG=$(curl -s "${PELORUS_LATEST_API_URL}" | jq -r '.tag_name')
-  echo "Debug: LAST_RELEASED_TAG (upstream): ${LAST_RELEASED_TAG}"
-  if [ "$LAST_RELEASED_TAG" == "null" ]; then
-      echo "ERROR: Problem with querying GITHUB API (rate limit?), reason:"
-      curl -s "${PELORUS_LATEST_API_URL}"
-      exit 1
-  fi
-  # shellcheck disable=SC2207
-  V_RELEASED=( $(echo "$LAST_RELEASED_TAG" | sed 's/v//g' | sed 's/-rc//g'  | tr ' . '  '  ') )
-  echo "Debug: V_RELEASED (upstream):" "${V_RELEASED[@]}"
 
-  V_X_VER=${V_RELEASED[0]}
-  V_Y_VER=${V_RELEASED[1]}
-  V_Z_VER=${V_RELEASED[2]}
-
-  # RC found in tag
-  V_RC=${V_RELEASED[3]}
-  RC_SUFFIX=""
-
-  # From all versions within all Chart.yaml files: X.Y.Z-rc.N find the highest N
-  HIGHEST_RC_VER=$(find charts/ -name "Chart.yaml" -type f -exec grep -hoP 'version:\s*v?\d+\.\d+\.\d+-rc.\K\d+' {} \; | sort -rn | head -n 1)
-  echo "Debug: HIGHEST_RC_VER (local): ${HIGHEST_RC_VER}"
-
-  echo "Current version (upstream): $LAST_RELEASED_TAG"
-
-  if [[ $x_ver ]]; then
-    V_X_VER=$(( V_X_VER +  1 ))
-    V_Y_VER="0"
-    V_Z_VER="0"
-  elif [[ $y_ver ]]; then
-    V_Y_VER=$(( V_Y_VER +  1 ))
-    V_Z_VER="0"
-  elif [[ $z_ver ]]; then
-    # Only bump the Z version if -rc.N was missing
-    # Otherwise remove the -rc.N as it's our next release
-    if [[ -z "${V_RC}" ]]; then
-      V_Z_VER=$(( V_Z_VER +  1 ))
-    fi
-  elif [[ $rc_ver ]]; then
-    if [[ -z "${V_RC}" ]]; then
-      # Start from the first RC number of the next Z release
-      V_Z_VER=$(( V_Z_VER +  1 ))
-      V_RC=1
-    else
-      V_RC=$(( V_RC +  1 ))
-    fi
-    RC_SUFFIX="-rc.${V_RC}"
-  fi
-  SEMVER="$V_X_VER.$V_Y_VER.$V_Z_VER$RC_SUFFIX"
-else
-  SEMVER="$exact_ver"
+LAST_RELEASED_TAG=$(curl -s "${PELORUS_LATEST_API_URL}" | jq -r '.tag_name' | sed 's/v//g')
+echo "Current released version (upstream): ${LAST_RELEASED_TAG}"
+if [ "$LAST_RELEASED_TAG" == "null" ]; then
+    echo "ERROR: Problem with querying GITHUB API (rate limit?), reason:"
+    curl -s "${PELORUS_LATEST_API_URL}"
+    exit 1
 fi
+# shellcheck disable=SC2207
+V_RELEASED=( $(echo "$LAST_RELEASED_TAG" | tr ' . '  '  ') )
+# echo "Debug: V_RELEASED (upstream):" "${V_RELEASED[@]}"
+
+V_X_VER=${V_RELEASED[0]}
+V_Y_VER=${V_RELEASED[1]}
+V_Z_VER=${V_RELEASED[2]}
+
+RC_SUFFIX=""
+
+CHART_FILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/charts/pelorus/Chart.yaml 2> /dev/null)"
+CURRENT_VERSION=$(echo "$CHART_FILE_IN_MASTER" | grep '^version: ' | cut -c 10-)
+# shellcheck disable=SC2207
+CURRENT_VERSION_ARRAY=( $(echo "$CURRENT_VERSION" | tr ' . '  '  ') )
+V_RC_VER=${CURRENT_VERSION_ARRAY[3]}
+# echo "Debug: V_RC_VER (local): ${V_RC_VER}"
+echo "Current version (upstream): $CURRENT_VERSION"
+
+if [[ $x_ver ]]; then
+  V_X_VER=$(( V_X_VER +  1 ))
+  V_Y_VER="0"
+  V_Z_VER="0"
+elif [[ $y_ver ]]; then
+  V_Y_VER=$(( V_Y_VER +  1 ))
+  V_Z_VER="0"
+elif [[ $z_ver ]]; then
+  # Only bump the Z version if -rc.N was missing
+  # Otherwise remove the -rc.N as it's our next release
+  if [[ -z "${V_RC_VER}" ]]; then
+    V_Z_VER=$(( V_Z_VER +  1 ))
+  fi
+elif [[ $rc_ver ]]; then
+  V_Z_VER=$(( V_Z_VER +  1 ))
+  if [[ -z "${V_RC_VER}" ]]; then
+    # Start from the first RC number of the next Z release
+    V_RC_VER=1
+  else
+    V_RC_VER=$(( V_RC_VER +  1 ))
+  fi
+  RC_SUFFIX="-rc.${V_RC_VER}"
+fi
+SEMVER="$V_X_VER.$V_Y_VER.$V_Z_VER$RC_SUFFIX"
 
 echo "Version to be released: v$SEMVER"
 
@@ -181,10 +172,11 @@ sed -i "/quay.io/ s/\({{ \.image_tag \| default \)\"[^\"]*\"\( \)\?/\1\"v$SEMVER
 # Replace deploymentconfig, but only within the line that includes "value"
 sed -i "/value/ s/\({{ \.image_tag \| default \)\"[^\"]*\"\( \)\?/\1\"v$SEMVER\"\2/g" "$DEPLOYMENTCONFIG_PATH"
 
-# Update branch in the Development documentation
-sed -i "s/\(release number, for example \`\).*\(\`\.\)/\1v$SEMVER\2/g" "$INSTALL_DOC"
-sed -i "s/\(image_tag: \).*\( # Specific release\)/\1v$SEMVER\2/g" "$INSTALL_DOC"
-
+if ! [[ $rc_ver ]]; then
+  # Update branch in the Development documentation
+  sed -i "s/\(release number, for example \`\).*\(\`\.\)/\1v$SEMVER\2/g" "$INSTALL_DOC"
+  sed -i "s/\(image_tag: \).*\( # Specific release\)/\1v$SEMVER\2/g" "$INSTALL_DOC"
+fi
 
 #### Verification if the changes were actually applied
 #### The verification check how many versions are found in the expected files
@@ -206,26 +198,33 @@ if [ "$NO_VERSIONS" -ne 1 ]; then
   exit 1
 fi
 
-# docs/Development.md should have exactly 2 places with the updated version
-NO_VERSIONS=$(grep -c "v$SEMVER" "$INSTALL_DOC")
-if [ "$NO_VERSIONS" -ne 2 ]; then
-  echo "ERROR: Unexpected changes in the: $INSTALL_DOC"
-  exit 1
+if ! [[ $rc_ver ]]; then
+  # docs/Development.md should have exactly 2 places with the updated version
+  NO_VERSIONS=$(grep -c "v$SEMVER" "$INSTALL_DOC")
+  if [ "$NO_VERSIONS" -ne 2 ]; then
+    echo "ERROR: Unexpected changes in the: $INSTALL_DOC"
+    exit 1
+  fi
 fi
 
-# docs/Development.md should have exactly 2 places with the updated version
+# _deploymentconfig.yaml should have exactly  only one version updated
 NO_VERSIONS=$(grep -c "v$SEMVER" "$DEPLOYMENTCONFIG_PATH")
 if [ "$NO_VERSIONS" -ne 1 ]; then
   echo "ERROR: Unexpected changes in the: $DEPLOYMENTCONFIG_PATH"
   exit 1
 fi
 
-printf "\nIMPORTANT:\n\t Update the operator files using ./scripts/create_pelorus_operator.sh script.\n\n"
+helm dep update charts/pelorus &> /dev/null
+rm -r charts/pelorus/charts/*.tgz &> /dev/null
 
 if [[ $x_ver ]]; then
-  printf "\nIMPORTANT:\n\t Do include \"major release\" text in the first line of your commit message, or label your PR with: \"major\"\n\n"
+  printf "\nIMPORTANT:\n\t Do label your PR with: \"major\"\n\n"
 elif [[ $y_ver ]]; then
-  printf "\nIMPORTANT:\n\t Do include \"minor release\" text in the first line of your commit message, or label your PR with: \"minor\"\n\n"
-else
-  printf "\nIMPORTANT:\n\t If it's minor or major version change do include \"minor release\" or \"major release\" text in the first line of your commit message, or label your PR with: \"minor\" or \"major\" \n\n"
+  printf "\nIMPORTANT:\n\t Do label your PR with: \"minor\"\n\n"
 fi
+
+if ! [[ $rc_ver ]]; then
+  printf "\nIMPORTANT:\n\t This change will result in a new release\n\n"
+fi
+
+# TODO merge this script with scripts/create_pelorus_operator.sh
