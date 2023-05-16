@@ -88,10 +88,10 @@ jobs:
 
       - name: Update fork repo
         run: |
-          git remote add upstream git@github.com:redhat-openshift-ecosystem/community-operators-prod.git
+          git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
           git fetch upstream
           git rebase upstream/main
-          git push
+          git push origin main
 
       - name: Create branch
         run: |
@@ -110,7 +110,7 @@ jobs:
         run: |
           git add -A
           git commit --signoff -m "operator pelorus-operator (${{ needs.setup.outputs.version }})"
-          git push pelorus-operator-${{ needs.setup.outputs.version }}
+          git push origin pelorus-operator-${{ needs.setup.outputs.version }}
 
       - name: Create PR
         uses: "./.github/workflow_templates/create-market-place-pr"
