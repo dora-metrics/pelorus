@@ -1,1 +1,113 @@
-# TODO on release PR close -> create operator images in quay and open PR in market place repo
+name: Continuous Delivery - Operator
+
+on:
+  # push:
+  # TODO remove pull_request
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'exporters/**'
+      - 'charts/**'
+      - 'pelorus-operator/**'
+      - '.github/workflows/cd.yml'
+
+env:
+  # TODO create bot account
+  FORK: mateusoliveira43
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.variables.outputs.is_release }}
+      version: ${{ steps.variables.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: operator-code
+          path: pelorus-operator/bundle
+
+      - name: Store variables
+        id: variables
+        run: |
+          export CURRENT_OPERATOR_VERSION="$(grep "VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
+          echo is_release=$(if [[ $CURRENT_OPERATOR_VERSION == *"rc"* ]];then echo "false";else echo "true";fi) >> "$GITHUB_OUTPUT"
+          echo version=$CURRENT_OPERATOR_VERSION >> "$GITHUB_OUTPUT"
+
+  # TODO uncomment
+  # create-images:
+  #   runs-on: ubuntu-latest
+  #   if: ${{ needs.setup.outputs.is_release }}
+  #   needs: setup
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+
+  #     - name: Log in to Quay.io
+  #       uses: redhat-actions/podman-login@v1
+  #       with:
+  #         username: ${{ secrets.QUAY_USERNAME }}
+  #         password: ${{ secrets.QUAY_PASSWORD }}
+  #         registry: quay.io
+
+  #     - name: Build and push operator image
+  #       working-directory: ./pelorus-operator
+  #       run: |
+  #         make podman-build
+  #         make podman-push
+
+  #     - name: Build and push operator bundle image
+  #       working-directory: ./pelorus-operator
+  #       run: |
+  #         make bundle-build
+  #         make bundle-push
+
+  create-pr:
+    runs-on: ubuntu-latest
+    if: ${{ needs.setup.outputs.is_release }}
+    needs: setup
+    # TODO uncomment
+    # needs: [setup, create-images]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.FORK }}/community-operators-prod
+          token: ${{ secrets.FORK_TOKEN }}
+
+      - name: Update fork repo
+        run: |
+          git remote add upstream git@github.com:redhat-openshift-ecosystem/community-operators-prod.git
+          git fetch upstream
+          git rebase upstream/main
+          git push
+
+      - name: Create branch
+        run: |
+          git checkout -b pelorus-operator-${{ needs.setup.outputs.version }}
+          mkdir -p operators/pelorus-operator/${{ needs.setup.outputs.version }}
+
+      - name: Download operator code
+        uses: actions/download-artifact@v3
+        with:
+          name: operator-code
+          path: operators/pelorus-operator/${{ needs.setup.outputs.version }}
+          # TODO remove
+          # cp -r ../pelorus/pelorus-operator/bundle/* operators/pelorus-operator/${{ needs.setup.outputs.version }}
+
+      - name: Push branch
+        run: |
+          git add -A
+          git commit --signoff -m "operator pelorus-operator (${{ needs.setup.outputs.version }})"
+          git push pelorus-operator-${{ needs.setup.outputs.version }}
+
+      - name: Create PR
+        uses: "./.github/workflow_templates/create-market-place-pr"
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ needs.setup.outputs.version }}
+          fork: ${{ env.FORK }}

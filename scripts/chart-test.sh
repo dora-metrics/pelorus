@@ -34,7 +34,7 @@ fi
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
 
 ct lint --remote "$REMOTE" --config ct.yaml || exit 1
-rm charts/pelorus/charts/*.tgz
+rm charts/pelorus/charts/*.tgz &> /dev/null
 
 if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml &> /dev/null; then
   echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml differs!"
@@ -92,4 +92,17 @@ if ! git --no-pager diff --quiet $REMOTE/master --name-status charts/; then
     echo "ERROR: Charts were modified, Operator needs version bumping!"
     exit 1
   fi
+fi
+
+# Check if both release candidate versions are the same
+# This also enforces that versions are both rc or both release
+# shellcheck disable=SC2207
+CURRENT_CHART_VERSION_ARRAY=( $(echo "$CURRENT_CHART_VERSION" | tr ' \-rc '  '  ') )
+CURRENT_CHART_VERSION_RC_VER=${CURRENT_CHART_VERSION_ARRAY[1]}
+# shellcheck disable=SC2207
+CURRENT_OPERATOR_VERSION_ARRAY=( $(echo "$CURRENT_OPERATOR_VERSION" | tr ' \-rc '  '  ') )
+CURRENT_OPERATOR_VERSION_RC_VER=${CURRENT_OPERATOR_VERSION_ARRAY[1]}
+if [ "$CURRENT_CHART_VERSION_RC_VER" != "$CURRENT_OPERATOR_VERSION_RC_VER" ]; then
+  echo "ERROR: Release candidate versions differs between charts (rc$CURRENT_CHART_VERSION_RC_VER) and operator (rc$CURRENT_OPERATOR_VERSION_RC_VER)!"
+  exit 1
 fi
