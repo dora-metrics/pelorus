@@ -68,7 +68,7 @@ jobs:
 
   create-pr:
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.outputs.is_release }}
+    if: ${{ fromJSON(needs.setup.outputs.is_release) }}
     needs: setup
     # TODO uncomment
     # needs: [setup, create-images]
