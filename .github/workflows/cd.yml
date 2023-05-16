@@ -36,12 +36,13 @@ jobs:
         run: |
           export CURRENT_OPERATOR_VERSION="$(grep "VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
           echo is_release=$(if [[ $CURRENT_OPERATOR_VERSION == *"rc"* ]];then echo "false";else echo "true";fi) >> "$GITHUB_OUTPUT"
+          echo is_release=true >> "$GITHUB_OUTPUT"
           echo version=$CURRENT_OPERATOR_VERSION >> "$GITHUB_OUTPUT"
 
   # TODO uncomment
   # create-images:
   #   runs-on: ubuntu-latest
-  #   if: ${{ needs.setup.outputs.is_release }}
+  #   if: ${{ fromJSON(needs.setup.outputs.is_release) }}
   #   needs: setup
   #   steps:
   #     - name: Checkout code
