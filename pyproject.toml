@@ -47,7 +47,7 @@ diagrams = "^0.23.3"
 mkdocs-material = "^9.1.9"
 mkdocs-redirects = "^1.2.0"
 pillow = "^9.5.0"
-pymdown-extensions = "^9.11"
+pymdown-extensions = "^10.0"
 
 [build-system]
 requires = ["poetry-core"]
