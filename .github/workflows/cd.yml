@@ -74,10 +74,12 @@ jobs:
     # TODO uncomment
     # needs: [setup, create-images]
     steps:
+      # TODO remove
       - name: debug
         run: |
           echo ${{ needs.setup.outputs.is_release }}
           echo ${{ needs.setup.outputs.version }}
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
