@@ -67,6 +67,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     namespaces: set[str] = field(factory=set, converter=comma_separated(set))
 
+    prod_label: str = field(default=pelorus.DEFAULT_PROD_LABEL)
+
     git_api: Optional[Url] = field(
         default=None,
         converter=attrs.converters.optional(pass_through(Url, Url.parse)),
