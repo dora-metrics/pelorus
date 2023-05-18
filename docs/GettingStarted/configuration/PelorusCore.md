@@ -54,6 +54,7 @@ spec:
 | [prometheus_storage_pvc_storageclass](#prometheus_storage_pvc_storageclass) | no | `gp2` |
 | [openshift_prometheus_htpasswd_auth](#openshift_prometheus_htpasswd_auth)  | no | `internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=` |
 | [openshift_prometheus_basic_auth_pass](#openshift_prometheus_basic_auth_pass) | no | `changeme` |
+| [[federate_openshift_monitoring]](#federate_openshift_monitoring) | no | - |
 | [[federated_prometheus_hosts]](#federated_prometheus_hosts) | no | - |
 | [[external_prometheus_hosts]](#external_prometheus_hosts) | no | - |
 | [thanos_version](#thanos_version) | no | `v0.28.0` |
@@ -144,6 +145,13 @@ $ htpasswd -nbs internal <my-secret-password>
 ### Multiple Prometheus
 
 By default, Pelorus gathers the data from the Prometheus instance deployed in the same cluster in which it is running. To collect data across multiple OpenShift clusters, additional Prometheus scrape hosts have to be configured. To do this `federated_prometheus_hosts` and `external_prometheus_hosts` configuration options are used.
+
+###### federate_openshift_monitoring
+
+**Required:** no
+**Type:** boolean
+
+If set to `true`, Pelorus will automatically pull in kuberentes and openshift metrics from the OpenShift Monitoring stack. Set to `false` by default.
 
 ###### federated_prometheus_hosts
 
