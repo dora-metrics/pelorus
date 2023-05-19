@@ -14,8 +14,4 @@ type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-<<<<<<< HEAD
 version: 2.0.10
-=======
-version: 2.0.11
->>>>>>> 63da2b9 (Try adding it directly in the operator project)

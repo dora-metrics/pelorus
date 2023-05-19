@@ -33,6 +33,7 @@ metadata:
                 }
               ]
             },
+            "federate_openshift_monitoring": false,
             "openshift_prometheus_basic_auth_pass": "changeme",
             "openshift_prometheus_htpasswd_auth": "internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=",
             "prometheus_retention": "1y",

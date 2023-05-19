@@ -23,11 +23,7 @@ spec:
       name: {{ .image_name }}:{{ .image_tag | default "latest" }}
     {{- end }}
 {{- else }}
-<<<<<<< HEAD
-      name: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.10" }}
-=======
-      name: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.11" }}
->>>>>>> 63da2b9 (Try adding it directly in the operator project)
+      name: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.10-rc.6" }}
 # .image_name
 {{- end }}
     name: {{ .image_tag | default "stable" }}
