@@ -56,7 +56,7 @@ metadata:
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
     repository: https://github.com/dora-metrics/pelorus/
     support: Pelorus Community
-  name: pelorus-operator.v0.0.7
+  name: pelorus-operator.v0.0.7-rc.6
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -407,7 +407,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/pelorus/pelorus-operator:0.0.7
+                image: quay.io/pelorus/pelorus-operator:0.0.7-rc.6
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -509,7 +509,7 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.7
+  version: 0.0.7-rc.6
   replaces: pelorus-operator.v0.0.6
   skips:
     - pelorus-operator.v0.0.6
