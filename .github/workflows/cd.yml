@@ -113,6 +113,6 @@ jobs:
         # TODO change to upstream repo and master branch
         uses: "mateusoliveira43/pelorus/.github/workflow_templates/create-market-place-pr@fix/release-steps-and-automation"
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.FORK_TOKEN }}
           version: ${{ needs.setup.outputs.version }}
           fork: ${{ env.FORK }}

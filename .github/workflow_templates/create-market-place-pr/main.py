@@ -29,7 +29,7 @@ if __name__ == "__main__":
             # TODO remove draft?
             draft=True,
         )
-        pull_request.add_to_labels("do-not-merge/hold ")
+        pull_request.create_comment("/hold")
     except Exception as error:
         logging.error(f"An error ocurred: {error}")
         raise SystemExit(1)
