@@ -56,6 +56,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 | [API_USER](#api_user) | no | - |
 | [TOKEN](#token) | yes | - |
 | [APP_LABEL](#app_label) | no | `app.kubernetes.io/name` |
+| [APP_NAME](#app_name) | no | - |
 | [APP_FIELD](#app_field) | no | `u_application` |
 | [PROJECTS](#projects) | no | - |
 | [PELORUS_DEFAULT_KEYWORD](#pelorus_default_keyword) | no | `default` |
@@ -116,6 +117,13 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 - **Type:** string
 
 : Changes the label used to identify applications.
+###### APP_NAME
+
+- **Required:** no
+    - Only applicable for [PROVIDER](#provider) set to `jira`
+- **Type:** string
+
+: Set `unknown` application to desired value.
 
 ###### APP_FIELD
 

@@ -43,6 +43,7 @@ def setup_jira_collector(
     token: str = "WIEds4uZHiCGnrtmgQPn9E7D",
     projects: Optional[str] = None,
     jql_query_string: str = DEFAULT_JQL_SEARCH_QUERY,
+    app_name: Optional[str] = None,
 ) -> JiraFailureCollector:
     return JiraFailureCollector(
         tracker_api=JIRA_SERVER,
@@ -50,6 +51,7 @@ def setup_jira_collector(
         token=token,
         projects=projects,
         jql_query_string=jql_query_string,
+        app_name=app_name,
     )
 
 
@@ -77,6 +79,28 @@ def test_jira_search_with_projects(projects):
 
     assert context is None
     assert len(issues) == 103
+    assert len([issue for issue in issues if issue.app == "unknown"]) == 4
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not JIRA_USERNAME, reason="No Jira username set, run export JIRA_USERNAME=username"
+)
+@pytest.mark.skipif(
+    not JIRA_TOKEN, reason="No Jira token set, run export JIRA_TOKEN=token"
+)
+def test_jira_search_with_app_name():
+    collector = setup_jira_collector(
+        JIRA_USERNAME, JIRA_TOKEN, projects="Test", app_name="robotron"
+    )
+
+    with nullcontext() as context:
+        issues = collector.search_issues()
+
+    assert context is None
+    assert len(issues) == 103
+    assert len([issue for issue in issues if issue.app == "unknown"]) == 0
+    assert len([issue for issue in issues if issue.app == "robotron"]) == 4
 
 
 @pytest.mark.parametrize(
@@ -126,6 +150,7 @@ def test_jira_search_with_jql(jql):
 
     assert context is None
     assert len(issues) == 103
+    assert len([issue for issue in issues if issue.app == "unknown"]) == 4
 
 
 @pytest.mark.parametrize(
