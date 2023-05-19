@@ -24,25 +24,25 @@ A common form of waste in an IT organization is in when multiple people or teams
 
 This struggle has given birth to new practices like [Platform Engineering](https://platformengineering.org/blog/what-is-platform-engineering), [Inner Sourcing](https://about.gitlab.com/topics/version-control/what-is-innersource/), and Re-commoning. The goal is to provide teams with a set of common platforms, tools, and solutions that they can consume on-demand as a way of reducing cognitive load and re-work by individual teams.
 
-In order to acheive this, it is important to track the health of these common assets by measuring whether they are being well adopted. This is how we get the outcome of _Platform Adoption_.
+__In order to acheive this, it is important to track the health of these common assets by measuring whether they are being well adopted. This is how we get the outcome of _Platform Adoption_.__
 
 ## Defining the _user_ and the _adoption event_
 
-Before we get into the measures that make up the Tech Adoption outcome, we have a decision to make. We need to define an entity that will call our _user_. Typically we would think of a user as an individual person. However, depending on the platform or tool we are trying to measure we may want to define a user differently. A user might be a team, and application, product, or service. 
+Before we get into the measures that make up the Tech Adoption outcome, we have a decision to make. We need to define an entity that will call our _user_. Typically we would think of a user as an individual person. However, depending on the platform or tool we are trying to measure we may want to define a user differently. A user might be a team, an application, a product, or a service.
 
-__A good way to figure out what your user should be for a given system is to think about what sorts of observable actions in that systems translate most directly to value.__ For instance, if you're measuring adoption of a learning platform, then your _adoption event_ might be an employee completing a course. In this case the _user_ would be an individual employee. However, if you're measuring adoption of an application hosting platform or deployment tool, then your _adoption event_ would likely be an application getting deployed into a certain environment, or passing a particular stage of a pipeline. In this case it makes more sense to track either the application itself or the team that owns the application.
+__A good way to figure out who your user is for a given system is to think about what sorts of observable actions in that system translate most directly to value.__ For instance, if you're measuring adoption of a learning platform, then your _adoption event_ might be an employee completing a course. In this case the _user_ would be an individual employee. However, if you're measuring adoption of an application hosting platform or deployment tool, then your _adoption event_ would likely be an application getting deployed into a certain environment, or passing a particular stage of a pipeline. In this case it makes more sense to track either the application itself or the team that owns the application.
 
-Varying systems will likely have different definitions of users and adoption events, and that's okay. What's important is to make sure that we're using the same definitions for user and adoption event across the different measures for the same system.
+Varying systems will likely have different definitions of users and adoption events, and that's okay. What's important is to make sure that we're consistent in our definitions for user and adoption event across different measures for a single system.
 
 ## :material-ruler: Measures
 
-Here we break down the 5 _measures_ of the Tech Adoption in detail. We'll cover the raw data points that we'll need to collect from our various systems, and then the formulas we'll need in order to calculate each measure.
+Here we break down the 5 _measures_ of the Tech Adoption outcome in detail. We'll cover the raw data points that we'll need to collect from our various systems and then the formulas to calculate each measure.
 
 ### :material-account-clock: Adoption lead time
 
 _Adoption lead time_ measures the speed at which a new user or team is able to onboard into a new platform, tool or pattern. By tracking lead time to adopt an internal product, we gain insight into the quality of the user experience for new users as well as indications of constraints in the process. 
 
-It's important with this measurement to capture, not only the time it takes to get access to a given product, but the total time it takes from when a user shows intent to use the product (usually by capturing at some sort of request submission) to the moment when that user has been able to use the product to do something valuable.
+It's important with this measurement to capture, not only the time it takes to get access to a given product, but the total time it takes from when a user shows intent to use the product (usually by capturing a request made) to the moment when that user has been able to use the product to do something valuable.
 
 #### Data Points
 
@@ -77,10 +77,14 @@ _Adoption end events ( $a_{E}$ )_
 
 _Adoption Lead Time ( $LT$ )_
 
-:   For any individual adoption event, the adoption lead time $a_{LT}$ can be calculated as follows:
+:   For any individual adoption event, the adoption lead time $LT$ can be calculated as follows:
 
     $$
     LT = a_{E} - a_{S}
+    $$
+
+    $$
+    Lead\ Time = \{adoption\ end\ event\} - \{adoption\ start\ event\}
     $$
 
 **_Average Adoption Lead Time ( $\overline{x}LT$ )_**
@@ -91,9 +95,13 @@ _Adoption Lead Time ( $LT$ )_
     \overline{x}LT = \frac{\sum_{1}^{N}(LT_{i})}{N}
     $$
 
+    $$
+    average(N\ adoption\ lead\ times)
+    $$
+
 ### :fontawesome-solid-arrow-trend-up: Adoption rate
 
-Adoption Rate ($AR$) measures the ability of the platform or tool to scale to support multiple teams and products. 
+Adoption Rate ($AR$) measure of the size of a user base over time. This serves as an indicator of the ability of the platform or tool to scale to support multiple teams and products.
 
 #### Data Points
 
@@ -131,6 +139,8 @@ _Adoptions at Time $t_{2}$ ( $a^{t_{2}}$)_
     $$
 
 **_Adoption Rate $AR$_**
+
+TODO: add a description of Adoption Rate
 
 $$
 AR = (a^{t_{2}} - a^{t_{2}} - 1) \cdot 100
@@ -188,7 +198,7 @@ _Active users_
 
 **_Retention Rate_**
 
-:   Explain
+:   TODO: Explain this
 
     $$
     RR = \left(\frac{u_{E} - u_{N}}{u_{S}}\right) \cdot 100
@@ -202,6 +212,7 @@ The simplest way to calculate _operational efficiency_ is by comparing the numbe
 
 #### Data Points
 
+TODO: Add data points
 #### Formulas
 
 _Active users_
@@ -228,15 +239,23 @@ _Active users_
 
 ### :material-account-heart-outline: __Developer Satisfaction__
 
-Measures the extent to which the platform is meeting the needs and wants of development
+Measures the extent to which the platform is meeting the needs and wants of developers
 
+#### Data Points
+
+TODO: Add data points
+#### Formulas
+
+TODO: Add formula
 ## What does "good" look like?
 
 As with most of our [outcomes](Overview.md), there is no universal definition of "good" and "bad" tech adoption metrics. The expectation is simply that:
 
-a. We are measuring them consistently for our platforms
-b. The metrics improve over time
+- We are measuring them consistently for our platforms
+- The metrics improve over time
 
 ### Emerging vs Established Tech
 
-In the spirit of lean, these bridge outcomes are all about helping organizations in the pursuit of perfectiuon, knowling full well that we'll likely never acheive it. With that, we believe that adoption and reuse of technology can always be improved. However, as certain tools and platforms mature, the areas that are easiest to improve will likely shift. At the beginning of the product lifecycle, it will be all about driving adoption of new users. That means that _adoption lead time_ and _adoption rate_ will be where we are likely to focus. However, as these products mature and we succeed in driving adoption, we may hit plateaus in lead times and adoption rates, as we might eventually capture the entire target audience, and improve the onboarding experience as much as we reasonably can. At that point, it might be time to focus on retaining those users, making sure that they are happy, and then driving extra value out of the platform through maintenance efficiency.
+TODO: Edit this paragraph
+
+In the spirit of lean, these bridge outcomes are all about helping organizations in the pursuit of perfection, knowing full well that we'll likely never acheive it. With that, we believe that adoption and reuse of technology can always be improved. However, as certain tools and platforms mature, the areas that are easiest to improve will likely shift. At the beginning of the product lifecycle, it will be all about driving adoption of new users. That means that _adoption lead time_ and _adoption rate_ will be where we are likely to focus. However, as these products mature and we succeed in driving adoption, we may hit plateaus in lead times and adoption rates, as we might eventually capture the entire target audience, and improve the onboarding experience as much as we reasonably can. At that point, it might be time to focus on retaining those users, making sure that they are happy, and then driving extra value out of the platform through maintenance efficiency.
