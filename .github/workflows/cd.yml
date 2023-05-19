@@ -74,48 +74,44 @@ jobs:
     # TODO uncomment
     # needs: [setup, create-images]
     steps:
-      # TODO remove
-      - name: debug
-        run: |
-          echo ${{ needs.setup.outputs.is_release }}
-          echo ${{ needs.setup.outputs.version }}
+      # TODO uncomment
+      # - name: Checkout marketplace code
+      #   uses: actions/checkout@v3
+      #   with:
+      #     repository: ${{ env.FORK }}/community-operators-prod
+      #     token: ${{ secrets.FORK_TOKEN }}
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ env.FORK }}/community-operators-prod
-          token: ${{ secrets.FORK_TOKEN }}
+      # - name: Update fork repo
+      #   run: |
+      #     git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
+      #     git fetch upstream
+      #     git rebase upstream/main
+      #     git push origin main
 
-      - name: Update fork repo
-        run: |
-          git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
-          git fetch upstream
-          git rebase upstream/main
-          git push origin main
+      # - name: Create branch
+      #   run: |
+      #     git checkout -b pelorus-operator-${{ needs.setup.outputs.version }}
+      #     mkdir -p operators/pelorus-operator/${{ needs.setup.outputs.version }}
 
-      - name: Create branch
-        run: |
-          git checkout -b pelorus-operator-${{ needs.setup.outputs.version }}
-          mkdir -p operators/pelorus-operator/${{ needs.setup.outputs.version }}
+      # - name: Download operator code
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: operator-code
+      #     path: operators/pelorus-operator/${{ needs.setup.outputs.version }}
+      #     # TODO remove
+      #     # cp -r ../pelorus/pelorus-operator/bundle/* operators/pelorus-operator/${{ needs.setup.outputs.version }}
 
-      - name: Download operator code
-        uses: actions/download-artifact@v3
-        with:
-          name: operator-code
-          path: operators/pelorus-operator/${{ needs.setup.outputs.version }}
-          # TODO remove
-          # cp -r ../pelorus/pelorus-operator/bundle/* operators/pelorus-operator/${{ needs.setup.outputs.version }}
-
-      - name: Push branch
-        run: |
-          git config user.name github-actions # TODO create bot account
-          git config user.email github-actions@github.com # TODO create bot account
-          git add -A
-          git commit --signoff -m "operator pelorus-operator (${{ needs.setup.outputs.version }})"
-          git push origin pelorus-operator-${{ needs.setup.outputs.version }}
+      # - name: Push branch
+      #   run: |
+      #     git config user.name github-actions # TODO create bot account
+      #     git config user.email github-actions@github.com # TODO create bot account
+      #     git add -A
+      #     git commit --signoff -m "operator pelorus-operator (${{ needs.setup.outputs.version }})"
+      #     git push origin pelorus-operator-${{ needs.setup.outputs.version }}
 
       - name: Create PR
-        uses: "./.github/workflow_templates/create-market-place-pr"
+        # TODO change to upstream repo and master branch
+        uses: "mateusoliveira43/pelorus/.github/workflow_templates/create-market-place-pr@fix/release-steps-and-automation"
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: ${{ needs.setup.outputs.version }}
