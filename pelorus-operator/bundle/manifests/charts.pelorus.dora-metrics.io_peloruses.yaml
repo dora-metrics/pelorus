@@ -151,10 +151,6 @@ spec:
                   - hostname
                   type: object
                 type: array
-              federate_openshift_monitoring:
-                description: Whether or not to pull in data from the OpenShift Monitoring stack
-                type: boolean
-                default: false
               federated_prometheus_hosts:
                 description: List of additional Federation hosts.
                 items:
