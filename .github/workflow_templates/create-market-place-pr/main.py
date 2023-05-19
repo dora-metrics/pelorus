@@ -20,16 +20,21 @@ if __name__ == "__main__":
             "redhat-openshift-ecosystem/community-operators-prod"
         )
         pull_request = repo.create_pull(
-            # TODO write better descriptions after tests
-            title="Automation test - DELETE IT",
-            body="This is an automation test, this PR will be closed without merging\n@mateusoliveira43 @mpryc",
+            title=f"operator pelorus-operator ({settings.input_version})",
+            body=(
+                f"## pelorus-operator files for version {settings.input_version}\n\n"
+                "This pull request was created automatically after merging new version of "
+                "[Pelorus](https://github.com/dora-metrics/pelorus)\n\n"
+                # TODO read Owners file in repo root
+                "Please review it\n- @etsauer\n- @KevinMGranger\n- @mateusoliveira43\n"
+                "- @mpryc\n- @weshayutin\n\n"
+                "After review, comment `/unhold` in This PR to merge it."
+            ),
             base="main",
             head=f"{settings.input_fork}:pelorus-operator-{settings.input_version}",
             maintainer_can_modify=True,
-            # TODO remove draft?
-            draft=True,
         )
-        pull_request.create_comment("/hold")
+        pull_request.as_issue().create_comment("/hold")
     except Exception as error:
         logging.error(f"An error ocurred: {error}")
         raise SystemExit(1)
