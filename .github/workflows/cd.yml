@@ -108,6 +108,8 @@ jobs:
 
       - name: Push branch
         run: |
+          git config user.name github-actions # TODO create bot account
+          git config user.email github-actions@github.com # TODO create bot account
           git add -A
           git commit --signoff -m "operator pelorus-operator (${{ needs.setup.outputs.version }})"
           git push origin pelorus-operator-${{ needs.setup.outputs.version }}

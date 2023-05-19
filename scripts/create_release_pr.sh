@@ -154,12 +154,6 @@ SEMVER="$V_X_VER.$V_Y_VER.$V_Z_VER$RC_SUFFIX"
 
 echo "Version to be released: v$SEMVER"
 
-# Sed to inject version between the quotes in the line containing:
-# .source_ref | default=""
-#TBD: Do we need to update _buildconfig.yaml or it should always point to master?
-#NEW_VER="v$SEMVER"
-# sed -i "/.source_ref | default/s/\"[^\"][^\"]*\"/\"$NEW_VER\"/" "$BUILDCONFIG_PATH"
-
 sed -i "s/^version:.*/version: $SEMVER/g" "$PELORUS_CHART"
 sed -i "s/^    version:.*/    version: $SEMVER/g" "$PELORUS_CHART"
 sed -i "s/^version:.*/version: $SEMVER/g" "$OPERATORS_CHART"
@@ -215,7 +209,7 @@ if [ "$NO_VERSIONS" -ne 1 ]; then
 fi
 
 helm dep update charts/pelorus &> /dev/null
-rm -r charts/pelorus/charts/*.tgz &> /dev/null
+rm -f charts/pelorus/charts/*.tgz
 
 if [[ $x_ver ]]; then
   printf "\nIMPORTANT:\n\t Do label your PR with: \"major\"\n\n"

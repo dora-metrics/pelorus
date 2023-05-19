@@ -34,7 +34,7 @@ fi
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
 
 ct lint --remote "$REMOTE" --config ct.yaml || exit 1
-rm charts/pelorus/charts/*.tgz &> /dev/null
+rm -f charts/pelorus/charts/*.tgz
 
 if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml &> /dev/null; then
   echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml differs!"
@@ -106,3 +106,6 @@ if [ "$CURRENT_CHART_VERSION_RC_VER" != "$CURRENT_OPERATOR_VERSION_RC_VER" ]; th
   echo "ERROR: Release candidate versions differs between charts (rc$CURRENT_CHART_VERSION_RC_VER) and operator (rc$CURRENT_OPERATOR_VERSION_RC_VER)!"
   exit 1
 fi
+
+# TODO check for pending releases
+# example: last GitHub tag 2.0.9 and current 2.0.10 or 2.1.0 or 2.0.11-rc.3

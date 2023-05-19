@@ -148,7 +148,7 @@ pushd "${destination_dir}" || exit 2
     mkdir -p helm-charts/pelorus/charts
     cp -r "${source_dir}charts/exporters" helm-charts/pelorus/charts
     operator-sdk create api --helm-chart="${source_dir}" || exit 2
-    rm helm-charts/pelorus/charts/*.tgz
+    rm -f helm-charts/pelorus/charts/*.tgz
 
     # Correct operator version, to be latest +1
     OPERATOR_VERSIONS=$(curl -H "Authorization: Bearer XYZ" -X GET "https://quay.io/api/v1/repository/${OPERATOR_ORG_NAME}/${OPERATOR_PROJECT_NAME}/tag/" 2> /dev/null | jq ".tags[] | select(.end_ts == null) | .name" | sed -e 's|\"||g' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' -o | sort -t. -nrk1,1 -nrk2,2 -nrk3,3)
