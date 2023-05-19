@@ -209,14 +209,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - prometheuses
-          - prometheusrules
-          - servicemonitors
-          verbs:
-          - '*'
-        - apiGroups:
           - route.openshift.io
           resources:
           - routes
@@ -255,6 +247,14 @@ spec:
           - image.openshift.io
           resources:
           - imagestreams
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheuses
+          - prometheusrules
+          - servicemonitors
           verbs:
           - '*'
         - apiGroups:
