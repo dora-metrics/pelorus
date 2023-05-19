@@ -14,18 +14,10 @@ type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-<<<<<<< HEAD
-version: 2.0.10
 
-dependencies:
-  - name: exporters
-    version: 2.0.10
-    repository: file://./charts/exporters
-=======
 version: 2.0.11
 
 dependencies:
   - name: exporters
     version: 2.0.10-rc.5
     repository: file://./charts/exportersrters
->>>>>>> e95725a (Bump chart version)

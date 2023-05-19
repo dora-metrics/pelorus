@@ -5,6 +5,7 @@
 # to reset password: htpasswd -s -b -n internal changeme
 openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
 openshift_prometheus_basic_auth_pass: changeme
+federate_openshift_monitoring: false
 # federated_prometheus_hosts:
 # external_prometheus_hosts:
 
