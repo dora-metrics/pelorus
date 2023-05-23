@@ -13,10 +13,10 @@ body:
       description: In what version of OpenShift the problem ocurred?
       options:
         - Not related to OpenShift
-        - 4.10
-        - 4.11
-        - 4.12
-        - 4.13
+        - '4.10'
+        - '4.11'
+        - '4.12'
+        - '4.13'
     validations:
       required: true
   - type: textarea
@@ -34,7 +34,7 @@ body:
     attributes:
       label: Steps to reproduce
       description: |
-        What steps were performed to reproduce the bug
+        What steps must be performed to reproduce the bug
       placeholder: |
         1. ...
         2. ...

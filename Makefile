@@ -271,6 +271,11 @@ update-requirements: $(PELORUS_VENV)
 	poetry export --format requirements.txt --output exporters/requirements-dev.txt --only dev && \
 	poetry export --format requirements.txt --output exporters/requirements.txt
 
+## openshift-check-versions: Checks if OpenShift versions used by the project are the 4 latest minor stable releases
+openshift-check-versions: $(PELORUS_VENV)
+	. ${PELORUS_VENV}/bin/activate && \
+	./scripts/check_openshift_version.py
+
 # Cleanup
 
 ## clean-dev-env: remove the virtual environment and clean up all .pyc files
