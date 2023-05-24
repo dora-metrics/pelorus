@@ -275,7 +275,7 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
         for tag in tags
         if tag.get("end_ts") is None and not tag["name"].upper().isupper()
     ]
-    tag_names.sort(reverse=True)
+    tag_names.sort(reverse=True, key=lambda version: semver.VersionInfo.parse(version))
 
     add_replaces_to_csv(
         new_version=next_operator_version,
