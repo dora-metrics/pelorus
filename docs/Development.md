@@ -742,7 +742,7 @@ Pelorus versions should be bumped anytime a change to exporters code (`exporters
 
 After finishing a development change that modified any of the code that requires a version bump, run
 ```
-make rc-release
+./scripts/update_projects_version.py -f -r
 ```
 to update the release candidate version.
 
@@ -752,26 +752,25 @@ To create a release on top of development changes, first create an issue for the
 
 Then, create a branch for the release you are about to make.
 
-- If it is a PATCH version release, run
+Then run the `update_projects_version` script using the `-l` (`--labels`) flag. It accepts one of the labels **major**, **minor** or **patch** for each of its 2 entries. The first entry is the chart version label and the second the operator version label.
+
+**Examples:**
+
+- To make a MINOR chart version and MAJOR operator version release, run
     ```
-    make release
+    ./scripts/update_projects_version.py -f -l minor major
     ```
 
-- If it is a MINOR version release, run
+- To make both chart version and operator version PATCH release, run
     ```
-    make minor-release
-    ```
-
-- If it is a MAJOR version release, run
-    ```
-    make major-release
+    ./scripts/update_projects_version.py -f -l patch patch
     ```
 
-> A release pull request should only contain the changes from the respective make command
+> A release pull request should only contain the changes from the script run
 
 Create the pull request, using the [release template](https://github.com/dora-metrics/pelorus/blob/master/.github/PULL_REQUEST_TEMPLATE/release_template.md).
 
-> If it a minor or major release, ensure that the pull Request is labeled with "minor" or "major" label.
+> If it a minor or major chart release, ensure that the pull Request is labeled with "minor" or "major" label.
 
 After the pull request is merged, on the [Pelorus releases](https://github.com/dora-metrics/pelorus/releases) page, click edit on the latest **Draft** and click **Publish Release** to make a GitHub release.
 

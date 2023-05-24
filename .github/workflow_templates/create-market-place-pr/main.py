@@ -7,7 +7,7 @@ from pydantic import BaseSettings, SecretStr
 class Settings(BaseSettings):
     input_token: SecretStr
     input_version: str
-    input_fork: str
+    input_fork_user: str
 
 
 if __name__ == "__main__":
@@ -31,7 +31,7 @@ if __name__ == "__main__":
                 "After review, comment `/unhold` in This PR to merge it."
             ),
             base="main",
-            head=f"{settings.input_fork}:pelorus-operator-{settings.input_version}",
+            head=f"{settings.input_fork_user}:pelorus-operator-{settings.input_version}",
             maintainer_can_modify=True,
         )
         pull_request.as_issue().create_comment("/hold")

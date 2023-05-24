@@ -2,13 +2,13 @@ name: Create PR in operator market place repository
 description: Create PR in redhat-openshift-ecosystem/community-operators-prod from fork
 inputs:
   token:
-    description: GitHub token that has write access to fork repo
+    description: GitHub token that has write access to the fork repo
     required: true
   version:
     description: The operator version to be released, following semantic versioning
     required: true
-  fork:
-    description: The username of the fork to open PR from
+  fork_user:
+    description: The user username of the fork to open PR from
     required: true
 runs:
   using: docker

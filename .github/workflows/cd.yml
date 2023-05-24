@@ -12,7 +12,7 @@ on:
 
 env:
   # TODO create bot account
-  FORK: mateusoliveira43
+  FORK_USER: mateusoliveira43
 
 jobs:
   setup:
@@ -71,7 +71,7 @@ jobs:
       - name: Checkout marketplace code
         uses: actions/checkout@v3
         with:
-          repository: ${{ env.FORK }}/community-operators-prod
+          repository: ${{ env.FORK_USER }}/community-operators-prod
           token: ${{ secrets.FORK_TOKEN }}
 
       - name: Update fork repo
@@ -103,6 +103,6 @@ jobs:
       - name: Create PR
         uses: "dora-metrics/pelorus/.github/workflow_templates/create-market-place-pr@master"
         with:
-          token: ${{ secrets.FORK_TOKEN }}
+          token: ${{ secrets.FORK_USER_TOKEN }}
           version: ${{ needs.setup.outputs.version }}
-          fork: ${{ env.FORK }}
+          fork_user: ${{ env.FORK_USER }}

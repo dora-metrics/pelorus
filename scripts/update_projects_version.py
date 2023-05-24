@@ -1,6 +1,24 @@
 #!/usr/bin/env python3
+#
+# Copyright Red Hat
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+"""
+Script to update all versions of the project.
 
-# TODO add docstring?
+More info: https://pelorus.readthedocs.io/en/latest/Development/#versioning-process
+"""
 
 import argparse
 import json
@@ -24,10 +42,15 @@ PELORUS_CHARTS_FOLDER = ROOT / "charts/pelorus"
 PELORUS_EXPORTERS_FOLDER = PELORUS_CHARTS_FOLDER / "charts/exporters"
 PELORUS_OPERATOR_FOLDER = ROOT / "pelorus-operator"
 PATCHES_FOLDER = ROOT / "scripts/pelorus-operator-patches"
+VIRTUAL_ENVIRONMENT = ROOT / ".venv"
 
 YAML_TAB = "  "
 VERSION_PATTERN = r"\d+\.\d+\.\d+(-rc\.\d+)?"
 SHELL_DEPENDENCIES = ["helm", "oc", "operator-sdk"]
+MAJOR_LABEL = "major"
+MINOR_LABEL = "minor"
+PATCH_LABEL = "patch"
+LABELS_OPTIONS = [MAJOR_LABEL, MINOR_LABEL, PATCH_LABEL]
 CHARTS_FILES_TO_UPDATE = {
     # Files to updated in charts folder and number of changes in each one
     PELORUS_CHARTS_FOLDER / "Chart.yaml": 2,
@@ -36,6 +59,20 @@ CHARTS_FILES_TO_UPDATE = {
     PELORUS_EXPORTERS_FOLDER / "templates/_deploymentconfig.yaml": 1,
     PELORUS_EXPORTERS_FOLDER / "templates/_imagestream_from_image.yaml": 1,
 }
+DEVELOPMENT_FILE = ROOT / "docs/Development.md"
+
+OPERATOR_RELEASED_TAGS_URL = (
+    "https://quay.io/api/v1/repository/pelorus/pelorus-operator/tag/"
+)
+PELORUS_REPO_RAW_URL = (
+    "https://raw.githubusercontent.com/dora-metrics/pelorus/master/{file_name}"
+)
+
+OPERATOR_CSV_FILE_NAME = "pelorus-operator.clusterserviceversion.yaml"
+CHART_VERSION_FILE_NAME = "charts/pelorus/Chart.yaml"
+OPERATOR_VERSION_FILE_NAME = (
+    f"pelorus-operator/bundle/manifests/{OPERATOR_CSV_FILE_NAME}"
+)
 
 
 def exit_error(message: str) -> None:
@@ -43,11 +80,17 @@ def exit_error(message: str) -> None:
     raise SystemExit(1)
 
 
-def path_type(file_path: str) -> Path:
+def folder_path_type(file_path: str) -> Path:
     _file_path = Path(file_path).resolve()
     if _file_path.exists():
+        if _file_path.is_file():
+            raise argparse.ArgumentTypeError("Must be a folder, not a file")
         return _file_path
-    raise argparse.ArgumentTypeError(f"Folder {_file_path} does not exist.")
+    raise argparse.ArgumentTypeError(f"Path {_file_path} does not exist.")
+
+
+def _to_dict(_list: List[str]) -> Dict[str, str]:
+    return {"chart": _list[0], "operator": _list[1]}
 
 
 def run_command(
@@ -71,14 +114,28 @@ def run_command(
         raise SystemExit(error.returncode) from error
 
 
-def check_prerequisites(destination: Path) -> None:
+def check_prerequisites(destination: Path, force: bool) -> None:
     if not PATCHES_FOLDER.exists():
         exit_error(f"Patches folder {PATCHES_FOLDER} does not exist")
 
+    if force:
+        logging.info(f"Removing destination folder {destination}")
+        shutil.rmtree(destination)
+        destination.mkdir(parents=True)
+
+    if any(destination.iterdir()):
+        exit_error(f"Destination folder {destination} is not empty")
+
     for dependency in SHELL_DEPENDENCIES:
-        if shutil.which(dependency) is None:
+        dependency_path = shutil.which(dependency)
+        if dependency_path is None:
             exit_error(
-                f"{dependency} executable not found, activate the project virtual environment"
+                f"{dependency} executable not found, activate the project's virtual environment {VIRTUAL_ENVIRONMENT}"
+            )
+        if str(VIRTUAL_ENVIRONMENT) not in dependency_path:
+            logging.warning(
+                f"Activate the project's virtual environment {VIRTUAL_ENVIRONMENT} to use latest "
+                "versions of the shell dependencies"
             )
 
     run_command(
@@ -98,50 +155,34 @@ def check_prerequisites(destination: Path) -> None:
         error_message="Prometheus CRD not found",
     )
 
-    if destination.is_file():
-        exit_error("Destination must be a folder, not a file")
-
-    if arguments.force and destination.exists():
-        logging.info(f"Removing destination folder {destination}")
-        shutil.rmtree(destination)
-        destination.mkdir(parents=True)
-
-    if not destination.exists():
-        exit_error(f"Destination folder {destination} does not exist")
-
-    if any(destination.iterdir()):
-        exit_error(f"Destination folder {destination} is not empty")
-
     logging.info(run_command("operator-sdk version").stdout.strip())
 
 
-def get_version_upstream(file: str) -> semver.VersionInfo:
+def get_version_upstream(file_name: str) -> semver.VersionInfo:
     current_version = None
 
     response: HTTPResponse
-    with request.urlopen(
-        f"https://raw.githubusercontent.com/dora-metrics/pelorus/master/{file}"
-    ) as response:
+    with request.urlopen(PELORUS_REPO_RAW_URL.format(file_name=file_name)) as response:
         match = re.search(VERSION_PATTERN, response.read().decode())
         if match:
             current_version = semver.VersionInfo.parse(match.group())
     if current_version is None:
-        exit_error(f"Version was not found in {file} in master branch")
+        exit_error(f"Version was not found in {file_name} in master branch")
     return current_version
 
 
 def bump_version(
-    version: semver.VersionInfo, arguments: argparse.Namespace
+    version: semver.VersionInfo, software: str, arguments: argparse.Namespace
 ) -> semver.VersionInfo:
     # TODO move this to chart-test?
     if version.build is not None:
         raise ValueError
 
-    if arguments.major:
+    if arguments.labels[software] == MAJOR_LABEL:
         return version.bump_major()
-    if arguments.minor:
+    if arguments.labels[software] == MINOR_LABEL:
         return version.bump_minor()
-    if arguments.patch:
+    if arguments.labels[software] == PATCH_LABEL:
         return version.next_version("patch")
     if arguments.pre_release:
         if version.prerelease:
@@ -149,10 +190,12 @@ def bump_version(
         return version.next_version("patch").bump_prerelease()
 
 
-def get_next_version(file: str, software: str, arguments: argparse.Namespace) -> str:
-    current_version = get_version_upstream(file=file)
+def get_next_version(
+    file_name: str, software: str, arguments: argparse.Namespace
+) -> str:
+    current_version = get_version_upstream(file_name=file_name)
     logging.info(f"Current {software} version (upstream): {current_version}")
-    next_version = bump_version(current_version, arguments=arguments)
+    next_version = bump_version(current_version, software=software, arguments=arguments)
     logging.info(f"Bumping {software} version to {next_version}")
 
     return str(next_version)
@@ -256,7 +299,7 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
 
     replace_in_file(
         file=PELORUS_OPERATOR_FOLDER
-        / "config/manifests/bases/pelorus-operator.clusterserviceversion.yaml",
+        / f"config/manifests/bases/{OPERATOR_CSV_FILE_NAME}",
         pattern="    containerImage: placeholder",
         new=f"    containerImage: {operator_image}:{next_operator_version}",
         number_of_changes=1,
@@ -264,9 +307,7 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
     logging.info("Executing operator make bundle")
     run_command("make bundle", directory=destination)
 
-    pelorus_operator_image_tags = request.Request(
-        "https://quay.io/api/v1/repository/pelorus/pelorus-operator/tag/"
-    )
+    pelorus_operator_image_tags = request.Request(OPERATOR_RELEASED_TAGS_URL)
     pelorus_operator_image_tags.add_header("Authorization", "Bearer XYZ")
     with request.urlopen(pelorus_operator_image_tags) as response:
         tags: List[Dict[str, str]] = list(json.load(response)["tags"])
@@ -280,7 +321,7 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
     add_replaces_to_csv(
         new_version=next_operator_version,
         cluster_service_version_file=destination
-        / "bundle/manifests/pelorus-operator.clusterserviceversion.yaml",
+        / f"bundle/manifests/{OPERATOR_CSV_FILE_NAME}",
         versions=tag_names,
     )
 
@@ -288,10 +329,12 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
 
 
 def main(arguments: argparse.Namespace) -> None:
-    check_prerequisites(destination=arguments.destination)
+    arguments.labels = _to_dict(arguments.labels)
+
+    check_prerequisites(destination=arguments.destination, force=arguments.force)
 
     next_chart_version = get_next_version(
-        file="charts/pelorus/Chart.yaml",
+        file_name=CHART_VERSION_FILE_NAME,
         software="chart",
         arguments=arguments,
     )
@@ -300,7 +343,7 @@ def main(arguments: argparse.Namespace) -> None:
     )
 
     next_operator_version = get_next_version(
-        file="pelorus-operator/bundle/manifests/pelorus-operator.clusterserviceversion.yaml",
+        file_name=OPERATOR_VERSION_FILE_NAME,
         software="operator",
         arguments=arguments,
     )
@@ -309,14 +352,13 @@ def main(arguments: argparse.Namespace) -> None:
         destination=arguments.destination,
     )
 
-    if arguments.major:
+    if arguments.labels["chart"] == MAJOR_LABEL:
         logging.info('IMPORTANT: label your PR with "major"')
-    if arguments.minor:
+    if arguments.labels["chart"] == MINOR_LABEL:
         logging.info('IMPORTANT: label your PR with "minor"')
     if not arguments.pre_release:
-        documentation_file = ROOT / "docs/Development.md"
         replace_in_file(
-            file=documentation_file,
+            file=DEVELOPMENT_FILE,
             pattern=VERSION_PATTERN,
             new=next_chart_version,
             number_of_changes=2,
@@ -325,51 +367,44 @@ def main(arguments: argparse.Namespace) -> None:
     logging.info("Update finished successfully")
 
 
-if __name__ == "__main__":
+def get_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Update all versions of the project.",
         allow_abbrev=False,
     )
-    parser.add_argument(
+    folder = parser.add_mutually_exclusive_group()
+    folder.add_argument(
         "-d",
         "--destination",
-        type=path_type,
-        help="Path to operator destination folder",
+        type=folder_path_type,
+        help=f"Path to operator destination folder. Default to {PELORUS_OPERATOR_FOLDER}",
         default=PELORUS_OPERATOR_FOLDER,
     )
-    parser.add_argument(
+    folder.add_argument(
         "-f",
         "--force",
         action="store_true",
         help="Removes destination folder before proceeding.",
     )
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        "-x",
-        "--major",
-        action="store_true",
-        help="Major update to project versions.",
+    labels = parser.add_mutually_exclusive_group(required=True)
+    labels.add_argument(
+        "-l",
+        "--labels",
+        nargs=2,
+        choices=LABELS_OPTIONS,
+        default=[None, None],
+        help="Update strategy to Chart and Operator, respectively.",
     )
-    group.add_argument(
-        "-y",
-        "--minor",
-        action="store_true",
-        help="Minor update to project versions.",
-    )
-    group.add_argument(
-        "-z",
-        "--patch",
-        action="store_true",
-        help="Patch update to project versions.",
-    )
-    group.add_argument(
+    labels.add_argument(
         "-r",
         "--pre-release",
         action="store_true",
-        help="Pre release update to project versions.",
+        help="Pre release update to all project versions.",
     )
+    return parser.parse_args()
 
+
+if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    arguments = parser.parse_args()
 
-    main(arguments=arguments)
+    main(arguments=get_arguments())

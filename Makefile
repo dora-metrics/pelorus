@@ -105,26 +105,6 @@ e2e-tests-dev-env: $(PELORUS_VENV)
 	$(info **** To run VENV: $$source ${PELORUS_VENV}/bin/activate)
 	$(info **** To later deactivate VENV: $$deactivate)
 
-# Release
-
-.PHONY:  major-release minor-release release rc-release
-
-major-release:
-	./scripts/create_release_pr.sh -x
-	./scripts/create_pelorus_operator.sh -f -x
-
-minor-release:
-	./scripts/create_release_pr.sh -y
-	./scripts/create_pelorus_operator.sh -f -y
-
-release:
-	./scripts/create_release_pr.sh -z
-	./scripts/create_pelorus_operator.sh -f -z
-
-rc-release:
-	./scripts/create_release_pr.sh -n
-	./scripts/create_pelorus_operator.sh -f -n
-
 .PHONY: mockoon-tests
 mockoon-tests: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
