@@ -132,22 +132,9 @@ We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ens
 
 ### Updating the chart versions
 
-When any of our Helm charts are updated, we need to bump the version number.
-This allows for a seemless upgrade experience.
-We have provided scripts that can test when a version bump is needed and do the bumping for you.
+When any of our Helm charts are updated, we need to bump their version. This allows for a seamless upgrade experience.
 
-1. Ensure the development environment is set up with `make dev-env`.
-2. Run `make chart-lint` to lint the charts, including checking the version number.
-
-You can check all chart versions and bump them if needed with a script that compares upstream pelorus repository with the changes in a fork. To do so ensure your upstream repository is added to your fork by:
-
-    $ git remote add upstream https://github.com/dora-metrics/pelorus.git
-    $ git pull
-    $ make chart-check-bump
-
-or bump specific charts with shell script:
-
-    $ ./scripts/bump-version.py CHART_PATH [ CHART_PATH ...]
+Check [Versioning Process](#versioning-process) section for more information.
 
 ## Dashboard Development
 
@@ -524,13 +511,7 @@ Webhook type exporter has an additional URL target http://localhost:8080/pelorus
 
 ## Operator Development
 
-To create a new version (or candidate) of Pelorus operator you must be logged into `podman` (`podman login` command) and `OpenShift` (`oc login` command) and then run
-```
-scripts/create_pelorus_operator.sh -f
-```
-This will update `pelorus-operator` folder with the updates.
-
-Then, run
+To create a new version (or pre-release) of Pelorus operator you must be logged into `podman` (`podman login` command) and then run
 ```
 cd pelorus-operator
 make podman-build
@@ -540,7 +521,9 @@ make bundle-push
 ```
 This will publish Pelorus operator images to [quay.io](https://quay.io/organization/pelorus).
 
-To deploy it to OpenShift marketplace, a pullrequest must be created in [Openshift Community Operators repository](https://github.com/redhat-openshift-ecosystem/community-operators-prod). The Pelorus operator source code that is deployed to OpenShift marketplace is stored in [`operators/pelorus-operator/`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/tree/main/operators/pelorus-operator) folder.
+To deploy it to OpenShift marketplace, a pull request must be created in [Openshift Community Operators repository](https://github.com/redhat-openshift-ecosystem/community-operators-prod). The Pelorus operator source code that is deployed to OpenShift marketplace is stored in [`operators/pelorus-operator/`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/tree/main/operators/pelorus-operator) folder.
+
+> The operator image and pull request creation are automated by the project CI. Check [Versioning Process](#versioning-process) section for more information
 
 ### API specification
 
@@ -734,7 +717,7 @@ Pelorus has the following versions
     - [operators](https://github.com/dora-metrics/pelorus/blob/master/charts/operators/Chart.yaml)
 - [operator](https://github.com/dora-metrics/pelorus/blob/master/pelorus-operator/bundle/manifests/pelorus-operator.clusterserviceversion.yaml#L511)
 
-To simplify it, the repository, all exporters and all helm-charts versions are the same (which follow SemVer conventions) and each time one of them is bumped, the others are also bumped.
+To simplify it, the repository, all exporters and all helm-charts versions are the same (which follow semantic versioning conventions) and each time one of them is bumped, the others are also bumped.
 
 Pelorus versions should be bumped anytime a change to exporters code (`exporters` folder), or to helm-charts (`charts` folder) or even to operator code (`pelorus-operator` folder). This is enforced by the project CI.
 
@@ -744,7 +727,7 @@ After finishing a development change that modified any of the code that requires
 ```
 ./scripts/update_projects_version.py -f -r
 ```
-to update the release candidate version.
+to update the pre-release version.
 
 ### Create a release
 

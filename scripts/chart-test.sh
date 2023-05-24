@@ -2,6 +2,7 @@
 
 GIT_REPO=dora-metrics/pelorus.git
 REMOTE=origin
+HELP_MESSAGE="INFO: Run scripts/update_projects_version.py to fix it"
 ORIGIN=$(git remote show origin)
 ORIGIN_RET=$?
 
@@ -27,6 +28,7 @@ if ! git --no-pager diff --quiet $REMOTE/master --name-status exporters/; then
   CHART_VERSION_IN_MASTER=$(echo "$CHART_FILE_IN_MASTER" | grep '^version: ' | cut -c 10-)
   if [ "$CHART_VERSION_IN_MASTER" == "$CURRENT_CHART_VERSION" ]; then
     echo "ERROR: Exporters were modified, Charts need version bumping!"
+    echo "$HELP_MESSAGE"
     exit 1
   fi
 fi
@@ -38,11 +40,13 @@ rm -f charts/pelorus/charts/*.tgz
 
 if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml &> /dev/null; then
   echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml differs!"
+  echo "$HELP_MESSAGE"
   exit 1
 fi
 
 if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml &> /dev/null; then
   echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml differs!"
+  echo "$HELP_MESSAGE"
   exit 1
 fi
 
@@ -59,6 +63,7 @@ if [[ "$NO_VERSIONS" -eq 1 ]]; then
 else
   echo "ERROR: Found different versions in Chart.yaml files:"
   echo "$FILES_VERSIONS"
+  echo "$HELP_MESSAGE"
   exit 1
 fi
 
@@ -90,6 +95,7 @@ if ! git --no-pager diff --quiet $REMOTE/master --name-status charts/; then
   OPERATOR_VERSION_IN_MASTER=$(echo "$OPERATOR_MAKEFILE_IN_MASTER" | grep "VERSION ?= " | cut -c 12-)
   if [ "$OPERATOR_VERSION_IN_MASTER" == "$CURRENT_OPERATOR_VERSION" ]; then
     echo "ERROR: Charts were modified, Operator needs version bumping!"
+    echo "$HELP_MESSAGE"
     exit 1
   fi
 fi
@@ -104,8 +110,6 @@ CURRENT_OPERATOR_VERSION_ARRAY=( $(echo "$CURRENT_OPERATOR_VERSION" | tr ' \-rc 
 CURRENT_OPERATOR_VERSION_RC_VER=${CURRENT_OPERATOR_VERSION_ARRAY[1]}
 if [ "$CURRENT_CHART_VERSION_RC_VER" != "$CURRENT_OPERATOR_VERSION_RC_VER" ]; then
   echo "ERROR: Release candidate versions differs between charts (rc$CURRENT_CHART_VERSION_RC_VER) and operator (rc$CURRENT_OPERATOR_VERSION_RC_VER)!"
+  echo "$HELP_MESSAGE"
   exit 1
 fi
-
-# TODO check for pending releases
-# example: last GitHub tag 2.0.9 and current 2.0.10 or 2.1.0 or 2.0.11-rc.3
