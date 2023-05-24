@@ -17,6 +17,7 @@ FILES_IN_PELORUS = [
 ]
 FILES_IN_OPENSHIFT = [
     "ci-operator/jobs/dora-metrics/pelorus/dora-metrics-pelorus-master-presubmits.yaml",
+    "ci-operator/config/dora-metrics/pelorus/dora-metrics-pelorus-master__{version}.yaml",
 ]
 OPENSHIFT_REPO = "openshift/release"
 OPENSHIFT_BRANCH = "master"
@@ -54,6 +55,15 @@ def check_version_in_openshift_repo(version: str, file_name: str) -> None:
 
 
 def check_versions(versions: List[str]) -> None:
+    """
+    Check if all supported OpenShift versions are being used/advertised.
+
+    Parameters
+    ----------
+    versions : List[str]
+        Currently supported OpenShift versions by the Pelorus project.
+
+    """
     for file in FILES_IN_PELORUS:
         for version in versions:
             # TODO check if no old versions exist in file
@@ -61,24 +71,21 @@ def check_versions(versions: List[str]) -> None:
                 logging.error(f"Missing version {version} in {file}")
     for file in FILES_IN_OPENSHIFT:
         for version in versions:
-            check_version_in_openshift_repo(version=version, file_name=file)
-    for version in versions:
-        try:
-            # TODO check if no old version file exist in folder
-            _file = f"ci-operator/config/dora-metrics/pelorus/dora-metrics-pelorus-master__{version}.yaml"
-            check_version_in_openshift_repo(version=version, file_name=_file)
-        except HTTPError:
-            logging.error(
-                f"File {_file} does not exist in {OPENSHIFT_BRANCH} branch of {OPENSHIFT_REPO}"
-            )
+            file_name = file.format(version=version)
+            try:
+                # TODO check if no old version file exist in folder
+                check_version_in_openshift_repo(version=version, file_name=file_name)
+            except HTTPError:
+                logging.error(
+                    f"File {file_name} does not exist in {OPENSHIFT_BRANCH} branch of {OPENSHIFT_REPO}"
+                )
 
 
 def main() -> None:
     check_versions(get_supported_versions())
 
-    error_log_code = 40
     log_cache: dict = logging.getLogger()._cache
-    if log_cache.get(error_log_code):
+    if log_cache.get(logging.ERROR):
         raise SystemExit(1)
     logging.info("Everything is up to date")
 
