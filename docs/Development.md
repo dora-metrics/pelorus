@@ -719,9 +719,9 @@ Pelorus has the following versions
 
 To simplify it, the repository, all exporters and all helm-charts versions are the same (which follow semantic versioning conventions) and each time one of them is bumped, the others are also bumped.
 
-Pelorus versions should be bumped anytime a change to exporters code (`exporters` folder), or to helm-charts (`charts` folder) or even to operator code (`pelorus-operator` folder). This is enforced by the project CI.
+Pelorus versions should be bumped anytime a change to exporters code (`exporters` folder), or to helm-charts (`charts` folder) or even to operator code (`pelorus-operator` folder), is made. This is enforced by the project CI.
 
-### update during development version
+### Update during development version
 
 After finishing a development change that modified any of the code that requires a version bump, run
 ```
@@ -753,7 +753,7 @@ Then run the `update_projects_version` script using the `-l` (`--labels`) flag. 
 
 Create the pull request, using the [release template](https://github.com/dora-metrics/pelorus/blob/master/.github/PULL_REQUEST_TEMPLATE/release_template.md).
 
-> If it a minor or major chart release, ensure that the pull Request is labeled with "minor" or "major" label.
+> If it is a minor or major chart release, ensure that the pull request is labeled with "minor" or "major" label.
 
 After the pull request is merged, on the [Pelorus releases](https://github.com/dora-metrics/pelorus/releases) page, click edit on the latest **Draft** and click **Publish Release** to make a GitHub release.
 
