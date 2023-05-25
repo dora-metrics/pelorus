@@ -17,6 +17,7 @@ FILES_IN_PELORUS = [
 ]
 FILES_IN_OPENSHIFT = [
     "ci-operator/jobs/dora-metrics/pelorus/dora-metrics-pelorus-master-presubmits.yaml",
+    "ci-operator/jobs/dora-metrics/pelorus/dora-metrics-pelorus-master-periodics.yaml",
     "ci-operator/config/dora-metrics/pelorus/dora-metrics-pelorus-master__{version}.yaml",
 ]
 OPENSHIFT_REPO = "openshift/release"
