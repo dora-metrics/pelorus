@@ -18,6 +18,7 @@ FILES_IN_PELORUS = [
 FILES_IN_OPENSHIFT = [
     "ci-operator/jobs/dora-metrics/pelorus/dora-metrics-pelorus-master-presubmits.yaml",
     "ci-operator/jobs/dora-metrics/pelorus/dora-metrics-pelorus-master-periodics.yaml",
+    "core-services/prow/02_config/dora-metrics/pelorus/_prowconfig.yaml",
     "ci-operator/config/dora-metrics/pelorus/dora-metrics-pelorus-master__{version}.yaml",
 ]
 OPENSHIFT_REPO = "openshift/release"
@@ -83,7 +84,9 @@ def check_versions(versions: List[str]) -> None:
 
 
 def main() -> None:
-    check_versions(get_supported_versions())
+    supported_versions = get_supported_versions()
+    logging.info(f"Latest minor OpenShift releases: {', '.join(supported_versions)}")
+    check_versions(supported_versions)
 
     log_cache: dict = logging.getLogger()._cache
     if log_cache.get(logging.ERROR):
