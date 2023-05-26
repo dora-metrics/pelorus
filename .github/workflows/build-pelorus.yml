@@ -9,15 +9,23 @@ on:
       - '.github/workflows/build-pelorus.yml'
 
 env:
-  builder_image: 'registry.access.redhat.com/ubi8/python-39'
-  imageregistry: 'quay.io'
   # Use 'pelorus' for release
   imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
-  s2i_log_level: 2
 
 jobs:
-  build-and-push-committime-image:
+  get-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.tags.outputs.tags }}
+    steps:
+      - id: tags
+        run: |
+          export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)
+          echo "tags=$(echo "latest,${{ github.sha }},$CURRENT_CHART_VERSION")" >> "$GITHUB_OUTPUT"
+
+  build-and-push-exporters-image:
     runs-on: ubuntu-22.04
+    needs: get-tags
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -26,81 +34,43 @@ jobs:
         uses: "./.github/workflow_templates/build_push_exporters"
         with:
           image: 'pelorus-committime-exporter'
-          builder_image: ${{ env.builder_image }}
-          s2i_log_level: ${{ env.s2i_log_level }}
-          quay_imageregistry: ${{ env.imageregistry }}
+          tags: ${{ needs.get-tags.outputs.tags }}
           quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
-
-
-  build-and-push-deploytime-image:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
 
       - name: Build and push deploytime exporter
         uses: "./.github/workflow_templates/build_push_exporters"
         with:
           image: 'pelorus-deploytime-exporter'
-          builder_image: ${{ env.builder_image }}
-          s2i_log_level: ${{ env.s2i_log_level }}
-          quay_imageregistry: ${{ env.imageregistry }}
+          tags: ${{ needs.get-tags.outputs.tags }}
           quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
-
-
-  build-and-push-failure-image:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
 
       - name: Build and push failure exporter
         uses: "./.github/workflow_templates/build_push_exporters"
         with:
           image: 'pelorus-failure-exporter'
-          builder_image: ${{ env.builder_image }}
-          s2i_log_level: ${{ env.s2i_log_level }}
-          quay_imageregistry: ${{ env.imageregistry }}
+          tags: ${{ needs.get-tags.outputs.tags }}
           quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
-
-
-  build-and-push-releasetime-image:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
 
       - name: Build and push releasetime exporter
         uses: "./.github/workflow_templates/build_push_exporters"
         with:
           image: 'pelorus-releasetime-exporter'
-          builder_image: ${{ env.builder_image }}
-          s2i_log_level: ${{ env.s2i_log_level }}
-          quay_imageregistry: ${{ env.imageregistry }}
+          tags: ${{ needs.get-tags.outputs.tags }}
           quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
-
-
-  build-and-push-webhook-image:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
 
       - name: Build and push webhook exporter
         uses: "./.github/workflow_templates/build_push_exporters"
         with:
           image: 'pelorus-webhook-exporter'
-          builder_image: ${{ env.builder_image }}
-          s2i_log_level: ${{ env.s2i_log_level }}
-          quay_imageregistry: ${{ env.imageregistry }}
+          tags: ${{ needs.get-tags.outputs.tags }}
           quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}

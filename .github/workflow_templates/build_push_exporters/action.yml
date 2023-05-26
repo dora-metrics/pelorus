@@ -1,13 +1,10 @@
-name: build_push_exporters
+name: Build and push exporter image to Quay.io
 
 inputs:
   image:
     required: true
-  builder_image:
-    required: true
-  s2i_log_level:
-    required: true
-  quay_imageregistry:
+  tags:
+    description: Comma separated string with the different image tags
     required: true
   quay_imagenamespace:
     required: true
@@ -19,35 +16,20 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Set Image version
-      shell: bash
+    - name: Set variables
       run: |
-        IMG_VER=$(grep quay.io charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml | grep -oP '(?<=default ")[^"]+')
-        echo "Image version: $IMG_VER"
-        echo "VERSION=$IMG_VER" >> $GITHUB_ENV
+        echo "FULL_IMAGE_NAME=quay.io/${{ inputs.quay_imagenamespace }}/${{ inputs.image }}" >> $GITHUB_ENV
+        echo "PARSED_TAGS=$(for tag in $(echo ${{ inputs.tags }} | tr "," " ");do echo -n "--tag ${{ env.FULL_IMAGE_NAME }}:$tag ";done)" >> $GITHUB_ENV
 
-    # Setup S2i and Build container image
-    - name: Setup and Build
-      id: build-exporter
-      uses: redhat-actions/s2i-build@v2
+    - name: Login to Quay.io (docker)
+      uses: docker/login-action@v2
       with:
-        image: ${{ inputs.image }}
-        path_context: 'exporters'
-        builder_image: ${{ inputs.builder_image }}
-        tags: latest ${{ github.sha }}
-        log_level: ${{ inputs.s2i_log_level }}
-
-    - name: Tag exporter image with additional version tag
-      shell: bash
-      run: |
-        docker tag ${{ steps.build-exporter.outputs.image }}:${{ github.sha }} ${{ steps.build-exporter.outputs.image }}:${{ env.VERSION }}
-
-    # Push Image to Quay registry
-    - name: Push To Quay Action
-      uses: redhat-actions/push-to-registry@v2
-      with:
-        image: ${{ steps.build-exporter.outputs.image }}
-        tags: ${{ steps.build-exporter.outputs.tags }} ${{ env.VERSION }}
-        registry: ${{ inputs.quay_imageregistry }}/${{ inputs.quay_imagenamespace }}
         username: ${{ inputs.quay_username }}
         password: ${{ inputs.quay_password }}
+        registry: quay.io
+
+    - name: Build exporter image
+      run: docker image build ${{ env.PARSED_TAGS }} -f container/Containerfile .
+
+    - name: Push exporter image to Quay.io
+      run: docker push --all-tags ${{ env.FULL_IMAGE_NAME }}
