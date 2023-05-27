@@ -246,7 +246,7 @@ shellcheck: $(PELORUS_VENV) $(PELORUS_VENV)/bin/shellcheck
 	. ${PELORUS_VENV}/bin/activate && \
 	if [[ -z shellcheck ]]; then echo "Shellcheck is not installed" >&2; false; fi && \
 	echo "🐚 📋 Linting shell scripts with shellcheck" && \
-	shellcheck $(shell find -name '*.sh' -type f | grep -v 'venv/\|git/\|.pytest_cache/\|htmlcov/\|_test/test_helper/\|_test/bats\|_test/conftest')
+	shellcheck $(shell find . -name '*.sh' -type f | grep -v 'venv/\|git/\|.pytest_cache/\|htmlcov/\|_test/test_helper/\|_test/bats\|_test/conftest')
 
 ifneq (, $(SHELLCHECK))
 shellcheck-optional: shellcheck
