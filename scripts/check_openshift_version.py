@@ -12,6 +12,7 @@ import semver
 
 ROOT = Path(__file__).resolve().parent.parent
 FILES_IN_PELORUS = [
+    ROOT / "README.md",
     ROOT / ".github/ISSUE_TEMPLATE/bug.yml",
     ROOT / "docs/UpstreamSupport.md",
 ]
