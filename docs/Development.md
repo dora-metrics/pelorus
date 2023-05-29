@@ -240,9 +240,9 @@ If not defined specifically, exporters are using pre-built container images with
 
 #### Pre-built Quay images
 
-Each pull request involving `exporters` folder that is merged results in a new set of images that are tagged with the commit hash (for example, `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31)) and with the exporters version (for example, `v2.0.10-rc.5`). The newest merged commit results in additional image tag `latest`. TODO test if this does not break new version script
+Each pull request involving `exporters` folder that is merged results in new exporters images that are tagged with the commit hash (for example, `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31)) and with the exporters version (for example, `v2.0.10-rc.5`). The newest images have the additional `latest` tag. TODO test if this does not break new version script
 
-Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in a new set of images that are tagged with `stable`.
+Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in new exporters images that are tagged with all the previous tags and also `stable` tag.
 
 These images are created using `container/Containerfile` file. This file is generated using [Source-To-Image (S2I)](https://github.com/openshift/source-to-image) (to download it, go to Assets section in [releases](https://github.com/openshift/source-to-image/releases) and selected the that fits your operational system).
 
@@ -345,7 +345,7 @@ exporters:
 
 #### Source-to-image (S2I)
 
-By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/dora-metrics/pelorus/releases) Pelorus. TODO is not master?
+By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to master branch.
 
 Example of such exporter instances are below:
 
