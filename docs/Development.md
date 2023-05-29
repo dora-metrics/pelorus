@@ -132,22 +132,9 @@ We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ens
 
 ### Updating the chart versions
 
-When any of our Helm charts are updated, we need to bump the version number.
-This allows for a seemless upgrade experience.
-We have provided scripts that can test when a version bump is needed and do the bumping for you.
+When any of our Helm charts are updated, we need to bump their version. This allows for a seamless upgrade experience.
 
-1. Ensure the development environment is set up with `make dev-env`.
-2. Run `make chart-lint` to lint the charts, including checking the version number.
-
-You can check all chart versions and bump them if needed with a script that compares upstream pelorus repository with the changes in a fork. To do so ensure your upstream repository is added to your fork by:
-
-    $ git remote add upstream https://github.com/dora-metrics/pelorus.git
-    $ git pull
-    $ make chart-check-bump
-
-or bump specific charts with shell script:
-
-    $ ./scripts/bump-version.py CHART_PATH [ CHART_PATH ...]
+Check [Versioning Process](#versioning-process) section for more information.
 
 ## Dashboard Development
 
@@ -524,13 +511,7 @@ Webhook type exporter has an additional URL target http://localhost:8080/pelorus
 
 ## Operator Development
 
-To create a new version (or candidate) of Pelorus operator you must be logged into `podman` (`podman login` command) and `OpenShift` (`oc login` command) and then run
-```
-scripts/create_pelorus_operator.sh -f
-```
-This will update `pelorus-operator` folder with the updates.
-
-Then, run
+To create a new version (or pre-release) of Pelorus operator you must be logged into `podman` (`podman login` command) and then run
 ```
 cd pelorus-operator
 make podman-build
@@ -540,7 +521,9 @@ make bundle-push
 ```
 This will publish Pelorus operator images to [quay.io](https://quay.io/organization/pelorus).
 
-To deploy it to OpenShift marketplace, a pullrequest must be created in [Openshift Community Operators repository](https://github.com/redhat-openshift-ecosystem/community-operators-prod). The Pelorus operator source code that is deployed to OpenShift marketplace is stored in [`operators/pelorus-operator/`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/tree/main/operators/pelorus-operator) folder.
+To deploy it to OpenShift marketplace, a pull request must be created in [Openshift Community Operators repository](https://github.com/redhat-openshift-ecosystem/community-operators-prod). The Pelorus operator source code that is deployed to OpenShift marketplace is stored in [`operators/pelorus-operator/`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/tree/main/operators/pelorus-operator) folder.
+
+> The operator image and pull request creation are automated by the project CI. Check [Versioning Process](#versioning-process) section for more information
 
 ### API specification
 
@@ -723,29 +706,58 @@ You can do some rudimentary linting with `make chart-lint`.
 
 We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.
 
-## Release Management Process
+## Versioning Process
 
-The following is a walkthrough of the process we follow to create and manage versioned releases of Pelorus.
-Pelorus release versions follow SemVer versioning conventions. Change of the version is managed via Makefile.
+Pelorus has the following versions
 
-1. Create Pelorus Pull Request with the release you're about to make.
+- [repository](https://github.com/dora-metrics/pelorus/releases)
+- [exporters](https://quay.io/organization/pelorus)
+- helm-charts
+    - [pelorus (and exporters subchart)](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/Chart.yaml)
+    - [operators](https://github.com/dora-metrics/pelorus/blob/master/charts/operators/Chart.yaml)
+- [operator](https://github.com/dora-metrics/pelorus/blob/master/pelorus-operator/bundle/manifests/pelorus-operator.clusterserviceversion.yaml#L511)
 
-    For PATCH version bump use:
+To simplify it, the repository, all exporters and all helm-charts versions are the same (which follow semantic versioning conventions) and each time one of them is bumped, the others are also bumped.
 
-        make release
+Pelorus versions should be bumped anytime a change to exporters code (`exporters` folder), or to helm-charts (`charts` folder) or even to operator code (`pelorus-operator` folder), is made. This is enforced by the project CI.
 
-    For minor-release version:
+### Update during development version
 
-        make minor-release
+After finishing a development change that modified any of the code that requires a version bump, run
+```
+./scripts/update_projects_version.py -f -r
+```
+to update the pre-release version.
 
-    For major-release version:
+### Create a release
 
-        make major-release
+To create a release on top of development changes, first create an issue for the release, using the [release issue template](https://github.com/dora-metrics/pelorus/issues/new?assignees=&labels=&projects=&template=release.yml&title=Release+of+Pelorus+Operator+version+%3CVERSION%3E).
 
-2. Propose Pull Request to the project github repository. Ensure that the PR is labeled with "minor" or "major" if one was created.
+Then, create a branch for the release you are about to make.
 
-3. After PR is merged on the [Pelorus releases](https://github.com/dora-metrics/pelorus/releases) page, click edit on the latest **Draft**.
-    * Click **Publish Release**.
+Then run the `update_projects_version` script using the `-l` (`--labels`) flag. It accepts one of the labels **major**, **minor** or **patch** for each of its 2 entries. The first entry is the chart version label and the second the operator version label.
+
+**Examples:**
+
+- To make a MINOR chart version and MAJOR operator version release, run
+    ```
+    ./scripts/update_projects_version.py -f -l minor major
+    ```
+
+- To make both chart version and operator version PATCH release, run
+    ```
+    ./scripts/update_projects_version.py -f -l patch patch
+    ```
+
+> A release pull request should only contain the changes from the script run
+
+Create the pull request, using the [release template](https://github.com/dora-metrics/pelorus/blob/master/.github/PULL_REQUEST_TEMPLATE/release_template.md).
+
+> If it is a minor or major chart release, ensure that the pull request is labeled with "minor" or "major" label.
+
+After the pull request is merged, on the [Pelorus releases](https://github.com/dora-metrics/pelorus/releases) page, click edit on the latest **Draft** and click **Publish Release** to make a GitHub release.
+
+To finish, review the PR opened by the CI in [community operators repository](https://github.com/redhat-openshift-ecosystem/community-operators-prod) and approve it to make the operator available in OpenShift marketplace.
 
 ## Testing the Docs
 
