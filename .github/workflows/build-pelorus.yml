@@ -23,9 +23,9 @@ jobs:
         run: |
           export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)
           if [[ $CURRENT_CHART_VERSION == *"rc"* ]];then
-            echo "tags=$(echo "latest,${{ github.sha }},$CURRENT_CHART_VERSION")" >> "$GITHUB_OUTPUT"
+            echo "tags=$(echo latest,${{ github.sha }},$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
           else
-            echo "tags=$(echo "stable,latest,${{ github.sha }},$CURRENT_CHART_VERSION")" >> "$GITHUB_OUTPUT"
+            echo "tags=$(echo stable,latest,${{ github.sha }},$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
           fi
 
   build-and-push-exporters-image:
