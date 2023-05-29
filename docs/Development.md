@@ -240,11 +240,30 @@ If not defined specifically, exporters are using pre-built container images with
 
 #### Pre-built Quay images
 
-Each Pelorus GitHub pull request that is [merged](https://github.com/dora-metrics/pelorus/pulls?q=is%3Apr+is%3Amerged) results in a new set of images that are tagged with the GitHub commit hash, for example `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31). The newest merged commit results in additional image tag `latest`.
+Each pull request involving `exporters` folder that is merged results in a new set of images that are tagged with the commit hash (for example, `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31)) and with the exporters version (for example, `v2.0.10-rc.5`). The newest merged commit results in additional image tag `latest`. TODO test if this does not break new version script
 
-Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in a new set of images that are tagged with the release number, for example `v2.0.10-rc.5`. At the same time when release is made a `stable` tag is updated to point to the latest released version of the images.
+Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in a new set of images that are tagged with `stable`.
 
-During Pelorus Helm deployment or update time user have option to specify the image tag for each exporter instance individually. Example below shows two different tags for the commit time exporter and two tags for the failure exporter.
+These images are created using `container/Containerfile` file. This file is generated using [Source-To-Image (S2I)](https://github.com/openshift/source-to-image) (to download it, go to Assets section in [releases](https://github.com/openshift/source-to-image/releases) and selected the that fits your operational system).
+
+To generate a new `Containerfile`, in the project root, run
+```
+s2i build exporters registry.access.redhat.com/ubi8/python-39 \
+image:tag --loglevel 2 --as-dockerfile container/Containerfile
+```
+and delete the created `upload` folder, remove labels and edit COPY source instruction in the file.
+
+To build the image, in the project root, run
+```
+podman image build --tag image:tag -f container/Containerfile .
+```
+
+To run the image, run
+```
+podman container run --rm -e APP_FILE=EXPORTER_TYPE/app.py image:tag
+```
+
+During Pelorus Helm deployment or update time, user have option to specify the image tag for each exporter instance individually. Example below shows two different tags for the commit time exporter and two tags for the failure exporter.
 
 ```yaml
 exporters:
@@ -326,7 +345,7 @@ exporters:
 
 #### Source-to-image (S2I)
 
-By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/dora-metrics/pelorus/releases) Pelorus.
+By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/dora-metrics/pelorus/releases) Pelorus. TODO is not master?
 
 Example of such exporter instances are below:
 
@@ -561,9 +580,8 @@ export REPOSITORY=quay.io/pelorus
 export pr_type=opened
 export pr_number=NUMBER
 export commit_hash=HASH
-# download source to image executable https://github.com/openshift/source-to-image/releases
-s2i build exporters registry.access.redhat.com/ubi8/python-39 $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash --loglevel 2
-docker push $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash
+docker image build --tag $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash -f container/Containerfile .
+docker push --all-tags $REPOSITORY/rc-pelorus-exporter
 
 cd pelorus-operator
 export TEST_VERSION=pr$pr_number-$commit_hash

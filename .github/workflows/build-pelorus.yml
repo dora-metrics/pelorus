@@ -1,7 +1,8 @@
 name: Pelorus Exporter Build
 
 on:
-  push:
+  # push:
+  pull_request:
     branches:
       - master
     paths:
@@ -21,7 +22,11 @@ jobs:
       - id: tags
         run: |
           export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)
-          echo "tags=$(echo "latest,${{ github.sha }},$CURRENT_CHART_VERSION")" >> "$GITHUB_OUTPUT"
+          if [[ $CURRENT_CHART_VERSION == *"rc"* ]];then
+            echo "tags=$(echo "latest,${{ github.sha }},$CURRENT_CHART_VERSION")" >> "$GITHUB_OUTPUT"
+          else
+            echo "tags=$(echo "stable,latest,${{ github.sha }},$CURRENT_CHART_VERSION")" >> "$GITHUB_OUTPUT"
+          fi
 
   build-and-push-exporters-image:
     runs-on: ubuntu-22.04
@@ -30,48 +35,51 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Build and push committime exporter
-        uses: "./.github/workflow_templates/build_push_exporters"
-        with:
-          image: 'pelorus-committime-exporter'
-          tags: ${{ needs.get-tags.outputs.tags }}
-          quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
-          quay_username: ${{ secrets.QUAY_USERNAME }}
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
+      - name: DEBUG
+        run: echo ${{ needs.get-tags.outputs.tags }}
 
-      - name: Build and push deploytime exporter
-        uses: "./.github/workflow_templates/build_push_exporters"
-        with:
-          image: 'pelorus-deploytime-exporter'
-          tags: ${{ needs.get-tags.outputs.tags }}
-          quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
-          quay_username: ${{ secrets.QUAY_USERNAME }}
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
+      # - name: Build and push committime exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-committime-exporter'
+      #     tags: ${{ needs.get-tags.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Build and push failure exporter
-        uses: "./.github/workflow_templates/build_push_exporters"
-        with:
-          image: 'pelorus-failure-exporter'
-          tags: ${{ needs.get-tags.outputs.tags }}
-          quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
-          quay_username: ${{ secrets.QUAY_USERNAME }}
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
+      # - name: Build and push deploytime exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-deploytime-exporter'
+      #     tags: ${{ needs.get-tags.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Build and push releasetime exporter
-        uses: "./.github/workflow_templates/build_push_exporters"
-        with:
-          image: 'pelorus-releasetime-exporter'
-          tags: ${{ needs.get-tags.outputs.tags }}
-          quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
-          quay_username: ${{ secrets.QUAY_USERNAME }}
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
+      # - name: Build and push failure exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-failure-exporter'
+      #     tags: ${{ needs.get-tags.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Build and push webhook exporter
-        uses: "./.github/workflow_templates/build_push_exporters"
-        with:
-          image: 'pelorus-webhook-exporter'
-          tags: ${{ needs.get-tags.outputs.tags }}
-          quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
-          quay_username: ${{ secrets.QUAY_USERNAME }}
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
+      # - name: Build and push releasetime exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-releasetime-exporter'
+      #     tags: ${{ needs.get-tags.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
+
+      # - name: Build and push webhook exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-webhook-exporter'
+      #     tags: ${{ needs.get-tags.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
 
