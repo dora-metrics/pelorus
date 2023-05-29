@@ -1,6 +1,10 @@
 # Failure Time Exporter
 
-Failure time exporter captures the timestamp at which a failure occurred, in a production environment, and when it was resolved. It does this by parsing the information of when the issue was created, and closed, in the Issue Tracker(s).
+Failure time exporter captures the timestamps at which a broken deployment occurred, and when it was fixed. It does this by parsing the information of when the issue related to that broken deployment was created, and closed, in the Issue Tracker(s).
+
+The Failure Time Exporter configuration should be adjusted based on the backend being used to restrict failures to only those related to failed deployments in a production.
+
+Failure exporter only collects failure events that are less than 30 minutes old. Older failures won't be included unless they have been already collected.
 
 Failure Time Exporter may be deployed with one of the [supported Issues Trackers](../Overview.md#issue-trackers). In one clusters' namespace there may be multiple instances of Failure Time Exporter, one for each provider (or each project). Each provider requires specific [configuration](#failureconfigmap).
 

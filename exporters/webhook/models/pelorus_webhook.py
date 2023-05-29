@@ -102,6 +102,14 @@ class FailurePelorusPayload(PelorusPayload):
     failure_id: str  # It's an str, because issue may be mix of str and int, e.g. Issue-1
     failure_event: FailureEvent
 
+    @validator("timestamp")
+    def accepted_timestamp_therashold(cls, v):
+        if is_out_of_date(str(v)):
+            raise ValueError(
+                f"Timestamp cannot be older than {METRIC_TIMESTAMP_THRESHOLD_MINUTES} minutes"
+            )
+        return v
+
 
 class DeployTimePelorusPayload(PelorusPayload):
     """

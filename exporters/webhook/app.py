@@ -130,11 +130,17 @@ async def prometheus_metric(received_metric: PelorusMetric):
 
         if failure_type == FailurePelorusPayload.FailureEvent.CREATED:
             in_memory_failure_creation_metric.add_metric(
-                metric_id, prometheus_metric, metric.timestamp
+                metric_id,
+                prometheus_metric,
+                metric.timestamp,
+                timestamp=metric.timestamp,
             )
         elif failure_type == FailurePelorusPayload.FailureEvent.RESOLVED:
             in_memory_failure_resolution_metric.add_metric(
-                metric_id, prometheus_metric, metric.timestamp
+                metric_id,
+                prometheus_metric,
+                metric.timestamp,
+                timestamp=metric.timestamp,
             )
         else:
             logging.error(f"Failure Metric {metric} can not be stored")

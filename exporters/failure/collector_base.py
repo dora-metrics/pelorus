@@ -8,6 +8,9 @@ from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
 
+# TODO 1: CI needs to create failures on the fly to enable this
+# from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date
+
 
 class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
     """
@@ -31,19 +34,41 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
 
         if critical_issues:
             metrics = self.generate_metrics(critical_issues)
+            # TODO 1:
+            # number_of_dropped = 0
             for m in metrics:
+                # TBD_1:
+                # if not is_out_of_date(str(m.deploy_time_timestamp)):
                 if not m.is_resolution:
                     logging.info(
                         "Collected failure_creation_timestamp{ app=%s, issue_number=%s } %s"
                         % (m.labels[0], m.labels[1], m.time_stamp)
                     )
-                    creation_metric.add_metric(m.labels, m.get_value())
+                    creation_metric.add_metric(
+                        m.labels, m.get_value(), timestamp=m.get_value()
+                    )
                 else:
                     logging.info(
                         "Collected failure_resolution_timestamp{ app=%s, issue_number=%s } %s"
                         % (m.labels[0], m.labels[1], m.time_stamp)
                     )
-                    failure_metric.add_metric(m.labels, m.get_value())
+                    failure_metric.add_metric(
+                        m.labels, m.get_value(), timestamp=m.get_value()
+                    )
+            # TODO 1:
+            #     else:
+            #         number_of_dropped += 1
+            #         debug_msg = f"Failure too old to be collected: failure_{'resolution' " \
+            #                      "if m.is_resolution else 'creation'}_timestamp{{ app={m.labels[0]}, " \
+            #                      "issue_number={m.labels[1]} }} {m.time_stamp}"
+            #         logging.debug(debug_msg)
+            # if number_of_dropped:
+            #     logging.info(
+            #         "Number of Failure metrics that are older then %smin and won't be collected: %s",
+            #         METRIC_TIMESTAMP_THRESHOLD_MINUTES,
+            #         number_of_dropped,
+            #     )
+
             yield (creation_metric)
             yield (failure_metric)
 
