@@ -24,7 +24,7 @@ jobs:
 
       - id: tags
         run: |
-          export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
+          export CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml  | cut -c 10-)"
           if [[ $CURRENT_CHART_VERSION == *"rc"* ]];then
             echo "tags=$(echo latest,${{ github.sha }},$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
           else
