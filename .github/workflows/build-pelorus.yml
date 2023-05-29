@@ -19,6 +19,9 @@ jobs:
     outputs:
       tags: ${{ steps.tags.outputs.tags }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - id: tags
         run: |
           export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
