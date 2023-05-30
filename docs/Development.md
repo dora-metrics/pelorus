@@ -244,18 +244,11 @@ Each pull request involving `exporters` folder that is merged results in new exp
 
 Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in new exporters images that are tagged with all the previous tags and also `stable` tag.
 
-These images are created using `container/Containerfile` file. This file is generated using [Source-To-Image (S2I)](https://github.com/openshift/source-to-image) (to download it, go to Assets section in [releases](https://github.com/openshift/source-to-image/releases) and selected the that fits your operational system).
+These images are created using `container/Containerfile` file.
 
-To generate a new `Containerfile`, in the project root, run
+To build the image, in the `exporters` folder, run
 ```
-s2i build exporters registry.access.redhat.com/ubi8/python-39 \
-image:tag --loglevel 2 --as-dockerfile container/Containerfile
-```
-and delete the created `upload` folder, remove labels and edit COPY source instruction in the file.
-
-To build the image, in the project root, run
-```
-podman image build --tag image:tag -f container/Containerfile .
+podman image build --tag image:tag -f ../container/Containerfile .
 ```
 
 To run the image, run
@@ -343,9 +336,9 @@ exporters:
     - comittime-enterprise-config
 ```
 
-#### Source-to-image (S2I)
+#### Image from source
 
-By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to master branch.
+By specifying `source_url` (and optionally `source_ref`), Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to master branch.
 
 Example of such exporter instances are below:
 

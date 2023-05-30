@@ -25,7 +25,7 @@ def _print_version():
     """
     Print the version of the currently running collector.
     Gets the collector name from inspecting `__main__`.
-    Gets version information from environment variables set by an S2I build.
+    Gets version information from environment variables in container image.
     """
     import __main__
 
@@ -36,14 +36,11 @@ def _print_version():
     else:
         exporter_name = "INTERPRETER"
 
-    repo, ref, commit = (
-        utils.get_env_var(f"OPENSHIFT_BUILD_{var.upper()}")
-        for var in "source reference commit".split()
+    repo, ref = (
+        utils.get_env_var(f"OPENSHIFT_BUILD_{var}") for var in ["SOURCE", "REFERENCE"]
     )
-    if repo and ref and commit:
-        print(
-            f"Running {exporter_name} exporter from {repo}, ref {ref} (commit {commit})"
-        )
+    if repo and ref:
+        print(f"Running {exporter_name} exporter from repo {repo} ref {ref}")
     else:
         image_tag = utils.get_env_var("PELORUS_IMAGE_TAG")
         if image_tag:

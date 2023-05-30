@@ -1,0 +1,4 @@
+*.md
+requirements-dev.txt
+tests/
+.dockerignore
