@@ -19,8 +19,9 @@ runs:
     - name: Set variables
       shell: bash
       run: |
-        echo "FULL_IMAGE_NAME=quay.io/${{ inputs.quay_imagenamespace }}/${{ inputs.image }}" >> $GITHUB_ENV
-        echo "PARSED_TAGS=$(for tag in $(echo ${{ inputs.tags }} | tr "," " ");do echo -n "--tag ${{ env.FULL_IMAGE_NAME }}:$tag ";done)" >> $GITHUB_ENV
+        FULL_IMAGE_NAME=quay.io/${{ inputs.quay_imagenamespace }}/${{ inputs.image }}
+        echo "FULL_IMAGE_NAME=$FULL_IMAGE_NAME" >> $GITHUB_ENV
+        echo "PARSED_TAGS=$(for tag in $(echo ${{ inputs.tags }} | tr "," " ");do echo -n "--tag $FULL_IMAGE_NAME:$tag ";done)" >> $GITHUB_ENV
 
 # TODO uncomment
 
