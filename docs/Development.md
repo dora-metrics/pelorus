@@ -244,11 +244,11 @@ Each pull request involving `exporters` folder that is merged results in new exp
 
 Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in new exporters images that are tagged with all the previous tags and also `stable` tag.
 
-These images are created using `container/Containerfile` file.
+These images are created using `exporters/Containerfile` file.
 
 To build the image, in the `exporters` folder, run
 ```
-podman image build --tag image:tag -f ../container/Containerfile .
+podman image build --tag image:tag -f Containerfile .
 ```
 
 To run the image, run
@@ -573,8 +573,10 @@ export REPOSITORY=quay.io/pelorus
 export pr_type=opened
 export pr_number=NUMBER
 export commit_hash=HASH
-docker image build --tag $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash -f container/Containerfile .
+cd exporters
+docker image build --tag $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash -f Containerfile .
 docker push --all-tags $REPOSITORY/rc-pelorus-exporter
+cd ..
 
 cd pelorus-operator
 export TEST_VERSION=pr$pr_number-$commit_hash

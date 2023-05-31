@@ -24,6 +24,4 @@ WORKDIR $WORK_DIR
 RUN pip install -r requirements.txt && \
     pip install -e .
 
-# TODO use array syntax
-# ENTRYPOINT [ "python" ]
 CMD python ${APP_FILE}

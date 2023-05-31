@@ -17,6 +17,7 @@ runs:
   using: 'composite'
   steps:
     - name: Set variables
+      shell: bash
       run: |
         echo "FULL_IMAGE_NAME=quay.io/${{ inputs.quay_imagenamespace }}/${{ inputs.image }}" >> $GITHUB_ENV
         echo "PARSED_TAGS=$(for tag in $(echo ${{ inputs.tags }} | tr "," " ");do echo -n "--tag ${{ env.FULL_IMAGE_NAME }}:$tag ";done)" >> $GITHUB_ENV
@@ -31,14 +32,17 @@ runs:
     #     registry: quay.io
 
     - name: Build exporter image
+      shell: bash
       working-directory: ./exporters
       run: |
         docker image build ${{ env.PARSED_TAGS }} \
         --build-arg PELORUS_IMAGE_TAG="${{ env.FULL_IMAGE_NAME }}:$(echo ${{ inputs.tags }} | grep -oP 'v\d+\.\d+.\d+(-rc.\d+)?')" \
-        -f ../container/Containerfile .
+        -f Containerfile .
 
     - name: DEBUG
+      shell: bash
       run: docker image ls -a
 
     # - name: Push exporter image to Quay.io
+    #   shell: bash
     #   run: docker push --all-tags ${{ env.FULL_IMAGE_NAME }}
