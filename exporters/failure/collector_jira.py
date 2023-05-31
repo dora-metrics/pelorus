@@ -88,6 +88,8 @@ class JiraFailureCollector(AbstractFailureCollector):
 
     query_result_fields_string: str = field(default=QUERY_RESULT_FIELDS, init=False)
 
+    app_name: Optional[str] = field(default=None, metadata=env_vars("APP_NAME"))
+
     def __attrs_post_init__(self):
         # Do not mix projects with custom JQL query
         # Gather all fields and projects
@@ -279,4 +281,6 @@ class JiraFailureCollector(AbstractFailureCollector):
             matcher = f"{self.app_label}="
             if label.startswith(matcher):
                 return label.replace(matcher, "")
-        return "unknown"
+        if self.app_name is None:
+            return "unknown"
+        return self.app_name
