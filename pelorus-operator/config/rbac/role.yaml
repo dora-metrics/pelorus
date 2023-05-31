@@ -55,14 +55,6 @@ rules:
 - verbs:
   - "*"
   apiGroups:
-  - "integreatly.org"
-  resources:
-  - "grafanadashboards"
-  - "grafanadatasources"
-  - "grafanas"
-- verbs:
-  - "*"
-  apiGroups:
   - "image.openshift.io"
   resources:
   - "imagestreams"
@@ -102,5 +94,13 @@ rules:
   - "apps.openshift.io"
   resources:
   - "deploymentconfigs"
+- verbs:
+  - "*"
+  apiGroups:
+  - "integreatly.org"
+  resources:
+  - "grafanadashboards"
+  - "grafanadatasources"
+  - "grafanas"
 
 #+kubebuilder:scaffold:rules
