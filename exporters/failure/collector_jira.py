@@ -282,6 +282,5 @@ class JiraFailureCollector(AbstractFailureCollector):
             if label.startswith(matcher):
                 return label.replace(matcher, "")
         if self.app_name is None:
-            # TODO set this behavior to all failure exporters?
             return "unknown"
         return self.app_name
