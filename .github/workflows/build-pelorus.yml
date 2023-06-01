@@ -1,8 +1,7 @@
 name: Pelorus Exporter Build
 
 on:
-  # push:
-  pull_request:
+  push:
     branches:
       - master
     paths:
@@ -43,8 +42,7 @@ jobs:
         with:
           image: 'pelorus-committime-exporter'
           tags: ${{ needs.get-tags.outputs.tags }}
-          # quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
-          quay_imagenamespace: test
+          quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
 
