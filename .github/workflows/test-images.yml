@@ -87,7 +87,7 @@ jobs:
 
           sed -i "s,$DEFAULT_OPERATOR_IMAGE,$TEST_OPERATOR_IMAGE,g" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
           sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
-          sed -i "s,$CURRENT_CHART_VERSION,$TEST_VERSION,g" helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
+          sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
           sed -i "s,$CURRENT_OPERATOR_VERSION,$TEST_VERSION,g" Makefile
           sed -i "s,pelorus-operator,rc-pelorus-operator,g" Makefile
           find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"

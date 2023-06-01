@@ -24,7 +24,7 @@ spec:
     type: Docker
     dockerStrategy:
       dockerfilePath: Containerfile
-      buildArgs:
+      env:
         - name: OPENSHIFT_BUILD_SOURCE
           value: {{ .source_url | default "https://github.com/dora-metrics/pelorus.git"}}
         - name: OPENSHIFT_BUILD_REFERENCE

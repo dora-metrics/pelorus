@@ -35,10 +35,7 @@ runs:
     - name: Build exporter image
       shell: bash
       working-directory: ./exporters
-      run: |
-        docker image build ${{ env.PARSED_TAGS }} \
-        --build-arg PELORUS_IMAGE_TAG="${{ env.FULL_IMAGE_NAME }}:$(echo ${{ inputs.tags }} | grep -oP 'v\d+\.\d+.\d+(-rc.\d+)?')" \
-        -f Containerfile .
+      run: docker image build ${{ env.PARSED_TAGS }} -f Containerfile .
 
     - name: DEBUG
       shell: bash
