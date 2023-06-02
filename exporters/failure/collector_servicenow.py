@@ -64,7 +64,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                 self.offset,
             )
             for issue in data["result"]:
-                logging.info(
+                logging.debug(
                     "Found issue opened: %s, %s: %s",
                     issue.get("number"),
                     issue.get(SN_OPENED_FIELD),
@@ -77,7 +77,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                 created_ts = second_precision(created_ts).timestamp()
                 resolution_ts = None
                 if issue[SN_RESOLVED_FIELD]:
-                    logging.info(
+                    logging.debug(
                         "Found issue close: %s, %s: %s",
                         issue.get(SN_RESOLVED_FIELD),
                         issue.get("number"),
