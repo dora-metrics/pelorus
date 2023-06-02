@@ -1,0 +1,22 @@
+FROM registry.access.redhat.com/ubi8/python-39:latest
+
+ARG WORK_DIR=/app/pelorus
+
+ENV APP_FILE=deploytime/app.py
+
+USER root
+
+COPY ./ $WORK_DIR
+
+RUN dnf -y install skopeo && \
+    dnf clean all && \
+    chown -R 1001:0 $WORK_DIR
+
+USER 1001
+
+WORKDIR $WORK_DIR
+
+RUN pip install -r requirements.txt && \
+    pip install -e .
+
+CMD python ${APP_FILE}

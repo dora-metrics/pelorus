@@ -240,11 +240,23 @@ If not defined specifically, exporters are using pre-built container images with
 
 #### Pre-built Quay images
 
-Each Pelorus GitHub pull request that is [merged](https://github.com/dora-metrics/pelorus/pulls?q=is%3Apr+is%3Amerged) results in a new set of images that are tagged with the GitHub commit hash, for example `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31). The newest merged commit results in additional image tag `latest`.
+Each pull request involving `exporters` folder that is merged results in new exporters images that are tagged with the commit hash (for example, `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31)) and with the exporters version (for example, `v2.0.10-rc.5`). The newest images have the additional `latest` tag.
 
-Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in a new set of images that are tagged with the release number, for example `v2.0.10-rc.5`. At the same time when release is made a `stable` tag is updated to point to the latest released version of the images.
+Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in new exporters images that are tagged with all the previous tags and also `stable` tag.
 
-During Pelorus Helm deployment or update time user have option to specify the image tag for each exporter instance individually. Example below shows two different tags for the commit time exporter and two tags for the failure exporter.
+These images are created using `exporters/Containerfile` file.
+
+To build the image, in the `exporters` folder, run
+```
+podman image build --tag image:tag -f Containerfile .
+```
+
+To run the image, run
+```
+podman container run --rm -e APP_FILE=EXPORTER_TYPE/app.py image:tag
+```
+
+During Pelorus Helm deployment or update time, user have option to specify the image tag for each exporter instance individually. Example below shows two different tags for the commit time exporter and two tags for the failure exporter.
 
 ```yaml
 exporters:
@@ -324,9 +336,9 @@ exporters:
     - comittime-enterprise-config
 ```
 
-#### Source-to-image (S2I)
+#### Image from source
 
-By specifying `source_url` and optionally `source_ref` Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus Helm deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the latest [released](https://github.com/dora-metrics/pelorus/releases) Pelorus.
+By specifying `source_url` (and optionally `source_ref`), Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to master branch.
 
 Example of such exporter instances are below:
 
@@ -561,9 +573,10 @@ export REPOSITORY=quay.io/pelorus
 export pr_type=opened
 export pr_number=NUMBER
 export commit_hash=HASH
-# download source to image executable https://github.com/openshift/source-to-image/releases
-s2i build exporters registry.access.redhat.com/ubi8/python-39 $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash --loglevel 2
-docker push $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash
+cd exporters
+docker image build --tag $REPOSITORY/rc-pelorus-exporter:vpr$pr_number-$commit_hash -f Containerfile .
+docker push --all-tags $REPOSITORY/rc-pelorus-exporter
+cd ..
 
 cd pelorus-operator
 export TEST_VERSION=pr$pr_number-$commit_hash
@@ -576,7 +589,7 @@ export TEST_EXPORTER_IMAGE="$REPOSITORY/rc-pelorus-exporter:{{ .image_tag | defa
 
 sed -i "s,$DEFAULT_OPERATOR_IMAGE,$TEST_OPERATOR_IMAGE,g" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
 sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
-sed -i "s,$CURRENT_CHART_VERSION,$TEST_VERSION,g" helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
+sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml
 sed -i "s,$CURRENT_OPERATOR_VERSION,$TEST_VERSION,g" Makefile
 sed -i "s,pelorus-operator,rc-pelorus-operator,g" Makefile
 find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
