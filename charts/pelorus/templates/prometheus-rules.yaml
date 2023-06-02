@@ -9,6 +9,7 @@ spec:
     - record: sdp:applications
       expr: >
         sdp:lead_time:by_app or count by (app) (deploy_timestamp) or sdp:time_to_restore:by_app or sdp:change_failure_rate:by_app
+
     - record: sdp:lead_time:by_commit
       expr: >
         min by (app, commit) (deploy_timestamp - on(app,image_sha) group_left(commit) commit_timestamp)
@@ -18,6 +19,7 @@ spec:
     - record: sdp:lead_time:global
       expr: >
         avg(sdp:lead_time:by_app)
+
     - record: sdp:time_to_restore:by_issue
       expr: >
         failure_resolution_timestamp{app!="unknown"} - max_over_time(failure_creation_timestamp{app!="unknown"}[5y])
@@ -27,6 +29,7 @@ spec:
     - record: sdp:time_to_restore:global
       expr: >
         avg (sdp:time_to_restore:by_app)
+
     - record: sdp:change_failure_rate:by_app
       expr: >
         (count by (app) (failure_creation_timestamp{app!="unknown"}) or sdp:lead_time:by_app * 0) / count by (app) (sdp:lead_time:by_commit)

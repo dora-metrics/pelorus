@@ -155,7 +155,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "sdp:lead_time:by_app{app=~\"$app\"}",
+            "expr": "sdp:lead_time:by_app{app=~\".*/$app/.*\"}",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -241,7 +241,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "((sdp:lead_time:by_app{app=\"$app\"}) - (sdp:lead_time:by_app{app=\"$app\"} offset $__range)) / (sdp:lead_time:by_app{app=\"$app\"} offset $__range)",
+            "expr": "((sdp:lead_time:by_app{app=~\".*/$app/.*\"}) - (sdp:lead_time:by_app{app=~\".*/$app/.*\"} offset $__range)) / (sdp:lead_time:by_app{app=~\".*/$app/.*\"} offset $__range)",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -323,7 +323,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "count (count_over_time (deploy_timestamp{app=\"$app\"} [$__range]) )",
+            "expr": "count (count_over_time (deploy_timestamp{app=~\".*/$app/.*\"} [$__range]) )",
             "format": "time_series",
             "instant": true,
             "intervalFactor": 1,
@@ -410,7 +410,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "(count (count_over_time (deploy_timestamp{app=\"$app\"} [$__range]) ) - count (count_over_time (deploy_timestamp{app=\"$app\"} [$__range] offset $__range) ) ) / count (count_over_time (deploy_timestamp{app=\"$app\"} [$__range] offset $__range) )",
+            "expr": "(count (count_over_time (deploy_timestamp{app=~\".*/$app/.*\"} [$__range]) ) - count (count_over_time (deploy_timestamp{app=~\".*/$app/.*\"} [$__range] offset $__range) ) ) / count (count_over_time (deploy_timestamp{app=~\".*/$app/.*\"} [$__range] offset $__range) )",
             "format": "time_series",
             "hide": false,
             "instant": false,
@@ -494,7 +494,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "sdp:time_to_restore:by_app{app=\"$app\"}",
+            "expr": "sdp:time_to_restore:by_app{app=~\".*/$app/.*\"}",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -580,7 +580,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "((sdp:time_to_restore:by_app{app=\"$app\"} ) - (sdp:time_to_restore:by_app{app=\"$app\"}  offset $__range)) / (sdp:time_to_restore:by_app{app=\"$app\"}  offset $__range)\n",
+            "expr": "((sdp:time_to_restore:by_app{app=~\".*/$app/.*\"} ) - (sdp:time_to_restore:by_app{app=~\".*/$app/.*\"}  offset $__range)) / (sdp:time_to_restore:by_app{app=~\".*/$app/.*\"}  offset $__range)\n",
             "format": "time_series",
             "hide": false,
             "instant": false,
@@ -667,7 +667,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "avg_over_time(sdp:change_failure_rate:by_app{app=\"$app\"} [$__range])",
+            "expr": "avg_over_time(sdp:change_failure_rate:by_app{app=~\".*/$app/.*\"} [$__range])",
             "format": "heatmap",
             "intervalFactor": 1,
             "refId": "A"
@@ -744,7 +744,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "((avg_over_time(sdp:change_failure_rate:by_app{app=\"$app\"} [$__range])) - (avg_over_time(sdp:change_failure_rate:by_app{app=\"$app\"} [$__range] offset $__range) ) ) / (avg_over_time(sdp:change_failure_rate:by_app{app=\"$app\"} [$__range] offset $__range) ) ",
+            "expr": "((avg_over_time(sdp:change_failure_rate:by_app{app=~\".*/$app/.*\"} [$__range])) - (avg_over_time(sdp:change_failure_rate:by_app{app=~\".*/$app/.*\"} [$__range] offset $__range) ) ) / (avg_over_time(sdp:change_failure_rate:by_app{app=~\".*/$app/.*\"} [$__range] offset $__range) ) ",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -805,7 +805,7 @@ spec:
         "steppedLine": false,
         "targets": [
             {
-            "expr": "sdp:lead_time:by_app{app=~\"$app\"}",
+            "expr": "sdp:lead_time:by_app{app=~\".*/$app/.*\"}",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -893,7 +893,7 @@ spec:
         "steppedLine": false,
         "targets": [
             {
-            "expr": "count (count_over_time (deploy_timestamp{app=\"$app\"} [$__range]) )",
+            "expr": "count (count_over_time (deploy_timestamp{app=~\".*/$app/.*\"} [$__range]) )",
             "refId": "A"
             }
         ],
@@ -979,7 +979,7 @@ spec:
         "steppedLine": false,
         "targets": [
             {
-            "expr": "sdp:time_to_restore:by_app{app=\"$app\"}",
+            "expr": "sdp:time_to_restore:by_app{app=~\".*/$app/.*\"}",
             "refId": "A"
             }
         ],
@@ -1067,7 +1067,7 @@ spec:
         "steppedLine": false,
         "targets": [
             {
-            "expr": "avg_over_time(sdp:change_failure_rate:by_app{app=\"$app\"} [$__range])",
+            "expr": "avg_over_time(sdp:change_failure_rate:by_app{app=~\".*/$app/.*\"} [$__range])",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -1137,7 +1137,7 @@ spec:
             "options": [],
             "query": "label_values(sdp:applications, app)",
             "refresh": 2,
-            "regex": "",
+            "regex": "/([^\/]+)/g",
             "skipUrlSync": false,
             "sort": 1,
             "tagValuesQuery": "",

@@ -33,6 +33,7 @@ from committime import CommitMetric, commit_metric_from_build
 from pelorus.config import env_vars
 from pelorus.config.converters import comma_separated, pass_through
 from pelorus.utils import Url, get_nested
+from provider_common import format_app_name
 
 # Custom annotations env for the Build
 # Default ones are in the CommitMetric._ANNOTATION_MAPPIG
@@ -126,7 +127,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             commit_metric.add_metric(
                 [
                     my_metric.namespace,
-                    my_metric.name,
+                    format_app_name(my_metric.name),
                     my_metric.commit_hash,
                     my_metric.image_hash,
                 ],

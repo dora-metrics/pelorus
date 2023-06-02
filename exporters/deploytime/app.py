@@ -12,6 +12,7 @@ from deploytime import DeployTimeMetric
 from pelorus.config import load_and_log, no_env_vars
 from pelorus.config.converters import comma_separated
 from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date
+from provider_common import format_app_name
 from provider_common.openshift import (
     filter_pods_by_replica_uid,
     get_and_log_namespaces,
@@ -54,7 +55,7 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
                     m.deploy_time,
                 )
                 deploy_timestamp_metric.add_metric(
-                    [m.namespace, m.name, m.image_sha],
+                    [m.namespace, format_app_name(m.name), m.image_sha],
                     m.deploy_time_timestamp,
                     timestamp=m.deploy_time_timestamp,
                 )
