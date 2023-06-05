@@ -73,7 +73,7 @@ class PagerdutyFailureCollector(AbstractFailureCollector):
             )
 
     def get_incidents(self) -> list[dict]:
-        logging.info("Getting incidents")
+        logging.debug("Collecting incidents")
 
         resp = self.session.get(self.url, headers=self.headers)
         try:

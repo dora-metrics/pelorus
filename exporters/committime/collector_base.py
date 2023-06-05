@@ -113,7 +113,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         commit_metrics = self.generate_metrics()
 
         for my_metric in commit_metrics:
-            logging.info(
+            logging.debug(
                 "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s"
                 % (
                     my_metric.namespace,
@@ -137,14 +137,14 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     def _get_watched_namespaces(self) -> set[str]:
         watched_namespaces = self.namespaces
         if not watched_namespaces:
-            logging.info("No namespaces specified, watching all namespaces")
+            logging.debug("No namespaces specified, watching all namespaces")
             v1_namespaces = self.kube_client.resources.get(
                 api_version="v1", kind="Namespace"
             )
             watched_namespaces = {
                 namespace.metadata.name for namespace in v1_namespaces.get().items
             }
-        logging.info("Watching namespaces: %s" % (watched_namespaces))
+        logging.debug("Watching namespaces: %s" % (watched_namespaces))
         return watched_namespaces
 
     def _get_openshift_obj_by_app(self, openshift_obj: str) -> Optional[dict]:

@@ -125,6 +125,8 @@ There are additional options available when the [PROVIDER](#provider) type is se
 
 : Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`.
 
+: > **NOTE:** `DEBUG` log level is too verbose, do not use it in production.
+
 ###### APP_LABEL
 
 - **Required:** no

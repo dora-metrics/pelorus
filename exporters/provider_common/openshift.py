@@ -225,24 +225,24 @@ def get_and_log_namespaces(
     3. If neither namespaces nor the PROD_LABEL is given, then implicitly matches all namespaces.
     """
     if namespaces:
-        logging.info("Watching namespaces %s", namespaces)
+        logging.debug("Watching namespaces %s", namespaces)
         return namespaces
 
     if prod_label:
-        logging.info(
+        logging.debug(
             "No namespaces specified, watching all namespaces with given PROD_LABEL (%s)",
             prod_label,
         )
         query_args = dict(label_selector=prod_label)
     else:
-        logging.info(
+        logging.debug(
             "No namespaces specified and no PROD_LABEL given, watching all namespaces."
         )
         query_args = dict()
 
     all_namespaces = client.resources.get(api_version="v1", kind="Namespace")
     namespaces = {ns.metadata.name for ns in all_namespaces.get(**query_args).items}
-    logging.info("Watching namespaces %s", namespaces)
+    logging.debug("Watching namespaces %s", namespaces)
     if not namespaces:
         logging.warning(
             "No NAMESPACES given and PROD_LABEL did not return any matching namespaces."

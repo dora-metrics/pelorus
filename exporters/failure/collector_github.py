@@ -44,6 +44,8 @@ class GithubFailureCollector(AbstractFailureCollector):
     Github implementation of a FailureCollector
     """
 
+    user: str = field(default="", init=False)
+
     token: str = field(
         default="",
         metadata=env_vars(*env_var_names.TOKEN) | log(REDACT),
@@ -61,7 +63,6 @@ class GithubFailureCollector(AbstractFailureCollector):
     tls_verify: bool = field(default=True)
 
     session: requests.Session = field(factory=requests.Session, init=False)
-    user: str = field(default="", init=False)
 
     issue_label: str = field(
         default=DEFAULT_GITHUB_ISSUE_LABEL, metadata=env_vars("GITHUB_ISSUE_LABEL")
@@ -79,7 +80,7 @@ class GithubFailureCollector(AbstractFailureCollector):
         try:
             self.user = self._get_github_user()
         except Exception:
-            logging.warning("github username not found")
+            logging.error("github username not found")
             raise
 
     def _get_github_user(self) -> str:
@@ -109,7 +110,7 @@ class GithubFailureCollector(AbstractFailureCollector):
     def get_issues(self) -> list[dict]:
         all_issues = []
         for proj in self.projects:
-            logging.info("Getting issues from: %s", proj)
+            logging.debug("Collecting issues from: %s", proj)
             # note: this is getting issues for each github project
             url = "https://{}/repos/{}/issues".format(self.tracker_api, proj)
             headers = {

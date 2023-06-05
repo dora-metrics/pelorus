@@ -84,7 +84,7 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
             raise error
 
     def get_work_items(self) -> List[WorkItem]:
-        logging.info("Getting work items")
+        logging.debug("Collecting work items")
 
         try:
             query_string = "Select [System.Id] From WorkItems"

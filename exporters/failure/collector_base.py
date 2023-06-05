@@ -19,6 +19,8 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
     """
 
     def collect(self):
+        # This function runs when the app starts and every time the /metrics
+        # endpoint is accessed
         creation_metric = GaugeMetricFamily(
             "failure_creation_timestamp",
             "Failure Creation Timestamp",
@@ -31,6 +33,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
         )
 
         critical_issues = self.search_issues()
+        logging.debug(f"Collected {len(critical_issues)} failure(s) in this run")
 
         if critical_issues:
             metrics = self.generate_metrics(critical_issues)
@@ -40,7 +43,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                 # TBD_1:
                 # if not is_out_of_date(str(m.deploy_time_timestamp)):
                 if not m.is_resolution:
-                    logging.info(
+                    logging.debug(
                         "Collected failure_creation_timestamp{ app=%s, issue_number=%s } %s"
                         % (m.labels[0], m.labels[1], m.time_stamp)
                     )
@@ -48,7 +51,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                         m.labels, m.get_value(), timestamp=m.get_value()
                     )
                 else:
-                    logging.info(
+                    logging.debug(
                         "Collected failure_resolution_timestamp{ app=%s, issue_number=%s } %s"
                         % (m.labels[0], m.labels[1], m.time_stamp)
                     )

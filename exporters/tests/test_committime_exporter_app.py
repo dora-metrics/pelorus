@@ -20,7 +20,7 @@ from kubernetes.dynamic.resource import ResourceInstance
 
 from committime.app import set_up
 from committime.collector_azure_devops import AzureDevOpsCommitCollector
-from tests import MockExporter
+from tests import MockExporter, get_number_of_error_logs
 
 
 def name_space(name: str):
@@ -69,8 +69,7 @@ def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
         mocked_commit_time_exporter.run_app({"PROVIDER": provider})
 
     # TODO shouldn't be 1?
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
+    assert get_number_of_error_logs(caplog.record_tuples) == 0
 
 
 @pytest.mark.parametrize("provider", ["wrong", "git_hub", "GITHUB", "GitHub"])
@@ -80,8 +79,7 @@ def test_app_git_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFi
         mocked_commit_time_exporter.run_app({"GIT_PROVIDER": provider})
 
     # TODO shouldn't be 1?
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
+    assert get_number_of_error_logs(caplog.record_tuples) == 0
 
 
 # TODO mock kubernetes/OpenShift objects so a call to azure API is made
@@ -89,8 +87,7 @@ def test_app_git_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFi
 # def test_app_git_azure_devops_without_required_options(caplog: pytest.LogCaptureFixture):
 #     run_app({"GIT_PROVIDER": "azure-devops"})
 
-#     # number of error logs
-#     assert len([record for record in caplog.record_tuples if record[1] == 40]) == 1
+#     assert get_number_of_error_logs(caplog.record_tuples) == 1
 
 
 @pytest.mark.integration
@@ -122,10 +119,9 @@ def test_app_git_azure_devops(caplog: pytest.LogCaptureFixture):
     assert mocked_exporter.token == "fake_token"
     # TODO assert "git_api='https://dev.azure.com'" in caplog.text
     assert mocked_exporter.git_api.url == "https://dev.azure.com"
-    assert "No namespaces specified, watching all namespaces" in caplog.text
+    # TODO assert "No namespaces specified, watching all namespaces" in caplog.text
     assert len(mocked_exporter.namespaces) == 0
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
+    assert get_number_of_error_logs(caplog.record_tuples) == 0
 
 
 @pytest.mark.integration
@@ -165,8 +161,7 @@ def test_app_git_with_all_options(caplog: pytest.LogCaptureFixture):
     assert "Watching namespaces: {'test1'}" in caplog.text
     assert len(mocked_exporter.namespaces) == 1
     assert "test1" in mocked_exporter.namespaces
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
+    assert get_number_of_error_logs(caplog.record_tuples) == 0
 
 
 @pytest.mark.integration
@@ -192,8 +187,7 @@ def test_app_image(caplog: pytest.LogCaptureFixture):
     assert mocked_exporter.date_annotation_name == "io.openshift.build.commit.date"
     assert "date_format='%a %b %d %H:%M:%S %Y %z'" in caplog.text
     assert mocked_exporter.date_format == "%a %b %d %H:%M:%S %Y %z"
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
+    assert get_number_of_error_logs(caplog.record_tuples) == 0
 
 
 @pytest.mark.integration
@@ -223,5 +217,4 @@ def test_app_image_with_all_options(caplog: pytest.LogCaptureFixture):
     assert mocked_exporter.date_annotation_name == "custom date annotation"
     assert "date_format='custom format'" in caplog.text
     assert mocked_exporter.date_format == "custom format"
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
+    assert get_number_of_error_logs(caplog.record_tuples) == 0
