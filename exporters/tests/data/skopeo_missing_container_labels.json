@@ -1,0 +1,87 @@
+{
+    "Name": "quay.io/pelorus/httpd-sample-app",
+    "Digest": "sha256:8065b45e025adff01bae128f669746b9e70ace52b50cf5a72a48b2102ec5089b",
+    "RepoTags": [
+        "latest"
+    ],
+    "Created": "2023-05-17T09:45:54.026075454Z",
+    "DockerVersion": "",
+    "Labels": {
+        "com.redhat.component": "httpd24-container",
+        "description": "Apache httpd 2.4 available as container, is a powerful, efficient, and extensible web server. Apache supports a variety of features, many implemented as compiled modules which extend the core functionality. These can range from server-side programming language support to authentication schemes. Virtual hosting allows one Apache installation to serve many different Web sites.",
+        "io.buildah.version": "1.29.0",
+        "io.k8s.description": "Apache httpd 2.4 available as container, is a powerful, efficient, and extensible web server. Apache supports a variety of features, many implemented as compiled modules which extend the core functionality. These can range from server-side programming language support to authentication schemes. Virtual hosting allows one Apache installation to serve many different Web sites.",
+        "io.k8s.display-name": "Apache httpd 2.4",
+        "io.openshift.expose-services": "8080:http,8443:https",
+        "io.openshift.s2i.scripts-url": "image:///usr/libexec/s2i",
+        "io.openshift.tags": "builder,httpd,httpd24",
+        "io.s2i.scripts-url": "image:///usr/libexec/s2i",
+        "maintainer": "SoftwareCollections.org \u003csclorg@redhat.com\u003e",
+        "name": "centos7/httpd-24-centos7",
+        "org.label-schema.build-date": "20200809",
+        "org.label-schema.license": "GPLv2",
+        "org.label-schema.name": "CentOS Base Image",
+        "org.label-schema.schema-version": "1.0",
+        "org.label-schema.vendor": "CentOS",
+        "org.opencontainers.image.created": "2020-08-09 00:00:00+01:00",
+        "org.opencontainers.image.licenses": "GPL-2.0-only",
+        "org.opencontainers.image.title": "CentOS Base Image",
+        "org.opencontainers.image.vendor": "CentOS",
+        "summary": "Platform for running Apache httpd 2.4 or building httpd-based application",
+        "usage": "s2i build https://github.com/sclorg/httpd-container.git --context-dir=examples/sample-test-app/ quay.io/centos7/httpd-24-centos7 sample-server",
+        "version": "2.4"
+    },
+    "Architecture": "amd64",
+    "Os": "linux",
+    "Layers": [
+        "sha256:c61d16cfe03e7bfb4e7e312f09fb17a815be72096544133320058ee6ce55d0b2",
+        "sha256:10fcbcffb51f81a88d50ed045bbd5818142cd8846a28478b36fb9baeea12b9c2",
+        "sha256:ef467998e3e7687c74c01db07b9ee7fab7c200133d76ab57770b5aac78f5a50c"
+    ],
+    "LayersData": [
+        {
+            "MIMEType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "Digest": "sha256:c61d16cfe03e7bfb4e7e312f09fb17a815be72096544133320058ee6ce55d0b2",
+            "Size": 78951426,
+            "Annotations": null
+        },
+        {
+            "MIMEType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "Digest": "sha256:10fcbcffb51f81a88d50ed045bbd5818142cd8846a28478b36fb9baeea12b9c2",
+            "Size": 10435967,
+            "Annotations": null
+        },
+        {
+            "MIMEType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "Digest": "sha256:ef467998e3e7687c74c01db07b9ee7fab7c200133d76ab57770b5aac78f5a50c",
+            "Size": 50444672,
+            "Annotations": null
+        }
+    ],
+    "Env": [
+        "STI_SCRIPTS_URL=image:///usr/libexec/s2i",
+        "STI_SCRIPTS_PATH=/usr/libexec/s2i",
+        "APP_ROOT=/opt/app-root",
+        "HOME=/opt/app-root/src",
+        "PATH=/opt/app-root/src/bin:/opt/app-root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PLATFORM=el7",
+        "HTTPD_VERSION=2.4",
+        "SUMMARY=Platform for running Apache httpd 2.4 or building httpd-based application",
+        "DESCRIPTION=Apache httpd 2.4 available as container, is a powerful, efficient, and extensible web server. Apache supports a variety of features, many implemented as compiled modules which extend the core functionality. These can range from server-side programming language support to authentication schemes. Virtual hosting allows one Apache installation to serve many different Web sites.",
+        "HTTPD_CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/httpd/",
+        "HTTPD_APP_ROOT=/opt/app-root",
+        "HTTPD_CONFIGURATION_PATH=/opt/app-root/etc/httpd.d",
+        "HTTPD_MAIN_CONF_PATH=/etc/httpd/conf",
+        "HTTPD_MAIN_CONF_MODULES_D_PATH=/etc/httpd/conf.modules.d",
+        "HTTPD_MAIN_CONF_D_PATH=/etc/httpd/conf.d",
+        "HTTPD_TLS_CERT_PATH=/etc/httpd/tls",
+        "HTTPD_VAR_RUN=/var/run/httpd",
+        "HTTPD_DATA_PATH=/var/www",
+        "HTTPD_DATA_ORIG_PATH=/opt/rh/httpd24/root/var/www",
+        "HTTPD_LOG_PATH=/var/log/httpd24",
+        "HTTPD_SCL=httpd24",
+        "BASH_ENV=/opt/app-root/scl_enable",
+        "ENV=/opt/app-root/scl_enable",
+        "PROMPT_COMMAND=. /opt/app-root/scl_enable"
+    ]
+}

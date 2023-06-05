@@ -301,5 +301,5 @@ def get_images_from_pod(pod: ResourceField) -> Dict[str, str]:
             if sha256_value and registry and image_name:
                 image_shas[
                     sha256_value
-                ] = f"docker://{registry}{image_name}{sha256_value}"
+                ] = f"docker://{registry}{image_name}@{sha256_value}"
     return image_shas

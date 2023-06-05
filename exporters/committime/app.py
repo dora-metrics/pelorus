@@ -20,6 +20,7 @@ from committime.collector_base import (
     AbstractCommitCollector,
 )
 from committime.collector_bitbucket import BitbucketCommitCollector
+from committime.collector_containerimage import ContainerImageCommitCollector
 from committime.collector_gitea import GiteaCommitCollector
 from committime.collector_github import GitHubCommitCollector
 from committime.collector_gitlab import GitLabCommitCollector
@@ -43,7 +44,7 @@ PROVIDER_CLASSES_BY_NAME = {
     "gitlab": GitLabCommitCollector,
 }
 
-PROVIDER_TYPES = {"git", "image"}
+PROVIDER_TYPES = {"git", "image", "containerimage"}
 DEFAULT_PROVIDER = "git"
 
 DEFAULT_COMMIT_DATE_FORMAT = "%a %b %d %H:%M:%S %Y %z"
@@ -54,6 +55,42 @@ class CommittimeTypeConfig:
     provider: str = field(
         default=DEFAULT_PROVIDER, validator=attrs.validators.in_(PROVIDER_TYPES)
     )
+
+
+@define(kw_only=True)
+class ContainerImageCommittimeConfig:
+    kube_client: DynamicClient = field(metadata=no_env_vars())
+
+    app_label: str = pelorus.DEFAULT_APP_LABEL
+    namespaces: set[str] = field(factory=set, converter=comma_separated(set))
+    prod_label: str = field(default=pelorus.DEFAULT_PROD_LABEL)
+
+    label_commit_time_format: str = field(
+        default=DEFAULT_COMMIT_DATE_FORMAT, metadata=env_vars("COMMIT_DATE_FORMAT")
+    )
+
+    label_commit_time: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_time"],
+        metadata=env_vars(COMMIT_DATE_ANNOTATION_ENV),
+    )
+
+    label_commit_hash: str = field(
+        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
+    )
+
+    def make_collector(self) -> AbstractCommitCollector:
+        return ContainerImageCommitCollector(
+            kube_client=self.kube_client,
+            date_format=self.label_commit_time_format,
+            namespaces=self.namespaces,
+            prod_label=self.prod_label,
+            username="",
+            token="",
+            app_label=self.app_label,
+            date_annotation_name=self.label_commit_time,
+            hash_annotation_name=self.label_commit_hash,
+        )
 
 
 @define(kw_only=True)
@@ -245,6 +282,10 @@ def set_up() -> AbstractCommitCollector:
         config = load_and_log(GitCommittimeConfig, other=dict(kube_client=dyn_client))
     elif provider_config.provider == "image":
         config = load_and_log(ImageCommittimeConfig, other=dict(kube_client=dyn_client))
+    elif provider_config.provider == "containerimage":
+        config = load_and_log(
+            ContainerImageCommittimeConfig, other=dict(kube_client=dyn_client)
+        )
     else:
         raise ValueError(
             f"Unknown provider {provider_config.provider}"
