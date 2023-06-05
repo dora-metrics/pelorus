@@ -46,8 +46,8 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    containerImage: quay.io/pelorus/pelorus-operator:0.0.7-rc.10
-    createdAt: "2023-06-05T16:36:04Z"
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.7-rc.11
+    createdAt: "2023-06-05T20:51:52Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -55,7 +55,7 @@ metadata:
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
     repository: https://github.com/dora-metrics/pelorus/
     support: Pelorus Community
-  name: pelorus-operator.v0.0.7-rc.10
+  name: pelorus-operator.v0.0.7-rc.11
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -208,6 +208,26 @@ spec:
           verbs:
           - '*'
         - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreams
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheuses
+          - prometheusrules
+          - servicemonitors
+          verbs:
+          - '*'
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - '*'
+        - apiGroups:
           - ""
           resources:
           - configmaps
@@ -235,26 +255,6 @@ spec:
           - grafanadashboards
           - grafanadatasources
           - grafanas
-          verbs:
-          - '*'
-        - apiGroups:
-          - image.openshift.io
-          resources:
-          - imagestreams
-          verbs:
-          - '*'
-        - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - prometheuses
-          - prometheusrules
-          - servicemonitors
-          verbs:
-          - '*'
-        - apiGroups:
-          - route.openshift.io
-          resources:
-          - routes
           verbs:
           - '*'
         - apiGroups:
@@ -406,7 +406,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/pelorus/pelorus-operator:0.0.7-rc.10
+                image: quay.io/pelorus/pelorus-operator:0.0.7-rc.11
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -508,7 +508,7 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.7-rc.10
+  version: 0.0.7-rc.11
   replaces: pelorus-operator.v0.0.6
   skips:
     - pelorus-operator.v0.0.6
