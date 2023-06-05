@@ -110,6 +110,8 @@ For the Header X-Pelorus-Event: `committime`
 ##### failure
 For the Header X-Pelorus-Event: `failure`
 
+> **NOTE:** To align with the nature of Prometheus, it is required that the failure event being sent to the webhook exporter should not have occurred more than 30 minutes prior to the time of sending.
+
 | Key             | Type     | Description |
 |-----------------|----------|-------------|
 | `app`           | `string` | Monitored application name |
