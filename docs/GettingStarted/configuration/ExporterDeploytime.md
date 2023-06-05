@@ -68,6 +68,8 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 
 : Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`.
 
+: > **NOTE:** `DEBUG` log level is too verbose, do not use it in production.
+
 ###### APP_LABEL
 
 - **Required:** no

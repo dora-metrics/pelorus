@@ -84,8 +84,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         else:
             try:
                 metric.commit_time = timestamp.isoformat("T", "auto")
-                # TODO
-                logging.info("metric.commit_time %s", timestamp)
+                logging.debug("metric.commit_time %s", timestamp)
                 metric.commit_timestamp = (
                     timestamp.timestamp()
                 )  # hopefully they haven't provided a naive datetime

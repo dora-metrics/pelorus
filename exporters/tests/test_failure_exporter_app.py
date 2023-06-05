@@ -21,7 +21,7 @@ from jira.exceptions import JIRAError
 from failure.app import set_up
 from pelorus.config.loading import MissingConfigDataError
 from pelorus.errors import FailureProviderAuthenticationError
-from tests import MockExporter
+from tests import MockExporter, get_number_of_error_logs, get_number_of_info_logs
 
 PAGER_DUTY_TOKEN = os.environ.get("PAGER_DUTY_TOKEN")
 AZURE_DEVOPS_TOKEN = os.environ.get("AZURE_DEVOPS_TOKEN")
@@ -38,8 +38,7 @@ def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
         mocked_failure_exporter.run_app({"PROVIDER": provider})
 
     # TODO shouldn't be 1?
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 0
+    assert get_number_of_error_logs(caplog.record_tuples) == 0
 
 
 @pytest.mark.integration
@@ -47,8 +46,7 @@ def test_app_pagerduty_without_required_options(caplog: pytest.LogCaptureFixture
     with pytest.raises(FailureProviderAuthenticationError):
         mocked_failure_exporter.run_app({"PROVIDER": "pagerduty"})
 
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 1
+    assert get_number_of_error_logs(caplog.record_tuples) == 1
 
 
 @pytest.mark.integration
@@ -63,10 +61,8 @@ def test_app_pagerduty_with_required_options(caplog: pytest.LogCaptureFixture):
 
     captured_logs = caplog.record_tuples
     assert "Collected " not in caplog.text
-    # number of informational logs
-    assert len(captured_logs) == 8
-    # number of error logs
-    assert len([record for record in captured_logs if record[1] == 40]) == 0
+    assert get_number_of_info_logs(captured_logs) == 8
+    assert get_number_of_error_logs(captured_logs) == 0
 
 
 @pytest.mark.integration
@@ -74,8 +70,7 @@ def test_app_azure_devops_without_required_options(caplog: pytest.LogCaptureFixt
     with pytest.raises(MissingConfigDataError):
         mocked_failure_exporter.run_app({"PROVIDER": "azure-devops"})
 
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 7
+    assert get_number_of_error_logs(caplog.record_tuples) == 7
 
 
 @pytest.mark.integration
@@ -89,8 +84,7 @@ def test_app_azure_devops_with_wrong_token(caplog: pytest.LogCaptureFixture):
             }
         )
 
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 1
+    assert get_number_of_error_logs(caplog.record_tuples) == 1
 
 
 @pytest.mark.integration
@@ -109,10 +103,8 @@ def test_app_azure_devops_with_required_options(caplog: pytest.LogCaptureFixture
 
     captured_logs = caplog.record_tuples
     assert "Collected " not in caplog.text
-    # number of informational logs
-    assert len(captured_logs) == 9
-    # number of error logs
-    assert len([record for record in captured_logs if record[1] == 40]) == 0
+    assert get_number_of_info_logs(captured_logs) == 9
+    assert get_number_of_error_logs(captured_logs) == 0
 
 
 @pytest.mark.integration
@@ -120,8 +112,7 @@ def test_app_jira_without_required_options(caplog: pytest.LogCaptureFixture):
     with pytest.raises(MissingConfigDataError):
         mocked_failure_exporter.run_app({"PROVIDER": "jira"})
 
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 9
+    assert get_number_of_error_logs(caplog.record_tuples) == 9
 
 
 @pytest.mark.integration
@@ -136,8 +127,7 @@ def test_app_jira_with_wrong_token(caplog: pytest.LogCaptureFixture):
             }
         )
 
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 1
+    assert get_number_of_error_logs(caplog.record_tuples) == 1
 
 
 @pytest.mark.integration
@@ -159,10 +149,8 @@ def test_app_jira_with_required_options(caplog: pytest.LogCaptureFixture):
 
     captured_logs = caplog.record_tuples
     assert "Collected " not in caplog.text
-    # number of informational logs
-    assert len(captured_logs) == 11
-    # number of error logs
-    assert len([record for record in captured_logs if record[1] == 40]) == 0
+    assert get_number_of_info_logs(captured_logs) == 11
+    assert get_number_of_error_logs(captured_logs) == 0
 
 
 @pytest.mark.integration
@@ -170,8 +158,7 @@ def test_app_github_without_required_options(caplog: pytest.LogCaptureFixture):
     with pytest.raises(FailureProviderAuthenticationError):
         mocked_failure_exporter.run_app({"PROVIDER": "github"})
 
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 1
+    assert get_number_of_error_logs(caplog.record_tuples) == 1
 
 
 # TODO add token to repo secrets
@@ -187,10 +174,8 @@ def test_app_github_without_required_options(caplog: pytest.LogCaptureFixture):
 
 #     captured_logs = caplog.record_tuples
 #     assert "Collected " not in caplog.text
-#     # number of informational logs
-#     assert len(captured_logs) == 11
-#     # number of error logs
-#     assert len([record for record in captured_logs if record[1] == 40]) == 0
+#     assert get_number_of_info_logs(captured_logs) == 11
+#     assert get_number_of_error_logs(captured_logs) == 0
 
 
 @pytest.mark.integration
@@ -198,8 +183,7 @@ def test_app_servicenow_without_required_options(caplog: pytest.LogCaptureFixtur
     with pytest.raises(MissingConfigDataError):
         mocked_failure_exporter.run_app({"PROVIDER": "servicenow"})
 
-    # number of error logs
-    assert len([record for record in caplog.record_tuples if record[1] == 40]) == 7
+    assert get_number_of_error_logs(caplog.record_tuples) == 7
 
 
 # TODO
@@ -215,8 +199,7 @@ def test_app_servicenow_without_required_options(caplog: pytest.LogCaptureFixtur
 #             }
 #         )
 
-#     # number of error logs
-#     assert len([record for record in caplog.record_tuples if record[1] == 40]) == 1
+#     assert get_number_of_error_logs(caplog.record_tuples) == 1
 
 
 # TODO add token to repo secrets
@@ -233,7 +216,5 @@ def test_app_servicenow_without_required_options(caplog: pytest.LogCaptureFixtur
 
 #     captured_logs = caplog.record_tuples
 #     assert "Collected " not in caplog.text
-#     # number of informational logs
-#     assert len(captured_logs) == 11
-#     # number of error logs
-#     assert len([record for record in captured_logs if record[1] == 40]) == 0
+#     assert get_number_of_info_logs(captured_logs) == 11
+#     assert get_number_of_error_logs(captured_logs) == 0

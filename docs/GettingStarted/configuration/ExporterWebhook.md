@@ -67,6 +67,8 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 
 : Set the log level. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`.
 
+: > **NOTE:** `DEBUG` log level is too verbose, do not use it in production.
+
 ## Webhook headers and payloads
 
 When sending an HTTP POST request to the webhook's configured URL endpoint, the payload must conform to the webhook payload specification and include several special headers. It's important to note that the header specifications may vary depending on the Pelorus plugin determined by the `User-Agent` Header value and are described per plugin, alongside the payload specification.

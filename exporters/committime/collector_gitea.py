@@ -56,11 +56,9 @@ class GiteaCommitCollector(AbstractCommitCollector):
             hash=metric.commit_hash,
         )
         url = self.git_api._replace(path=path).url
-        # TODO
-        logging.info("URL %s" % (url))
+        logging.debug("URL %s" % (url))
         response = self.session.get(url, auth=(self.username, self.token))
-        # TODO
-        logging.info("response %s", response)
+        logging.debug("response %s", response)
         if response.status_code != 200:
             # This will occur when trying to make an API call to non-Github
             logging.warning(

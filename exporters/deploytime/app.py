@@ -32,8 +32,7 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
             logging.warning("If NAMESPACES are given, PROD_LABEL is ignored.")
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
-        # TODO
-        logging.info("collect: start")
+        logging.debug("collect: start")
         metrics = self.generate_metrics()
 
         deploy_timestamp_metric = GaugeMetricFamily(
@@ -70,8 +69,7 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
                     m.deploy_time_timestamp,
                 )
         if number_of_dropped:
-            # TODO
-            logging.info(
+            logging.debug(
                 "Number of deployments that are older then %smin and won't be collected: %s",
                 METRIC_TIMESTAMP_THRESHOLD_MINUTES,
                 number_of_dropped,
@@ -86,8 +84,7 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
         if not namespaces:
             return []
 
-        # TODO
-        logging.info("generate_metrics: start")
+        logging.debug("generate_metrics: start")
 
         pods = get_running_pods(self.client, namespaces, self.app_label)
 
