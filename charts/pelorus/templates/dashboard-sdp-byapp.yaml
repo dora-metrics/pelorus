@@ -241,7 +241,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "((avg(sdp:lead_time:by_app{app=~\".*/$app/.*\"})) - (avg(sdp:lead_time:by_app{app=~\".*/$app/.*\"}) offset $__range)) / (avg(sdp:lead_time:by_app{app=~\".*/$app/.*\"}) offset $__range)",
+            "expr": "((avg(sdp:lead_time:by_app{app=~\".*/$app/.*\"})) - (avg(sdp:lead_time:by_app{app=~\".*/$app/.*\"} offset $__range))) / (avg(sdp:lead_time:by_app{app=~\".*/$app/.*\"} offset $__range))",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -580,7 +580,7 @@ spec:
         "tableColumn": "",
         "targets": [
             {
-            "expr": "((avg(sdp:time_to_restore:by_app{app=~\".*/$app/.*\"}) ) - (avg(sdp:time_to_restore:by_app{app=~\".*/$app/.*\"})  offset $__range)) / (avg(sdp:time_to_restore:by_app{app=~\".*/$app/.*\"})  offset $__range)\n",
+            "expr": "((avg(sdp:time_to_restore:by_app{app=~\".*/$app/.*\"}) ) - (avg(sdp:time_to_restore:by_app{app=~\".*/$app/.*\"}  offset $__range))) / (avg(sdp:time_to_restore:by_app{app=~\".*/$app/.*\"}  offset $__range))\n",
             "format": "time_series",
             "hide": false,
             "instant": false,
@@ -1137,7 +1137,7 @@ spec:
             "options": [],
             "query": "label_values(sdp:applications, app)",
             "refresh": 2,
-            "regex": "/([^\/]+)/g",
+            "regex": "/([^\/,]+)/g",
             "skipUrlSync": false,
             "sort": 1,
             "tagValuesQuery": "",
