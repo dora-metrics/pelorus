@@ -153,7 +153,7 @@ tests:
       - series: commit_timestamp{app="/group/subgroup/application_1/", image_sha="sha256:application_1-2", commit="application_1-2"}
         values: '1594759935'
       # application_2
-      - series: commit_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-1", commit="application_1-1"}
+      - series: commit_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-1", commit="application_2-1"}
         values: '1594753745'
       # application_3
       - series: commit_timestamp{app="/group/application_3/", image_sha="sha256:application_3-1", commit="application_3-1"}
@@ -291,4 +291,334 @@ tests:
     - labels: '{}'
       value: 1
 
-# TODO tests with comma
+# Test app hierarchy filter - another scenario - in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+- interval: 1m
+  input_series:
+      # Commits
+      # application_1
+      - series: commit_timestamp{app="/group/subgroup/application_1/", image_sha="sha256:application_1-1", commit="application_1-1"}
+        values: '1594759435'
+      - series: commit_timestamp{app="/group/subgroup/application_1/", image_sha="sha256:application_1-2", commit="application_1-2"}
+        values: '1594759935'
+      - series: commit_timestamp{app="/group/subgroup/application_1/", image_sha="sha256:application_1-3", commit="application_1-3"}
+        values: '1594767500'
+      # application_2
+      - series: commit_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-1", commit="application_2-1"}
+        values: '1594753745'
+      - series: commit_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-2", commit="application_2-2"}
+        values: '1594759945'
+      - series: commit_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-3", commit="application_2-3"}
+        values: '1594768900'
+      # application_3
+      - series: commit_timestamp{app="/group/application_3/", image_sha="sha256:application_3-1", commit="application_3-1"}
+        values: '1594759740'
+
+      # Deploys
+      # application_1
+      - series: deploy_timestamp{app="/group/subgroup/application_1/", image_sha="sha256:application_1-1"}
+        values: '1594759735'
+      - series: deploy_timestamp{app="/group/subgroup/application_1/", image_sha="sha256:application_1-2"}
+        values: '1594760485'
+      - series: deploy_timestamp{app="/group/subgroup/application_1/", image_sha="sha256:application_1-3"}
+        values: '1594767700'
+      # application_2
+      - series: deploy_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-1"}
+        values: '1594759745'
+      - series: deploy_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-2"}
+        values: '1594760000'
+      - series: deploy_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-3"}
+        values: '1594768950'
+      # application_3
+      - series: deploy_timestamp{app="/group/application_3/", image_sha="sha256:application_3-1"}
+        values: '1594759752'
+
+      # Failures
+      # application_1
+      - series: failure_creation_timestamp{app="/group/subgroup/application_1/", issue_number="application_1-1"}
+        values: '1594759835'
+      - series: failure_resolution_timestamp{app="/group/subgroup/application_1/", issue_number="application_1-1"}
+        values: '1594760500'
+      # application_2
+      - series: failure_creation_timestamp{app="/group/subgroup/application_2/", issue_number="application_2-1"}
+        values: '1594760600'
+      - series: failure_resolution_timestamp{app="/group/subgroup/application_2/", issue_number="application_2-1"}
+        values: '1594768600'
+      # application_3
+      - series: failure_creation_timestamp{app="/group/application_3/", issue_number="application_3-1"}
+        values: '1594759890'
+
+  promql_expr_test:
+  # TODO Change since last interval boxes
+  # TODO over time graphs
+  # Tests for Lead Time for Change - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+  - expr: avg(sdp:lead_time:by_app{app=~".*/group/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 799
+  - expr: avg(sdp:lead_time:by_app{app=~".*/subgroup/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1192.5
+  - expr: avg(sdp:lead_time:by_app{app=~".*/application_1/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 350
+  - expr: avg(sdp:lead_time:by_app{app=~".*/application_2/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 2035
+  - expr: avg(sdp:lead_time:by_app{app=~".*/application_3/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 12
+
+  # Tests for Deployment Frequency - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/group/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 7
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/subgroup/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 6
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/application_1/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 3
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/application_2/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 3
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/application_3/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+
+  # Tests for Mean Time to Restore - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/group/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 4332.5
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/subgroup/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 4332.5
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/application_1/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 665
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/application_2/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 8000
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/application_3/.*"})
+    eval_time: 1m
+    exp_samples: []
+
+  # Tests for Change Failure Rate - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/group/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0.5555555555555556
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/subgroup/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0.3333333333333333
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/application_1/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0.3333333333333333
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/application_2/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0.3333333333333333
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/application_3/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+
+# Test app hierarchy filter with comma in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+- interval: 1m
+  input_series:
+      # Commits
+      # application_1
+      - series: commit_timestamp{app="/group/subgroup/application_1/,/class/application_1/", image_sha="sha256:application_1-1", commit="application_1-1"}
+        values: '1594759435'
+      - series: commit_timestamp{app="/group/subgroup/application_1/,/class/application_1/", image_sha="sha256:application_1-2", commit="application_1-2"}
+        values: '1594759935'
+      # application_2
+      - series: commit_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-1", commit="application_2-1"}
+        values: '1594753745'
+      # application_3
+      - series: commit_timestamp{app="/group/application_3/,/class/application_3/", image_sha="sha256:application_3-1", commit="application_3-1"}
+        values: '1594759740'
+
+      # Deploys
+      # application_1
+      - series: deploy_timestamp{app="/group/subgroup/application_1/,/class/application_1/", image_sha="sha256:application_1-1"}
+        values: '1594759735'
+      - series: deploy_timestamp{app="/group/subgroup/application_1/,/class/application_1/", image_sha="sha256:application_1-2"}
+        values: '1594760485'
+      # application_2
+      - series: deploy_timestamp{app="/group/subgroup/application_2/", image_sha="sha256:application_2-1"}
+        values: '1594759745'
+      # application_3
+      - series: deploy_timestamp{app="/group/application_3/,/class/application_3/", image_sha="sha256:application_3-1"}
+        values: '1594759750'
+
+      # Failures
+      # application_1
+      - series: failure_creation_timestamp{app="/group/subgroup/application_1/,/class/application_1/", issue_number="application_1-1"}
+        values: '1594759835'
+      - series: failure_resolution_timestamp{app="/group/subgroup/application_1/,/class/application_1/", issue_number="application_1-1"}
+        values: '1594760500'
+      # application_2
+      # application_3
+      - series: failure_creation_timestamp{app="/group/application_3/,/class/application_3/", issue_number="application_3-1"}
+        values: '1594759890'
+
+  promql_expr_test:
+  # TODO Change since last interval boxes
+  # TODO over time graphs
+  # Tests for Lead Time for Change - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+  - expr: avg(sdp:lead_time:by_app{app=~".*/group/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 2145
+  - expr: avg(sdp:lead_time:by_app{app=~".*/subgroup/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 3212.5
+  - expr: avg(sdp:lead_time:by_app{app=~".*/class/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 217.5
+  - expr: avg(sdp:lead_time:by_app{app=~".*/application_1/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 425
+  - expr: avg(sdp:lead_time:by_app{app=~".*/application_2/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 6000
+  - expr: avg(sdp:lead_time:by_app{app=~".*/application_3/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 10
+
+  # Tests for Deployment Frequency - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/group/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 4
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/subgroup/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 3
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/class/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 3
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/application_1/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/application_2/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: count (count_over_time (deploy_timestamp{app=~".*/application_3/.*"} [5m]) )
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+
+  # Tests for Mean Time to Restore - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/group/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 665
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/subgroup/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 665
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/class/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 665
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/application_1/.*"})
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 665
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/application_2/.*"})
+    eval_time: 1m
+    exp_samples: []
+  - expr: avg(sdp:time_to_restore:by_app{app=~".*/application_3/.*"})
+    eval_time: 1m
+    exp_samples: []
+
+  # Tests for Change Failure Rate - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/group/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0.5
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/subgroup/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0.25
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/class/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0.75
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/application_1/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0.5
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/application_2/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 0
+  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/application_3/.*"} [5m]))
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
