@@ -55,13 +55,6 @@ rules:
 - verbs:
   - "*"
   apiGroups:
-  - "rbac.authorization.k8s.io"
-  resources:
-  - "rolebindings"
-  - "roles"
-- verbs:
-  - "*"
-  apiGroups:
   - "apps.openshift.io"
   resources:
   - "deploymentconfigs"
@@ -102,5 +95,12 @@ rules:
   - "secrets"
   - "serviceaccounts"
   - "services"
+- verbs:
+  - "*"
+  apiGroups:
+  - "rbac.authorization.k8s.io"
+  resources:
+  - "rolebindings"
+  - "roles"
 
 #+kubebuilder:scaffold:rules
