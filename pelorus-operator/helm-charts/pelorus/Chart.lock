@@ -3,4 +3,4 @@ dependencies:
   repository: file://./charts/exporters
   version: 2.0.10-rc.11
 digest: sha256:2499ccca8df581f287f0ecab1b294dc135a59d553e92aceac69d57179e24e99e
-generated: "2023-06-05T17:51:48.121504178-03:00"
+generated: "2023-06-06T09:14:02.179129255-03:00"
