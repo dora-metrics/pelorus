@@ -457,3 +457,29 @@ In this example, we configure a Failure exporter to monitor issues from 2 GitHub
             value: production_issue
 [...]
 ```
+
+## Grafana hierarchy filter for applications
+
+In the Grafana **Software Delivery Performance - By App** dashboard, it is possible to filter the view by the applications hierarchy. For example, suppose you have following structure of applications
+```
+├── group1
+│   ├── subgroup1
+│   │   └── application3
+│   └── subgroup2
+│       ├── application4
+│       └── application5
+├── group2
+│   ├── subgroup3
+│   │   └── application6
+│   └── application7
+├── application1
+└── application2
+```
+
+To enable the views of **group1**, **group2**, **subgroup1**, **subgroup2** and **subgroup3**, you have to send the name of the application with the hierarchy structure, separated by `/`.
+
+For example, in the previous scenario you would send **group1/subgroup2/application5**, instead of just **application5** as the application name to the Pelorus metrics.
+
+It also possible to send non structured hierarchy. To do that, separate it by `,`. For example, if an application belongs to a group, class and family, you can send it as **group/application,class/application,family/application**, instead of just **application** to the Pelorus metrics.
+
+> **NOTE:** for the filter to work properly, each hierarchy level name and application name must be UNIQUE.
