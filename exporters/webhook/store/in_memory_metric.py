@@ -20,6 +20,7 @@ from typing import Dict, Optional, Sequence, Union
 from prometheus_client.core import GaugeMetricFamily
 from pydantic.main import ModelMetaclass
 
+from provider_common import format_app_name
 from webhook.models.pelorus_webhook import (
     CommitTimePelorusPayload,
     DeployTimePelorusPayload,
@@ -109,7 +110,10 @@ def pelorus_metric_to_prometheus(pelorus_model: PelorusPayload) -> list[str]:
     for metric_value in data_model.values():
         if hasattr(pelorus_model, metric_value):
             value = getattr(pelorus_model, metric_value)
-            data_values.append(value)
+            if metric_value == "app":
+                data_values.append(format_app_name(value))
+            else:
+                data_values.append(value)
         else:
             # If the model do not match the payload dict, we should raise an error
             raise TypeError(

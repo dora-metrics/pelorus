@@ -7,6 +7,7 @@ from typing import Collection, Iterable, Union
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
+from provider_common import format_app_name
 
 # TODO 1: CI needs to create failures on the fly to enable this
 # from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date
@@ -48,7 +49,9 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                         % (m.labels[0], m.labels[1], m.time_stamp)
                     )
                     creation_metric.add_metric(
-                        m.labels, m.get_value(), timestamp=m.get_value()
+                        [format_app_name(m.labels[0]), m.labels[1]],
+                        m.get_value(),
+                        timestamp=m.get_value(),
                     )
                 else:
                     logging.debug(
@@ -56,7 +59,9 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                         % (m.labels[0], m.labels[1], m.time_stamp)
                     )
                     failure_metric.add_metric(
-                        m.labels, m.get_value(), timestamp=m.get_value()
+                        [format_app_name(m.labels[0]), m.labels[1]],
+                        m.get_value(),
+                        timestamp=m.get_value(),
                     )
             # TODO 1:
             #     else:

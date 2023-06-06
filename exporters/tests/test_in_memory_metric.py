@@ -97,7 +97,7 @@ class TestInMemoryMetric:
         )
 
         metric_labels = {
-            "app": name,
+            "app": f"/{name}/",
             "image_sha": image_hash,
             "commit_hash": commit_hash,
             "namespace": namespace,
