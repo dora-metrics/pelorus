@@ -62,7 +62,9 @@ def setup_logging():
     )
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
-    root_logger.addHandler(handler)
+    # committime : containerimage threading.Thread().start() adds handler
+    if root_logger.hasHandlers():
+        root_logger.addHandler(handler)
     root_logger.setLevel(numeric_level)
     print(f"Initializing Logger with LogLevel: {loglevel}")
 
