@@ -1,14 +1,16 @@
-name: Continuous Delivery - Operator
+name: Continuous Delivery
 
 on:
-  push:
+  # push:
+  pull_request:
     branches:
       - master
-    paths:
-      - 'exporters/**'
-      - 'charts/**'
-      - 'pelorus-operator/**'
-      - '.github/workflows/cd.yml'
+    # paths:
+    #   - 'exporters/**'
+    #   - 'charts/**'
+    #   - 'pelorus-operator/**'
+    #   # TODO enable it in a PR that touches one of these folders
+    #   # - '.github/workflows/cd.yml'
 
 env:
   # TODO create bot account
@@ -18,11 +20,22 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
+      version_change: ${{ steps.variables.outputs.version_change }}
       is_release: ${{ steps.variables.outputs.is_release }}
+      tags: ${{ steps.variables.outputs.tags }}
       version: ${{ steps.variables.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            version_change:
+              - 'exporters/**'
+              - 'charts/**'
+              - 'pelorus-operator/**'
 
       - uses: actions/upload-artifact@v3
         with:
@@ -32,77 +45,175 @@ jobs:
       - name: Store variables
         id: variables
         run: |
-          export CURRENT_OPERATOR_VERSION="$(grep "VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
-          echo is_release=$(if [[ $CURRENT_OPERATOR_VERSION == *"rc"* ]];then echo "false";else echo "true";fi) >> "$GITHUB_OUTPUT"
-          echo version=$CURRENT_OPERATOR_VERSION >> "$GITHUB_OUTPUT"
+          echo version_change=${{ steps.changes.outputs.version_change }} >> "$GITHUB_OUTPUT"
+          if [[ ${{ steps.changes.outputs.version_change }} == "true" ]];then
+            export CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml  | cut -c 10-)"
+            if [[ $CURRENT_CHART_VERSION == *"rc"* ]];then
+              echo "tags=$(echo latest,${{ github.sha }},v$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
+              echo is_release=false >> "$GITHUB_OUTPUT"
+            else
+              echo "tags=$(echo stable,latest,${{ github.sha }},v$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
+              echo is_release=true >> "$GITHUB_OUTPUT"
+              export CURRENT_OPERATOR_VERSION="$(grep "VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
+              echo version=$CURRENT_OPERATOR_VERSION >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo is_release=false >> "$GITHUB_OUTPUT"
+          fi
 
-  create-images:
+  release_drafter:
+    runs-on: ubuntu-latest
+    if: needs.setup.outputs.is_release == 'false'
+    needs: setup
+    steps:
+      # - uses: release-drafter/release-drafter@v5
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          echo "called"
+          echo ${{ needs.setup.outputs.version_change }}
+          echo ${{ needs.setup.outputs.tags }}
+          echo ${{ needs.setup.outputs.version }}
+          echo ${{ needs.setup.outputs.is_release }}
+
+  build-and-push-exporters-images:
+    runs-on: ubuntu-latest
+    if: ${{ fromJSON(needs.setup.outputs.version_change) }}
+    needs: setup
+    steps:
+      - run: |
+          echo "called"
+          echo ${{ needs.setup.outputs.version_change }}
+          echo ${{ needs.setup.outputs.tags }}
+          echo ${{ needs.setup.outputs.version }}
+          echo ${{ needs.setup.outputs.is_release }}
+      # - name: Checkout
+      #   uses: actions/checkout@v3
+
+      # - name: Build and push committime exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-committime-exporter'
+      #     tags: ${{ needs.setup.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
+
+      # - name: Build and push deploytime exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-deploytime-exporter'
+      #     tags: ${{ needs.setup.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
+
+      # - name: Build and push failure exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-failure-exporter'
+      #     tags: ${{ needs.setup.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
+
+      # - name: Build and push releasetime exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-releasetime-exporter'
+      #     tags: ${{ needs.setup.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
+
+      # - name: Build and push webhook exporter
+      #   uses: "./.github/workflow_templates/build_push_exporters"
+      #   with:
+      #     image: 'pelorus-webhook-exporter'
+      #     tags: ${{ needs.setup.outputs.tags }}
+      #     quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
+      #     quay_username: ${{ secrets.QUAY_USERNAME }}
+      #     quay_password: ${{ secrets.QUAY_PASSWORD }}
+
+  build-and-push-operator-images:
     runs-on: ubuntu-latest
     if: ${{ fromJSON(needs.setup.outputs.is_release) }}
     needs: setup
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - run: |
+          echo "called"
+          echo ${{ needs.setup.outputs.version_change }}
+          echo ${{ needs.setup.outputs.tags }}
+          echo ${{ needs.setup.outputs.version }}
+          echo ${{ needs.setup.outputs.is_release }}
+      # - name: Checkout code
+      #   uses: actions/checkout@v3
 
-      - name: Log in to Quay.io
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_PASSWORD }}
-          registry: quay.io
+      # - name: Log in to Quay.io
+      #   uses: redhat-actions/podman-login@v1
+      #   with:
+      #     username: ${{ secrets.QUAY_USERNAME }}
+      #     password: ${{ secrets.QUAY_PASSWORD }}
+      #     registry: quay.io
 
-      - name: Build and push operator image
-        working-directory: ./pelorus-operator
-        run: |
-          make podman-build
-          make podman-push
+      # - name: Build and push operator image
+      #   working-directory: ./pelorus-operator
+      #   run: |
+      #     make podman-build
+      #     make podman-push
 
-      - name: Build and push operator bundle image
-        working-directory: ./pelorus-operator
-        run: |
-          make bundle-build
-          make bundle-push
+      # - name: Build and push operator bundle image
+      #   working-directory: ./pelorus-operator
+      #   run: |
+      #     make bundle-build
+      #     make bundle-push
 
-  create-pr:
+  create-pr-in-community-operators-prod:
     runs-on: ubuntu-latest
     if: ${{ fromJSON(needs.setup.outputs.is_release) }}
-    needs: [setup, create-images]
+    needs: [setup, build-and-push-operator-images]
     steps:
-      - name: Checkout marketplace code
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ env.FORK_USER }}/community-operators-prod
-          token: ${{ secrets.FORK_USER_TOKEN }}
+      - run: |
+          echo "called"
+          echo ${{ needs.setup.outputs.version_change }}
+          echo ${{ needs.setup.outputs.tags }}
+          echo ${{ needs.setup.outputs.version }}
+          echo ${{ needs.setup.outputs.is_release }}
+      # - name: Checkout marketplace code
+      #   uses: actions/checkout@v3
+      #   with:
+      #     repository: ${{ env.FORK_USER }}/community-operators-prod
+      #     token: ${{ secrets.FORK_USER_TOKEN }}
 
-      - name: Update fork repo
-        run: |
-          git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
-          git fetch upstream
-          git rebase upstream/main
-          git push origin main
+      # - name: Update fork repo
+      #   run: |
+      #     git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
+      #     git fetch upstream
+      #     git rebase upstream/main
+      #     git push origin main
 
-      - name: Create branch
-        run: |
-          git checkout -b pelorus-operator-${{ needs.setup.outputs.version }}
-          mkdir -p operators/pelorus-operator/${{ needs.setup.outputs.version }}
+      # - name: Create branch
+      #   run: |
+      #     git checkout -b pelorus-operator-${{ needs.setup.outputs.version }}
+      #     mkdir -p operators/pelorus-operator/${{ needs.setup.outputs.version }}
 
-      - name: Download operator code
-        uses: actions/download-artifact@v3
-        with:
-          name: operator-code
-          path: operators/pelorus-operator/${{ needs.setup.outputs.version }}
+      # - name: Download operator code
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: operator-code
+      #     path: operators/pelorus-operator/${{ needs.setup.outputs.version }}
 
-      - name: Push branch
-        run: |
-          git config user.name github-actions # TODO create bot account
-          git config user.email github-actions@github.com # TODO create bot account
-          git add -A
-          git commit --signoff -m "operator pelorus-operator (${{ needs.setup.outputs.version }})"
-          git push origin pelorus-operator-${{ needs.setup.outputs.version }}
+      # - name: Push branch
+      #   run: |
+      #     git config user.name github-actions # TODO create bot account
+      #     git config user.email github-actions@github.com # TODO create bot account
+      #     git add -A
+      #     git commit --signoff -m "operator pelorus-operator (${{ needs.setup.outputs.version }})"
+      #     git push origin pelorus-operator-${{ needs.setup.outputs.version }}
 
-      - name: Create PR
-        uses: "dora-metrics/pelorus/.github/workflow_templates/create-market-place-pr@master"
-        with:
-          token: ${{ secrets.FORK_USER_TOKEN }}
-          version: ${{ needs.setup.outputs.version }}
-          fork_user: ${{ env.FORK_USER }}
+      # - name: Create PR
+      #   uses: "dora-metrics/pelorus/.github/workflow_templates/create-market-place-pr@master"
+      #   with:
+      #     token: ${{ secrets.FORK_USER_TOKEN }}
+      #     version: ${{ needs.setup.outputs.version }}
+      #     fork_user: ${{ env.FORK_USER }}
