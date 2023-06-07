@@ -13,8 +13,8 @@ description: A Helm chart for Kubernetes
 type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
-# to the chart and its templates, including the app version
-version: 2.0.10
+# to the chart and its templates, including the app version.
+version: 2.0.10-rc.1
 
 dependencies:
   - name: exporters
