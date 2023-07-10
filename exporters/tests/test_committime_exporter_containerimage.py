@@ -76,7 +76,7 @@ def test_get_labels_from_image(mock_popen, returncode, json_file, expected_label
     for key, value in expected_labels.items():
         assert key in result and result[key] == value
 
-    command = "skopeo inspect image_uri"
+    command = "skopeo inspect --cert-dir /var/run/secrets/kubernetes.io/serviceaccount/ image_uri"
     subprocess.Popen.assert_called_once_with(
         command,
         stdout=subprocess.PIPE,
@@ -109,7 +109,7 @@ def test_missing_labels_from_image(mock_popen, returncode, json_file, missing_la
     for missing_label in missing_labels:
         assert missing_label not in result
 
-    command = "skopeo inspect image_uri"
+    command = "skopeo inspect --cert-dir /var/run/secrets/kubernetes.io/serviceaccount/ image_uri"
     subprocess.Popen.assert_called_once_with(
         command,
         stdout=subprocess.PIPE,
@@ -140,7 +140,7 @@ def test_malformed_json_response(mock_popen, returncode, json_file):
         get_labels_from_image("sha256_value", "image_uri")
     assert "Error: Invalid JSON output" in str(skopeo_exception.value)
 
-    command = "skopeo inspect image_uri"
+    command = "skopeo inspect --cert-dir /var/run/secrets/kubernetes.io/serviceaccount/ image_uri"
     subprocess.Popen.assert_called_once_with(
         command,
         stdout=subprocess.PIPE,

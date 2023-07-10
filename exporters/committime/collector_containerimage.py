@@ -68,6 +68,9 @@ image_label_cache: Dict[str, Tuple[Dict, float]] = {}
 running_pods_shas_lock = threading.Lock()
 running_pods_shas = set()
 
+# The directory where ca.crt is mounted
+CA_CRT_DIR = "/var/run/secrets/kubernetes.io/serviceaccount/"
+
 
 class SkopeoDataException(Exception):
     "An error that occurred Skopeo call"
@@ -155,7 +158,8 @@ def get_labels_from_image(sha_256: str, image_uri: str) -> Dict[str, str]:
         raise SkopeoDataException("Sha not to be checked")
 
     logging.debug(f"Running skopeo for: {sha_256}")
-    command = f"skopeo inspect {image_uri}"
+    command = f"skopeo inspect --cert-dir {CA_CRT_DIR} {image_uri}"
+    logging.debug(f"Running shell command: {command}")
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
@@ -163,13 +167,16 @@ def get_labels_from_image(sha_256: str, image_uri: str) -> Dict[str, str]:
     output = output.decode("utf-8").strip()
     if process.returncode != 0:
         _add_skopeo_failure(sha_256)
-        raise SkopeoDataException(stderr.decode().strip())
+        stderr = stderr.decode().strip()
+        logging.debug(f"Error from skopeo for {command}: {stderr}")
+        raise SkopeoDataException(stderr)
 
     try:
         image_data = json.loads(output)
         labels = image_data.get("Labels", {})
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
         _add_skopeo_failure(sha_256)
+        logging.debug(f"Error from decoding JSON for {sha_256}: {e.msg}")
         raise SkopeoDataException("Error: Invalid JSON output")
 
     # We got the labels, so remove them from the potential

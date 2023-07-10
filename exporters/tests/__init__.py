@@ -47,7 +47,7 @@ class MockExporter:
                 mock_kube_client.return_value.resources.get.side_effect = (
                     self.mock_kube_client
                 )
-                collector = self.set_up()
+                collector = self.set_up(prod=False)
             return collector
         finally:
             for key in arguments:
