@@ -208,7 +208,7 @@ if __name__ == "__main__":
         print(oc_url())
         sys.exit()
 
-    exact = None
+    exact = ""
     if software == "ct":
         exact = "v3.8.0"  # https://github.com/helm/chart-testing/issues/577
 
