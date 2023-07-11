@@ -153,8 +153,8 @@ def oc_url():
     return f"{BASE_URL}/{version}/openshift-client-{filename_suffix}.tar.gz"
 
 
-def get_latest_assets(repo: str) -> Iterable[ReleaseAsset]:
-    "Get the release assets for the latest release."
+def get_latest_assets(repo: str, exact: str = "") -> Iterable[ReleaseAsset]:
+    "Get the release assets for the latest release, if no exact version."
     url = GITHUB_RELEASE_TEMPLATE.format(repo)
 
     response = requests.get(url)
@@ -167,6 +167,9 @@ def get_latest_assets(repo: str) -> Iterable[ReleaseAsset]:
 
     for release in body:
         version_string = release["tag_name"]
+        if exact and exact == version_string:
+            latest_release = release
+            break
         if version_string.startswith("v"):
             version_string = version_string[1:]
         if version_string.endswith("+stringlabels"):
@@ -205,9 +208,13 @@ if __name__ == "__main__":
         print(oc_url())
         sys.exit()
 
+    exact = None
+    if software == "ct":
+        exact = "v3.8.0"  # https://github.com/helm/chart-testing/issues/577
+
     tool = Tool[software]
 
-    for asset in get_latest_assets(tool.repo):
+    for asset in get_latest_assets(tool.repo, exact):
         if tool.matcher(asset.url):
             print(asset.url)
             sys.exit()

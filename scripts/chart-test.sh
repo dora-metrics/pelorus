@@ -34,11 +34,8 @@ if ! git --no-pager diff --quiet $REMOTE/master --name-status exporters/; then
 fi
 
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
-git remote show
-git remote show "$REMOTE"
-git rev-parse --verify master
-git rev-parse --verify "$REMOTE/master"
-ct lint --remote "$REMOTE" --config ct.yaml --target-branch "$REMOTE/master" --debug || exit 1
+
+ct lint --remote "$REMOTE" --config ct.yaml || exit 1
 rm -f charts/pelorus/charts/*.tgz
 
 if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml &> /dev/null; then
