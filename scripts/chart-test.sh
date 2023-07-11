@@ -34,7 +34,7 @@ if ! git --no-pager diff --quiet $REMOTE/master --name-status exporters/; then
 fi
 
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
-
+git remote show "$REMOTE"
 ct lint --remote "$REMOTE" --config ct.yaml || exit 1
 rm -f charts/pelorus/charts/*.tgz
 
