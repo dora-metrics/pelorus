@@ -209,27 +209,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - route.openshift.io
-          resources:
-          - routes
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          - secrets
-          - serviceaccounts
-          - services
-          verbs:
-          - '*'
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - roles
-          verbs:
-          - '*'
-        - apiGroups:
           - apps.openshift.io
           resources:
           - deploymentconfigs
@@ -255,6 +234,28 @@ spec:
           - prometheuses
           - prometheusrules
           - servicemonitors
+          verbs:
+          - '*'
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - secrets
+          - serviceaccounts
+          - services
+          verbs:
+          - '*'
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          - roles
           verbs:
           - '*'
         - apiGroups:
