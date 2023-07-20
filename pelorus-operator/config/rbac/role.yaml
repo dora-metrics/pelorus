@@ -100,7 +100,6 @@ rules:
   apiGroups:
   - "rbac.authorization.k8s.io"
   resources:
-  - "rolebindings"
   - "roles"
 
 #+kubebuilder:scaffold:rules
