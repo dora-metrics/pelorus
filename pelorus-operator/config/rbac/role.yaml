@@ -55,20 +55,6 @@ rules:
 - verbs:
   - "*"
   apiGroups:
-  - "apps.openshift.io"
-  resources:
-  - "deploymentconfigs"
-- verbs:
-  - "*"
-  apiGroups:
-  - "integreatly.org"
-  resources:
-  - "grafanadashboards"
-  - "grafanadatasources"
-  - "grafanas"
-- verbs:
-  - "*"
-  apiGroups:
   - "image.openshift.io"
   resources:
   - "imagestreams"
@@ -100,6 +86,21 @@ rules:
   apiGroups:
   - "rbac.authorization.k8s.io"
   resources:
+  - "rolebindings"
   - "roles"
+- verbs:
+  - "*"
+  apiGroups:
+  - "apps.openshift.io"
+  resources:
+  - "deploymentconfigs"
+- verbs:
+  - "*"
+  apiGroups:
+  - "integreatly.org"
+  resources:
+  - "grafanadashboards"
+  - "grafanadatasources"
+  - "grafanas"
 
 #+kubebuilder:scaffold:rules
