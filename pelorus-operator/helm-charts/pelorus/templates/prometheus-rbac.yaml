@@ -40,5 +40,5 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: pelorus-prometheus
-  namespace: pelorus
+  namespace: {{ .Release.Namespace }}
 {{- end }}
