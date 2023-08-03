@@ -5,8 +5,11 @@
 # to reset password: htpasswd -s -b -n internal changeme
 openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
 openshift_prometheus_basic_auth_pass: changeme
+
+# Automatically set OpenShift's in-built prometheus stack as a federation point so Pelorus can use OpenShift metrics in Dashboards
 federate_openshift_monitoring:
   enabled: false
+  metrics_filter: null
 # federated_prometheus_hosts:
 # external_prometheus_hosts:
 

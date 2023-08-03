@@ -34,7 +34,8 @@ metadata:
               ]
             },
             "federate_openshift_monitoring": {
-              "enabled": false
+              "enabled": false,
+              "metrics_filter": null
             },
             "openshift_prometheus_basic_auth_pass": "changeme",
             "openshift_prometheus_htpasswd_auth": "internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=",
@@ -50,7 +51,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.8-rc.1
-    createdAt: "2023-08-02T20:42:56Z"
+    createdAt: "2023-08-03T20:00:34Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -211,20 +212,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - image.openshift.io
-          resources:
-          - imagestreams
-          verbs:
-          - '*'
-        - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - prometheuses
-          - prometheusrules
-          - servicemonitors
-          verbs:
-          - '*'
-        - apiGroups:
           - route.openshift.io
           resources:
           - routes
@@ -258,6 +245,20 @@ spec:
           - grafanadashboards
           - grafanadatasources
           - grafanas
+          verbs:
+          - '*'
+        - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreams
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheuses
+          - prometheusrules
+          - servicemonitors
           verbs:
           - '*'
         - apiGroups:
