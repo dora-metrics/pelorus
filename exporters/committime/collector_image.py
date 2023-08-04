@@ -18,13 +18,46 @@
 import logging
 from typing import Iterable, Optional
 
-from attrs import define
+from attrs import define, field, frozen
 
 from committime import CommitMetric
+from exporters.pelorus.deserialization import nested
+from exporters.pelorus.utils.openshift_utils import CommonResourceInstance
 from pelorus.timeutil import parse_guessing_timezone_DYNAMIC, to_epoch_from_string
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
 from .collector_base import AbstractCommitCollector
+
+COMMIT_TIME_DOCKER_LABEL = "io.openshift.build.commit.date"
+
+
+@frozen
+class DockerLabelInfo:
+    namespace: Optional[str] = field(
+        default=None, metadata=nested(["io.openshift.build.namespace"])
+    )
+    commit_time: Optional[str] = field(
+        default=None, metadata=nested([COMMIT_TIME_DOCKER_LABEL])
+    )
+    commit_hash: Optional[str] = field(
+        default=None, metadata=nested(["io.openshift.build.commit.id"])
+    )
+
+
+@frozen
+class Image(CommonResourceInstance):
+    "Relevant data from an `image.openshift.io/v1/Image`"
+
+    # TODO: this doesn't seem right but was copied from previous code
+    image_location: str = field(metadata=nested("dockerImageReference"))
+
+    docker_labels: Optional[DockerLabelInfo] = field(
+        default=None, metadata=nested("dockerImageMetadata.Config.Labels")
+    )
+
+    @property
+    def hash(self):
+        return self.metadata.name
 
 
 @define(kw_only=True)
