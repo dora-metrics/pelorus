@@ -8,7 +8,7 @@ openshift_prometheus_basic_auth_pass: changeme
 
 # Automatically set OpenShift's in-built prometheus stack as a federation point so Pelorus can use OpenShift metrics in Dashboards
 federate_openshift_monitoring:
-  enabled: true
+  enabled: false
   metrics_filter: null
 # federated_prometheus_hosts:
 # external_prometheus_hosts:

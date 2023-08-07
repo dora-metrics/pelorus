@@ -150,6 +150,17 @@ spec:
               prometheus_storage_pvc_storageclass:
                 description: Prometheus Persistent Volume storage class to be used.
                 type: string
+              federate_openshift_monitoring:
+                description: Optionally integrate Pelorus with the OpenShift monitoring stack to pull in system and pod level metrics
+                type: object
+                  properties:
+                    enabled:
+                      description: Whether or not to enable this feature. Defaults to 'false'
+                      type: boolean
+                      default: false
+                    metrics_filter:
+                      description: Optional filter to specify which metrics to pull in
+                      nullable: true
               federated_prometheus_hosts:
                 description: 'List of additional Federation hosts.'
                 type: array
