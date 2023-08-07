@@ -147,7 +147,3 @@ policy/
 # BATS
 _test/test_helper/
 _test/prometheus/rules.yaml
-
-## Helm generated content
-charts/**/*.tgz
-pelorus-operator/**/*.tgz

@@ -55,12 +55,6 @@ rules:
 - verbs:
   - "*"
   apiGroups:
-  - "image.openshift.io"
-  resources:
-  - "imagestreams"
-- verbs:
-  - "*"
-  apiGroups:
   - "monitoring.coreos.com"
   resources:
   - "prometheuses"
@@ -102,5 +96,11 @@ rules:
   - "grafanadashboards"
   - "grafanadatasources"
   - "grafanas"
+- verbs:
+  - "*"
+  apiGroups:
+  - "image.openshift.io"
+  resources:
+  - "imagestreams"
 
 #+kubebuilder:scaffold:rules
