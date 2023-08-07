@@ -34,7 +34,7 @@ metadata:
               ]
             },
             "federate_openshift_monitoring": {
-              "enabled": false,
+              "enabled": true,
               "metrics_filter": null
             },
             "openshift_prometheus_basic_auth_pass": "changeme",
@@ -51,7 +51,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.8-rc.1
-    createdAt: "2023-08-03T20:00:34Z"
+    createdAt: "2023-08-07T18:39:17Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
