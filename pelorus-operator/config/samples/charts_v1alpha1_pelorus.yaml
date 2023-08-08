@@ -18,7 +18,6 @@ spec:
       exporter_type: webhook
   federate_openshift_monitoring:
     enabled: false
-    metrics_filter: null
   openshift_prometheus_basic_auth_pass: changeme
   openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
   prometheus_retention: 1y
