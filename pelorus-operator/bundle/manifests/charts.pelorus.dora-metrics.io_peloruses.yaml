@@ -1,0 +1,238 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: peloruses.charts.pelorus.dora-metrics.io
+spec:
+  group: charts.pelorus.dora-metrics.io
+  names:
+    kind: Pelorus
+    listKind: PelorusList
+    plural: peloruses
+    singular: pelorus
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Configure a running instance of Pelorus
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: 'PelorusSpec defines state of the Pelorus application and
+              allows to configure for the desired workflow. More information about
+              Pelorus configuration that can be used in the Spec section is available
+              at: https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusCore/'
+            properties:
+              bucket_access_key:
+                description: S3 Access Key ID.
+                type: string
+              bucket_access_point:
+                description: S3 named network endpoint that is used to perform S3
+                  object operations.
+                type: string
+              bucket_secret_access_key:
+                description: S3 Secret Access Key.
+                type: string
+              custom_ca:
+                description: Whether or not the cluster serves custom signed certificates
+                  for ingress (e.g. router certs).
+                type: boolean
+              exporters:
+                description: Configure Pelorus exporters' References.
+                properties:
+                  instances:
+                    items:
+                      properties:
+                        app_name:
+                          description: Must consist of lower case alphanumeric characters
+                            or '-'.
+                          type: string
+                        custom_certs:
+                          description: ConfigMap name(s) with custom CA certificates.
+                          items:
+                            properties:
+                              map_name:
+                                description: ConfigMap name created from Certificate
+                                  file.
+                                type: string
+                            required:
+                            - map_name
+                            type: object
+                          type: array
+                        enabled:
+                          default: true
+                          description: If set to false, exporter instance won't be
+                            created.
+                          type: boolean
+                        env_from_configmaps:
+                          description: ConfigMap name(s) with configuration used by
+                            the exporter instance.
+                          items:
+                            type: string
+                          type: array
+                        env_from_secrets:
+                          description: Secret name(s) with configuration used by the
+                            exporter instance.
+                          items:
+                            type: string
+                          type: array
+                        exporter_type:
+                          description: 'Exporter type as in the: https://pelorus.readthedocs.io/en/latest/Configuration/#configuring-exporters-overview'
+                          enum:
+                          - deploytime
+                          - committime
+                          - failure
+                          - webhook
+                          type: string
+                        extraEnv:
+                          description: List of Name and Value pairs used to configure
+                            the exporter instance.
+                          items:
+                            properties:
+                              name:
+                                description: Option name.
+                                type: string
+                              value:
+                                description: Option value.
+                                type: string
+                            required:
+                            - name
+                            - value
+                            type: object
+                          type: array
+                        image_name:
+                          description: DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
+                            Exporter image name, with registry.
+                          type: string
+                        image_tag:
+                          description: DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
+                            Exporter image tag.
+                          type: string
+                        source_ref:
+                          description: DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
+                            Exporter git reference or branch.
+                          type: string
+                        source_url:
+                          description: DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION
+                            Exporter git source code.
+                          type: string
+                      required:
+                      - app_name
+                      - exporter_type
+                      type: object
+                    type: array
+                type: object
+              external_prometheus_hosts:
+                description: List of additional external scrape hosts.
+                items:
+                  properties:
+                    hostname:
+                      description: The fully qualified domain name or IP Address of
+                        the external scrape host
+                      type: string
+                    id:
+                      description: Must consist of lower case alphanumeric characters
+                        or '-'.
+                      type: string
+                  required:
+                  - hostname
+                  type: object
+                type: array
+              federate_openshift_monitoring:
+                description: Optionally integrate Pelorus with the OpenShift monitoring
+                  stack to pull in system and pod level metrics
+                properties:
+                  enabled:
+                    default: false
+                    description: Whether or not to enable this feature. Defaults to
+                      'false'
+                    type: boolean
+                  metrics_filter:
+                    description: Optional filter to specify which metrics to pull
+                      in
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                type: object
+              federated_prometheus_hosts:
+                description: List of additional Federation hosts.
+                items:
+                  properties:
+                    hostname:
+                      description: The fully qualified domain name or IP Address of
+                        the Prometheus Federation host.
+                      type: string
+                    id:
+                      description: Must consist of lower case alphanumeric characters
+                        or '-'.
+                      type: string
+                    password:
+                      description: The federated Prometheus "basic auth" password.
+                      type: string
+                  required:
+                  - id
+                  - hostname
+                  type: object
+                type: array
+              openshift_prometheus_basic_auth_pass:
+                description: Password for Grafana to communicate with the Prometheus
+                  datasource. Must match the "Prometheus Internal Auth (htpasswd)".
+                type: string
+              openshift_prometheus_htpasswd_auth:
+                description: Credentials for the internal user that are used by Grafana
+                  to communicate with the Prometheus and Thanos deployed by Pelorus.
+                  Must match the "Grafana Datasource Internal Auth (basic auth)".
+                type: string
+              prometheus_retention:
+                description: 'Prometheus Retention time. More information: https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusCore/#prometheus_retention'
+                type: string
+              prometheus_retention_size:
+                description: 'Prometheus Retention Size. More information: https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusCore/#prometheus_retention_size'
+                type: string
+              prometheus_storage:
+                description: 'Use Prometheus Persistent Volume. More information:
+                  https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusCore/#prometheus-persistent-volume'
+                type: boolean
+              prometheus_storage_pvc_capacity:
+                description: Prometheus Persistent Volume capacity.
+                type: string
+              prometheus_storage_pvc_storageclass:
+                description: Prometheus Persistent Volume storage class to be used.
+                type: string
+              thanos_bucket_name:
+                description: S3 bucket name.
+                type: string
+              thanos_version:
+                description: DEVELOPMENT OPTION, DO NOT USE IN PRODUCTION Thanos version
+                  from the Official Thanos podman image.
+                type: string
+            type: object
+          status:
+            description: Status defines the observed state of Pelorus
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null

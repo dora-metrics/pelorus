@@ -161,8 +161,8 @@ spec:
                   metrics_filter:
                     description: Optional filter to specify which metrics to pull in
                     type: array
-                      items:
-                        type: string
+                    items:
+                      type: string
                     nullable: true
               federated_prometheus_hosts:
                 description: 'List of additional Federation hosts.'
