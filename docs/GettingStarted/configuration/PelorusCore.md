@@ -162,10 +162,24 @@ When configured, Pelorus can automatically integrate into OpenShift's Prometheus
     - '{job="openshift-state-metrics"}'
     ```
 
-Examples
+Examples:
 
-
-
+```yaml
+kind: Pelorus
+apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
+metadata:
+  name: pelorus-sample
+  namespace: test-pelorus-operator
+spec:
+  federate_openshift_monitoring:
+    enabled: true
+    metrics_filter:
+    # Just pull in one specific metric
+    - 'kube_pod_container_info{}'
+  exporters:
+    global: {}
+    instances: []
+```
 
 ###### federated_prometheus_hosts
 
