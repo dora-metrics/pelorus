@@ -160,6 +160,7 @@ spec:
                     default: false
                   metrics_filter:
                     description: Optional filter to specify which metrics to pull in
+                    type: array
                     nullable: true
               federated_prometheus_hosts:
                 description: 'List of additional Federation hosts.'
