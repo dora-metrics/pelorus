@@ -12,6 +12,8 @@ from typing import Callable, Iterable, Literal, NamedTuple, cast
 import requests
 import semver
 
+from common import read_key
+
 GITHUB_RELEASE_TEMPLATE = "https://api.github.com/repos/{}/releases"
 
 
@@ -210,7 +212,9 @@ if __name__ == "__main__":
 
     exact = ""
     if software == "ct":
-        exact = "v3.8.0"  # https://github.com/helm/chart-testing/issues/577
+        exact = read_key("CHART_TESTING_VERSION")
+    if software == "operator_sdk":
+        exact = read_key("OPERATOR_SDK_VERSION")
 
     tool = Tool[software]
 
