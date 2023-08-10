@@ -77,14 +77,6 @@ Within the Pelorus GitHub fork directory:
 
        To ensure the implementation's pull request is merged **after** the ADR's PR it is recommended to add `Depends on: #ADR_PULL_REQUEST_NUMBER` as the first comment on the implementation PRs. Please follow the [dpulls](https://www.dpulls.com/docs#/dependencies) for more information.
 
-## Internal Architecture Docs
-
-Documentation for low-level code architecture can be found in the
-[architecture_docs directory](https://github.com/dora-metrics/pelorus/tree/master/architecture_docs).
-
-Other components of the codebase may have their own architecture docs
-in their respective folders.
-
 ## Python dependencies
 
 The project uses [Poetry](https://python-poetry.org/) to manage the Python dependencies
