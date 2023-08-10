@@ -98,6 +98,28 @@ class OperatorSdk:
         return cls.pattern.search(url) is not None
 
 
+class Shellcheck:
+    "Shellcheck's URL pattern"
+    repo = "koalaman/shellcheck"
+
+    os = OS.lower()
+
+    if ARCH in X86_64_ARCH_NAMES or OS == "Darwin":
+        # currently no native arm downloads for darwin
+        # so we just use x86 and rosetta it
+        arch = "x86_64"
+    elif ARCH == "arm64":
+        arch = "aarch64"
+    else:
+        sys.exit(f"Unsupported OS {OS}")
+
+    pattern = f"{os}.{arch}.tar.xz"
+
+    @classmethod
+    def url_matches(cls, url: str) -> bool:
+        return cls.pattern in url
+
+
 class Tool(enum.Enum):
     "Maps the dev tools we want to their repos and respective URL matchers."
 
@@ -109,7 +131,8 @@ class Tool(enum.Enum):
     ct = "helm/chart-testing", StandardTool.url_matches
     conftest = "open-policy-agent/conftest", StandardTool.url_matches
     promtool = "prometheus/prometheus", StandardTool.url_matches
-    shellcheck = "koalaman/shellcheck", StandardTool.url_matches
+
+    shellcheck = Shellcheck.repo, Shellcheck.url_matches
 
     noobaa = Nooba.repo, Nooba.url_matches
 
