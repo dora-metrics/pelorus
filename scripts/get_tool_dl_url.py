@@ -199,6 +199,7 @@ parser.add_argument(
     help=f"The executable to retrieve the URL for.\nSupported: {', '.join(CLI_NAMES)}",
     choices=CLI_NAMES,
 )
+parser.add_argument("-v", "--verbose", action="store_true", default=False)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -218,5 +219,9 @@ if __name__ == "__main__":
         if tool.matcher(asset.url):
             print(asset.url)
             sys.exit()
+        elif args.verbose:
+            sys.stderr.write(
+                f"{asset.name} at {asset.url} does not match pattern for {software}\n"
+            )
 
     sys.exit(f"No matching download URL found for {software} on {OS} {ARCH}")
