@@ -76,6 +76,7 @@ nav:
   - Architecture: Architecture.md
   - Contribution:
     - Dev Guide: Development.md
+    - Development Choices: DevelopmentChoices.md
     - Upstream Support: UpstreamSupport.md
 plugins:
   - social

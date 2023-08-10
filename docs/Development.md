@@ -17,6 +17,10 @@ Architectural Decision Records (ADRs) let us keep a record of the development ch
 
 Our ADRs are kept in the [ADRs directory](https://github.com/dora-metrics/pelorus/tree/master/docs/adr/) following the [agreed upon format](./adr/0001-record-architecture-decisions.md).
 
+### Readings on ADRs
+- [Michael Nygard's "Documenting architecture decisions"](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
+- [Why you should be using architecture decision records to document your project (on redhat.com)](https://www.redhat.com/architect/architecture-decision-records)
+
 ### ADR template
 
 Our ADR template is sourced from the [adr-tools-python](https://bitbucket.org/tinkerer_/adr-tools-python/), and it comprises a few sections. `CAPITAL` words will be replaced by the tooling with generated values:
