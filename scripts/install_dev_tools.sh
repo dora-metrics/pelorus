@@ -299,4 +299,4 @@ if should_cli_be_installed "poetry" "${cli_tools_arr[@]}" && \
         curl -sSL https://install.python-poetry.org | POETRY_HOME="$DEFAULT_VENV" python3 -
 fi
 
-exit 0
+cleanup_and_exit 0
