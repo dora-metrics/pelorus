@@ -73,7 +73,7 @@ class Nooba:
     "Nooba's URL pattern."
 
     repo = "noobaa/noobaa-operator"
-    arch = "mac" if OS == "Darwin" else "linux"
+    arch = OS.lower()
     pattern = re.compile(f"https://(.*)-{arch}-(.*)[0-9]")
 
     @classmethod
