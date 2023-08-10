@@ -185,9 +185,9 @@ isort-check: $(PELORUS_VENV)
 
 # Linting
 
-.PHONY: lint python-lint pylava chart-lint chart-lint-optional shellcheck shellcheck-optional typecheck
+.PHONY: lint python-lint pylava chart-lint chart-lint-optional shellcheck typecheck
 ## lint: lint python code, shell scripts, and helm charts
-lint: python-lint chart-lint-optional shellcheck-optional
+lint: python-lint chart-lint-optional shellcheck
 
 ## python-lint: lint python files
 python-lint: $(PELORUS_VENV)
@@ -220,20 +220,11 @@ chart-lint-optional:
 	$(warning chart test (ct) not installed, skipping)
 endif
 
-
-ifneq (, $(SHELLCHECK))
 shellcheck: $(PELORUS_VENV) $(PELORUS_VENV)/bin/shellcheck
+	@echo "🐚 📋 Linting shell scripts with shellcheck"
 	. ${PELORUS_VENV}/bin/activate && \
-	echo "🐚 📋 Linting shell scripts with shellcheck" && \
 	shellcheck $(shell find . -name '*.sh' -type f | grep -v 'venv/\|git/\|.pytest_cache/\|htmlcov/\|_test/test_helper/\|_test/bats\|_test/conftest')
-shellcheck-optional: shellcheck
-else
-shellcheck:
-	echo "Shellcheck is not installed" >&2
-	@false
-shellcheck-optional:
-	$(warning 🐚 ⏭ Shellcheck not found, skipping)
-endif
+
 
 ## doc-check: Check if there is any problem with the project documentation generation
 doc-check: $(PELORUS_VENV)
