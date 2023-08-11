@@ -14,10 +14,6 @@ on:
 jobs:
   unit-test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.11']
 
     steps:
       - name: Checkout
@@ -26,7 +22,7 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
           cache: 'pip'
           cache-dependency-path: |
             **/requirements*.txt
