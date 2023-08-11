@@ -148,19 +148,19 @@ By default, Pelorus gathers the data from the Prometheus instance deployed in th
 
 ###### federate_openshift_monitoring
 
-**Required:** no
-**Type:** object
+- **Required:** no
+- **Type:** object
 
-When configured, Pelorus can automatically integrate into OpenShift's Prometheus-based monitoring stack to pull in data about pods, namespaces, and such to be used in custom dashboards. The properties of this object include:
+: When configured, Pelorus can automatically integrate into OpenShift's Prometheus-based monitoring stack to pull in data about pods, namespaces, and such to be used in custom dashboards. The properties of this object include:
 
 : * enabled - a boolean that determines whether or not to enable this feature. default is `false`.
 : * metrics_filter - a block of freeform yaml that can be used to determine which metrics to pull in from openshift-monitoring. Default value is:
 
-    ```yaml
-    # Pull in all openshift and kubernetes metrics
-    - '{job="kube-state-metrics"}'
-    - '{job="openshift-state-metrics"}'
-    ```
+      ```yaml
+      # Pull in all openshift and kubernetes metrics
+      - '{job="kube-state-metrics"}'
+      - '{job="openshift-state-metrics"}'
+      ```
 
 Examples:
 
