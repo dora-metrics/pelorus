@@ -33,28 +33,27 @@ from urllib import request
 
 import semver
 
-OPERATOR_NAME = "pelorus-operator"
-OPERATOR_ORGANIZATION_NAME = "pelorus"
-OPERATOR_DOMAIN = "pelorus.dora-metrics.io"
+from common import read_key
 
 ROOT = Path(__file__).resolve().parent.parent
-PELORUS_CHARTS_FOLDER = ROOT / "charts/pelorus"
-PELORUS_EXPORTERS_FOLDER = PELORUS_CHARTS_FOLDER / "charts/exporters"
 PELORUS_OPERATOR_FOLDER = ROOT / "pelorus-operator"
-PATCHES_FOLDER = ROOT / "scripts/pelorus-operator-patches"
+PELORUS_CHARTS_FOLDER = PELORUS_OPERATOR_FOLDER / "helm-charts/pelorus"
+PELORUS_EXPORTERS_FOLDER = PELORUS_CHARTS_FOLDER / "charts/exporters"
 VIRTUAL_ENVIRONMENT = ROOT / ".venv"
 
 YAML_TAB = "  "
 VERSION_PATTERN = r"\d+\.\d+\.\d+(-rc\.\d+)?"
+VERSION_PATTERN2 = r"VERSION \?= \d+\.\d+\.\d+(-rc\.\d+)?"
+VERSION_PATTERN3 = r"quay.io/pelorus/pelorus-operator:\d+\.\d+\.\d+(-rc\.\d+)?"
 SHELL_DEPENDENCIES = ["helm", "oc", "operator-sdk"]
 MAJOR_LABEL = "major"
 MINOR_LABEL = "minor"
 PATCH_LABEL = "patch"
 LABELS_OPTIONS = [MAJOR_LABEL, MINOR_LABEL, PATCH_LABEL]
 CHARTS_FILES_TO_UPDATE = {
-    # Files to updated in charts folder and number of changes in each one
+    # Files to be updated in charts folder and number of changes in each one
     PELORUS_CHARTS_FOLDER / "Chart.yaml": 2,
-    ROOT / "charts/operators/Chart.yaml": 1,
+    PELORUS_OPERATOR_FOLDER / "helm-charts/operators/Chart.yaml": 1,
     PELORUS_EXPORTERS_FOLDER / "Chart.yaml": 1,
     PELORUS_EXPORTERS_FOLDER / "templates/_deploymentconfig.yaml": 1,
     PELORUS_EXPORTERS_FOLDER / "templates/_imagestream_from_image.yaml": 1,
@@ -69,7 +68,7 @@ PELORUS_REPO_RAW_URL = (
 )
 
 OPERATOR_CSV_FILE_NAME = "pelorus-operator.clusterserviceversion.yaml"
-CHART_VERSION_FILE_NAME = "charts/pelorus/Chart.yaml"
+CHART_VERSION_FILE_NAME = "pelorus-operator/helm-charts/pelorus/Chart.yaml"
 OPERATOR_VERSION_FILE_NAME = (
     f"pelorus-operator/bundle/manifests/{OPERATOR_CSV_FILE_NAME}"
 )
@@ -78,15 +77,6 @@ OPERATOR_VERSION_FILE_NAME = (
 def exit_error(message: str) -> None:
     logging.error(message)
     raise SystemExit(1)
-
-
-def folder_path_type(file_path: str) -> Path:
-    _file_path = Path(file_path).resolve()
-    if _file_path.exists():
-        if _file_path.is_file():
-            raise argparse.ArgumentTypeError("Must be a folder, not a file")
-        return _file_path
-    raise argparse.ArgumentTypeError(f"Path {_file_path} does not exist.")
 
 
 def _to_dict(_list: List[str]) -> Dict[str, str]:
@@ -114,18 +104,7 @@ def run_command(
         raise SystemExit(error.returncode) from error
 
 
-def check_prerequisites(destination: Path, force: bool) -> None:
-    if not PATCHES_FOLDER.exists():
-        exit_error(f"Patches folder {PATCHES_FOLDER} does not exist")
-
-    if force:
-        logging.info(f"Removing destination folder {destination}")
-        shutil.rmtree(destination)
-        destination.mkdir(parents=True)
-
-    if any(destination.iterdir()):
-        exit_error(f"Destination folder {destination} is not empty")
-
+def check_prerequisites() -> None:
     for dependency in SHELL_DEPENDENCIES:
         dependency_path = shutil.which(dependency)
         if dependency_path is None:
@@ -134,7 +113,7 @@ def check_prerequisites(destination: Path, force: bool) -> None:
             )
         if str(VIRTUAL_ENVIRONMENT) not in dependency_path:
             logging.warning(
-                f"Activate the project's virtual environment {VIRTUAL_ENVIRONMENT} to use latest "
+                f"Activate the project's virtual environment {VIRTUAL_ENVIRONMENT} to use valid "
                 "versions of the shell dependencies"
             )
 
@@ -155,7 +134,16 @@ def check_prerequisites(destination: Path, force: bool) -> None:
         error_message="Prometheus CRD not found",
     )
 
-    logging.info(run_command("operator-sdk version").stdout.strip())
+    operator_sdk_version = run_command("operator-sdk version").stdout.strip()
+    logging.info(operator_sdk_version)
+    if (
+        f'operator-sdk version: "{read_key("OPERATOR_SDK_VERSION")}"'
+        not in operator_sdk_version
+    ):
+        exit_error(
+            "Operator SDK version is invalid. Recreate the project's virtual environment "
+            f"{VIRTUAL_ENVIRONMENT} to use version {read_key('OPERATOR_SDK_VERSION')}"
+        )
 
 
 def get_version_upstream(file_name: str) -> semver.VersionInfo:
@@ -213,7 +201,7 @@ def replace_in_file(file: Path, pattern: str, new: str, number_of_changes: int) 
         exit_error(f"Unexpected changes in {file}")
 
 
-def update_charts_folder(next_chart_version: str) -> None:
+def update_charts_version(next_chart_version: str) -> None:
     for file, occurrences in CHARTS_FILES_TO_UPDATE.items():
         replace_in_file(
             file=file,
@@ -253,55 +241,18 @@ def add_replaces_to_csv(
         file_content.writelines(cluster_service_version_file_content)
 
 
-def update_operator_folder(next_operator_version: str, destination: Path) -> None:
-    logging.info("Creating operator init files")
-    # TODO run update command instead of init every time
-    run_command(
-        f"operator-sdk init --plugins=helm --domain={OPERATOR_DOMAIN} --project-name={OPERATOR_NAME}",
-        directory=destination,
-    )
-    logging.info("Creating operator api")
-    exporters_charts_in_operator = destination / "helm-charts/pelorus/charts/exporters"
-    exporters_charts_in_operator.mkdir(parents=True)
-    shutil.copytree(
-        PELORUS_EXPORTERS_FOLDER, exporters_charts_in_operator, dirs_exist_ok=True
-    )
-    run_command(
-        f"operator-sdk create api --helm-chart={PELORUS_CHARTS_FOLDER}",
-        directory=destination,
-    )
-    for file in exporters_charts_in_operator.parent.glob("*.tgz"):
-        file.unlink()
-
+def update_operator_version(next_operator_version: str, destination: Path) -> None:
     replace_in_file(
         file=PELORUS_OPERATOR_FOLDER / "Makefile",
-        pattern=r"VERSION \?= 0\.0\.1",
+        pattern=VERSION_PATTERN2,
         new=f"VERSION ?= {next_operator_version}",
         number_of_changes=1,
     )
-    operator_image = f"quay.io/{OPERATOR_ORGANIZATION_NAME}/{OPERATOR_NAME}"
-    replace_in_file(
-        file=PELORUS_OPERATOR_FOLDER / "Makefile",
-        pattern=r"IMAGE_TAG_BASE \?= pelorus\.dora-metrics\.io/pelorus-operator",
-        new=f"IMAGE_TAG_BASE ?= {operator_image}",
-        number_of_changes=1,
-    )
-    logging.info("Generating operator kustomize manifests files")
-    run_command(
-        "operator-sdk generate kustomize manifests -q --interactive=false",
-        directory=destination,
-    )
-
-    for file in PATCHES_FOLDER.rglob("*"):
-        if file.is_file():
-            logging.info(f"Applying patch {file}")
-            run_command(f"patch -d {destination} -p0 < {file}")
-
     replace_in_file(
         file=PELORUS_OPERATOR_FOLDER
         / f"config/manifests/bases/{OPERATOR_CSV_FILE_NAME}",
-        pattern="    containerImage: placeholder",
-        new=f"    containerImage: {operator_image}:{next_operator_version}",
+        pattern=VERSION_PATTERN3,
+        new=f"quay.io/pelorus/pelorus-operator:{next_operator_version}",
         number_of_changes=1,
     )
     logging.info("Executing operator make bundle")
@@ -318,6 +269,7 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
     ]
     tag_names.sort(reverse=True, key=lambda version: semver.VersionInfo.parse(version))
 
+    # TODO change config/manifests/bases instead?
     add_replaces_to_csv(
         new_version=next_operator_version,
         cluster_service_version_file=destination
@@ -331,14 +283,14 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
 def main(arguments: argparse.Namespace) -> None:
     arguments.labels = _to_dict(arguments.labels)
 
-    check_prerequisites(destination=arguments.destination, force=arguments.force)
+    check_prerequisites()
 
     next_chart_version = get_next_version(
         file_name=CHART_VERSION_FILE_NAME,
         software="chart",
         arguments=arguments,
     )
-    update_charts_folder(
+    update_charts_version(
         next_chart_version=next_chart_version,
     )
 
@@ -347,9 +299,9 @@ def main(arguments: argparse.Namespace) -> None:
         software="operator",
         arguments=arguments,
     )
-    update_operator_folder(
+    update_operator_version(
         next_operator_version=next_operator_version,
-        destination=arguments.destination,
+        destination=PELORUS_OPERATOR_FOLDER,
     )
 
     if arguments.labels["chart"] == MAJOR_LABEL:
@@ -369,22 +321,9 @@ def main(arguments: argparse.Namespace) -> None:
 
 def get_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
+        # TODO add more information
         description="Update all versions of the project.",
         allow_abbrev=False,
-    )
-    folder = parser.add_mutually_exclusive_group()
-    folder.add_argument(
-        "-d",
-        "--destination",
-        type=folder_path_type,
-        help=f"Path to operator destination folder. Default to {PELORUS_OPERATOR_FOLDER}",
-        default=PELORUS_OPERATOR_FOLDER,
-    )
-    folder.add_argument(
-        "-f",
-        "--force",
-        action="store_true",
-        help="Removes destination folder before proceeding.",
     )
     labels = parser.add_mutually_exclusive_group(required=True)
     labels.add_argument(

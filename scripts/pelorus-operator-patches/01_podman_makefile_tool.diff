@@ -1,6 +1,6 @@
 --- Makefile.orig	2023-04-06 10:52:02.085396187 +0200
 +++ Makefile	2023-04-06 10:54:26.168353594 +0200
-@@ -50,7 +50,7 @@
+@@ -54,7 +54,7 @@
  IMG ?= controller:latest
  
  .PHONY: all
@@ -9,7 +9,7 @@
  
  ##@ General
  
-@@ -75,13 +75,13 @@
+@@ -79,13 +79,13 @@
  run: helm-operator ## Run against the configured Kubernetes cluster in ~/.kube/config
  	$(HELM_OPERATOR) run
  
@@ -30,7 +30,7 @@
  
  # PLATFORMS defines the target platforms for  the manager image be build to provide support to multiple
  # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
-@@ -163,11 +163,11 @@
+@@ -183,11 +183,11 @@
  
  .PHONY: bundle-build
  bundle-build: ## Build the bundle image.
@@ -44,7 +44,7 @@
  
  .PHONY: opm
  OPM = ./bin/opm
-@@ -202,9 +202,9 @@
+@@ -222,9 +222,9 @@
  # https://github.com/operator-framework/community-operators/blob/7f1438c/docs/packaging-operator.md#updating-your-existing-operator
  .PHONY: catalog-build
  catalog-build: opm ## Build a catalog image.

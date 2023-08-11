@@ -1,0 +1,12 @@
+CHART_TESTING_VERSION: v3.8.0 # https://github.com/helm/chart-testing/issues/577
+OPERATOR_SDK_VERSION: v1.28.1
+# TODO HELM_VERSION scripts/install_dev_tools.sh line 31 (needs to change logic as well)
+# TODO Tekton
+# TODO? OpenShift Client
+# TODO Promtool (see what version operator uses, and use same)
+# TODO Conftest
+# TODO Bats
+# TODO Noobaa
+# TODO Shellcheck
+# TODO? Poetry
+# TODO? jq (not installed)

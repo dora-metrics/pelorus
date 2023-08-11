@@ -1,0 +1,170 @@
+diff -ruN -x helm-charts /config/rbac/role.yaml /config/rbac/role.yaml
+--- /config/rbac/role.yaml	2023-08-09 09:12:44.183182876 -0300
++++ /config/rbac/role.yaml	2023-08-09 09:12:52.091225574 -0300
+@@ -55,6 +55,20 @@
+ - verbs:
+   - "*"
+   apiGroups:
++  - "monitoring.coreos.com"
++  resources:
++  - "prometheuses"
++  - "prometheusrules"
++  - "servicemonitors"
++- verbs:
++  - "*"
++  apiGroups:
++  - "route.openshift.io"
++  resources:
++  - "routes"
++- verbs:
++  - "*"
++  apiGroups:
+   - ""
+   resources:
+   - "configmaps"
+@@ -88,19 +102,5 @@
+   - "image.openshift.io"
+   resources:
+   - "imagestreams"
+-- verbs:
+-  - "*"
+-  apiGroups:
+-  - "monitoring.coreos.com"
+-  resources:
+-  - "prometheuses"
+-  - "prometheusrules"
+-  - "servicemonitors"
+-- verbs:
+-  - "*"
+-  apiGroups:
+-  - "route.openshift.io"
+-  resources:
+-  - "routes"
+ 
+ #+kubebuilder:scaffold:rules
+diff -ruN -x helm-charts /config/scorecard/patches/basic.config.yaml /config/scorecard/patches/basic.config.yaml
+--- /config/scorecard/patches/basic.config.yaml	2023-08-09 09:12:41.108166273 -0300
++++ /config/scorecard/patches/basic.config.yaml	2023-08-09 09:12:49.005208911 -0300
+@@ -4,7 +4,7 @@
+     entrypoint:
+     - scorecard-test
+     - basic-check-spec
+-    image: quay.io/operator-framework/scorecard-test:v1.28.1
++    image: quay.io/operator-framework/scorecard-test:v1.31.0
+     labels:
+       suite: basic
+       test: basic-check-spec-test
+diff -ruN -x helm-charts /config/scorecard/patches/olm.config.yaml /config/scorecard/patches/olm.config.yaml
+--- /config/scorecard/patches/olm.config.yaml	2023-08-09 09:12:41.108166273 -0300
++++ /config/scorecard/patches/olm.config.yaml	2023-08-09 09:12:49.005208911 -0300
+@@ -4,7 +4,7 @@
+     entrypoint:
+     - scorecard-test
+     - olm-bundle-validation
+-    image: quay.io/operator-framework/scorecard-test:v1.28.1
++    image: quay.io/operator-framework/scorecard-test:v1.31.0
+     labels:
+       suite: olm
+       test: olm-bundle-validation-test
+@@ -14,7 +14,7 @@
+     entrypoint:
+     - scorecard-test
+     - olm-crds-have-validation
+-    image: quay.io/operator-framework/scorecard-test:v1.28.1
++    image: quay.io/operator-framework/scorecard-test:v1.31.0
+     labels:
+       suite: olm
+       test: olm-crds-have-validation-test
+@@ -24,7 +24,7 @@
+     entrypoint:
+     - scorecard-test
+     - olm-crds-have-resources
+-    image: quay.io/operator-framework/scorecard-test:v1.28.1
++    image: quay.io/operator-framework/scorecard-test:v1.31.0
+     labels:
+       suite: olm
+       test: olm-crds-have-resources-test
+@@ -34,7 +34,7 @@
+     entrypoint:
+     - scorecard-test
+     - olm-spec-descriptors
+-    image: quay.io/operator-framework/scorecard-test:v1.28.1
++    image: quay.io/operator-framework/scorecard-test:v1.31.0
+     labels:
+       suite: olm
+       test: olm-spec-descriptors-test
+@@ -44,7 +44,7 @@
+     entrypoint:
+     - scorecard-test
+     - olm-status-descriptors
+-    image: quay.io/operator-framework/scorecard-test:v1.28.1
++    image: quay.io/operator-framework/scorecard-test:v1.31.0
+     labels:
+       suite: olm
+       test: olm-status-descriptors-test
+diff -ruN -x helm-charts /Dockerfile /Dockerfile
+--- /Dockerfile	2023-08-09 09:12:41.108166273 -0300
++++ /Dockerfile	2023-08-09 09:12:49.005208911 -0300
+@@ -1,5 +1,5 @@
+ # Build the manager binary
+-FROM quay.io/operator-framework/helm-operator:v1.28.1
++FROM quay.io/operator-framework/helm-operator:v1.31.0
+ 
+ ENV HOME=/opt/helm
+ COPY watches.yaml ${HOME}/watches.yaml
+diff -ruN -x helm-charts /Makefile /Makefile
+--- /Makefile	2023-08-09 09:12:41.108166273 -0300
++++ /Makefile	2023-08-09 09:12:49.005208911 -0300
+@@ -46,6 +46,10 @@
+ 	BUNDLE_GEN_FLAGS += --use-image-digests
+ endif
+ 
++# Set the Operator SDK version to use. By default, what is installed on the system is used.
++# This is useful for CI or a project to utilize a specific version of the operator-sdk toolkit.
++OPERATOR_SDK_VERSION ?= v1.31.0
++
+ # Image URL to use all building/pushing image targets
+ IMG ?= controller:latest
+ 
+@@ -146,7 +150,7 @@
+ 	@{ \
+ 	set -e ;\
+ 	mkdir -p $(dir $(HELM_OPERATOR)) ;\
+-	curl -sSLo $(HELM_OPERATOR) https://github.com/operator-framework/operator-sdk/releases/download/v1.28.1/helm-operator_$(OS)_$(ARCH) ;\
++	curl -sSLo $(HELM_OPERATOR) https://github.com/operator-framework/operator-sdk/releases/download/v1.31.0/helm-operator_$(OS)_$(ARCH) ;\
+ 	chmod +x $(HELM_OPERATOR) ;\
+ 	}
+ else
+@@ -154,12 +158,28 @@
+ endif
+ endif
+ 
++.PHONY: operator-sdk
++OPERATOR_SDK ?= ./bin/operator-sdk
++operator-sdk: ## Download operator-sdk locally if necessary.
++ifeq (,$(wildcard $(OPERATOR_SDK)))
++ifeq (, $(shell which operator-sdk 2>/dev/null))
++	@{ \
++	set -e ;\
++	mkdir -p $(dir $(OPERATOR_SDK)) ;\
++	curl -sSLo $(OPERATOR_SDK) https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_$(OS)_$(ARCH) ;\
++	chmod +x $(OPERATOR_SDK) ;\
++	}
++else
++OPERATOR_SDK = $(shell which operator-sdk)
++endif
++endif
++
+ .PHONY: bundle
+-bundle: kustomize ## Generate bundle manifests and metadata, then validate generated files.
+-	operator-sdk generate kustomize manifests -q
++bundle: kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
++	$(OPERATOR_SDK) generate kustomize manifests -q
+ 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
+-	operator-sdk bundle validate ./bundle
++	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
++	$(OPERATOR_SDK) bundle validate ./bundle
+ 
+ .PHONY: bundle-build
+ bundle-build: ## Build the bundle image.
