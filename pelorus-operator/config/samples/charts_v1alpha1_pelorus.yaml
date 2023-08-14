@@ -16,6 +16,8 @@ spec:
       exporter_type: committime
     - app_name: webhook-exporter
       exporter_type: webhook
+  federate_openshift_monitoring:
+    enabled: false
   openshift_prometheus_basic_auth_pass: changeme
   openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
   prometheus_retention: 1y

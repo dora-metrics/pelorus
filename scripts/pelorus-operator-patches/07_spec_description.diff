@@ -1,6 +1,6 @@
 --- config/crd/bases/charts.pelorus.dora-metrics.io_peloruses.yaml.original	2023-04-06 10:52:01.069396488 +0200
 +++ config/crd/bases/charts.pelorus.dora-metrics.io_peloruses.yaml	2023-04-06 11:15:16.652048772 +0200
-@@ -15,29 +15,201 @@
+@@ -15,29 +27,215 @@
    - name: v1alpha1
      schema:
        openAPIV3Schema:
@@ -148,6 +148,20 @@
 +              prometheus_storage_pvc_storageclass:
 +                description: Prometheus Persistent Volume storage class to be used.
 +                type: string
++              federate_openshift_monitoring:
++                description: Optionally integrate Pelorus with the OpenShift monitoring stack to pull in system and pod level metrics
++                type: object
++                properties:
++                  enabled:
++                    description: Whether or not to enable this feature. Defaults to 'false'
++                    type: boolean
++                    default: false
++                  metrics_filter:
++                    description: Optional filter to specify which metrics to pull in
++                    type: array
++                    items:
++                      type: string
++                    nullable: true
 +              federated_prometheus_hosts:
 +                description: 'List of additional Federation hosts.'
 +                type: array
