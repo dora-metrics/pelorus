@@ -52,9 +52,9 @@ class FailureCollectorConfig:
         return load_and_log(PROVIDER_TYPES[self.tracker_provider])
 
 
-def set_up() -> AbstractFailureCollector:
+def set_up(prod: bool = True) -> AbstractFailureCollector:
     # TODO refactor: all exporters have same structure
-    pelorus.setup_logging()
+    pelorus.setup_logging(prod=prod)
 
     config = load_and_log(FailureCollectorConfig)
     collector = config.create()

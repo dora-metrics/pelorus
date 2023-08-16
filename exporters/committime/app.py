@@ -271,9 +271,9 @@ class GitCommittimeConfig:
         )  # should be unreachable
 
 
-def set_up() -> AbstractCommitCollector:
+def set_up(prod: bool = True) -> AbstractCommitCollector:
     # TODO refactor: all exporters have same structure
-    pelorus.setup_logging()
+    pelorus.setup_logging(prod=prod)
     provider_config = load_and_log(CommittimeTypeConfig)
 
     dyn_client = pelorus.utils.get_k8s_client()

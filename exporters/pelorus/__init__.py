@@ -50,7 +50,7 @@ def _print_version():
 
 
 # region: logging setup
-def setup_logging():
+def setup_logging(prod: bool = True):
     _print_version()
     loglevel = utils.get_env_var("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
     numeric_level = getattr(logging, loglevel, None)
@@ -62,6 +62,9 @@ def setup_logging():
     )
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
+    # committime : containerimage threading.Thread().start() adds handler
+    if prod and root_logger.hasHandlers():
+        root_logger.handlers = []
     root_logger.addHandler(handler)
     root_logger.setLevel(numeric_level)
     print(f"Initializing Logger with LogLevel: {loglevel}")

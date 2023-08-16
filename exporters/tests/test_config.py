@@ -87,7 +87,7 @@ def test_loading_from_other():
 
 
 def test_logging(caplog: pytest.LogCaptureFixture):
-    pelorus.setup_logging()
+    pelorus.setup_logging(prod=False)
 
     @define(kw_only=True)
     class Loggable:
