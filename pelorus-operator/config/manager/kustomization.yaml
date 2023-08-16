@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/pelorus/pelorus-operator
-  newTag: 0.0.8-rc.4
+  newTag: 0.0.8-rc.5

@@ -55,6 +55,28 @@ rules:
 - verbs:
   - "*"
   apiGroups:
+  - "integreatly.org"
+  resources:
+  - "grafanadashboards"
+  - "grafanadatasources"
+  - "grafanas"
+- verbs:
+  - "*"
+  apiGroups:
+  - "image.openshift.io"
+  resources:
+  - "imagestreams"
+- verbs:
+  - "*"
+  apiGroups:
+  - "monitoring.coreos.com"
+  resources:
+  - "prometheuses"
+  - "prometheusrules"
+  - "servicemonitors"
+- verbs:
+  - "*"
+  apiGroups:
   - "route.openshift.io"
   resources:
   - "routes"
@@ -80,27 +102,5 @@ rules:
   - "apps.openshift.io"
   resources:
   - "deploymentconfigs"
-- verbs:
-  - "*"
-  apiGroups:
-  - "integreatly.org"
-  resources:
-  - "grafanadashboards"
-  - "grafanadatasources"
-  - "grafanas"
-- verbs:
-  - "*"
-  apiGroups:
-  - "image.openshift.io"
-  resources:
-  - "imagestreams"
-- verbs:
-  - "*"
-  apiGroups:
-  - "monitoring.coreos.com"
-  resources:
-  - "prometheuses"
-  - "prometheusrules"
-  - "servicemonitors"
 
 #+kubebuilder:scaffold:rules
