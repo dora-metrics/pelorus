@@ -1,6 +1,6 @@
 dependencies:
 - name: exporters
   repository: file://./charts/exporters
-  version: 2.0.11-rc.4
-digest: sha256:900316cd09a827cc056e461548d390e956f445e337a3a6da9332a7f104fb8855
-generated: "2023-08-16T14:46:06.496158126-03:00"
+  version: 2.0.11-rc.5
+digest: sha256:a8b983deb6da2968f3f294d4ad5c4731cd14dcee7b3c37804bf0e534c2512819
+generated: "2023-08-16T17:50:46.538971828-03:00"
