@@ -55,6 +55,28 @@ rules:
 - verbs:
   - "*"
   apiGroups:
+  - ""
+  resources:
+  - "configmaps"
+  - "secrets"
+  - "serviceaccounts"
+  - "services"
+- verbs:
+  - "*"
+  apiGroups:
+  - "rbac.authorization.k8s.io"
+  resources:
+  - "rolebindings"
+  - "roles"
+- verbs:
+  - "*"
+  apiGroups:
+  - "apps.openshift.io"
+  resources:
+  - "deploymentconfigs"
+- verbs:
+  - "*"
+  apiGroups:
   - "integreatly.org"
   resources:
   - "grafanadashboards"
@@ -80,27 +102,5 @@ rules:
   - "route.openshift.io"
   resources:
   - "routes"
-- verbs:
-  - "*"
-  apiGroups:
-  - ""
-  resources:
-  - "configmaps"
-  - "secrets"
-  - "serviceaccounts"
-  - "services"
-- verbs:
-  - "*"
-  apiGroups:
-  - "rbac.authorization.k8s.io"
-  resources:
-  - "rolebindings"
-  - "roles"
-- verbs:
-  - "*"
-  apiGroups:
-  - "apps.openshift.io"
-  resources:
-  - "deploymentconfigs"
 
 #+kubebuilder:scaffold:rules
