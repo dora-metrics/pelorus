@@ -174,7 +174,7 @@ def get_version_upstream(file_name: str) -> semver.VersionInfo:
 def bump_version(
     version: semver.VersionInfo, software: str, arguments: argparse.Namespace
 ) -> semver.VersionInfo:
-    # TODO move this to chart-test?
+    # TODO move this to chart-check?
     if version.build is not None:
         raise ValueError
 
@@ -234,7 +234,7 @@ def add_replaces_to_csv(
     if not cluster_service_version_file.exists():
         exit_error(f"{cluster_service_version_file} does not exist.")
     if new_version in versions:
-        # TODO move this to chart-test?
+        # TODO move this to chart-check?
         exit_error(f"version {new_version} already exists in Pelorus Operator tags.")
 
     with open(cluster_service_version_file, encoding="utf-8") as file_content:

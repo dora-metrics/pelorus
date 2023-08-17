@@ -75,8 +75,18 @@ nav:
     - How Pelorus Can Help: philosophy/HowPelorusCanHelp.md
   - Architecture: Architecture.md
   - Contribution:
-    - Dev Guide: Development.md
-    - Upstream Support: UpstreamSupport.md
+    - Overview: contribution/Overview.md
+    - Development:
+      - Setup: contribution/Development.md
+      # - Python:
+      # - Helm charts:
+      # - Operator SDK:
+      # - Documentation:
+      # - Grafana:
+      # - Prometheus:
+      # - versioning/release:
+      # - CI/CD:
+      # - How to open PR:
 plugins:
   - social
   - redirects:

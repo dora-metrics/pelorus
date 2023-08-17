@@ -35,7 +35,7 @@ fi
 
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
 
-ct lint --remote "$REMOTE" --config ct.yaml || exit 1
+ct lint --remote "$REMOTE" --config scripts/config/ct.yaml || exit 1
 rm -f charts/pelorus/charts/*.tgz
 
 if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml &> /dev/null; then

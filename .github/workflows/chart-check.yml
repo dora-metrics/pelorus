@@ -1,4 +1,4 @@
-name: Chart Lint
+name: Charts check
 on:
   push:
     branches: [ master ]
@@ -6,7 +6,7 @@ on:
       - 'exporters/**'
       - 'charts/**'
       - 'pelorus-operator/**'
-      - '.github/workflows/chart-lint.yml'
+      - '.github/workflows/chart-check.yml'
       - 'lintconf.yaml'
       - 'Makefile'
 
@@ -16,13 +16,12 @@ on:
       - 'exporters/**'
       - 'charts/**'
       - 'pelorus-operator/**'
-      - '.github/workflows/chart-lint.yml'
+      - '.github/workflows/chart-check.yml'
       - 'lintconf.yaml'
       - 'Makefile'
 
 jobs:
-  lint:
-    name: Lint
+  chart-check:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -42,5 +41,5 @@ jobs:
             **/requirements*.txt
             pyproject.toml
 
-      - name: Lint charts
-        run: make chart-lint
+      - name: Charts check
+        run: make chart-check

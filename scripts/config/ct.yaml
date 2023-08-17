@@ -1,0 +1,7 @@
+chart-dirs:
+  - charts/pelorus/charts/
+  - charts/
+chart-yaml-schema: scripts/config/chart_schema.yaml
+lint-conf: scripts/config/lintconf.yaml
+# TODO create script to add maintainers with values from OWNERS file
+validate-maintainers: false

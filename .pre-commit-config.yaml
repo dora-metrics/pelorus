@@ -1,9 +1,9 @@
 repos:
   - repo: local
     hooks:
-    - id: chart-lint
-      name: Linting Charts with Chart Testing
-      entry: make chart-lint
+    - id: chart-check
+      name: chart-check
+      entry: make chart-check
       pass_filenames: false
       files: ^(charts|exporters)/
       language: system

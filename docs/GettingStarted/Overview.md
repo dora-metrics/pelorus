@@ -28,7 +28,14 @@ Pelorus is composed of Prometheus, Grafana and exporters. It can be easily deplo
 
 ## Supported Providers
 
-List of providers supported by Pelorus.
+Pelorus' exporters support a variety of different providers. The Pelorus community is working to ensure an optimal experience for each provider supported by Pelorus. Providers with
+
+- :fontawesome-solid-circle-check:{ .checked } means it is automatically tested by the project CI
+- :fontawesome-solid-circle-xmark: means it is still not automatically tested by the project CI
+
+Below is the list of providers supported by Pelorus.
+
+TODO check contributing
 
 Open an [issue](https://github.com/dora-metrics/pelorus/issues/new?assignees=&labels=kind%2Ffeature%2Cneeds-triage&template=feature.yml) or a pull request to add support for additional providers!
 
@@ -36,19 +43,27 @@ Open an [issue](https://github.com/dora-metrics/pelorus/issues/new?assignees=&la
 
 <font size="5">
 
-- OpenShift :simple-redhatopenshift:
+- OpenShift :simple-redhatopenshift: : [Known issues](https://github.com/dora-metrics/pelorus/labels/deploytime-exporter)
+
+    - version 4.10 : Tested by project CI :fontawesome-solid-circle-check:{ .checked }
+    - version 4.11 : Tested by project CI :fontawesome-solid-circle-check:{ .checked }
+    - version 4.12 : Tested by project CI :fontawesome-solid-circle-check:{ .checked }
+    - version 4.13 : Tested by project CI :fontawesome-solid-circle-check:{ .checked }
 
 </font>
+
+> **NOTE:** The Pelorus engineering team will provide **best-effort** level support for it on the currently latest and the latest 3 previous released stable minor versions of OpenShift version 4.
 
 ### Git Providers
 
 <font size="5">
 
-- GitHub :simple-github:
-- Bitbucket :simple-bitbucket:
-- Gitea :simple-gitea:
-- GitLab :simple-gitlab:
-- Azure DevOps :simple-azuredevops:
+- GitHub :simple-github: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-github)
+- GitHub Enterprise :simple-github: : Tested by project CI :fontawesome-solid-circle-xmark: | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-github-enterprise+)
+- Bitbucket :simple-bitbucket: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-bitbucket+)
+- Gitea :simple-gitea: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-gitea)
+- GitLab :simple-gitlab: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-gitlab)
+- Azure DevOps :simple-azuredevops: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Acommittime-exporter+label%3Abackend-azure-devops)
 
 </font>
 
@@ -56,10 +71,10 @@ Open an [issue](https://github.com/dora-metrics/pelorus/issues/new?assignees=&la
 
 <font size="5">
 
-- Jira :simple-jirasoftware:
-- GitHub :simple-github:
-- ServiceNow
-- PagerDuty :simple-pagerduty:
-- Azure DevOps :simple-azuredevops:
+- Jira :simple-jirasoftware: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-jira+)
+- GitHub :simple-github: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-github+)
+- ServiceNow : Tested by project CI :fontawesome-solid-circle-xmark: | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-servicenow+)
+- PagerDuty :simple-pagerduty: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-pagerduty+)
+- Azure DevOps :simple-azuredevops: : Tested by project CI :fontawesome-solid-circle-check:{ .checked } | [Known issues](https://github.com/dora-metrics/pelorus/issues?q=is%3Aopen+label%3Afailure-exporter+label%3Abackend-azure-devops+)
 
 </font>

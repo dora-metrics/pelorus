@@ -128,7 +128,7 @@ Currently we have two charts:
     * A set of Grafana Dashboards and Datasources
     * The Pelorus exporters, managed in an [exporter](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
 
-We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `make chart-lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
+We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `make chart-check`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
 
 ### Updating the chart versions
 
@@ -715,7 +715,7 @@ helm uninstall pelorus --namespace pelorus
 helm uninstall operators --namespace pelorus
 ```
 
-You can do some rudimentary linting with `make chart-lint`.
+You can do some rudimentary linting with `make chart-check`.
 
 We are in the process of refactoring our helm charts such that they can be tested more automatically using [helm chart-testing](https://github.com/helm/chart-testing). Some general guidelines are outlined in the [CoP Helm testing strategy](https://redhat-cop.github.io/ci/linting-testing-helm-charts.html). More to come soon.
 
