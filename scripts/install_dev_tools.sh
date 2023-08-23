@@ -267,8 +267,8 @@ if should_cli_be_installed "noobaa" "${cli_tools_arr[@]}" && \
       echo "$NOOBAA_CLIENT_URL"
       download_file_from_url "${NOOBAA_CLIENT_URL}" "${DWN_DIR}"
       NOOBAA_CLIENT_PATH="${DWN_DIR}"/$(basename "${NOOBAA_CLIENT_URL}")
-      mv "${NOOBAA_CLIENT_PATH}" "${VENV}/bin/noobaa"
-      chmod +x "${VENV}/bin/noobaa"
+      extract_file_to_dir "${NOOBAA_CLIENT_PATH}" "${VENV}/bin/"
+      mv "${VENV}/bin/noobaa-operator" "${VENV}/bin/noobaa"
 fi
 
 if should_cli_be_installed "operator-sdk" "${cli_tools_arr[@]}" && \
