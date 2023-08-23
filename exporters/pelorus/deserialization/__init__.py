@@ -61,14 +61,13 @@ from typing import (
     Iterable,
     Literal,
     Mapping,
-    MutableSequence,
     NamedTuple,
     Optional,
     Sequence,
     TypeVar,
     Union,
+    cast,
     get_type_hints,
-    overload,
 )
 
 import attr
@@ -128,7 +127,7 @@ def _type_has_getitem(type_: type) -> bool:
     return hasattr(type_, "__getitem__")
 
 
-# region: attrs fixes
+# region attrs fixes
 
 # type annotations can be represented as the types themselves, or as strings.
 # attrs seems to use strings for fields in inherited classes, which can break
@@ -171,7 +170,7 @@ def _fields(cls: type["attr.AttrsInstance"]) -> Iterable[Field]:
 
 # endregion
 
-# region: generic types
+# region generic types
 
 # generic types such as dict[str, int] have two parts:
 # the "origin" and the "args".
@@ -179,42 +178,66 @@ def _fields(cls: type["attr.AttrsInstance"]) -> Iterable[Field]:
 # This lets us inspect these types properly.
 
 
-def _extract_dict_types(type_: type) -> Optional[tuple[type, type]]:
+def _extract_dict_types(type_: type[dict]) -> Union[tuple[type, type], tuple[()], None]:
     """
     If this type annotation is a dictionary-like, extract its key and value types.
+    If it's just a regular dict (not annotated), return an empty tuple.
     Otherwise return None.
 
-    dictionary-like is defined as "has __getitem__ and two type arguments".
+    dictionary-like is defined as "has __getitem__".
 
     >>> assert _extract_dict_types(dict[str, int]) == (str, int)
+    >>> assert _extract_dict_types(dict) == tuple()
     >>> assert _extract_dict_types(list[int]) is None
     """
     origin, args = typing.get_origin(type_), typing.get_args(type_)
+
     if origin is None:
+        if issubclass(type_, dict):
+            # non-generic dict
+            return tuple()
+        else:
+            # non-generic something else
+            return None
+
+    if not issubclass(origin, dict):
+        # generic but not a dict
         return None
 
-    if not _type_has_getitem(type_):
-        return None
-    if len(args) != 2:
-        return None
+    if len(args) != 2:  # pragma: no cover
+        # generic dict subclass with a different number of generic args
+        raise TypeError(
+            f"dict subclasses must have either 0 or 2 generic arguments: {type_}"
+        )
 
     return args[0], args[1]
 
 
-def _extract_list_type(type_: type) -> Optional[type]:
+def _extract_list_type(type_: type[list]) -> Union[type, tuple[()], None]:
     """
-    If this type annotation is a list-like, extract its value type.
+    If this type annotation is a list, extract its value type.
+    If it's a non-generic list, return an empty tuple.
     Otherwise return None.
 
     >>> assert _extract_list_type(list[int]) == int
+    >>> assert _extract_list_type(list) == tuple()
     >>> assert _extract_list_type(dict[str, str]) is None
     """
     origin, args = typing.get_origin(type_), typing.get_args(type_)
     if origin is None:
+        if issubclass(type_, list):  # non-generic list
+            return tuple()
+        else:
+            return None
+
+    if not issubclass(origin, list):  # generic but not a list
         return None
 
-    if not issubclass(origin, MutableSequence):
-        return None
+    if len(args) != 1:  # pragma: no cover
+        # generic list subclass with different number of generic args
+        raise TypeError(
+            f"list subclasses must have either 0 or 1 generic argument: {type_}"
+        )
 
     return args[0]
 
@@ -227,28 +250,38 @@ def _extract_optional_type(type_: type) -> Optional[type]:
     >>> assert _extract_optional_type(Optional[int]) == int
     >>> assert _extract_optional_type(int) is None
     """
-    # this is weird because Optional is just an alias for Union,
-    # where the other entry is NoneType.
-    # and in 3.10, unions with `Type1 | Type2` are a different type!
-    # we'll have to handle that when adding 3.10 support.
 
-    # it's unclear if order is guaranteed so we have to check both.
-    if typing.get_origin(type_) is not typing.Union:
+    origin = typing.get_origin(type_)
+    if origin is None:
+        return None
+    elif origin is typing.Union:
+        pass
+    elif (
+        getattr(origin, "__module__", None) == "types"
+        and getattr(origin, "__name__", None) == "UnionType"
+    ):
+        # this is weird because Optional is just an alias for Union,
+        # where the other entry is NoneType.
+        pass  # pragma: no cover
+    else:
+        # not a union
         return None
 
     args = typing.get_args(type_)
 
     if len(args) != 2:
-        return None
+        # a union with more than 2 args
+        raise TypeError(f"Only Optionals are supported, not other Unions ({type_})")
 
-    t1, t2 = args
-
-    if issubclass(t1, type(None)):  # type: ignore
-        return t2
-    elif issubclass(t2, type(None)):  # type: ignore
-        return t1
+    # it seems like `None` always comes second but is that guaranteed anywhere?
+    if args[1] is type(None):  # noqa
+        # the usual order
+        return args[0]
+    if args[0] is type(None):  # noqa # pragma: no cover
+        return args[1]
     else:
-        return None
+        # union with 2 members, neither is None
+        raise TypeError(f"Only Optionals are supported, not other Unions ({type_})")
 
 
 # endregion
@@ -302,15 +335,7 @@ class _Deserializer:
             self.unstructured_data_path.pop()
             self.structured_field_name_path.pop()
 
-    @overload
     def _deserialize(self, src: Any, target_type: type[T]) -> T:
-        ...
-
-    @overload
-    def _deserialize(self, src: Any, target_type: type[Optional[T]]) -> Optional[T]:
-        ...
-
-    def _deserialize(self, src: Any, target_type) -> Optional[Any]:
         """
         Dispatch to a deserialization method based on target_type,
         with some pre-checks for the src.
@@ -324,30 +349,22 @@ class _Deserializer:
 
         # must test "non-classes" first, because they're not regarded as "types".
         if (optional_alt := _extract_optional_type(target_type)) is not None:
-            return self._deserialize_optional(src, optional_alt)
+            return cast(T, self._deserialize_optional(src, optional_alt))
 
         if issubclass(target_type, PRIMITIVE_TYPES):
             return self._deserialize_primitive(src, target_type)
 
-        if attrs.has(target_type):
-            if _type_has_getitem(type(src)):
-                # assuming it has str key types.
-                return self._deserialize_attrs_class(src, target_type)
-            else:
-                raise TypeCheckError("Mapping", src)
+        attrs_result = self._try_deserialize_attrs_class(src, target_type)
+        if attrs_result is not None:
+            return attrs_result
 
-        if (dict_types := _extract_dict_types(target_type)) is not None:
-            if _type_has_getitem(type(src)):
-                # assuming it has str key types.
-                return self._deserialize_dict(src, dict_types[1])
-            else:
-                raise TypeCheckError("Mapping", src)
+        dict_result = self._try_deserialize_dict(src, target_type)
+        if dict_result is not None:
+            return dict_result
 
-        if (list_member_type := _extract_list_type(target_type)) is not None:
-            if isinstance(src, Iterable):
-                return self._deserialize_list(src, list_member_type)
-            else:
-                raise TypeCheckError(Iterable, src)
+        list_result = self._try_deserialize_list(src, target_type)
+        if list_result is not None:
+            return list_result
 
         raise TypeError(f"Unsupported type for deserialization: {target_type.__name__}")
 
@@ -384,6 +401,19 @@ class _Deserializer:
         finally:
             self.unstructured_data_path.pop()
             self.structured_field_name_path.pop()
+
+    def _try_deserialize_attrs_class(
+        self, src: Any, target_type: type[T]
+    ) -> Optional[T]:
+        "If target_type is an attrs class, deserialize it. Otherwise return None."
+        if not attrs.has(target_type):
+            return None
+
+        if not _type_has_getitem(type(src)):
+            raise TypeCheckError("Mapping", src)
+
+        # assuming it has str key types.
+        return cast(T, self._deserialize_attrs_class(src, target_type))
 
     def _deserialize_attrs_class(self, src: Mapping[str, Any], to: type[T]) -> T:
         "Initialize an attrs class field-by-field."
@@ -426,6 +456,21 @@ class _Deserializer:
                 src_name=src_name,
             )
 
+    def _try_deserialize_dict(self, src: Any, target_type: type[T]) -> Optional[T]:
+        "If target_type is a dict, deserialize it. Otherwise return None."
+        if (dict_types := _extract_dict_types(target_type)) is None:
+            return None
+
+        if not _type_has_getitem(type(src)):
+            raise TypeCheckError("Mapping", src)
+
+        if not dict_types:
+            return cast(T, self._deserialize_dict(src, Any))
+
+        key_type, value_type = dict_types
+        assert key_type is str  # assuming, but perhaps should be a formal error
+        return cast(T, self._deserialize_dict(src, value_type))
+
     def _deserialize_dict(
         self, src: Mapping[str, Any], target_value_type: type[T]
     ) -> dict[str, T]:
@@ -467,6 +512,21 @@ class _Deserializer:
                 src_name=src_name,
                 target_name=self.structured_field_name_path[-1],
             )
+
+    def _try_deserialize_list(self, src: Any, target_type: type[T]) -> Optional[T]:
+        "If target_type is a list, deserialize it. Otherwise return None."
+        if (list_member_type := _extract_list_type(target_type)) is None:
+            return None
+
+        if not isinstance(src, Iterable):
+            raise TypeCheckError(Iterable, src)
+
+        if list_member_type is tuple():
+            target_value_type = Any
+        else:
+            target_value_type = cast(type, list_member_type)
+
+        return cast(T, self._deserialize_list(src, target_value_type))
 
     def _deserialize_list(
         self, src: Iterable[Any], target_value_type: type[T]
