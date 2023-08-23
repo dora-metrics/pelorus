@@ -21,10 +21,10 @@ from typing import Iterable, Optional
 from attrs import define, field, frozen
 
 from committime import CommitMetric
-from exporters.pelorus.deserialization import nested
-from exporters.pelorus.utils.openshift_utils import CommonResourceInstance
+from pelorus.deserialization import nested
 from pelorus.timeutil import parse_guessing_timezone_DYNAMIC, to_epoch_from_string
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
+from pelorus.utils.openshift_utils import CommonResourceInstance
 
 from .collector_base import AbstractCommitCollector
 

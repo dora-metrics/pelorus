@@ -30,11 +30,11 @@ from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
 from committime import CommitMetric, commit_metric_from_build
-from exporters.pelorus.deserialization import nested, retain_source
-from exporters.pelorus.utils.openshift_utils import CommonResourceInstance
 from pelorus.config import env_vars
 from pelorus.config.converters import comma_separated, pass_through
+from pelorus.deserialization import nested, retain_source
 from pelorus.utils import Url, get_nested
+from pelorus.utils.openshift_utils import CommonResourceInstance
 from provider_common import format_app_name
 
 # Custom annotations env for the Build
