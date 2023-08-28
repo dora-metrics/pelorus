@@ -44,7 +44,7 @@ yq = "^3.2.2"
 [tool.poetry.group.doc.dependencies]
 cairosvg = "^2.7.0"
 diagrams = "^0.23.3"
-mkdocs-material = "^9.1.9"
+mkdocs-material = "^9.2.5"
 mkdocs-redirects = "^1.2.0"
 pillow = "^9.5.0"
 pymdown-extensions = "^10.0"
