@@ -2,12 +2,14 @@ name: Pre-commit test
 
 on:
   push:
+    branches: [ master ]
     paths:
       - '.pre-commit-config.yaml'
       - '.github/workflows/pre-commit-test.yml'
       - 'Makefile'
 
   pull_request:
+    branches: [ master ]
     paths:
       - '.pre-commit-config.yaml'
       - '.github/workflows/pre-commit-test.yml'

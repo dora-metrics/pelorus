@@ -1,6 +1,7 @@
 name: Mockoon Tests
 on:
   push:
+    branches: [ master ]
     paths:
       - 'exporters/**'
       - 'mocks/**'
@@ -10,6 +11,7 @@ on:
       - 'scripts/run-mockoon-tests.sh'
 
   pull_request:
+    branches: [ master ]
     paths:
       - 'exporters/**'
       - 'mocks/**'

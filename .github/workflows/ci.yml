@@ -2,6 +2,7 @@ name: Continuos Integration
 
 on:
   pull_request:
+    branches: [ master ]
     paths:
       - '.github/workflows/ci.yml'
   schedule:

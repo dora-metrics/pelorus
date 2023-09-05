@@ -2,6 +2,7 @@ name: Conftest
 
 on:
   push:
+    branches: [ master ]
     paths:
       - '_test/**'
       - 'charts/**'
@@ -9,6 +10,7 @@ on:
       - 'Makefile'
 
   pull_request:
+    branches: [ master ]
     paths:
       - '_test/**'
       - 'charts/**'

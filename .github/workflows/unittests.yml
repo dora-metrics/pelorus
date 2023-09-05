@@ -1,6 +1,7 @@
 name: Unit Tests
 on:
   push:
+    branches: [ master ]
     paths:
       - 'exporters/**'
       - 'pyproject.toml'
@@ -8,6 +9,7 @@ on:
       - 'Makefile'
 
   pull_request:
+    branches: [ master ]
     paths:
       - 'exporters/**'
       - 'pyproject.toml'

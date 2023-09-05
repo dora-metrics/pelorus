@@ -1,6 +1,7 @@
 name: Pylava
 on:
   pull_request:
+    branches: [ master ]
     paths:
       - 'pyproject.toml'
       - '.github/workflows/python-linting.yml'

@@ -1,6 +1,7 @@
 name: Check Python Formatting
 on:
   pull_request:
+    branches: [ master ]
     paths:
       - '.github/workflows/python-formatting.yml'
       - 'pyproject.toml'

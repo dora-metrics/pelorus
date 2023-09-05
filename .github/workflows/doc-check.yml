@@ -1,6 +1,7 @@
 name: Documentation check
 on:
   pull_request:
+    branches: [ master ]
     paths:
       - 'docs/**'
       - '.github/workflows/doc-check.yml'

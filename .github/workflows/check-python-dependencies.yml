@@ -1,6 +1,7 @@
 name: Check Python dependencies
 on:
   pull_request:
+    branches: [ master ]
     paths:
       - 'pyproject.toml'
       - 'poetry.lock'
