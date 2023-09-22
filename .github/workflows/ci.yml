@@ -2,6 +2,7 @@ name: Continuos Integration
 
 on:
   pull_request:
+    branches: [ master ]
     paths:
       - '.github/workflows/ci.yml'
   schedule:
@@ -11,7 +12,7 @@ jobs:
   project-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v4
         with:

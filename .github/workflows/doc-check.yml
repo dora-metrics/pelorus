@@ -1,6 +1,7 @@
 name: Documentation check
 on:
   pull_request:
+    branches: [ master ]
     paths:
       - 'docs/**'
       - '.github/workflows/doc-check.yml'
@@ -16,7 +17,7 @@ jobs:
         python-version: ['3.9', '3.10', '3.11']
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4

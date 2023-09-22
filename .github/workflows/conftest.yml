@@ -2,6 +2,7 @@ name: Conftest
 
 on:
   push:
+    branches: [ master ]
     paths:
       - '_test/**'
       - 'charts/**'
@@ -9,6 +10,7 @@ on:
       - 'Makefile'
 
   pull_request:
+    branches: [ master ]
     paths:
       - '_test/**'
       - 'charts/**'
@@ -24,7 +26,7 @@ jobs:
         python-version: ['3.9']
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4

@@ -1,12 +1,14 @@
 name: Prometheus Rules Tests
 on:
   push:
+    branches: [ master ]
     paths:
       - '_test/**'
       - 'charts/pelorus/**'
       - '.github/workflows/prometheus-rules.yml'
 
   pull_request:
+    branches: [ master ]
     paths:
       - '_test/**'
       - 'charts/pelorus/**'
@@ -21,7 +23,7 @@ jobs:
         python-version: ['3.9']
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
