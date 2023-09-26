@@ -30,6 +30,7 @@ theme:
     - navigation.tabs
     - navigation.top
     - navigation.instant
+    - content.tooltips
   custom_dir: docs/custom
 extra_css:
   - stylesheets/extra.css
@@ -39,6 +40,7 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 markdown_extensions:
   - admonition
+  - abbr
   - attr_list
   - def_list
   - md_in_html
@@ -78,7 +80,7 @@ nav:
     - Outcomes:
       - Overview: philosophy/outcomes/Overview.md
       - Software Delivery Performance: philosophy/outcomes/SoftwareDeliveryPerformance.md
-      - Tech Adoption & ReUse: philosophy/outcomes/platform_adoption.md
+      - Developer Adoption: philosophy/outcomes/developer_adoption.md
     - How Pelorus Can Help: philosophy/HowPelorusCanHelp.md
   - Architecture: Architecture.md
   - Contribution:
