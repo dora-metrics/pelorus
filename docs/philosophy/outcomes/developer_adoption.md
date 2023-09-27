@@ -302,25 +302,26 @@ _Number of current active users ( $U_{T_0}$ )_
 
 _Number of survey results_
 
-:
+:   The number of people that responded to the net promoter score survey
 
     $$
-    OE = \frac{E_{T_0}}{M_{T_0}}
+    P = count(R)
     $$
 
 _Net Promoter Score (NPS)_
 
-: 
+:   The Net Promoter Score calculation that captures the quality of a developer's experience with the component, calculated using the number of detractors (scores 6 or below, ${R_D}$) and the number of promoters (scores 9 or 10, ${R_P}$ )
+
     $$
-    OE = \frac{E_{T_0}}{M_{T_0}}
+    NPS = \frac{ count(R_P) - count(R_D) }{P}
     $$
 
 _Response rate_
 
-:
+:   The percentage of the active users whose experiences were captured by the survey
 
     $$
-    OE = \frac{E_{T_0}}{M_{T_0}}
+    RR = \frac{ P }{ U_{T_0} }
     $$
 
 ## What does "good" look like?
