@@ -45,7 +45,7 @@ Measures the ability of an organization to deliver value to its customers
 
 [:material-arrow-right: Learn more...](SoftwareDeliveryPerformance.md)
 
-## :fontawesome-solid-person-circle-plus: Supported Technology Adoption :material-check-circle:{ .unchecked }
+## :fontawesome-solid-person-circle-plus: Developer Adoption :material-check-circle:{ .unchecked }
 
 Measures an organization’s ability to reduce waste by adopting common patterns, platforms and tools
 
@@ -68,6 +68,12 @@ Measures an organization’s ability to reduce waste by adopting common patterns
     ---
 
     Measures the sustainability of the platform and whether it continues to be used beyond initial onboarding
+
+-   :material-counter: __Adoption Density__
+
+    ---
+
+    Measures the quantity and quality of user activity
 
 -   :fontawesome-solid-people-roof: __Operational efficiency__
 
