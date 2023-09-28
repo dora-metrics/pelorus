@@ -321,7 +321,7 @@ _Response rate_
 :   The percentage of the active users whose experiences were captured by the survey
 
     $$
-    RR = \frac{ P }{ U_{T_0} }
+    RR = \frac{ P }{ U_{T_0} } \cdot 100
     $$
 
 ## What does "good" look like?
