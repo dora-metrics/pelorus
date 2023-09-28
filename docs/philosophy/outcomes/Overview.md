@@ -89,7 +89,7 @@ Measures an organization’s ability to reduce waste by adopting common patterns
 
 </div>
 
-[:material-arrow-right: Learn more...](platform_adoption.md)
+[:material-arrow-right: Learn more...](developer_adoption.md)
 
 ## :fontawesome-solid-money-bill-trend-up: Value Flow :material-check-circle:{ .unchecked }
 

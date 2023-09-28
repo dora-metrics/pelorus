@@ -19,11 +19,11 @@ Lean Thinking, the grandparent of Agile, DevOps and everything else we talk abou
 
 !!! further-reading "Further Reading"
 
-    Read more about _muda_ and the 5 principles of Lean Thinking that help to banish waste in the book [Lean Thinking](https://www.lean.org/store/book/lean-thinking-2nd-edition/) by James P. Womack and Daniel T. Jones.
+    Read more about _muda_ and the 5 principles of Lean Thinking that help to banish waste in the book [Lean Thinking](https://www.lean.org/store/book/lean-thinking-2nd-edition/){:target="_blank"} by James P. Womack and Daniel T. Jones.
 
 A common form of waste in an IT organization is when multiple people or teams with similar needs work separately to solve the same problem. This can happen for a number of reasons, but the culprit is always some form of communication gap. The recent trends toward decentralization of IT, agile, cloud adoption, microservices architectures and full stack development have made it increasingly difficult for teams that are independent of each other to be able to share a common set of tools, platforms, and solutions that helps to reduce the cognitive load of the development team, while also allowing for the autonomy that teams need to do great work.
 
-This struggle has given birth to new practices like [Platform Engineering](https://platformengineering.org/blog/what-is-platform-engineering), [Inner Sourcing](https://about.gitlab.com/topics/version-control/what-is-innersource/), and [Re-commoning](https://www.youtube.com/watch?v=mGNEbDhT1Hw). The goal is to provide teams with a set of common components (platforms, tools, and solutions) that they can consume on-demand as a way of reducing cognitive load and re-work by individual teams.
+This struggle has given birth to new practices like [Platform Engineering](https://platformengineering.org/blog/what-is-platform-engineering){:target="_blank"}, [Inner Sourcing](https://about.gitlab.com/topics/version-control/what-is-innersource/){:target="_blank"}, and [Re-commoning](https://www.youtube.com/watch?v=mGNEbDhT1Hw){:target="_blank"}. The goal is to provide teams with a set of common components (platforms, tools, and solutions) that they can consume on-demand as a way of reducing cognitive load and re-work by individual teams.
 
 {==
 
