@@ -51,12 +51,6 @@ Measures an organization’s ability to reduce waste by adopting common patterns
 
 <div class="grid cards" markdown>
 
--   :material-account-clock: __Adoption lead time__
-
-    ---
-
-    Measures a team’s ability to onboard into a new platform, tool or pattern and exposes constraints in the process
-
 -   :fontawesome-solid-arrow-trend-up: __Adoption rate__
 
     ---
@@ -68,6 +62,12 @@ Measures an organization’s ability to reduce waste by adopting common patterns
     ---
 
     Measures the sustainability of the platform and whether it continues to be used beyond initial onboarding
+
+-   :material-account-clock: __Adoption lead time__
+
+    ---
+
+    Measures a team’s ability to onboard into a new platform, tool or pattern and exposes constraints in the process
 
 -   :material-counter: __Adoption Density__
 
