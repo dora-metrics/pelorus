@@ -52,7 +52,7 @@ Once we have identified who our target user is and the adoption event we want to
 
 ## :material-ruler: Measures
 
-Here we break down the 5 _measures_ of the Developer Adoption outcome in detail. We'll cover the raw data points that we'll need to collect from our various components and then the formulas to calculate each measure.
+Here we break down the 6 _measures_ of the Developer Adoption outcome in detail. We'll cover the raw data points that we'll need to collect from our various components and then the formulas to calculate each measure.
 
 ### :fontawesome-solid-arrow-trend-up: __Adoption rate__
 
