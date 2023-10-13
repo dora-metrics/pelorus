@@ -26,11 +26,12 @@ OPENSHIFT_REPO = "openshift/release"
 OPENSHIFT_BRANCH = "master"
 RAW_URL = f"https://raw.githubusercontent.com/{OPENSHIFT_REPO}/{OPENSHIFT_BRANCH}"
 
+OCP_VERSIONS_URL = "https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph"
+NO_LAST_OCP_VERSIONS = 1
+
 
 def get_supported_versions() -> List[str]:
-    with request.urlopen(
-        "https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph"
-    ) as response:
+    with request.urlopen(OCP_VERSIONS_URL) as response:
         versions: List[Dict[str, str]] = list(json.load(response)["nodes"])
     stable_versions = [
         version["version"]
@@ -44,7 +45,10 @@ def get_supported_versions() -> List[str]:
     latest_minor_versions = list(minor_versions)
     latest_minor_versions.sort(reverse=True)
 
-    return [f"{version.major}.{version.minor}" for version in latest_minor_versions[:4]]
+    return [
+        f"{version.major}.{version.minor}"
+        for version in latest_minor_versions[:NO_LAST_OCP_VERSIONS]
+    ]
 
 
 def check_version_in_openshift_repo(version: str, file_name: str) -> None:
@@ -86,7 +90,9 @@ def check_versions(versions: List[str]) -> None:
 
 def main() -> None:
     supported_versions = get_supported_versions()
-    logging.info(f"Latest minor OpenShift releases: {', '.join(supported_versions)}")
+    logging.info(
+        f"Last '{NO_LAST_OCP_VERSIONS}' minor OpenShift release(s): {', '.join(supported_versions)}"
+    )
     check_versions(supported_versions)
 
     log_cache: dict = logging.getLogger()._cache

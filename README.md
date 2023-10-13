@@ -10,17 +10,8 @@
 
 Prow CI Periodic E2E Tests:
 
-- OpenShift version 4.10 [![4.10 scenario 1 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.10-e2e-openshift-test-scenario-1-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.10-e2e-openshift-test-scenario-1-periodic)
-[![4.10 scenario 2 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.10-e2e-openshift-test-scenario-2-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.10-e2e-openshift-test-scenario-2-periodic)
-
-- OpenShift version 4.11 [![4.11 scenario 1 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.11-e2e-openshift-test-scenario-1-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.11-e2e-openshift-test-scenario-1-periodic)
-[![4.11 scenario 2 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.11-e2e-openshift-test-scenario-2-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.11-e2e-openshift-test-scenario-2-periodic)
-
-- OpenShift version 4.12 [![4.12 scenario 1 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.12-e2e-openshift-test-scenario-1-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.12-e2e-openshift-test-scenario-1-periodic)
-[![4.12 scenario 2 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.12-e2e-openshift-test-scenario-2-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.12-e2e-openshift-test-scenario-2-periodic)
-
 - OpenShift version 4.13 [![4.13 scenario 1 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.13-e2e-openshift-test-scenario-1-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.13-e2e-openshift-test-scenario-1-periodic)
-[![4.13 scenario 2 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.13-e2e-openshift-test-scenario-2-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.13-e2e-openshift-test-scenario-2-periodic)
+
 
 Pelorus is a tool that helps IT organizations measure their impact on the overall performance of their organization. It does this by gathering metrics about team and organizational behaviors over time in some key areas of IT that have been shown to impact the value they deliver to the organization as a whole. Some of the key outcomes Pelorus can focus on are:
 
