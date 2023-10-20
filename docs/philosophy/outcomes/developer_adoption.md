@@ -33,7 +33,7 @@ Successful adoption of the right combination of components should lead to an imp
 
 ## Parameters of success
 
-Before we get into the measures that make up the Developer Adoption outcome, we have a few decisions to make and some shared understanding to build.  Across each of the measures in Developer Adoption, we have three parameters of success that need to be defined and agreed upon: _target user_, _adoption event_, and _active user_.  __A good way to figure out what success looks like for the component, think about who has to conduct what sorts of observable actions in that component to translate most directly to value.__ 
+Before we get into the measures that make up the Developer Adoption outcome, we have a few decisions to make and some shared understanding to build.  Across each of the measures in Developer Adoption, we have three parameters of success that need to be defined and agreed upon: _target user_, _adoption event_, and _active user_.  __A good way to figure out what success looks like for the component, think about who has to conduct what sorts of observable actions in that component to translate most directly to value.__
 
 We need to define an entity that will call our _target user_. Typically we would think of a user as an individual person. However, depending on the platform or tool we are trying to measure we may want to define a user differently. A user might be a team, an application, a product, or a service.
 
@@ -46,7 +46,7 @@ Once we have identified who our target user is and the adoption event we want to
 
 | Parameter      | Description                                                      | Examples                                |
 | -------------- | ---------------------------------------------------------------- | --------------------------------------- |
-| :fontawesome-solid-users-viewfinder: Target user    | The type of user that the component provides value to (individual, team, application, product or a service) | Front-end developers, business-to-business APIs, customer-facing apps | 
+| :fontawesome-solid-users-viewfinder: Target user    | The type of user that the component provides value to (individual, team, application, product or a service) | Front-end developers, business-to-business APIs, customer-facing apps |
 | :material-timeline-check: Adoption event | The observable action in the component that translate most directly to value | Deploys an application to a specific environment, completes a story, commits some code to a specific branch, logs a certain number of hours of active use |
 | :fontawesome-solid-user-clock: Active user    | Combines a target user and an adoption event with a time scope and frequency to determine what it means to be "active" in the component | A developer who has committed code from their cloud workspace within the past week |
 
@@ -54,56 +54,67 @@ Once we have identified who our target user is and the adoption event we want to
 
 Here we break down the 6 _measures_ of the Developer Adoption outcome in detail. We'll cover the raw data points that we'll need to collect from our various components and then the formulas to calculate each measure.
 
+### Common knowledge
+
+Data points and formulas used by more than one _measure_.
+
+#### Data Points
+
+##### Adoption events
+
+:   _Adoption events $(E)$_: A set of valuable users interactions with the tool
+
+    Expressed as a set of tuples (string, timestamp), where
+
+    - the first element is the target user's username
+    - the second element is the timestamp when the interaction occurred
+
+#### Formulas
+
+##### Active users at a given time interval
+
+:   _Active users at a given time interval $(A(t,\Delta t))$_: Given a timestamp $t$ and a time interval $t-\Delta t$, the unique target users who have at least one adoption event between $t$ and $t-\Delta t$, is the set:
+
+    $$
+    A(t,\Delta t) = \{\text{username} : \exists\ x,t -\Delta t \leq x \leq t, (\text{username},x) \in E\}
+    $$
+
+##### Number of active users at a given time interval
+
+:   _Number of active users at a given time interval $(U(t,\Delta t))$_: Given a timestamp $t$ and a time interval $t-\Delta t$, the number of unique target users who have at least one adoption event between $t$ and $t-\Delta t$, is calculated as follows:
+
+    $$
+    U(t,\Delta t) = \text{count}(A(t,\Delta t))
+    $$
+
+##### Number of adoption events at a given time interval
+
+:   _Number of adoption events at a given time interval $(E(t,\Delta t))$_: Given a timestamp $t$ and a time interval $t-\Delta t$, the number of adoption events between $t$ and $t-\Delta t$ is calculated as follows:
+
+    $$
+    E(t,\Delta t) = \text{count}(\{(\text{username},x) : \exists\ x,t -\Delta t \leq x \leq t, (\text{username},x) \in E\})
+    $$
+
 ### :fontawesome-solid-arrow-trend-up: __Adoption rate__
 
 Adoption Rate ($AR$) is the rate at which a component is acquiring new users. This serves as an indicator of the ability of the component to scale to support multiple teams and products, as well as whether or not the component is compelling developers to want to try it out.
 
 #### Data Points
 
-The following data points must be gathered from the components we are aiming to measure.
-
-_Adoption events by user ($E$)_
-
-:   A unique target user does something valuable using the tool
-
-    Expressed as a set of timestamps
-
-_Target time span (from $T_1$ to $T_0$)_
-
-:   The minimum period of time that a user must have an adoption event, according to our _active users_ definition
-
-    Expressed as two timestamps
-
-_Previous consecutive target time span (from $T_2$ to $T_1$)_
-
-:   The period of time before the time that we are measuring. The two time spans should be equal, meaning $T_1 - T_2 = T_0 - T_1$
+[_Adoption events $(E)$_](#adoption-events)
 
 #### Formulas
 
-_Number of active users at Time $T_0$ ( $U_{T_0}$ )_
-
-:   The number of users who have at least one adoption event between timestamp $T_0$ and $T_1$. Calculated as follows:
-
-    $$
-    U_{T_0} = count(E[T_{0} - T_{1}]\ group\ by\ (user))
-    $$
-
-_Number of active users at Time $T_1$ ( $U_{T_1}$ )_
-
-:   The number of users who have at least one adoption event between timestamp $T_1$ and $T_2$. Calculated as follows:
-
-    $$
-    U_{T_1} = count(E[T_{1} - T_{2}]\ group\ by\ (user))
-    $$
+[_Number of active users at a given time interval $(U(t,\Delta t))$_](#number-of-active-users-at-a-given-time-interval)
 
 !!! formula ""
 
-    _Adoption Rate ($AR$)_
+    _Adoption Rate $(AR(t,\Delta t))$_
 
-    :   The rate of change of the number of adoption end events over time
+    :   The rate of change of users adoption the tool at timestamp $t$ over time interval $\Delta t$
 
     $$
-    AR = \left(\frac{U_{T_0} - U_{T_1}}{U_{T_1}}\right) \cdot 100
+    AR(t,\Delta t) = \left(\frac{U(t,\Delta t) - U(t-\Delta t,\Delta t)}{U(t-\Delta t,\Delta t)}\right) \cdot 100
     $$
 
 ### :material-account-arrow-down: __Retention rate__
@@ -112,60 +123,30 @@ So we've got a platform up and running, onboarding is really fast and we've been
 
 #### Data Points
 
-The following data points must be gathered from the components we are aiming to measure. These are the same data points required for _Adoption Rate_, so if you've done that, you're half way there.
-
-_Adoption events by user ($E$)_
-
-:   A unique target user does something valuable using the tool
-
-    Expressed as a set of timestamps
-
-_Target time span (from $T_1$ to $T_0$)_
-
-:   The minimum period of time that a user must have an adoption event, according to our _active users_ definition
-
-    Expressed as two timestamps
-
-_Previous consecutive target time span (from $T_2$ to $T_1$)_
-
-:   The period of time before the time that we are measuring. The two time spans should be equal, meaning $T_1 - T_2 = T_0 - T_1$
-
-    Expressed as two timestamps
+[_Adoption events $(E)$_](#adoption-events)
 
 #### Formulas
 
-_Number of active users at Time $T_0$ ( $U_{T_0}$ )_
+[_Active users at a given time interval $(A(t,\Delta t))$_](#active-users-at-a-given-time-interval)
 
-:   The number of users who have at least one adoption event between timestamp $T_0$ and $T_1$. Calculated as follows:
+[_Number of active users at a given time interval $(U(t,\Delta t))$_](#number-of-active-users-at-a-given-time-interval)
 
-    $$
-    U_{T_0} = count(E[T_{0} - T_{1}]\ group\ by\ (user))
-    $$
+_Number of new users at a given time interval $(N(t,\Delta t))$_
 
-_Number of active users at Time $T_1$ ( $U_{T_1}$ )_
-
-:   The number of users who have at least one adoption event between timestamp $T_1$ and $T_2$. Calculated as follows:
+:   Given a timestamp $t$ and a time interval $t-\Delta t$, the number of new target users between $t$ and $t-\Delta t$, is calculated as follows:
 
     $$
-    U_{T_1} = count(E[T_{1} - T_{2}]\ group\ by\ (user))
-    $$
-
-_Number of new users acquired from time $T_1$ to $T_0$ ( $N_{T_0}$ )_
-
-:   The number of active users at Time $T_0$ that were not users as of $T_1$.
-
-    $$
-    N_{T_0} = count(U_{T_0}\ unless\ U_{T_1})
+    N(t,\Delta t) = \text{count}(A(t,\Delta t) - A(t-\Delta t,\Delta t))
     $$
 
 !!! formula ""
 
-    _Retention Rate ($RR$)_
+    _Retention Rate $(RR(t,\Delta t))$_
 
-    :   The percentage of users that were active last period and this period
+    :   The percentage of users that were active at timestamp $t$ over time interval $\Delta t$
 
         $$
-        RR = \left(\frac{U_{T_0} - N_{T_0}}{U_{T_1}}\right) \cdot 100
+        RR(t,\Delta t) = \left(\frac{U(t,\Delta t) - N(t,\Delta t)}{U(t-\Delta t,\Delta t)}\right) \cdot 100
         $$
 
 ### :material-account-clock: __Adoption lead time__
@@ -176,38 +157,28 @@ It's important with this measurement to capture, not only the time it takes to g
 
 #### Data Points
 
-The following data points must be gathered from the systems we are aiming to measure.
-
-_Adoption trigger ($T$)_
-
-:   Target user requests access
-
-    Expressed as a timestamp
-
-_Adoption events by user ($E$)_
-
-:   A unique target user does something valuable using the tool
-
-    Expressed as a set of timestamps
+[_Adoption events $(E)$_](#adoption-events)
 
 #### Formulas
 
-_Adoption Lead Time ($LT$)_
+_Adoption lead time at a given time $(L(t))$_
 
-:   For any individual adoption event, the adoption lead time $LT$ can be calculated as follows:
+:   Given a timestamp $t$, the adoption lead time for any individual adoption event at time $t$, is calculated as follows:
 
     $$
-    LT = min(E) - T
+    L(t) = \min(\{x:(\text{username},x) \in E\}) - t
     $$
+
+TODO still confused
 
 !!! formula ""
 
-    _Average Adoption Lead Time ($\overline{x}LT$)_
+    _Average Adoption Lead Time $(\bar{L}(t))$_
 
-    :   Given a collection of $N$ individual adoption lead times ( $LT_{1}..LT_{N}$ ), the _average adoption lead time_ $\overline{x}LT$ can be calculated as follows:
+    :   The average adoption lead time at timestamp $t$ collection of $N$ individual adoption lead times
 
         $$
-        \overline{x}LT = \frac{\sum_{1}^{N}(LT_{i})}{N}
+        \bar{L}(t) = \frac{\sum_{1}^{N}L(t_{i})}{N}
         $$
 
 ### :material-counter: __Adoption density__
@@ -216,49 +187,19 @@ So far we've focused most of our measurement on identifying active users -- thos
 
 #### Data Points
 
-_Adoption events ($E$)_
-
-:   A unique target user does something valuable using the tool
-
-    Expressed as a set of timestamps
-
-_Target time span (from $T_1$ to $T_0$)_
-
-:   The minimum period of time that a user must have an adoption event, according to our _active users_ definition
-
-    Expressed as two timestamps
-
-_Previous consecutive target time span (from $T_2$ to $T_1$)_
-
-:   The period of time before the time that we are measuring. The two time spans should be equal, meaning $T_1 - T_2 = T_0 - T_1$
-
-    Expressed as two timestamps
+[_Adoption events $(E)$_](#adoption-events)
 
 #### Formulas
 
-_Total Adoption Events at time $T_0$ ($E_{T_0}$)_
-
-:   Given the set of all adoption events $E$, the total number of adoption events between $T_1$ and $T_0$ can be calculated as follows
-
-$$
-E_{T_0} = count(E[T_0 - T_1])
-$$
-
-_Total Adoption Events at time $T_1$ ($E_{T_1}$)_
-
-:   Given the set of all adoption events $E$, the total number of adoption events between $T_2$ and $T_1$ can be calculated as follows
-
-$$
-E_{T_1} = count(E[T_1 - T_2])
-$$
+[_Number of adoption events at a given time interval $(E(t,\Delta t))$_](#number-of-adoption-events-at-a-given-time-interval)
 
 !!! formula ""
-    _Adoption Density ($AD$)_
+    _Adoption Density $(AD(t,\Delta t))$_
 
-    :   Given the total adoption events at time $T_0$ and $T_1$, we can calculate _Adoption Density_ using a growth formula
+    :   The density growth of adoption events at timestamp $t$ over time interval $\Delta t$
 
     $$
-    AD = \left(\frac{E_{T_0} - E_{T_1}}{E_{T_1}}\right) \cdot 100
+    AD(t,\Delta t) = \left(\frac{E(t,\Delta t) - E(t-\Delta t,\Delta t)}{E(t-\Delta t,\Delta t)}\right) \cdot 100
     $$
 
 ### :fontawesome-solid-people-roof: __Operational efficiency__
@@ -269,72 +210,72 @@ The simplest way to calculate _operational efficiency_ is by comparing the numbe
 
 #### Data Points
 
-_Adoption events ($E$)_
-
-:   A unique target user does something valuable using the tool
-
-    Expressed as a set of timestamps
+[_Adoption events $(E)$_](#adoption-events)
 
 _Component Maintainers ($M$)_
 
-:   A count of the number of people it takes to maintain the component
+:   The number of people it takes to maintain the component
 
     Expressed as a number
 
+    TODO this is constant or can increase/decrease over time?
+
 #### Formulas
+
+[_Number of adoption events at a given time interval $(E(t,\Delta t))$_](#number-of-adoption-events-at-a-given-time-interval)
+
+_Number of maintainers at a given time interval $(M(t,\Delta t))$_
+
+:   Given a timestamp $t$ and a time interval $t-\Delta t$, the number maintainers between $t$ and $t-\Delta t$, is calculated as follows:
+
+    $$
+    M(t,\Delta t) = \text{count}(\{(\text{maintainer},x) : \exists\ x,t -\Delta t \leq x \leq t, (\text{maintainer},x) \in M\})
+    $$
 
 !!! formula ""
 
-    _Operational Efficiency ($OE$)_
+    _Operational Efficiency $(OE(t,\Delta t))$_
 
-    :   Given the total number of adoption events $E$ and the number of maintainers $M$ supporting the component, we calculate operational efficiency $OE$ using a simple ratio:
+    :   The operational efficiency at timestamp $t$ over time interval $\Delta t$
 
         $$
-        OE = \frac{E_{T_0}}{M_{T_0}}
+        OE(t) = \frac{E(t,\Delta t)}{M(t,\Delta t)}
         $$
 
 ### :material-account-heart-outline: __Developer Satisfaction__
 
-Measures the extent to which the platform is meeting the needs and wants of developers
+Measures the extent to which the platform is meeting the needs and wants of developers.
 
 #### Data Points
 
-_Net Promoter Score survey results ($R$)_
+[_Number of active users at a given time interval $(U(t,\Delta t))$_](#number-of-active-users-at-a-given-time-interval)
+
+_Net Promoter Score survey $(S)$_
 
 :   The set of scores returned from a net promoter score survey
 
     Expressed as a set of integers between 0 and 10
 
-_Number of current active users ($U_{T_0}$)_
-
-:   The number of users who have at least one adoption event between timestamp $T_0$ and $T_1$.
-
-    Expressed as an integer (calculated in previous measures)
-
 #### Formulas
 
-_Number of survey results_
+_Survey response rate $(SR(t,\Delta t))$_
 
-:   The number of people that responded to the net promoter score survey
-
-    $$
-    P = count(R)
-    $$
-
-_Response rate_
-
-:   The percentage of the active users whose experiences were captured by the survey
+:   The percentage of the active users between $t$ and $t-\Delta t$ whose experiences were captured by the survey, is calculated as follows:
 
     $$
-    RR = \frac{ P }{ U_{T_0} } \cdot 100
+    SR(t,\Delta t) = \frac{\text{count}(S)}{U(t,\Delta t)} \cdot 100
     $$
+
+TODO Net Promoter Score survey (S) results is constant or can increase/decrease over time?
 
 !!! formula ""
 
     _Net Promoter Score ($NPS$)_
 
-    :   The Net Promoter Score calculation that captures the quality of a developer's experience with the component, calculated using the number of detractors ${R_D}$ (scores 6 or below) and the number of promoters ${R_P}$ (scores 9 or 10)
+    :   The Net Promoter Score
 
         $$
-        NPS = \frac{ count(R_P) - count(R_D) }{P}
+        NPS = \frac{ \text{count}(S_P) - \text{count}(S_D) }{\text{count}(S)}
         $$
+
+    :   where ${S_P}$ is the subset of $S$ of scores 9 or 10 and ${S_D}$ is the subset of $S$ of scores 6 or below
