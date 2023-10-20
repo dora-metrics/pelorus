@@ -73,7 +73,7 @@ class Nooba:
     "Nooba's URL pattern."
 
     repo = "noobaa/noobaa-operator"
-    arch = "mac" if OS == "Darwin" else "linux"
+    arch = OS.lower()
     pattern = re.compile(f"https://(.*)-{arch}-(.*)[0-9]")
 
     @classmethod
@@ -98,6 +98,28 @@ class OperatorSdk:
         return cls.pattern.search(url) is not None
 
 
+class Shellcheck:
+    "Shellcheck's URL pattern"
+    repo = "koalaman/shellcheck"
+
+    os = OS.lower()
+
+    if ARCH in X86_64_ARCH_NAMES or OS == "Darwin":
+        # currently no native arm downloads for darwin
+        # so we just use x86 and rosetta it
+        arch = "x86_64"
+    elif ARCH == "arm64":
+        arch = "aarch64"
+    else:
+        sys.exit(f"Unsupported OS {OS}")
+
+    pattern = f"{os}.{arch}.tar.xz"
+
+    @classmethod
+    def url_matches(cls, url: str) -> bool:
+        return cls.pattern in url
+
+
 class Tool(enum.Enum):
     "Maps the dev tools we want to their repos and respective URL matchers."
 
@@ -109,7 +131,8 @@ class Tool(enum.Enum):
     ct = "helm/chart-testing", StandardTool.url_matches
     conftest = "open-policy-agent/conftest", StandardTool.url_matches
     promtool = "prometheus/prometheus", StandardTool.url_matches
-    shellcheck = "koalaman/shellcheck", StandardTool.url_matches
+
+    shellcheck = Shellcheck.repo, Shellcheck.url_matches
 
     noobaa = Nooba.repo, Nooba.url_matches
 
@@ -199,6 +222,7 @@ parser.add_argument(
     help=f"The executable to retrieve the URL for.\nSupported: {', '.join(CLI_NAMES)}",
     choices=CLI_NAMES,
 )
+parser.add_argument("-v", "--verbose", action="store_true", default=False)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -218,5 +242,9 @@ if __name__ == "__main__":
         if tool.matcher(asset.url):
             print(asset.url)
             sys.exit()
+        elif args.verbose:
+            sys.stderr.write(
+                f"{asset.name} at {asset.url} does not match pattern for {software}\n"
+            )
 
     sys.exit(f"No matching download URL found for {software} on {OS} {ARCH}")

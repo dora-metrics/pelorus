@@ -111,7 +111,7 @@ function should_cli_be_installed(){
 # Function to safely remove temporary files and temporary download dir
 # Argument is optional exit value to propagate it after cleanup
 function cleanup_and_exit() {
-    local exit_val=$1
+    local exit_val=${1:-1}
     if [ -z "${DWN_DIR}" ]; then
         echo "cleanup_and_exit(): Temp download dir not provided !" >&2
     else
@@ -120,14 +120,12 @@ function cleanup_and_exit() {
           PELORUS_TMP_DIR=$(basename "${DWN_DIR}")
           if [[ "${PELORUS_TMP_DIR}" =~ "${TMP_DIR_PREFIX}"* ]]; then
               echo "Cleaning up temporary files"
-              eval rm -f "${DWN_DIR}/*"
-              rmdir "${DWN_DIR}"
+              rm -rf -- "${DWN_DIR}"
           fi
       fi
     fi
-    # Propagate exit value if was provided
-    [ -n "${exit_val}" ] && exit "$exit_val"
-    exit 0
+    trap - EXIT
+    exit "$exit_val"
 }
 
 function print_help() {
@@ -269,8 +267,8 @@ if should_cli_be_installed "noobaa" "${cli_tools_arr[@]}" && \
       echo "$NOOBAA_CLIENT_URL"
       download_file_from_url "${NOOBAA_CLIENT_URL}" "${DWN_DIR}"
       NOOBAA_CLIENT_PATH="${DWN_DIR}"/$(basename "${NOOBAA_CLIENT_URL}")
-      mv "${NOOBAA_CLIENT_PATH}" "${VENV}/bin/noobaa"
-      chmod +x "${VENV}/bin/noobaa"
+      extract_file_to_dir "${NOOBAA_CLIENT_PATH}" "${VENV}/bin/"
+      mv "${VENV}/bin/noobaa-operator" "${VENV}/bin/noobaa"
 fi
 
 if should_cli_be_installed "operator-sdk" "${cli_tools_arr[@]}" && \
@@ -300,3 +298,5 @@ if should_cli_be_installed "poetry" "${cli_tools_arr[@]}" && \
     ! [ -x "$(command -v "${DEFAULT_VENV}/bin/poetry")" ]; then
         curl -sSL https://install.python-poetry.org | POETRY_HOME="$DEFAULT_VENV" python3 -
 fi
+
+cleanup_and_exit 0
