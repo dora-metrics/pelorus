@@ -52,7 +52,7 @@ Once we have identified who our target user is and the adoption event we want to
 
 ## :material-ruler: Measures
 
-Here we break down the 6 _measures_ of the Developer Adoption outcome in detail. We'll cover the raw data points that we'll need to collect from our various components and then the formulas to calculate each measure.
+Here we break down the 6 _measures_ of the Developer Adoption outcome in detail. We'll cover the raw data points that we'll need to collect from our various components and then present the formulas to calculate each measure.
 
 ### Common knowledge
 
@@ -62,7 +62,7 @@ Data points and formulas used by more than one _measure_.
 
 ##### Adoption events
 
-:   _Adoption events $(E)$_: A set of valuable users interactions with the tool
+:   _Adoption events $(E)$_: A set of valuable target users interactions with the tool
 
     Expressed as a set of tuples (string, timestamp), where
 
@@ -89,7 +89,7 @@ Data points and formulas used by more than one _measure_.
 
 ##### Number of adoption events at a given time interval
 
-:   _Number of adoption events at a given time interval $(E(t,\Delta t))$_: Given a timestamp $t$ and a time interval $t-\Delta t$, the number of adoption events between $t$ and $t-\Delta t$ is calculated as follows:
+:   _Number of adoption events at a given time interval $(E(t,\Delta t))$_: Given a timestamp $t$ and a time interval $t-\Delta t$, the number of adoption events between $t$ and $t-\Delta t$, is calculated as follows:
 
     $$
     E(t,\Delta t) = \text{count}(\{(\text{username},x) : \exists\ x,t -\Delta t \leq x \leq t, (\text{username},x) \in E\})
@@ -161,24 +161,24 @@ It's important with this measurement to capture, not only the time it takes to g
 
 #### Formulas
 
-_Adoption lead time at a given time $(L(t))$_
+_Adoption lead time of a target user $(L(\text{username}))$_
 
-:   Given a timestamp $t$, the adoption lead time for any individual adoption event at time $t$, is calculated as follows:
+:   Given a target user username, the adoption lead time for an adoption event for username, is calculated as follows:
 
     $$
-    L(t) = \min(\{x:(\text{username},x) \in E\}) - t
+    L(\text{username}) = \min(\{x:(\text{username},x) \in E\}) - t_{\text{username}}
     $$
 
-TODO still confused
+:   where $t_{\text{username}}$ is the timestamp when username requests access to the tool
 
 !!! formula ""
 
-    _Average Adoption Lead Time $(\bar{L}(t))$_
+    _Average Adoption Lead Time $(\bar{L}(\text{username}_1,\ldots,\text{username}_N))$_
 
-    :   The average adoption lead time at timestamp $t$ collection of $N$ individual adoption lead times
+    :   The average adoption lead time collection of $N$ adoption lead times of different target users
 
         $$
-        \bar{L}(t) = \frac{\sum_{1}^{N}L(t_{i})}{N}
+        \bar{L}(\text{username}_1,\ldots,\text{username}_N) = \frac{\sum_{1}^{N}L(\text{username}_{i})}{N}
         $$
 
 ### :material-counter: __Adoption density__
@@ -214,11 +214,12 @@ The simplest way to calculate _operational efficiency_ is by comparing the numbe
 
 _Component Maintainers ($M$)_
 
-:   The number of people it takes to maintain the component
+:   A set of how many maintainers the tool have over the time
 
-    Expressed as a number
+    Expressed as a set of tuples (integer, timestamp), where
 
-    TODO this is constant or can increase/decrease over time?
+    - the first element is the number of maintainers
+    - the second element is the timestamp when the number changed
 
 #### Formulas
 
@@ -229,7 +230,7 @@ _Number of maintainers at a given time interval $(M(t,\Delta t))$_
 :   Given a timestamp $t$ and a time interval $t-\Delta t$, the number maintainers between $t$ and $t-\Delta t$, is calculated as follows:
 
     $$
-    M(t,\Delta t) = \text{count}(\{(\text{maintainer},x) : \exists\ x,t -\Delta t \leq x \leq t, (\text{maintainer},x) \in M\})
+    M(t,\Delta t) = \max(\{\text{maintainer} : \min(x: t -\Delta t -x \geq 0) \lor t -\Delta t < x \leq t, (\text{maintainer},x) \in M\})
     $$
 
 !!! formula ""
@@ -239,7 +240,7 @@ _Number of maintainers at a given time interval $(M(t,\Delta t))$_
     :   The operational efficiency at timestamp $t$ over time interval $\Delta t$
 
         $$
-        OE(t) = \frac{E(t,\Delta t)}{M(t,\Delta t)}
+        OE(t,\Delta t) = \frac{E(t,\Delta t)}{M(t,\Delta t)}
         $$
 
 ### :material-account-heart-outline: __Developer Satisfaction__
@@ -248,34 +249,43 @@ Measures the extent to which the platform is meeting the needs and wants of deve
 
 #### Data Points
 
-[_Number of active users at a given time interval $(U(t,\Delta t))$_](#number-of-active-users-at-a-given-time-interval)
+_Net promoter score survey $(S)$_
 
-_Net Promoter Score survey $(S)$_
+:   A set of scores from a net promoter score survey over the time
 
-:   The set of scores returned from a net promoter score survey
+    Expressed as a set of tuples (set of integers, timestamp), where
 
-    Expressed as a set of integers between 0 and 10
+    - the first element are the scores (between 0 and 10) the target users gave the tool
+    - the second element is the timestamp when the number of scores changed
 
 #### Formulas
 
+[_Number of active users at a given time interval $(U(t,\Delta t))$_](#number-of-active-users-at-a-given-time-interval)
+
+_Number of net promoter score survey responses at a given time interval $(S(t,\Delta t))$_
+
+:   Given a timestamp $t$ and a time interval $t-\Delta t$, the number of net promoter score survey responses between $t$ and $t-\Delta t$, is calculated as follows:
+
+    $$
+    S(t,\Delta t) = \min(\{\text{count}(\text{scores}) : \min(x: t -\Delta t -x \geq 0) \lor t -\Delta t < x \leq t, (\text{scores},x) \in S\})
+    $$
+
 _Survey response rate $(SR(t,\Delta t))$_
 
-:   The percentage of the active users between $t$ and $t-\Delta t$ whose experiences were captured by the survey, is calculated as follows:
+:   Given a timestamp $t$ and a time interval $t-\Delta t$, the percentage of the active users who responded the survey between $t$ and $t-\Delta t$, is calculated as follows:
 
     $$
-    SR(t,\Delta t) = \frac{\text{count}(S)}{U(t,\Delta t)} \cdot 100
+    SR(t,\Delta t) = \frac{S(t,\Delta t)}{U(t,\Delta t)} \cdot 100
     $$
-
-TODO Net Promoter Score survey (S) results is constant or can increase/decrease over time?
 
 !!! formula ""
 
-    _Net Promoter Score ($NPS$)_
+    _Net Promoter Score ($NPS(t,\Delta t)$)_
 
-    :   The Net Promoter Score
+    :   The Net Promoter Score at timestamp $t$ over time interval $\Delta t$
 
         $$
-        NPS = \frac{ \text{count}(S_P) - \text{count}(S_D) }{\text{count}(S)}
+        NPS(t,\Delta t) = \frac{ S_P(t,\Delta t) - S_D(t,\Delta t) }{S(t,\Delta t)}
         $$
 
-    :   where ${S_P}$ is the subset of $S$ of scores 9 or 10 and ${S_D}$ is the subset of $S$ of scores 6 or below
+    :   where ${S_P}$ is the subset of $S$ of scores 9 or 10 (promoters) and ${S_D}$ is the subset of $S$ of scores 6 or below (detractors)
