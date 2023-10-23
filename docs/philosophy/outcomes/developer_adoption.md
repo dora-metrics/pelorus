@@ -62,7 +62,7 @@ Data points and formulas used by more than one _measure_.
 
 ##### Adoption events
 
-:   _Adoption events $(E)$_: A set of valuable target users interactions with the tool
+:   _Adoption events $(E)$_: A set of valuable target users interactions with the component
 
     Expressed as a set of tuples (string, timestamp), where
 
@@ -111,7 +111,7 @@ Adoption Rate ($AR$) is the rate at which a component is acquiring new users. Th
 
     _Adoption Rate $(AR(t,\Delta t))$_
 
-    :   The rate of change of users adoption the tool at timestamp $t$ over time interval $\Delta t$
+    :   The rate of change of users adoption the component at timestamp $t$ over time interval $\Delta t$
 
     $$
     AR(t,\Delta t) = \left(\frac{U(t,\Delta t) - U(t-\Delta t,\Delta t)}{U(t-\Delta t,\Delta t)}\right) \cdot 100
@@ -169,7 +169,7 @@ _Adoption lead time of a target user $(L(\text{username}))$_
     L(\text{username}) = \min(\{x:(\text{username},x) \in E\}) - t_{\text{username}}
     $$
 
-:   where $t_{\text{username}}$ is the timestamp when username requests access to the tool
+:   where $t_{\text{username}}$ is the timestamp when username requests access to the component
 
 !!! formula ""
 
@@ -214,7 +214,7 @@ The simplest way to calculate _operational efficiency_ is by comparing the numbe
 
 _Component Maintainers ($M$)_
 
-:   A set of how many maintainers the tool have over the time
+:   A set of how many maintainers the component have over the time
 
     Expressed as a set of tuples (integer, timestamp), where
 
@@ -255,7 +255,7 @@ _Net promoter score survey $(S)$_
 
     Expressed as a set of tuples (set of integers, timestamp), where
 
-    - the first element are the scores (between 0 and 10) the target users gave the tool
+    - the first element are the scores (between 0 and 10) the target users gave the component
     - the second element is the timestamp when the number of scores changed
 
 #### Formulas
