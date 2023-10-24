@@ -45,17 +45,11 @@ Measures the ability of an organization to deliver value to its customers
 
 [:material-arrow-right: Learn more...](SoftwareDeliveryPerformance.md)
 
-## :fontawesome-solid-person-circle-plus: Supported Technology Adoption :material-check-circle:{ .unchecked }
+## :fontawesome-solid-person-circle-plus: Developer Adoption :material-check-circle:{ .unchecked }
 
 Measures an organization’s ability to reduce waste by adopting common patterns, platforms and tools
 
 <div class="grid cards" markdown>
-
--   :material-account-clock: __Adoption lead time__
-
-    ---
-
-    Measures a team’s ability to onboard into a new platform, tool or pattern and exposes constraints in the process
 
 -   :fontawesome-solid-arrow-trend-up: __Adoption rate__
 
@@ -68,6 +62,18 @@ Measures an organization’s ability to reduce waste by adopting common patterns
     ---
 
     Measures the sustainability of the platform and whether it continues to be used beyond initial onboarding
+
+-   :material-account-clock: __Adoption lead time__
+
+    ---
+
+    Measures a team’s ability to onboard into a new platform, tool or pattern and exposes constraints in the process
+
+-   :material-counter: __Adoption Density__
+
+    ---
+
+    Measures the quantity and quality of user activity
 
 -   :fontawesome-solid-people-roof: __Operational efficiency__
 
@@ -82,6 +88,8 @@ Measures an organization’s ability to reduce waste by adopting common patterns
     Measures the extent to which the platform is meeting the needs and wants of development
 
 </div>
+
+[:material-arrow-right: Learn more...](developer_adoption.md)
 
 ## :fontawesome-solid-money-bill-trend-up: Value Flow :material-check-circle:{ .unchecked }
 

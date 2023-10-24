@@ -30,14 +30,22 @@ theme:
     - navigation.tabs
     - navigation.top
     - navigation.instant
+    - content.tooltips
   custom_dir: docs/custom
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 markdown_extensions:
   - admonition
+  - abbr
   - attr_list
   - def_list
   - md_in_html
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.details
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
@@ -47,6 +55,11 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
   - tables
 nav:
   - Home: index.md
@@ -72,6 +85,7 @@ nav:
     - Outcomes:
       - Overview: philosophy/outcomes/Overview.md
       - Software Delivery Performance: philosophy/outcomes/SoftwareDeliveryPerformance.md
+      - Developer Adoption: philosophy/outcomes/developer_adoption.md
     - How Pelorus Can Help: philosophy/HowPelorusCanHelp.md
   - Architecture: Architecture.md
   - Contribution:
