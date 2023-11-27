@@ -90,18 +90,37 @@ tests = ["attrs[tests-no-zope]", "zope-interface"]
 tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-xdist[psutil]"]
 
 [[package]]
-name = "azure-devops"
-version = "6.0.0b4"
-description = "Python wrapper around the Azure DevOps 6.x APIs"
+name = "azure-core"
+version = "1.29.1"
+description = "Microsoft Azure Core Library for Python"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "azure-devops-6.0.0b4.tar.gz", hash = "sha256:96a4fc2a24a85087d4971d6f177b5c91e961cb7dd47fa98f99f0071459f80ebb"},
-    {file = "azure_devops-6.0.0b4-py2-none-any.whl", hash = "sha256:a22d4d899c26324fdda89e97112a19b3579073b7b45fa72470141ebf588e97c0"},
+    {file = "azure-core-1.29.1.zip", hash = "sha256:68e5bb6e3a3230ec202001cc5cb88e57f11c441c8345e921a9ffb8c370abf936"},
+    {file = "azure_core-1.29.1-py3-none-any.whl", hash = "sha256:6bcefa1f70ff7bf3c39c07c73d8a21df73288eff7e6a1031eb8cfae71cc7bed4"},
 ]
 
 [package.dependencies]
-msrest = ">=0.6.0,<0.7.0"
+requests = ">=2.18.4"
+six = ">=1.11.0"
+typing-extensions = ">=4.3.0"
+
+[package.extras]
+aio = ["aiohttp (>=3.0)"]
+
+[[package]]
+name = "azure-devops"
+version = "7.1.0b4"
+description = "Python wrapper around the Azure DevOps 7.x APIs"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "azure-devops-7.1.0b4.tar.gz", hash = "sha256:f04ba939112579f3d530cfecc044a74ef9e9339ba23c9ee1ece248241f07ff85"},
+    {file = "azure_devops-7.1.0b4-py3-none-any.whl", hash = "sha256:f827e9fbc7c77bc6f2aaee46e5717514e9fe7d676c87624eccd0ca640b54f122"},
+]
+
+[package.dependencies]
+msrest = ">=0.7.1,<0.8.0"
 
 [[package]]
 name = "black"
@@ -1134,16 +1153,17 @@ test = ["autoflake", "black", "isort", "pytest"]
 
 [[package]]
 name = "msrest"
-version = "0.6.21"
+version = "0.7.1"
 description = "AutoRest swagger generator Python client runtime."
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 files = [
-    {file = "msrest-0.6.21-py2.py3-none-any.whl", hash = "sha256:c840511c845330e96886011a236440fafc2c9aff7b2df9c0a92041ee2dee3782"},
-    {file = "msrest-0.6.21.tar.gz", hash = "sha256:72661bc7bedc2dc2040e8f170b6e9ef226ee6d3892e01affd4d26b06474d68d8"},
+    {file = "msrest-0.7.1-py3-none-any.whl", hash = "sha256:21120a810e1233e5e6cc7fe40b474eeb4ec6f757a15d7cf86702c369f9567c32"},
+    {file = "msrest-0.7.1.zip", hash = "sha256:6e7661f46f3afd88b75667b7187a92829924446c7ea1d169be8c4bb7eeb788b9"},
 ]
 
 [package.dependencies]
+azure-core = ">=1.24.0"
 certifi = ">=2017.4.17"
 isodate = ">=0.6.0"
 requests = ">=2.16,<3.0"
@@ -2444,4 +2464,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "9a4415a31b6fa822c7b9b0b1d1a23ffc1684e6a672697e8a0a16274f6c85c08c"
+content-hash = "4c1d8519d312c1e45ba845369b1e22cf7ce55305c5bf148a358ccdf93cc9e125"
