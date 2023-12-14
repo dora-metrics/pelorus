@@ -167,7 +167,7 @@ jobs:
           mkdir -p operators/pelorus-operator/${{ needs.setup.outputs.version }}
 
       - name: Download operator code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: operator-code
           path: operators/pelorus-operator/${{ needs.setup.outputs.version }}
