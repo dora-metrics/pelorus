@@ -27,7 +27,7 @@ from msrest.authentication import BasicAuthentication
 
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
 from pelorus.config import env_var_names, env_vars
-from pelorus.config.converters import comma_separated, comma_or_whitespace_separated, pass_through
+from pelorus.config.converters import comma_or_whitespace_separated, pass_through
 from pelorus.config.log import REDACT, log
 from pelorus.errors import FailureProviderAuthenticationError
 from pelorus.timeutil import parse_assuming_utc_with_fallback, second_precision
@@ -54,7 +54,7 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
     )
 
     projects: set[str] = field(
-        factory=set, converter=comma_separated(set)
+        factory=set, converter=comma_or_whitespace_separated(set)
     )
 
     work_item_type: set[str] = field(
