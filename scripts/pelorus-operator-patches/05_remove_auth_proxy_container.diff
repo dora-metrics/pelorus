@@ -1,8 +1,8 @@
---- config/default/manager_auth_proxy_patch.yaml.original	2023-04-06 10:51:58.253397321 +0200
-+++ config/default/manager_auth_proxy_patch.yaml	2023-04-06 11:12:44.620084332 +0200
-@@ -25,29 +25,6 @@
-                   values:
-                     - linux
+--- config/default/manager_auth_proxy_patch.yaml.original	2024-04-26 16:22:17.278756017 +0200
++++ config/default/manager_auth_proxy_patch.yaml	2024-04-26 16:22:35.693818863 +0200
+@@ -9,29 +9,6 @@
+   template:
+     spec:
        containers:
 -      - name: kube-rbac-proxy
 -        securityContext:
@@ -10,7 +10,7 @@
 -          capabilities:
 -            drop:
 -              - "ALL"
--        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.1
+-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.14.1
 -        args:
 -        - "--secure-listen-address=0.0.0.0:8443"
 -        - "--upstream=http://127.0.0.1:8080/"
@@ -30,3 +30,4 @@
        - name: manager
          args:
          - "--health-probe-bind-address=:8081"
+
