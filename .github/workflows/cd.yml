@@ -47,7 +47,7 @@ jobs:
             else
               echo "tags=$(echo stable,latest,${{ github.sha }},v$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
               echo is_release=true >> "$GITHUB_OUTPUT"
-              export CURRENT_OPERATOR_VERSION="$(grep "VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
+              export CURRENT_OPERATOR_VERSION="$(grep "^VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
               echo version=$CURRENT_OPERATOR_VERSION >> "$GITHUB_OUTPUT"
             fi
           else
