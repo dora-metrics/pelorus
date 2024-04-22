@@ -78,7 +78,7 @@ jobs:
           TEST_VERSION: pr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
         working-directory: ./pelorus-operator
         run: |
-          export CURRENT_OPERATOR_VERSION="$(grep "VERSION ?= " Makefile  | cut -c 12-)"
+          export CURRENT_OPERATOR_VERSION="$(grep "^VERSION ?= " Makefile  | cut -c 12-)"
           export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
           export DEFAULT_OPERATOR_IMAGE="${{ env.REPOSITORY }}/pelorus-operator:$CURRENT_OPERATOR_VERSION"
           export TEST_OPERATOR_IMAGE="${{ env.REPOSITORY }}/rc-pelorus-operator:${{ env.TEST_VERSION }}"
