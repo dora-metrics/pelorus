@@ -235,6 +235,8 @@ if __name__ == "__main__":
     exact = ""
     if software == "ct":
         exact = "v3.8.0"  # https://github.com/helm/chart-testing/issues/577
+    if software == "operator_sdk":
+        exact = "v1.33.0"  # same as https://github.com/dora-metrics/pelorus/blob/master/pelorus-operator/Makefile#L51
 
     tool = Tool[software]
 

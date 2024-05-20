@@ -29,7 +29,6 @@ adr-tools-python = "^1.0.3"
 black = "^23.3.0"
 httpx = "^0.24.0"
 isort = "^5.12.0"
-mkdocs = "^1.4.2"
 pre-commit = "^3.3.1"
 pylama = {version = "^8.4.0", extras = ["toml"]}
 pyright = "^1.1.305"
@@ -44,10 +43,11 @@ yq = "^3.2.2"
 [tool.poetry.group.doc.dependencies]
 cairosvg = "^2.7.0"
 diagrams = "^0.23.3"
-mkdocs-material = "^9.1.9"
+mkdocs = "^1.6.0"
+mkdocs-material = "^9.5.22"
 mkdocs-redirects = "^1.2.0"
 pillow = "^10.1.0"
-pymdown-extensions = "^10.0"
+pymdown-extensions = "^10.4"
 
 [build-system]
 requires = ["poetry-core"]

@@ -55,21 +55,6 @@ rules:
 - verbs:
   - "*"
   apiGroups:
-  - "route.openshift.io"
-  resources:
-  - "routes"
-- verbs:
-  - "*"
-  apiGroups:
-  - ""
-  resources:
-  - "configmaps"
-  - "secrets"
-  - "serviceaccounts"
-  - "services"
-- verbs:
-  - "*"
-  apiGroups:
   - "rbac.authorization.k8s.io"
   resources:
   - "rolebindings"
@@ -102,5 +87,20 @@ rules:
   - "prometheuses"
   - "prometheusrules"
   - "servicemonitors"
+- verbs:
+  - "*"
+  apiGroups:
+  - "route.openshift.io"
+  resources:
+  - "routes"
+- verbs:
+  - "*"
+  apiGroups:
+  - ""
+  resources:
+  - "configmaps"
+  - "secrets"
+  - "serviceaccounts"
+  - "services"
 
 #+kubebuilder:scaffold:rules
