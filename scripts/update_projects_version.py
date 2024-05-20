@@ -292,7 +292,7 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
         directory=destination,
     )
 
-    for file in PATCHES_FOLDER.rglob("*"):
+    for file in sorted(PATCHES_FOLDER.rglob("*")):
         if file.is_file():
             logging.info(f"Applying patch {file}")
             run_command(f"patch -d {destination} -p0 < {file}")
