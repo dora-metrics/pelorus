@@ -7,7 +7,7 @@ on:
 
 env:
   # TODO create bot account
-  FORK_USER: mateusoliveira43
+  FORK_USER: etsauer
 
 jobs:
   setup:
