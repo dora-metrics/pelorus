@@ -89,10 +89,10 @@ fi
 
 # Enforce operator version bump when charts folder is touched
 
-CURRENT_OPERATOR_VERSION="$(grep "VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
+CURRENT_OPERATOR_VERSION="$(grep "^VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
 if ! git --no-pager diff --quiet $REMOTE/master --name-status charts/; then
   OPERATOR_MAKEFILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/pelorus-operator/Makefile 2> /dev/null)"
-  OPERATOR_VERSION_IN_MASTER=$(echo "$OPERATOR_MAKEFILE_IN_MASTER" | grep "VERSION ?= " | cut -c 12-)
+  OPERATOR_VERSION_IN_MASTER=$(echo "$OPERATOR_MAKEFILE_IN_MASTER" | grep "^VERSION ?= " | cut -c 12-)
   if [ "$OPERATOR_VERSION_IN_MASTER" == "$CURRENT_OPERATOR_VERSION" ]; then
     echo "ERROR: Charts were modified, Operator needs version bumping!"
     echo "$HELP_MESSAGE"
