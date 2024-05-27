@@ -584,7 +584,7 @@ cd ..
 
 cd pelorus-operator
 export TEST_VERSION=pr$pr_number-$commit_hash
-export CURRENT_OPERATOR_VERSION=$(grep "VERSION ?= " Makefile  | cut -c 12-)
+export CURRENT_OPERATOR_VERSION=$(grep "^VERSION ?= " Makefile  | cut -c 12-)
 export CURRENT_CHART_VERSION="$(grep '^version: ' helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
 export DEFAULT_OPERATOR_IMAGE=$REPOSITORY/pelorus-operator:$CURRENT_OPERATOR_VERSION
 export TEST_OPERATOR_IMAGE=$REPOSITORY/rc-pelorus-operator:$TEST_VERSION
