@@ -244,7 +244,7 @@ If not defined specifically, exporters are using pre-built container images with
 
 #### Pre-built Quay images
 
-Each pull request involving `exporters` folder that is merged results in new exporters images that are tagged with the commit hash (for example, `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31)) and with the exporters version (for example, `v2.0.11`). The newest images have the additional `latest` tag.
+Each pull request involving `exporters` folder that is merged results in new exporters images that are tagged with the commit hash (for example, `d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31` for the following [Pull Request](https://github.com/dora-metrics/pelorus/commit/d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31)) and with the exporters version (for example, `v2.0.12`). The newest images have the additional `latest` tag.
 
 Each new Pelorus [release](https://github.com/dora-metrics/pelorus/releases) results in new exporters images that are tagged with all the previous tags and also `stable` tag.
 
@@ -298,7 +298,7 @@ exporters:
 
   - app_name: jira-failure-exporter
     exporter_type: failure
-    image_tag: v2.0.11 # Specific release
+    image_tag: v2.0.12 # Specific release
     env_from_secrets:
     - jira-credentials
     env_from_configmaps:
