@@ -32,10 +32,10 @@ spec:
           configMap:
             name: {{ $config.map_name }}
         {{- end }}
-        {{- if .custom_ca }}
+        {{- if .custom_ca_configmap }}
         - name: configmap-cluster-ca-bundle
           configMap:
-            name: {{ .custom_ca.map_name }}
+            name: {{ .custom_ca_configmap }}
             defaultMode: 420
         {{- end }}
       containers:
@@ -47,7 +47,7 @@ spec:
             - name: custom-cert-volume-{{$config.map_name}}
               mountPath: /etc/pelorus/custom_certs/{{$config.map_name}}
             {{- end }}
-            {{- if .custom_ca }}
+            {{- if .custom_ca_configmap }}
             - name: configmap-cluster-ca-bundle
               readOnly: true
               mountPath: /etc/pki/tls/certs
