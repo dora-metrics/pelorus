@@ -50,6 +50,8 @@ exporters:
 
     - app_name: committime-exporter
       exporter_type: committime
+      # Override the exporter system CA bundle. The ConfigMap must be present and must contain the ca-bundle.crt key with PEM formatted certs.
+      # custom_ca_configmap: <configmap name>
 
     - app_name: webhook-exporter
       exporter_type: webhook
