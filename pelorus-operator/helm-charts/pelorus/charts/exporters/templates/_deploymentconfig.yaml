@@ -36,7 +36,9 @@ spec:
         - name: configmap-cluster-ca-bundle
           configMap:
             name: {{ .custom_ca_configmap }}
-            defaultMode: 420
+            items:
+            - key: ca-bundle.crt
+              path: tls-ca-bundle.pem
         {{- end }}
       containers:
         - name: {{ .app_name }}
@@ -50,7 +52,7 @@ spec:
             {{- if .custom_ca_configmap }}
             - name: configmap-cluster-ca-bundle
               readOnly: true
-              mountPath: /etc/pki/tls/certs
+              mountPath: /etc/pki/ca-trust/extracted/pem
             {{- end }}
 
           envFrom:
