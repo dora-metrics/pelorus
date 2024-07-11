@@ -3,9 +3,6 @@
 		{
 			"name": "pelorus",
 			"path": "/projects/pelorus"
-		},
-		{
-			"path": "../pelorus-api"
 		}
 	],
 	"extensions": {
