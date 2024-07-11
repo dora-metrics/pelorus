@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"name": "pelorus",
+			"path": "/projects/pelorus"
+		}
+	],
+	"extensions": {
+		"recommendations": [
+			"redhat.vscode-yaml",
+			"mhutchie.git-graph",
+			"eamodio.gitlens",
+			"streetsidesoftware.code-spell-checker",
+			"johnpapa.winteriscoming",
+			"cnshenj.vscode-task-manager"
+		]
+	},
+	"settings": {
+		"workbench.colorTheme": "Winter is Coming (Dark Blue)",
+		"workbench.preferredDarkColorTheme": "Winter is Coming (Dark Blue)",
+		"workbench.preferredLightColorTheme": "Winter is Coming (Light)",
+		"editor.wordWrap": "on",
+		"files.autoSave": "off"
+	}
+}

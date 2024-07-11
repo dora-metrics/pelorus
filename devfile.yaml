@@ -1,0 +1,39 @@
+schemaVersion: 2.2.0
+metadata:
+  name: pelorus
+components:
+- name: dev-tools
+  container:
+    image: quay.io/redhat-cop/devspaces-python-311:pr-d076f5c2cc3a41caa54a9b964ee54f425f09f350
+    memoryLimit: 6Gi
+    mountSources: true
+    env:
+    - name: SHELL
+      value: "/bin/zsh"
+    - name: VSCODE_DEFAULT_WORKSPACE
+      value: "/projects/pelorus/pelorus.code-workspace"
+    - name: GOPATH
+      value: /projects/home/go
+- volume:
+    size: 10Gi
+  name: projects
+- name: oc-cli
+  container:
+    args:
+      - '-c'
+      - >-
+        mkdir -p /projects/bin && cp /usr/bin/oc /projects/bin/oc && cp /usr/bin/kubectl /projects/bin/kubectl
+    command:
+      - /bin/bash
+    image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+    sourceMapping: /projects
+    mountSources: true
+    memoryLimit: 256M
+commands:
+- apply:
+    component: oc-cli
+    label: Copy OpenShift CLI
+  id: cp-oc-cli
+events:
+  preStart:
+    - cp-oc-cli
