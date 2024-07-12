@@ -60,6 +60,10 @@ spec:
                           description: Must consist of lower case alphanumeric characters
                             or '-'.
                           type: string
+                        custom_ca_configmap:
+                          description: ConfigMap name with ca-bundle.crt key mounted
+                            over the exporter image system CA bundle.
+                          type: string
                         custom_certs:
                           description: ConfigMap name(s) with custom CA certificates.
                           items:
