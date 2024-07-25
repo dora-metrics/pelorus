@@ -116,6 +116,7 @@ dmypy.json
 
 # Ignore vscode meta
 *.code-workspace
+!pelorus.code-workspace
 .vscode/
 
 ### JetBrains template
