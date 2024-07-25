@@ -131,7 +131,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     format_app_name(my_metric.name),
                     my_metric.commit_hash,
                     my_metric.image_hash,
-                    my_metric.repo_url
+                    my_metric.repo_url,
                 ],
                 my_metric.commit_timestamp,
             )
