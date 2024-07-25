@@ -108,19 +108,20 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         commit_metric = GaugeMetricFamily(
             "commit_timestamp",
             "Commit timestamp",
-            labels=["namespace", "app", "commit", "image_sha"],
+            labels=["namespace", "app", "commit", "image_sha", "repo_url"],
         )
 
         commit_metrics = self.generate_metrics()
 
         for my_metric in commit_metrics:
             logging.debug(
-                "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s } %s"
+                "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s, repo_url=%s } %s"
                 % (
                     my_metric.namespace,
                     my_metric.name,
                     my_metric.commit_hash,
                     my_metric.image_hash,
+                    my_metric.repo_url,
                     str(float(my_metric.commit_timestamp)),
                 )
             )
@@ -130,6 +131,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     format_app_name(my_metric.name),
                     my_metric.commit_hash,
                     my_metric.image_hash,
+                    my_metric.repo_url
                 ],
                 my_metric.commit_timestamp,
             )
