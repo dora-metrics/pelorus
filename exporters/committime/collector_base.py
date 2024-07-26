@@ -77,7 +77,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     tls_verify: bool = field(default=True)
 
-    commit_dict: dict[str, Optional[float]] = field(factory=dict, init=False)
+    commit_dict: dict[str, Optional[CommitMetric]] = field(factory=dict, init=False)
 
     # TODO hash_annotation_name and repo_url_annotation_name seem to be
     # unnecessary
@@ -108,20 +108,20 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         commit_metric = GaugeMetricFamily(
             "commit_timestamp",
             "Commit timestamp",
-            labels=["namespace", "app", "commit", "image_sha", "repo_url"],
+            labels=["namespace", "app", "commit", "image_sha", "commit_link"],
         )
 
         commit_metrics = self.generate_metrics()
 
         for my_metric in commit_metrics:
             logging.debug(
-                "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s, repo_url=%s } %s"
+                "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s, commit_link=%s } %s"
                 % (
                     my_metric.namespace,
                     my_metric.name,
                     my_metric.commit_hash,
                     my_metric.image_hash,
-                    my_metric.repo_url,
+                    my_metric.commit_link,
                     str(float(my_metric.commit_timestamp)),
                 )
             )
@@ -131,7 +131,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     format_app_name(my_metric.name),
                     my_metric.commit_hash,
                     my_metric.image_hash,
-                    my_metric.repo_url,
+                    my_metric.commit_link,
                 ],
                 my_metric.commit_timestamp,
             )
@@ -389,6 +389,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             )
             try:
                 metric = self.get_commit_time(metric)
+                logging.debug(f"Metric returned from git provider: {metric}")
             except UnsupportedGITProvider as ex:
                 errors.append(ex.message)
                 return None
@@ -397,14 +398,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 errors.append("Couldn't get commit time")
             else:
                 # Add the timestamp to the cache
-                self.commit_dict[metric.commit_hash] = metric.commit_timestamp
+                self.commit_dict[metric.commit_hash] = metric
         elif metric.commit_hash:
-            metric.commit_timestamp = self.commit_dict[metric.commit_hash]
-            logging.debug(
-                "Returning sha: %s, commit_timestamp: %s, from cache.",
-                metric.commit_hash,
-                metric.commit_timestamp,
-            )
+            metric = self.commit_dict[metric.commit_hash]
+            logging.debug(f"Returning metric from cache {metric}")
 
         return metric
 

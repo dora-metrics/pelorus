@@ -63,6 +63,7 @@ class CommitMetric:
     The unix timestamp.
     In the future, this and commit_time should be combined.
     """
+    commit_link: Optional[str] = attr.field(default=None, kw_only=True)
 
     build_name: Optional[str] = attr.field(default=None, kw_only=True)
     build_config_name: Optional[str] = attr.field(default=None, kw_only=True)
