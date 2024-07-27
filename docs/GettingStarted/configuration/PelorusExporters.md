@@ -71,6 +71,7 @@ This is the list of options that can be applied to `exporters.instances` section
 | [extraEnv](#extraenv) | no | - |
 | [enabled](#enabled) | no | `true` |
 | [custom_certs](#custom_certs) | no | - |
+| [custom_ca_configmap](#custom_ca_configmap) | no | - |
 | [image_tag](#image_tag) | no | - |
 | [image_name](#image_name) | no | - |
 | [source_url](#source_url) | no | - |
@@ -168,6 +169,13 @@ custom_certs:
 ```
 
 : Check [Custom Certificates](#custom-certificates) for more information.
+
+###### custom_ca_configmap
+
+- **Required:** no
+- **Type:** String
+
+: Used to override the exporter system ca bundle. The value must be the ConfigMap name holding the `ca-bundle.crt` key with PEM formatted certificates.
 
 ###### image_tag
 

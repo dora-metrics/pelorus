@@ -1,0 +1,13 @@
+--- config/crd/bases/charts.pelorus.dora-metrics.io_peloruses.yaml.original
++++ config/crd/bases/charts.pelorus.dora-metrics.io_peloruses.yaml
+@@ -95,6 +95,10 @@ spec:
+                           description: If set to false, exporter instance won't be created.
+                           type: boolean
+                           default: true
++                        custom_ca_configmap:
++                          description: >-
++                            ConfigMap name with ca-bundle.crt key mounted over the exporter image system CA bundle.
++                          type: string
+                         custom_certs:
+                           description: ConfigMap name(s) with custom CA certificates.
+                           type: array

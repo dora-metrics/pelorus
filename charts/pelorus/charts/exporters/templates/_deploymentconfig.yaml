@@ -32,6 +32,14 @@ spec:
           configMap:
             name: {{ $config.map_name }}
         {{- end }}
+        {{- if .custom_ca_configmap }}
+        - name: configmap-cluster-ca-bundle
+          configMap:
+            name: {{ .custom_ca_configmap }}
+            items:
+            - key: ca-bundle.crt
+              path: tls-ca-bundle.pem
+        {{- end }}
       containers:
         - name: {{ .app_name }}
           imagePullPolicy: Always
@@ -40,6 +48,11 @@ spec:
             {{- range $config := .custom_certs }}
             - name: custom-cert-volume-{{$config.map_name}}
               mountPath: /etc/pelorus/custom_certs/{{$config.map_name}}
+            {{- end }}
+            {{- if .custom_ca_configmap }}
+            - name: configmap-cluster-ca-bundle
+              readOnly: true
+              mountPath: /etc/pki/ca-trust/extracted/pem
             {{- end }}
 
           envFrom:
