@@ -83,6 +83,7 @@ class GiteaCommitCollector(AbstractCommitCollector):
 
                 logging.debug("metric.commit_time %s", commit_time)
                 metric.commit_timestamp = commit_time.timestamp()
+                metric.commit_link = commit["html_url"]
             except Exception:
                 logging.error(
                     "Failed processing commit time for build %s" % metric.build_name,
