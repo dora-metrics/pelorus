@@ -317,7 +317,7 @@ class ContainerImageCommitCollector(AbstractCommitCollector):
                         commit_timestamp=pod.metadata.commit_timestamp,
                         image_hash=sha,
                     )
-                    metric.repo_url = pod.metadata.repo_url
+                    metric.commit_link = pod.metadata.repo_url
                     yield metric
 
         _cleanup_cache()
