@@ -12,7 +12,7 @@ spec:
 
     - record: sdp:lead_time:by_commit
       expr: >
-        min by (app, commit) (deploy_timestamp - on(app,image_sha) group_left(commit) commit_timestamp)
+        min by (app, commit, commit_link, image_sha) (deploy_timestamp - on(app,image_sha) group_left(commit, commit_link) commit_timestamp)
     - record: sdp:lead_time:by_app
       expr: >
         avg by (app) (sdp:lead_time:by_commit)

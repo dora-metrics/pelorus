@@ -116,6 +116,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
             metric.commit_timestamp = parse_tz_aware(
                 commit_time_str, format=_DATETIME_FORMAT
             ).timestamp()
+            metric.commit_link = commit.web_url
         except Exception:
             logging.error(
                 "Failed processing commit time for build %s" % metric.build_name,

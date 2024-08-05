@@ -23,7 +23,7 @@ spec:
       name: {{ .image_name }}:{{ .image_tag | default "latest" }}
     {{- end }}
 {{- else }}
-      name: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.1" }}
+      name: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.2" }}
 # .image_name
 {{- end }}
     name: {{ .image_tag | default "stable" }}

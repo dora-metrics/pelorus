@@ -69,6 +69,8 @@ class GitHubCommitCollector(AbstractCommitCollector):
             try:
                 metric.commit_time = commit["commit"]["committer"]["date"]
                 metric.commit_timestamp = parse_datetime(metric.commit_time).timestamp()
+                metric.commit_link = commit["html_url"]
+                logging.debug(f"Set all github commit metrics: {metric}")
             except Exception:
                 logging.error(
                     "Failed processing commit time for build %s" % metric.build_name,
