@@ -83,18 +83,22 @@ tests:
   - expr: sdp:lead_time:by_commit{app="basic-nginx"}
     eval_time: 1m
     exp_samples:
-    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="b4db23e0d91699165e92ea38ba03ac277c778397"}'
+    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="b4db23e0d91699165e92ea38ba03ac277c778397", image_sha="sha256:a344eb5673e7e3faf871e7375762f1869c823c957aa126ce8f52033395f2b358"}'
       value: 111
-    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="9421e2898111a38fd5b6a17d6c94c2e3569b5c2f"}'
+    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="9421e2898111a38fd5b6a17d6c94c2e3569b5c2f", image_sha="sha256:9e1348e33d416072d6301e5dc35e2c54b8dc95772b0a89ff2036fa79b368864d"}'
       value: 282
-    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="c8683ac2ae37cb9dd7c4c576747bf8f3d74c4f28"}'
+    - labels: 'sdp:lead_time:by_commit{app="basic-nginx", commit="c8683ac2ae37cb9dd7c4c576747bf8f3d74c4f28", image_sha="sha256:3131dfa239ec3db1e876ebea141b9d92627a432ca94949c7a6197d05261b0f84"}'
       value: 2918139
   # Ensure expected values for lead time for app 2
   - expr: sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot"}
     eval_time: 1m
     exp_samples:
-    - labels: 'sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d"}'
+    - labels: 'sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d", image_sha="sha256:08ab5ef50c3fa51993e4d40b62533afe6619558aaba9e3a179c451b2676db7ed"}'
       value: 1028589
+    - labels: 'sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d", image_sha="sha256:382947b77566babcc7c6c55f50cb17469c7d068bc4b0cfbdcd4b8b33e091d133"}'
+      value: 1047163
+    - labels: 'sdp:lead_time:by_commit{app="kenwilli-basic-spring-boot", commit="ea67853d8f9b4f43400500f807d72cdfb5b0936d", image_sha="sha256:46332b417660900361f7185830a4eb6d5ddc7e3002944ba26ed260e83f415197"}'
+      value: 1045699
   # Check calculation of average lead time per application
   - expr: sdp:lead_time:by_app
     eval_time: 1m
@@ -102,12 +106,12 @@ tests:
     - labels: 'sdp:lead_time:by_app{app="basic-nginx"}'
       value: 972844
     - labels: 'sdp:lead_time:by_app{app="kenwilli-basic-spring-boot"}'
-      value: 1028589
+      value: 1040483.6666666666
   - expr: sdp:lead_time:global
     eval_time: 1m
     exp_samples:
     - labels: 'sdp:lead_time:global'
-      value: 1000716.5
+      value: 1006663.8333333333
   - expr: count(sdp:time_to_restore:by_issue)
     eval_time: 1m
     exp_samples:
@@ -136,12 +140,12 @@ tests:
     - labels: 'sdp:change_failure_rate:by_app{app="basic-nginx"}'
       value: .6666666666666666
     - labels: 'sdp:change_failure_rate:by_app{app="kenwilli-basic-spring-boot"}'
-      value: 1
+      value: .3333333333333333
   - expr: sdp:change_failure_rate:global
     eval_time: 1m
     exp_samples:
     - labels: 'sdp:change_failure_rate:global{}'
-      value: .8333333333333333
+      value: .5
 
 # Test app hierarchy filter in charts/pelorus/templates/dashboard-sdp-byapp.yaml
 - interval: 1m
