@@ -106,12 +106,12 @@ tests:
     - labels: 'sdp:lead_time:by_app{app="basic-nginx"}'
       value: 972844
     - labels: 'sdp:lead_time:by_app{app="kenwilli-basic-spring-boot"}'
-      value: 1040483.6666666666
+      value: 1040483.6666666667
   - expr: sdp:lead_time:global
     eval_time: 1m
     exp_samples:
     - labels: 'sdp:lead_time:global'
-      value: 1006663.8333333333
+      value: 1006663.8333333334
   - expr: count(sdp:time_to_restore:by_issue)
     eval_time: 1m
     exp_samples:
