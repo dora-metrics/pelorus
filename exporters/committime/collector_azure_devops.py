@@ -88,6 +88,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
                 metric.commit_timestamp = (
                     timestamp.timestamp()
                 )  # hopefully they haven't provided a naive datetime
+                metric.commit_link = metric.repo_url
             except Exception:
                 logging.error(
                     "Failed processing commit time for build %s" % metric.build_name,

@@ -182,6 +182,7 @@ def get_labels_from_image(sha_256: str, image_uri: str) -> Dict[str, str]:
     # We got the labels, so remove them from the potential
     # existence in the failures.
     _remove_from_skopeo_failure(sha_256)
+    logging.debug(f"Found the following labels for image {image_uri}: {labels}")
     return labels
 
 
@@ -230,11 +231,13 @@ def _set_commit_metadata(
     pod: ResourceField,
     date_label: str,
     hash_label: str,
+    repo_url_label: str,
     sha_256: str,
     date_format: str = None,
 ) -> None:
     with image_label_cache_lock:
         labels = image_label_cache.get(sha_256, None)
+        logging.debug(f"Got image labels for: {sha_256}")
         if labels and isinstance(labels, Tuple) and isinstance(labels[0], dict):
             pod.metadata.commit_hash = labels[0].get(hash_label)
             commit_time = labels[0].get(date_label)
@@ -251,6 +254,10 @@ def _set_commit_metadata(
                         ).timestamp()
                     except ValueError:
                         logging.debug(f"Can't get commit timestamp for sha: {sha_256}")
+            repo_url = labels[0].get(repo_url_label)
+            if not repo_url:
+                repo_url = "unknown"
+            pod.metadata.repo_url = repo_url
 
 
 @define(kw_only=True)
@@ -259,6 +266,7 @@ class ContainerImageCommitCollector(AbstractCommitCollector):
 
     date_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["commit_time"]
     hash_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["commit_hash"]
+    repo_url_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["repo_url"]
 
     def get_commit_time(self, metric) -> Optional[CommitMetric]:
         return super().get_commit_time(metric)
@@ -296,6 +304,7 @@ class ContainerImageCommitCollector(AbstractCommitCollector):
                     pod,
                     self.date_annotation_name,
                     self.hash_annotation_name,
+                    self.repo_url_annotation_name,
                     sha,
                     self.date_format,
                 )
@@ -308,6 +317,7 @@ class ContainerImageCommitCollector(AbstractCommitCollector):
                         commit_timestamp=pod.metadata.commit_timestamp,
                         image_hash=sha,
                     )
+                    metric.commit_link = pod.metadata.repo_url
                     yield metric
 
         _cleanup_cache()

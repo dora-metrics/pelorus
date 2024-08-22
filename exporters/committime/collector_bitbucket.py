@@ -92,6 +92,8 @@ class Version1(APIVersion):
 
         # convert the time stamp to datetime and set in metric
         metric.commit_time = timestamp.isoformat()
+        # since the v1 api is deprecated, just set link to unknown
+        metric.commit_link = "unknown"
 
 
 class Version2(APIVersion):
@@ -119,6 +121,7 @@ class Version2(APIVersion):
         # API V2 has a human-readable time, which needs to be parsed.
         commit_time = api_response["date"]
         timestamp = parse_tz_aware(commit_time, _DATETIME_FORMAT)
+        commit_link = api_response["links"]["html"]
 
         logging.debug(
             "API v2 returned sha: %s, timestamp: %s (%s)",
@@ -130,6 +133,7 @@ class Version2(APIVersion):
         metric.commit_time = commit_time
         # set the timestamp after conversion
         metric.commit_timestamp = timestamp.timestamp()
+        metric.commit_link = commit_link
 
 
 _SUPPORTED_API_VERSIONS = (Version2(), Version1())

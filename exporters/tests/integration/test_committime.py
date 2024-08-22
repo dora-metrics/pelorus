@@ -53,7 +53,7 @@ def expected_commits() -> list[CommitMetricEssentials]:
             namespace="basic-nginx-build",
             name="basic-nginx",
             commit_hash="15dedb60b6208aafdfb2328a93543e3d94500978",
-            image_hash="sha256:4a20c8cfa48af3a938462e9cd7bfa0b16abfbc6ba16f0999f3931c79b1130e4b",
+            image_hash="sha256:c1282f65b5c327db4dcc6cdfb27e91338bd625d119d9ae769318f089d82e35e2",
         ),
         CommitMetricEssentials(
             commit_timestamp=1620401174.0,
