@@ -4,6 +4,7 @@ approvers:
   - mateusoliveira43
   - mpryc
   - weshayutin
+  - cgruver
 
 reviewers:
   - etsauer
@@ -11,4 +12,5 @@ reviewers:
   - mateusoliveira43
   - mpryc
   - weshayutin
+  - cgruver
   - github-actions[bot]
