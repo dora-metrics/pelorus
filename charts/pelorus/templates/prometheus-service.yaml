@@ -18,7 +18,7 @@ spec:
     protocol: TCP
     targetPort: web-tls
   selector:
-    app: prometheus
+    app.kubernetes.io/name: prometheus
     prometheus: prometheus-pelorus
   sessionAffinity: ClientIP
   sessionAffinityConfig:
