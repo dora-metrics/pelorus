@@ -49,8 +49,8 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.2
-    createdAt: "2024-08-05T20:19:51Z"
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.3
+    createdAt: "2024-09-05T13:30:15Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -58,7 +58,7 @@ metadata:
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
     repository: https://github.com/dora-metrics/pelorus/
     support: Pelorus Community
-  name: pelorus-operator.v0.0.10-rc.2
+  name: pelorus-operator.v0.0.10-rc.3
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -385,7 +385,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/pelorus/pelorus-operator:0.0.10-rc.2
+                image: quay.io/pelorus/pelorus-operator:0.0.10-rc.3
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -487,7 +487,7 @@ spec:
   provider:
     name: Red Hat
     url: https://redhat.com
-  version: 0.0.10-rc.2
+  version: 0.0.10-rc.3
   replaces: pelorus-operator.v0.0.9
   skips:
     - pelorus-operator.v0.0.9
