@@ -50,7 +50,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.3
-    createdAt: "2024-09-05T14:52:24Z"
+    createdAt: "2024-09-05T18:53:43Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
