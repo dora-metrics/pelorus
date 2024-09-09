@@ -55,20 +55,6 @@ rules:
 - verbs:
   - "*"
   apiGroups:
-  - "monitoring.coreos.com"
-  resources:
-  - "prometheuses"
-  - "prometheusrules"
-  - "servicemonitors"
-- verbs:
-  - "*"
-  apiGroups:
-  - "route.openshift.io"
-  resources:
-  - "routes"
-- verbs:
-  - "*"
-  apiGroups:
   - ""
   resources:
   - "configmaps"
@@ -94,5 +80,19 @@ rules:
   - "image.openshift.io"
   resources:
   - "imagestreams"
+- verbs:
+  - "*"
+  apiGroups:
+  - "monitoring.coreos.com"
+  resources:
+  - "prometheuses"
+  - "prometheusrules"
+  - "servicemonitors"
+- verbs:
+  - "*"
+  apiGroups:
+  - "route.openshift.io"
+  resources:
+  - "routes"
 
 #+kubebuilder:scaffold:rules

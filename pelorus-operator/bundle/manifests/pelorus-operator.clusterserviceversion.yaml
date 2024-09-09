@@ -50,7 +50,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.4
-    createdAt: "2024-09-09T20:31:37Z"
+    createdAt: "2024-09-09T20:46:45Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -211,20 +211,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - prometheuses
-          - prometheusrules
-          - servicemonitors
-          verbs:
-          - '*'
-        - apiGroups:
-          - route.openshift.io
-          resources:
-          - routes
-          verbs:
-          - '*'
-        - apiGroups:
           - ""
           resources:
           - configmaps
@@ -250,6 +236,20 @@ spec:
           - image.openshift.io
           resources:
           - imagestreams
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheuses
+          - prometheusrules
+          - servicemonitors
+          verbs:
+          - '*'
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
           verbs:
           - '*'
         - apiGroups:
