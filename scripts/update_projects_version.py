@@ -56,7 +56,7 @@ CHARTS_FILES_TO_UPDATE = {
     PELORUS_CHARTS_FOLDER / "Chart.yaml": 2,
     ROOT / "charts/operators/Chart.yaml": 1,
     PELORUS_EXPORTERS_FOLDER / "Chart.yaml": 1,
-    PELORUS_EXPORTERS_FOLDER / "templates/_deploymentconfig.yaml": 1,
+    PELORUS_EXPORTERS_FOLDER / "templates/_deployment.yaml": 1,
     PELORUS_EXPORTERS_FOLDER / "templates/_imagestream_from_image.yaml": 1,
 }
 DEVELOPMENT_FILE = ROOT / "docs/Development.md"

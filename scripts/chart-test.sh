@@ -38,8 +38,8 @@ fi
 ct lint --remote "$REMOTE" --config ct.yaml || exit 1
 rm -f charts/pelorus/charts/*.tgz
 
-if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml &> /dev/null; then
-  echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_deploymentconfig.yaml differs!"
+if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deployment.yaml &> /dev/null; then
+  echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_deployment.yaml differs!"
   echo "$HELP_MESSAGE"
   exit 1
 fi
