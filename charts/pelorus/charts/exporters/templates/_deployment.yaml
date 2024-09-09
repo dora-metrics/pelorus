@@ -1,7 +1,7 @@
 {{- define "exporters.deploymentconfig" }}
 ---
-apiVersion: apps.openshift.io/v1
-kind: DeploymentConfig
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/name: {{ .app_name }}
@@ -9,20 +9,15 @@ metadata:
   name: {{ .app_name }}
 spec:
   replicas: 1
-  revisionHistoryLimit: 10
   selector:
-    app.kubernetes.io/name: {{ .app_name }}
-    app: {{ .app_name }}
-    deploymentconfig: {{ .app_name }}
-  strategy:
-    type: Rolling
+    matchLabels:
+      app.kubernetes.io/name: {{ .app_name }}
+      app: {{ .app_name }}
   template:
     metadata:
       labels:
         app.kubernetes.io/name: {{ .app_name }}
         app: {{ .app_name }}
-        deploymentconfig: {{ .app_name }}
-        application: {{ .app_name }}
         pelorus.dora-metrics.io/exporter-type: {{ .exporter_type | default "generic-exporter" }}
     spec:
       serviceAccount: pelorus-exporter
@@ -67,7 +62,7 @@ spec:
               value: {{ .image_name }}:{{ .image_tag | default "latest" }}
                 {{- end }}
               {{- else }}
-              value: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.3" }}
+              value: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.4" }}
               {{- end }}
             {{- end }}
 
@@ -87,20 +82,4 @@ spec:
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 20
-  triggers:
-  - type: ConfigChange
-  - imageChangeParams:
-      automatic: true
-      containerNames:
-      - {{ .app_name }}
-      from:
-        kind: ImageStreamTag
-        {{- if or .source_ref .source_url }}
-        name: {{ .app_name }}:latest
-        {{- else }}
-        # default is an internal registry tag and must match the default from
-        # _imagestream_from_image.yaml
-        name: {{ .app_name }}:{{ .image_tag | default "stable" }}
-        {{- end }}
-    type: ImageChange
 {{- end }}
