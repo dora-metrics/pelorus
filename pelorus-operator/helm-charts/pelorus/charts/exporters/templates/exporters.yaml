@@ -24,7 +24,6 @@
       {{- end}}
       {{ include "exporters.imagestream_from_image" $exporter }}
     {{- end }}
-      {{ include "exporters.route" $exporter }}
       {{ include "exporters.service" $exporter }}
   {{- end }}
 {{- end }}
