@@ -45,54 +45,39 @@ rules:
   - patch
   - update
   - watch
-- verbs:
-  - "*"
-  apiGroups:
-  - "rbac.authorization.k8s.io"
-  resources:
-  - "clusterrolebindings"
-  - "clusterroles"
-- verbs:
-  - "*"
-  apiGroups:
+- apiGroups:
   - ""
   resources:
-  - "configmaps"
-  - "secrets"
-  - "serviceaccounts"
-  - "services"
-- verbs:
-  - "*"
-  apiGroups:
-  - "rbac.authorization.k8s.io"
+  - pods
+  - services
+  - services/finalizers
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
   resources:
-  - "rolebindings"
-  - "roles"
-- verbs:
-  - "*"
-  apiGroups:
-  - "apps"
-  resources:
-  - "deployments"
-- verbs:
-  - "*"
-  apiGroups:
-  - "image.openshift.io"
-  resources:
-  - "imagestreams"
-- verbs:
-  - "*"
-  apiGroups:
-  - "monitoring.coreos.com"
-  resources:
-  - "prometheuses"
-  - "prometheusrules"
-  - "servicemonitors"
-- verbs:
-  - "*"
-  apiGroups:
-  - "route.openshift.io"
-  resources:
-  - "routes"
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 
 #+kubebuilder:scaffold:rules
