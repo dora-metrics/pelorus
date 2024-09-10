@@ -15,6 +15,5 @@ spec:
     targetPort: 8080
   selector:
     app.kubernetes.io/name: {{ .app_name }}
-    deploymentconfig: {{ .app_name }}
   type: ClusterIP
 {{- end }}

@@ -62,9 +62,9 @@ rules:
 - verbs:
   - "*"
   apiGroups:
-  - "apps.openshift.io"
+  - "apps"
   resources:
-  - "deploymentconfigs"
+  - "deployments"
 - verbs:
   - "*"
   apiGroups:
