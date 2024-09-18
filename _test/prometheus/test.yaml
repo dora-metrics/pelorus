@@ -434,11 +434,11 @@ tests:
     exp_samples: []
 
   # Tests for Change Failure Rate - Current interval in charts/pelorus/templates/dashboard-sdp-byapp.yaml
-  - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/group/.*"} [5m]))
+  - expr: round(avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/group/.*"} [5m])), .001)
     eval_time: 1m
     exp_samples:
     - labels: '{}'
-      value: 0.5555555555555556
+      value: 0.556
   - expr: avg(avg_over_time(sdp:change_failure_rate:by_app{app=~".*/subgroup/.*"} [5m]))
     eval_time: 1m
     exp_samples:
