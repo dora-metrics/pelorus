@@ -50,7 +50,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.6
-    createdAt: "2024-09-18T19:54:34Z"
+    createdAt: "2024-09-18T20:17:43Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -211,15 +211,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          - secrets
-          - serviceaccounts
-          - services
-          verbs:
-          - '*'
-        - apiGroups:
           - rbac.authorization.k8s.io
           resources:
           - rolebindings
@@ -250,6 +241,15 @@ spec:
           - route.openshift.io
           resources:
           - routes
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - secrets
+          - serviceaccounts
+          - services
           verbs:
           - '*'
         - apiGroups:
@@ -385,7 +385,7 @@ spec:
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 - --leader-election-id=pelorus-operator
-                image: quay.io/etsauer/pelorus-operator:0.0.10-rc.6
+                image: quay.io/pelorus/pelorus-operator:0.0.10-rc.6
                 livenessProbe:
                   httpGet:
                     path: /healthz
