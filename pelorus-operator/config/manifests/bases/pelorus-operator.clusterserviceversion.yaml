@@ -6,7 +6,7 @@ metadata:
     capabilities: Basic Install
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
-    containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.5
+    containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.6
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus

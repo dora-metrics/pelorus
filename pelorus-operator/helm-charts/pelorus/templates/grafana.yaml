@@ -1,5 +1,5 @@
 ---
-apiVersion: integreatly.org/v1alpha1
+apiVersion: integreatly.org/v1beta1
 kind: Grafana
 metadata:
   name: grafana-oauth
