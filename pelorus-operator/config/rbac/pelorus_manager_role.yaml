@@ -78,6 +78,7 @@ rules:
   - watch
   - create
   - delete
+  - patch
 # Required to build and deploy exporters from the source code
 - apiGroups:
   - "build.openshift.io"
