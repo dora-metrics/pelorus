@@ -5,13 +5,6 @@ metadata:
 rules:
 # Needed to create or delete Prometheus and Grafana subscriptions
 - apiGroups:
-  - "apiextensions.k8s.io"
-  resources:
-  - "customresourcedefinitions"
-  verbs:
-  - get
-  - list
-- apiGroups:
   - "operators.coreos.com"
   resources:
   - "operatorgroups"
