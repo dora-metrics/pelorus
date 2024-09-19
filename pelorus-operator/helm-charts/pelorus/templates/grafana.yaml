@@ -9,12 +9,12 @@ spec:
       mode: "console"
       level: "warn"
     auth:
-      disable_login_form: False
-      disable_signout_menu: True
+      disable_login_form: "false"
+      disable_signout_menu: "true"
     auth.basic:
-      enabled: True
+      enabled: "true"
     auth.anonymous:
-      enabled: True
+      enabled: "true"
   containers:
   - args:
     - '-provider=openshift'
