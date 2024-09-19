@@ -5,20 +5,20 @@ metadata:
   name: prometheus-grafana-datasource
 spec:
   name: prometheus.yaml
-  datasources:
-    - access: "proxy"
-      basicAuth: true
-      basicAuthPassword: {{ .Values.openshift_prometheus_basic_auth_pass }}
-      basicAuthUser: "internal"
-      editable: false
-      jsonData:
-        tlsSkipVerify: true
-      name: "prometheus"
-      orgId: 1
-      type: "prometheus"
-      {{- if .Values.bucket_access_point }}
-      url: "https://thanos-pelorus.{{ .Release.Namespace }}.svc:9092"
-      {{- else }}
-      url: "https://prometheus-pelorus.{{ .Release.Namespace }}.svc:9091"
-      {{- end }}
-      version: 1
+  datasource:
+    access: "proxy"
+    basicAuth: true
+    basicAuthPassword: {{ .Values.openshift_prometheus_basic_auth_pass }}
+    basicAuthUser: "internal"
+    editable: false
+    jsonData:
+      tlsSkipVerify: true
+    name: "prometheus"
+    orgId: 1
+    type: "prometheus"
+    {{- if .Values.bucket_access_point }}
+    url: "https://thanos-pelorus.{{ .Release.Namespace }}.svc:9092"
+    {{- else }}
+    url: "https://prometheus-pelorus.{{ .Release.Namespace }}.svc:9091"
+    {{- end }}
+    version: 1
