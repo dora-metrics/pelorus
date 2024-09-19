@@ -50,7 +50,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.6
-    createdAt: "2024-09-19T18:13:51Z"
+    createdAt: "2024-09-19T18:41:49Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -317,7 +317,7 @@ spec:
           - delete
           - list
         - apiGroups:
-          - integreatly.org
+          - grafana.integreatly.org
           resources:
           - grafanas
           - grafanadashboards
