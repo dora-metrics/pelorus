@@ -5,6 +5,9 @@ metadata:
   name: prometheus-grafana-datasource
 spec:
   name: prometheus.yaml
+  instanceSelector:
+    matchLabels:
+      grafana: grafana-oauth
   datasource:
     access: "proxy"
     basicAuth: true
