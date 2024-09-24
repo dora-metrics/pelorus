@@ -30,7 +30,7 @@ spec:
       containers:
         - name: {{ .app_name }}
           imagePullPolicy: Always
-          image: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.5" }}
+          image: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.6" }}
           volumeMounts:
             {{- range $config := .custom_certs }}
             - name: custom-cert-volume-{{$config.map_name}}
@@ -62,7 +62,7 @@ spec:
               value: {{ .image_name }}:{{ .image_tag | default "latest" }}
                 {{- end }}
               {{- else }}
-              value: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.5" }}
+              value: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.6" }}
               {{- end }}
             {{- end }}
 

@@ -2,8 +2,8 @@ dependencies:
 - type: olm.package
   value:
     packageName: prometheus
-    version: "0.56.3"
+    version: ">=0.56.3"
 - type: olm.package
   value:
     packageName: grafana-operator
-    version: "5.12.0"
+    version: ">=5.12.0"

@@ -66,7 +66,7 @@ rules:
   - list
 # Required by the Grafana and Prometheus operators
 - apiGroups:
-  - "integreatly.org"
+  - "grafana.integreatly.org"
   resources:
   - "grafanas"
   - "grafanadashboards"
@@ -78,6 +78,7 @@ rules:
   - watch
   - create
   - delete
+  - patch
 # Required to build and deploy exporters from the source code
 - apiGroups:
   - "build.openshift.io"

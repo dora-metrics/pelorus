@@ -73,14 +73,14 @@ fi
 GRAFANA_VER_HELM=$(grep grafana_subscription_version charts/operators/values.yaml | cut -d':' -f2 | tr -d ' ')
 PROMETHEUS_VER_HELM=$(grep prometheus_subscription_version charts/operators/values.yaml | cut -d':' -f2 | tr -d ' ')
 
-if ! grep \""$GRAFANA_VER_HELM"\" pelorus-operator/bundle/metadata/properties.yaml >/dev/null; then
+if ! grep "$GRAFANA_VER_HELM" pelorus-operator/bundle/metadata/properties.yaml >/dev/null; then
   echo "ERROR: Grafana version $GRAFANA_VER_HELM not found in the pelorus-operator/bundle/metadata/properties.yaml"
   exit 1
 else
   echo "OK: Grafana version $GRAFANA_VER_HELM in sync with the pelorus-operator/bundle/metadata/properties.yaml"
 fi
 
-if ! grep \""$PROMETHEUS_VER_HELM"\" pelorus-operator/bundle/metadata/properties.yaml >/dev/null; then
+if ! grep "$PROMETHEUS_VER_HELM" pelorus-operator/bundle/metadata/properties.yaml >/dev/null; then
   echo "ERROR: Prometheus version $PROMETHEUS_VER_HELM not found in the pelorus-operator/bundle/metadata/properties.yaml"
   exit 1
 else

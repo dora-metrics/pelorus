@@ -147,7 +147,7 @@ def check_prerequisites(destination: Path, force: bool) -> None:
         ),
     )
     run_command(
-        "oc get crd grafanas.integreatly.org",
+        "oc get crd grafanas.grafana.integreatly.org",
         error_message="Grafana CRD not found",
     )
     run_command(
