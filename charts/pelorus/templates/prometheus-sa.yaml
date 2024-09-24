@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  annotations:
-    serviceaccounts.openshift.io/oauth-redirectreference.pelorus-prometheus: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"prometheus-pelorus"}}'
-  name: pelorus-prometheus
