@@ -2,7 +2,7 @@ name: Trigger test images
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'exporters/**'
       - 'charts/**'

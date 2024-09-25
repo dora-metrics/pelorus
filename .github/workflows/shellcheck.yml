@@ -1,13 +1,13 @@
 name: Shellcheck Tests
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - '.github/workflows/shellcheck.yml'
       - 'Makefile'
       - '**.sh'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - '.github/workflows/shellcheck.yml'
       - 'Makefile'
