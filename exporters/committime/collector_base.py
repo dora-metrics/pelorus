@@ -20,10 +20,10 @@ from __future__ import annotations
 import logging
 import re
 from abc import abstractmethod
-from typing import ClassVar, Iterable, Optional
+from typing import Any, ClassVar, Iterable, Optional
 
 import attrs
-from attrs import define, field
+from attrs import define, field, frozen
 from jsonpath_ng import parse
 from openshift.dynamic import DynamicClient
 from prometheus_client.core import GaugeMetricFamily
@@ -32,7 +32,9 @@ import pelorus
 from committime import CommitMetric, commit_metric_from_build
 from pelorus.config import env_vars
 from pelorus.config.converters import comma_separated, pass_through
+from pelorus.deserialization import nested, retain_source
 from pelorus.utils import Url, get_nested
+from pelorus.utils.openshift_utils import CommonResourceInstance
 from provider_common import format_app_name
 
 # Custom annotations env for the Build
@@ -454,3 +456,27 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     return git_uri + ".git"
 
         return None
+
+
+@frozen
+class Build(CommonResourceInstance):
+    strategy: str = field(metadata=nested("spec.strategy.type"))
+    status: str = field(metadata=nested("status.phase"))
+
+    openshift_source: Any = field(metadata=retain_source())
+
+    image_hash: Optional[str] = field(
+        default=None, metadata=nested("status.output.to.imageDigest")
+    )
+    repo_url: Optional[str] = field(
+        default=None, metadata=nested("spec.source.git.uri")
+    )
+    commit_hash: Optional[str] = field(
+        default=None, metadata=nested("spec.revision.git.commit")
+    )
+    config_namespace: Optional[str] = field(
+        default=None, metadata=nested("status.config.namespace")
+    )
+    config_name: Optional[str] = field(
+        default=None, metadata=nested("status.config.name")
+    )
