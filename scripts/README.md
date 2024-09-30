@@ -30,3 +30,10 @@ Used to create Pelorus helm based operator from the helm charts.
 
 Ensures modification to the operator files can be cleanly applied and allows
 to recreate operator easily.
+
+## scripts/send_example_payload.py
+
+Used for testing and demo purposes to send fake data to the webhook exporter.
+Usually the script is copied over, modified (APP_NAME, send_events()) and
+used to fill out the webhook receiver to represent deployments, commits
+and failures in the Grafana.
