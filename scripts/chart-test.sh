@@ -22,11 +22,11 @@ git remote update upstream --prune &> /dev/null
 
 # Enforce chart version bump when exporters folder is touched
 
-CURRENT_CHART_VERSION="$(grep '^version: ' charts/pelorus/Chart.yaml | cut -c 10-)"
-if ! git --no-pager diff --quiet $REMOTE/master --name-status exporters/; then
-  CHART_FILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/charts/pelorus/Chart.yaml 2> /dev/null)"
-  CHART_VERSION_IN_MASTER=$(echo "$CHART_FILE_IN_MASTER" | grep '^version: ' | cut -c 10-)
-  if [ "$CHART_VERSION_IN_MASTER" == "$CURRENT_CHART_VERSION" ]; then
+CURRENT_CHART_VERSION="$(grep '^version: ' pelorus-operator/helm-charts/pelorus/Chart.yaml | cut -c 10-)"
+if ! git --no-pager diff --quiet $REMOTE/main --name-status exporters/; then
+  CHART_FILE_IN_MAIN="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/main/pelorus-operator/helm-charts/pelorus/Chart.yaml 2> /dev/null)"
+  CHART_VERSION_IN_MAIN=$(echo "$CHART_FILE_IN_MAIN" | grep '^version: ' | cut -c 10-)
+  if [ "$CHART_VERSION_IN_MAIN" == "$CURRENT_CHART_VERSION" ]; then
     echo "ERROR: Exporters were modified, Charts need version bumping!"
     echo "$HELP_MESSAGE"
     exit 1
@@ -36,33 +36,16 @@ fi
 # Runs chart-testing (ct CLI) with remote flag to avoid git errors
 
 ct lint --remote "$REMOTE" --config ct.yaml || exit 1
-rm -f charts/pelorus/charts/*.tgz
+rm -f pelorus-operator/helm-charts/pelorus/charts/*.tgz
 
-if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_deployment.yaml &> /dev/null; then
-  echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_deployment.yaml differs!"
+if ! grep "default \"v$CURRENT_CHART_VERSION\"" pelorus-operator/helm-charts/pelorus/charts/exporters/templates/_deployment.yaml &> /dev/null; then
+  echo "ERROR: Version in pelorus-operator/helm-charts/pelorus/charts/exporters/templates/_deployment.yaml differs!"
   echo "$HELP_MESSAGE"
   exit 1
 fi
 
-if ! grep "default \"v$CURRENT_CHART_VERSION\"" charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml &> /dev/null; then
-  echo "ERROR: Version in charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml differs!"
-  echo "$HELP_MESSAGE"
-  exit 1
-fi
-
-# Verify the versions of the charts are the same across main charts and
-# the charts from pelorus-operator
-
-# Get the number representing all different versions found in the 'Chart.yaml'
-# files within charts/ and pelorus-operator/helm-charts/ directories
-FILES_VERSIONS=$(find charts/ pelorus-operator/helm-charts/ -type f -name 'Chart.yaml' -exec grep -H '^version: ' {} \;)
-VERSIONS=$(echo "$FILES_VERSIONS" | cut -d ' ' -f 2 | sort | uniq)
-NO_VERSIONS=$(echo "$VERSIONS" | wc -l)
-if [[ "$NO_VERSIONS" -eq 1 ]]; then
-    echo "All chart versions are in-sync. Chart version: $VERSIONS"
-else
-  echo "ERROR: Found different versions in Chart.yaml files:"
-  echo "$FILES_VERSIONS"
+if ! grep "default \"v$CURRENT_CHART_VERSION\"" pelorus-operator/helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml &> /dev/null; then
+  echo "ERROR: Version in pelorus-operator/helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml differs!"
   echo "$HELP_MESSAGE"
   exit 1
 fi
@@ -70,8 +53,8 @@ fi
 # Ensure version of the Grafana and Prometheus operators is in sync
 # with pelorus-operator.
 
-GRAFANA_VER_HELM=$(grep grafana_subscription_version charts/operators/values.yaml | cut -d':' -f2 | tr -d ' ')
-PROMETHEUS_VER_HELM=$(grep prometheus_subscription_version charts/operators/values.yaml | cut -d':' -f2 | tr -d ' ')
+GRAFANA_VER_HELM=$(grep grafana_subscription_version pelorus-operator/helm-charts/operators/values.yaml | cut -d':' -f2 | tr -d ' ')
+PROMETHEUS_VER_HELM=$(grep prometheus_subscription_version pelorus-operator/helm-charts/operators/values.yaml | cut -d':' -f2 | tr -d ' ')
 
 if ! grep "$GRAFANA_VER_HELM" pelorus-operator/bundle/metadata/properties.yaml >/dev/null; then
   echo "ERROR: Grafana version $GRAFANA_VER_HELM not found in the pelorus-operator/bundle/metadata/properties.yaml"
@@ -90,10 +73,10 @@ fi
 # Enforce operator version bump when charts folder is touched
 
 CURRENT_OPERATOR_VERSION="$(grep "^VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
-if ! git --no-pager diff --quiet $REMOTE/master --name-status charts/; then
-  OPERATOR_MAKEFILE_IN_MASTER="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/master/pelorus-operator/Makefile 2> /dev/null)"
-  OPERATOR_VERSION_IN_MASTER=$(echo "$OPERATOR_MAKEFILE_IN_MASTER" | grep "^VERSION ?= " | cut -c 12-)
-  if [ "$OPERATOR_VERSION_IN_MASTER" == "$CURRENT_OPERATOR_VERSION" ]; then
+if ! git --no-pager diff --quiet $REMOTE/main --name-status pelorus-operator/helm-charts/; then
+  OPERATOR_MAKEFILE_IN_MAIN="$(curl https://raw.githubusercontent.com/dora-metrics/pelorus/main/pelorus-operator/Makefile 2> /dev/null)"
+  OPERATOR_VERSION_IN_MAIN=$(echo "$OPERATOR_MAKEFILE_IN_MAIN" | grep "^VERSION ?= " | cut -c 12-)
+  if [ "$OPERATOR_VERSION_IN_MAIN" == "$CURRENT_OPERATOR_VERSION" ]; then
     echo "ERROR: Charts were modified, Operator needs version bumping!"
     echo "$HELP_MESSAGE"
     exit 1
