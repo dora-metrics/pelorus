@@ -119,7 +119,7 @@ jobs:
 
       # TODO delete old comments, just have the last on PR
       - name: Comment test command in PR
-        if: needs.setup.outputs.pr_type
+        if: ${{ failure() }}
         uses: "./.github/workflow_templates/comment-pr"
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
