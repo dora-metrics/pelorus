@@ -49,7 +49,6 @@ jobs:
 
   create-images:
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.outputs.pr_type != 'closed' }}
     needs: setup
     steps:
       - name: Checkout code
@@ -61,7 +60,7 @@ jobs:
         uses: "./.github/workflow_templates/build_push_exporters"
         with:
           image: rc-pelorus-exporter
-          tags: ${{ needs.setup.outputs.branch_ref == 'refs/heads/main' && 'main' || join([needs.setup.outputs.pr_number, '-', needs.setup.outputs.commit_hash]) }}
+          tags: needs.setup.outputs.commit_hash
           quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
@@ -75,7 +74,7 @@ jobs:
 
       - name: Use test images in operator
         env:
-          TEST_VERSION: pr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
+          TEST_VERSION: needs.setup.outputs.commit_hash
         working-directory: ./pelorus-operator
         run: |
           export CURRENT_OPERATOR_VERSION="$(grep "^VERSION ?= " Makefile  | cut -c 12-)"
@@ -106,7 +105,7 @@ jobs:
         working-directory: ./pelorus-operator
         run: |
           make podman-build
-          podman image ls -a | grep pr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
+          podman image ls -a | grep ${{ needs.setup.outputs.commit_hash }}
           podman image ls -a | grep rc-pelorus-operator
           make podman-push
 
@@ -114,13 +113,14 @@ jobs:
         working-directory: ./pelorus-operator
         run: |
           make bundle-build
-          podman image ls -a | grep pr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
+          podman image ls -a | grep ${{ needs.setup.outputs.commit_hash }}
           podman image ls -a | grep rc-pelorus-operator-bundle
           make bundle-push
 
       # TODO delete old comments, just have the last on PR
       - name: Comment test command in PR
         uses: "./.github/workflow_templates/comment-pr"
+        if: ${{ needs.setup.outputs.pr_type != 'closed' }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ needs.setup.outputs.pr_number }}
