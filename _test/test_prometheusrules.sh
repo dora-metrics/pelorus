@@ -1,5 +1,5 @@
 #!/bin/bash
-RULES_FILE="charts/pelorus/templates/prometheus-rules.yaml"
+RULES_FILE="pelorus-operator/helm-charts/pelorus/templates/prometheus-rules.yaml"
 TESTS_DIR="_test/prometheus"
 
 # Capture prometheus rules file out to a new temporary file
