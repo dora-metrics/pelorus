@@ -61,7 +61,7 @@ jobs:
         uses: "./.github/workflow_templates/build_push_exporters"
         with:
           image: rc-pelorus-exporter
-          tags: vpr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }}
+          tags: ${{ needs.setup.outputs.branch_ref == 'refs/heads/main' && 'main' || join([needs.setup.outputs.pr_number, '-', needs.setup.outputs.commit_hash]) }}
           quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
