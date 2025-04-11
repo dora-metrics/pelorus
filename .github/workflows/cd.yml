@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - main
 
 env:
   # TODO create bot account
