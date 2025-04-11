@@ -32,7 +32,7 @@ jobs:
               '"pr_number":"${{ github.event.number }}",' \
               '"commit_hash":"${{ needs.get-short-sha.outputs.sha }}"}' > trigger-information.json
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: trigger-information
           path: ./trigger-information.json
