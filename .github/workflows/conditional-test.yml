@@ -6,6 +6,30 @@ on:
       - test-images-**
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      branch_ref: ${{ steps.variables.outputs.branch_ref }}
+      pr_type: ${{ steps.variables.outputs.pr_type }}
+      pr_number: ${{ steps.variables.outputs.pr_number }}
+      commit_hash: ${{ steps.variables.outputs.commit_hash }}
+    steps:
+      - name: Download trigger information
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: trigger-test-images.yml
+          run_id: ${{ github.event.workflow_run.id }}
+          name: trigger-information
+          path: ./
+
+      - name: Store variables
+        id: variables
+        run: |
+          echo branch_ref=$(cat trigger-information.json | jq -r '.branch_ref') >> "$GITHUB_OUTPUT"
+          echo pr_type=$(cat trigger-information.json | jq -r '.pr_type') >> "$GITHUB_OUTPUT"
+          echo pr_number=$(cat trigger-information.json | jq -r '.pr_number') >> "$GITHUB_OUTPUT"
+          echo commit_hash=$(cat trigger-information.json | jq -r '.commit_hash') >> "$GITHUB_OUTPUT"
   test:
     runs-on: ubuntu-latest
     steps:
