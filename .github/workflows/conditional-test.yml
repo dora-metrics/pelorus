@@ -11,5 +11,6 @@ jobs:
     steps:
     - name: test if logic
       if: ${{ github.event_name == 'pull_request' }}
-      run: |
-        echo "it ran!"
+      # run: |
+      #   echo "it ran!"
+      uses: "./.github/workflow_templates/comment-pr"
