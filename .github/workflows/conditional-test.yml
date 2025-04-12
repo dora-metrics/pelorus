@@ -1,9 +1,12 @@
 name: test if statement
 
 on:
-  push:
-    branches:
-      - test-images-**
+  # push:
+  #   branches:
+  #     - test-images-**
+  workflow_run:
+    workflows: [Trigger test images]
+    types: [completed]
 
 jobs:
   setup:
