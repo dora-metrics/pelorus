@@ -10,5 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: test if logic
+      if: ""
       run: |
         echo "it ran!"
