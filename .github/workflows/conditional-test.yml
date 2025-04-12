@@ -1,0 +1,14 @@
+name: Continuous Delivery
+
+on:
+  push:
+    branches:
+      - test-images-**
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: test if logic
+      run: |
+        echo "it ran!"
