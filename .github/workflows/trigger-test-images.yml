@@ -2,7 +2,9 @@ name: Trigger test images
 
 on:
   push:
-    branches: [ main ]
+    branches:
+    - main
+    - test-images-**
   pull_request:
     branches: [ main ]
     paths:
