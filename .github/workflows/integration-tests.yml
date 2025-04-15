@@ -12,7 +12,7 @@ jobs:
       pr_type: ${{ steps.variables.outputs.pr_type }}
     steps:
       - name: Download trigger information
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v9
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: trigger-test-images.yml
