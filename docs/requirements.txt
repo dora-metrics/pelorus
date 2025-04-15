@@ -251,9 +251,9 @@ mkdocs-redirects==1.2.0 ; python_version >= "3.9" and python_version < "4.0" \
 mkdocs==1.6.0 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:1eb5cb7676b7d89323e62b56235010216319217d4af5ddc543a91beb8d125ea7 \
     --hash=sha256:a73f735824ef83a4f3bcb7a231dcab23f5a838f88b7efc54a0eef5fbdbc3c512
-packaging==23.1 ; python_version >= "3.9" and python_version < "4.0" \
-    --hash=sha256:994793af429502c4ea2ebf6bf664629d07c1a9fe974af92966e4b8d2df7edc61 \
-    --hash=sha256:a392980d2b6cffa644431898be54b0045151319d1e7ec34f0cfed48767dd334f
+packaging==24.2 ; python_version >= "3.9" and python_version < "4.0" \
+    --hash=sha256:09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759 \
+    --hash=sha256:c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f
 paginate==0.5.6 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:5e6007b6a9398177a7e1648d04fdd9f8c9766a1a945bceac82f1929e8c78af2d
 pathspec==0.11.1 ; python_version >= "3.9" and python_version < "4.0" \
