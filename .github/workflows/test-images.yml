@@ -118,20 +118,20 @@ jobs:
           make bundle-push
 
       # TODO delete old comments, just have the last on PR
-      # - name: Comment test command in PR
-      #   if: ${{ github.event_name == 'pull_request' }}
-      #   uses: "./.github/workflow_templates/comment-pr"
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     pr_number: ${{ needs.setup.outputs.pr_number }}
-      #     message: |
-      #       Test images available! 🧪🚀 To test operator with them, run
-      #       ```
-      #       operator-sdk run bundle \
-      #       quay.io/pelorus/rc-pelorus-operator-bundle:vpr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }} \
-      #       --namespace test-pelorus-operator
-      #       ```
-      #       To clean up environment afterwards, run
-      #       ```
-      #       operator-sdk cleanup pelorus-operator --namespace test-pelorus-operator
-      #       ```
+      - name: Comment test command in PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: "./.github/workflow_templates/comment-pr"
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ needs.setup.outputs.pr_number }}
+          message: |
+            Test images available! 🧪🚀 To test operator with them, run
+            ```
+            operator-sdk run bundle \
+            quay.io/pelorus/rc-pelorus-operator-bundle:vpr${{ needs.setup.outputs.pr_number }}-${{ needs.setup.outputs.commit_hash }} \
+            --namespace test-pelorus-operator
+            ```
+            To clean up environment afterwards, run
+            ```
+            operator-sdk cleanup pelorus-operator --namespace test-pelorus-operator
+            ```
