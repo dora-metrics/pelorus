@@ -26,7 +26,7 @@ if __name__ == "__main__":
                 "This pull request was created automatically after merging new version of "
                 "[Pelorus](https://github.com/dora-metrics/pelorus)\n\n"
                 # TODO read Owners file in repo root
-                "Please review it\n- @etsauer\n- @KevinMGranger\n- @mateusoliveira43\n"
+                "Please review it\n- @etsauer\n- @KevinMGranger\n"
                 "- @mpryc\n- @weshayutin\n\n"
                 "After review, comment `/unhold` in This PR to merge it."
             ),
