@@ -19,9 +19,9 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional
+from typing import NamedTuple, Optional
 
-import attr
+import attrs
 import giturlparse
 
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
@@ -35,43 +35,43 @@ SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 
 # TODO: the majority of these fields are unused.
 # Let's figure out why they're there.
-@attr.define
+@attrs.define
 class CommitMetric:
-    name: str = attr.field()
-    annotations: dict = attr.field(default=None, kw_only=True)
-    labels: dict = attr.field(default=None, kw_only=True)
-    namespace: Optional[str] = attr.field(default=None, kw_only=True)
+    name: str = attrs.field()
+    annotations: dict = attrs.field(default=None, kw_only=True)
+    labels: dict = attrs.field(default=None, kw_only=True)
+    namespace: Optional[str] = attrs.field(default=None, kw_only=True)
 
-    __repo_url: str = attr.field(default=None, init=False)
-    __repo_protocol = attr.field(default=None, init=False)
-    __repo_fqdn: str = attr.field(default=None, init=False)
-    __repo_group = attr.field(default=None, init=False)
-    __repo_name = attr.field(default=None, init=False)
-    __repo_project = attr.field(default=None, init=False)
-    __repo_port = attr.field(default=None, init=False)
-    __azure_project = attr.field(default=None, init=False)
+    __repo_url: str = attrs.field(default=None, init=False)
+    __repo_protocol = attrs.field(default=None, init=False)
+    __repo_fqdn: str = attrs.field(default=None, init=False)
+    __repo_group = attrs.field(default=None, init=False)
+    __repo_name = attrs.field(default=None, init=False)
+    __repo_project = attrs.field(default=None, init=False)
+    __repo_port = attrs.field(default=None, init=False)
+    __azure_project = attrs.field(default=None, init=False)
 
-    committer: Optional[str] = attr.field(default=None, kw_only=True)
-    commit_hash: Optional[str] = attr.field(default=None, kw_only=True)
-    commit_time: Optional[str] = attr.field(default=None, kw_only=True)
+    committer: Optional[str] = attrs.field(default=None, kw_only=True)
+    commit_hash: Optional[str] = attrs.field(default=None, kw_only=True)
+    commit_time: Optional[str] = attrs.field(default=None, kw_only=True)
     """
     A human-readable timestamp.
     In the future, this and commit_timestamp should be combined.
     """
-    commit_timestamp: Optional[float] = attr.field(default=None, kw_only=True)
+    commit_timestamp: Optional[float] = attrs.field(default=None, kw_only=True)
     """
     The unix timestamp.
     In the future, this and commit_time should be combined.
     """
     commit_link: Optional[str] = attr.field(default=None, kw_only=True)
 
-    build_name: Optional[str] = attr.field(default=None, kw_only=True)
-    build_config_name: Optional[str] = attr.field(default=None, kw_only=True)
+    build_name: Optional[str] = attrs.field(default=None, kw_only=True)
+    build_config_name: Optional[str] = attrs.field(default=None, kw_only=True)
 
-    image_location: Optional[str] = attr.field(default=None, kw_only=True)
-    image_name: Optional[str] = attr.field(default=None, kw_only=True)
-    image_tag: Optional[str] = attr.field(default=None, kw_only=True)
-    image_hash: Optional[str] = attr.field(default=None, kw_only=True)
+    image_location: Optional[str] = attrs.field(default=None, kw_only=True)
+    image_name: Optional[str] = attrs.field(default=None, kw_only=True)
+    image_tag: Optional[str] = attrs.field(default=None, kw_only=True)
+    image_hash: Optional[str] = attrs.field(default=None, kw_only=True)
 
     @property
     def repo_url(self):
@@ -235,3 +235,81 @@ def commit_metric_from_build(app: str, build, errors: list) -> CommitMetric:
             setattr(metric, attr_name, value)
 
     return metric
+
+
+@attrs.frozen
+class GitRepo:
+    "Extracted information about a git repo url."
+
+    url: str
+    """
+    The full URL for the repo.
+    Obtained from build metadata, Image annotations, etc.
+    """
+    protocol: str
+    fqdn: str
+    group: str
+    name: str
+    "The git repo name, e.g. myrepo.git"
+    port: Optional[str]
+
+    @property
+    def project(self) -> str:
+        "Alias for the repo name."
+        return self.name
+
+    @property
+    def server(self) -> str:
+        "The protocol, server FQDN, and port in URL format."
+        url = f"{self.protocol}://{self.fqdn}"
+
+        if self.port:
+            url += f":{self.port}"
+
+        return url
+
+    @classmethod
+    def from_url(cls, url: str):
+        "Parse the given URL and handle the edge cases for it."
+
+        # code inherited from old committime metric class.
+        # Unsure of the purpose of some of this code.
+
+        # Ensure git URI does not end with "/", issue #590
+        url = url.strip("/")
+        parsed = giturlparse.parse(url)
+        if len(parsed.protocols) > 0 and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
+            raise ValueError("Unsupported protocol %s", parsed.protocols[0])
+        protocol = parsed.protocol
+        # In the case of multiple subgroups the host will be in the pathname
+        # Otherwise, it will be in the resource
+        if parsed.pathname.startswith("//"):
+            fqdn = parsed.pathname.split("/")[2]
+            protocol = parsed.protocols[0]
+        else:
+            fqdn = parsed.resource
+        group = parsed.owner
+        name = parsed.name
+        port = parsed.port
+
+        return cls(url, protocol, fqdn, group, name, port)
+
+
+class CommitInfo(NamedTuple):
+    """
+    Information used to retrieve commit time information.
+    Previously, this information wasn't guaranteed to be present,
+    which made the code messy with various checks and exceptions, etc.
+    Or worse, just hoping things weren't None and we wouldn't crash the exporter.
+
+    In addition, it was unclear how exporters should report the commit time:
+    they change it on the metric, but also return the metric,
+    but if they return None, it shouldn't be counted... confusing.
+    This allows us to handle things more consistently.
+    """
+
+    repo: GitRepo
+    commit_hash: str
+
+
+__all__ = ["CommitMetric"]
