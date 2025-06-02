@@ -18,7 +18,7 @@ jobs:
       commit_hash: ${{ steps.variables.outputs.commit_hash }}
     steps:
       - name: Download trigger information
-        uses: dawidd6/action-download-artifact@v9
+        uses: dawidd6/action-download-artifact@v10
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: trigger-test-images.yml
