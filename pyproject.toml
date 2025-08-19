@@ -20,7 +20,7 @@ prometheus-client = "^0.16.0"
 pygithub = "^1.58.1"
 python-gitlab = ">=2.4.0" # change to ^?
 pytz = "^2023.3"
-requests = "^2.31.0"
+requests = "^2.32.5"
 typing-extensions = "^4.5.0"
 uvicorn = "^0.22.0"
 
