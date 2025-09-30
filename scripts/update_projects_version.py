@@ -38,7 +38,7 @@ OPERATOR_ORGANIZATION_NAME = "pelorus"
 OPERATOR_DOMAIN = "pelorus.dora-metrics.io"
 
 ROOT = Path(__file__).resolve().parent.parent
-PELORUS_CHARTS_FOLDER = ROOT / "charts/pelorus"
+PELORUS_CHARTS_FOLDER = ROOT / "pelorus-operator/helm-charts/pelorus"
 PELORUS_EXPORTERS_FOLDER = PELORUS_CHARTS_FOLDER / "charts/exporters"
 PELORUS_OPERATOR_FOLDER = ROOT / "pelorus-operator"
 PATCHES_FOLDER = ROOT / "scripts/pelorus-operator-patches"
@@ -54,7 +54,7 @@ LABELS_OPTIONS = [MAJOR_LABEL, MINOR_LABEL, PATCH_LABEL]
 CHARTS_FILES_TO_UPDATE = {
     # Files to updated in charts folder and number of changes in each one
     PELORUS_CHARTS_FOLDER / "Chart.yaml": 2,
-    ROOT / "charts/operators/Chart.yaml": 1,
+    # ROOT / "charts/operators/Chart.yaml": 1,
     PELORUS_EXPORTERS_FOLDER / "Chart.yaml": 1,
     PELORUS_EXPORTERS_FOLDER / "templates/_deployment.yaml": 2,
     PELORUS_EXPORTERS_FOLDER / "templates/_imagestream_from_image.yaml": 1,
@@ -123,8 +123,8 @@ def check_prerequisites(destination: Path, force: bool) -> None:
         shutil.rmtree(destination)
         destination.mkdir(parents=True)
 
-    if any(destination.iterdir()):
-        exit_error(f"Destination folder {destination} is not empty")
+    # if any(destination.iterdir()):
+    #     exit_error(f"Destination folder {destination} is not empty")
 
     for dependency in SHELL_DEPENDENCIES:
         dependency_path = shutil.which(dependency)
@@ -254,24 +254,24 @@ def add_replaces_to_csv(
 
 
 def update_operator_folder(next_operator_version: str, destination: Path) -> None:
-    logging.info("Creating operator init files")
-    # TODO run update command instead of init every time
-    run_command(
-        f"operator-sdk init --plugins=helm --domain={OPERATOR_DOMAIN} --project-name={OPERATOR_NAME}",
-        directory=destination,
-    )
-    logging.info("Creating operator api")
-    exporters_charts_in_operator = destination / "helm-charts/pelorus/charts/exporters"
-    exporters_charts_in_operator.mkdir(parents=True)
-    shutil.copytree(
-        PELORUS_EXPORTERS_FOLDER, exporters_charts_in_operator, dirs_exist_ok=True
-    )
-    run_command(
-        f"operator-sdk create api --helm-chart={PELORUS_CHARTS_FOLDER}",
-        directory=destination,
-    )
-    for file in exporters_charts_in_operator.parent.glob("*.tgz"):
-        file.unlink()
+    # logging.info("Creating operator init files")
+    # # TODO run update command instead of init every time
+    # run_command(
+    #     f"operator-sdk init --plugins=helm --domain={OPERATOR_DOMAIN} --project-name={OPERATOR_NAME}",
+    #     directory=destination,
+    # )
+    # logging.info("Creating operator api")
+    # exporters_charts_in_operator = destination / "helm-charts/pelorus/charts/exporters"
+    # exporters_charts_in_operator.mkdir(parents=True)
+    # shutil.copytree(
+    #     PELORUS_EXPORTERS_FOLDER, exporters_charts_in_operator, dirs_exist_ok=True
+    # )
+    # run_command(
+    #     f"operator-sdk create api --helm-chart={PELORUS_CHARTS_FOLDER}",
+    #     directory=destination,
+    # )
+    # for file in exporters_charts_in_operator.parent.glob("*.tgz"):
+    #     file.unlink()
 
     replace_in_file(
         file=PELORUS_OPERATOR_FOLDER / "Makefile",
@@ -282,7 +282,7 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
     operator_image = f"quay.io/{OPERATOR_ORGANIZATION_NAME}/{OPERATOR_NAME}"
     replace_in_file(
         file=PELORUS_OPERATOR_FOLDER / "Makefile",
-        pattern=r"IMAGE_TAG_BASE \?= pelorus\.dora-metrics\.io/pelorus-operator",
+        pattern=r"IMAGE_TAG_BASE \?= quay\.io/pelorus/pelorus-operator",
         new=f"IMAGE_TAG_BASE ?= {operator_image}",
         number_of_changes=1,
     )
@@ -292,15 +292,15 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
         directory=destination,
     )
 
-    for file in sorted(PATCHES_FOLDER.rglob("*")):
-        if file.is_file():
-            logging.info(f"Applying patch {file}")
-            run_command(f"patch -d {destination} -p0 < {file}")
+    # for file in sorted(PATCHES_FOLDER.rglob("*")):
+    #     if file.is_file():
+    #         logging.info(f"Applying patch {file}")
+    #         run_command(f"patch -d {destination} -p0 < {file}")
 
     replace_in_file(
         file=PELORUS_OPERATOR_FOLDER
         / f"config/manifests/bases/{OPERATOR_CSV_FILE_NAME}",
-        pattern="    containerImage: placeholder",
+        pattern=r"    containerImage: quay\.io/pelorus/pelorus-operator:.*",
         new=f"    containerImage: {operator_image}:{next_operator_version}",
         number_of_changes=1,
     )
