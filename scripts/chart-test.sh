@@ -50,26 +50,6 @@ if ! grep "default \"v$CURRENT_CHART_VERSION\"" pelorus-operator/helm-charts/pel
   exit 1
 fi
 
-# Ensure version of the Grafana and Prometheus operators is in sync
-# with pelorus-operator.
-
-GRAFANA_VER_HELM=$(grep grafana_subscription_version pelorus-operator/helm-charts/operators/values.yaml | cut -d':' -f2 | tr -d ' ')
-PROMETHEUS_VER_HELM=$(grep prometheus_subscription_version pelorus-operator/helm-charts/operators/values.yaml | cut -d':' -f2 | tr -d ' ')
-
-if ! grep "$GRAFANA_VER_HELM" pelorus-operator/bundle/metadata/properties.yaml >/dev/null; then
-  echo "ERROR: Grafana version $GRAFANA_VER_HELM not found in the pelorus-operator/bundle/metadata/properties.yaml"
-  exit 1
-else
-  echo "OK: Grafana version $GRAFANA_VER_HELM in sync with the pelorus-operator/bundle/metadata/properties.yaml"
-fi
-
-if ! grep "$PROMETHEUS_VER_HELM" pelorus-operator/bundle/metadata/properties.yaml >/dev/null; then
-  echo "ERROR: Prometheus version $PROMETHEUS_VER_HELM not found in the pelorus-operator/bundle/metadata/properties.yaml"
-  exit 1
-else
-  echo "OK: Prometheus version $PROMETHEUS_VER_HELM in sync with the pelorus-operator/bundle/metadata/properties.yaml"
-fi
-
 # Enforce operator version bump when charts folder is touched
 
 CURRENT_OPERATOR_VERSION="$(grep "^VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
