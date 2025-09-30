@@ -19,6 +19,7 @@ jobs:
       - name: Install dependencies
         run: | 
           make dev-env
+          . .venv/bin/activate
           poetry install
 
       - name: Check if project's Python dependencies files are up to date
