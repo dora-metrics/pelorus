@@ -17,7 +17,9 @@ jobs:
           python-version: "3.9"
 
       - name: Install dependencies
-        run: make dev-env
+        run: | 
+          make dev-env
+          poetry install
 
       - name: Check if project's Python dependencies files are up to date
         run: |
