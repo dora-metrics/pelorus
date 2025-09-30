@@ -60,7 +60,7 @@ jobs:
         uses: "./.github/workflow_templates/build_push_exporters"
         with:
           image: rc-pelorus-exporter
-          tags: needs.setup.outputs.commit_hash
+          tags: ${{ needs.setup.outputs.commit_hash }}
           quay_imagenamespace: ${{ secrets.QUAY_IMAGE_NAMESPACE }}
           quay_username: ${{ secrets.QUAY_USERNAME }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
@@ -74,7 +74,7 @@ jobs:
 
       - name: Use test images in operator
         env:
-          TEST_VERSION: needs.setup.outputs.commit_hash
+          TEST_VERSION: ${{ needs.setup.outputs.commit_hash }}
         working-directory: ./pelorus-operator
         run: |
           export CURRENT_OPERATOR_VERSION="$(grep "^VERSION ?= " Makefile  | cut -c 12-)"
