@@ -4,6 +4,7 @@ version = "0.1.0" # we are not using it yet
 description = "Automate the measurement of organizational behavior"
 authors = ["Pelorus community"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -82,3 +83,6 @@ max_line_length = 120
 [[tool.pylama.files]]
 path = "exporters/tests/*"
 ignore= "W0401"
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
