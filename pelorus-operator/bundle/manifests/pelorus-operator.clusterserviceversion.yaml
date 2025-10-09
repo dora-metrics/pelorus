@@ -50,7 +50,7 @@ metadata:
     categories: |
       Modernization & Migration,Developer Tools,Monitoring,Integration & Delivery
     containerImage: quay.io/pelorus/pelorus-operator:0.0.10-rc.6
-    createdAt: "2024-09-19T20:50:32Z"
+    createdAt: "2025-09-30T21:02:40Z"
     description: |
       Tool that helps IT organizations measure their impact on the overall performance of their organization
     operatorframework.io/suggested-namespace: pelorus
@@ -496,3 +496,14 @@ spec:
     name: Red Hat
     url: https://redhat.com
   version: 0.0.10-rc.6
+  replaces: pelorus-operator.v0.0.9
+  skips:
+    - pelorus-operator.v0.0.9
+    - pelorus-operator.v0.0.8
+    - pelorus-operator.v0.0.7
+    - pelorus-operator.v0.0.6
+    - pelorus-operator.v0.0.5
+    - pelorus-operator.v0.0.4
+    - pelorus-operator.v0.0.3
+    - pelorus-operator.v0.0.2
+    - pelorus-operator.v0.0.1
