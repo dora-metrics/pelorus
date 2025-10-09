@@ -135,7 +135,7 @@ jobs:
             Test images available! 🧪🚀 To test operator with them, run
             ```
             operator-sdk run bundle \
-            quay.io/pelorus/rc-pelorus-operator-bundle:${{ needs.setup.outputs.commit_hash }} \
+            quay.io/pelorus/rc-pelorus-operator-bundle:v${{ needs.setup.outputs.commit_hash }} \
             --namespace test-pelorus-operator
             ```
             To clean up environment afterwards, run
