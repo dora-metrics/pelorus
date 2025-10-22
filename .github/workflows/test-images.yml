@@ -59,7 +59,7 @@ jobs:
           COMMIT_HASH: ${{ steps.variables.outputs.commit_hash }}
         run: echo "$BRANCH_REF, $PR_TYPE, $PR_NUMBER, $COMMIT_HASH"
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.branch_ref }}
 
