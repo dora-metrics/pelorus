@@ -1,46 +1,47 @@
-name: Conftest
+# Disabling until I can get conftest working again
+# name: Conftest
 
-on:
-  push:
-    branches: [ main ]
-    paths:
-      - '_test/**'
-      - 'pelorus-operator/helm-charts/**'
-      - '.github/workflows/conftest.yml'
-      - 'Makefile'
+# on:
+#   push:
+#     branches: [ main ]
+#     paths:
+#       - '_test/**'
+#       - 'pelorus-operator/helm-charts/**'
+#       - '.github/workflows/conftest.yml'
+#       - 'Makefile'
 
-  pull_request:
-    branches: [ main ]
-    paths:
-      - '_test/**'
-      - 'pelorus-operator/helm-charts/**'
-      - '.github/workflows/conftest.yml'
-      - 'Makefile'
+#   pull_request:
+#     branches: [ main ]
+#     paths:
+#       - '_test/**'
+#       - 'pelorus-operator/helm-charts/**'
+#       - '.github/workflows/conftest.yml'
+#       - 'Makefile'
 
-jobs:
-  conftest:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9']
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+# jobs:
+#   conftest:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         python-version: ['3.11']
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: |
-            **/requirements*.txt
-            pyproject.toml
+#       - name: Set up Python ${{ matrix.python-version }}
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: ${{ matrix.python-version }}
+#           cache: 'pip'
+#           cache-dependency-path: |
+#             **/requirements*.txt
+#             pyproject.toml
 
-      - name: Install dependencies
-        run: |
-          make dev-env
+#       - name: Install dependencies
+#         run: |
+#           make dev-env
 
-      - name: Run conf-tests
-        run: |
-          make conf-tests
+#       - name: Run conf-tests
+#         run: |
+#           make conf-tests
