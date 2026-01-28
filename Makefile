@@ -2,6 +2,8 @@
 
 # may override with environment variable
 PYTHON_BINARY?=python3
+# ensure we're always using the version of pip that matches python version
+PIP=$(PYTHON_BINARY) -m pip
 
 ifndef PELORUS_VENV
   PELORUS_VENV=.venv
@@ -46,8 +48,8 @@ help:
 $(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt docs/requirements.txt
 	test -d ${PELORUS_VENV} || ${PYTHON_BINARY} -m venv ${PELORUS_VENV}
 	. ${PELORUS_VENV}/bin/activate && \
-	       pip install -U pip && \
-	       pip install -r exporters/requirements.txt \
+	       $(PIP) install -U pip && \
+	       $(PIP) install -r exporters/requirements.txt \
 	                   -r exporters/requirements-dev.txt \
 					   -r docs/requirements.txt
 	touch ${PELORUS_VENV}
@@ -55,7 +57,7 @@ $(PELORUS_VENV): exporters/requirements.txt exporters/requirements-dev.txt docs/
 .PHONY: exporters
 exporters: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
-	       pip install -e exporters/
+	       $(PIP) install -e exporters/
 
 .PHONY: git-blame
 git-blame:

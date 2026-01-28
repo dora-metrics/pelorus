@@ -14,3 +14,6 @@
 Prow CI Periodic E2E Tests:
 
 - OpenShift version 4.16 [![4.16 scenario 1 builds](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-dora-metrics-pelorus-master-4.16-e2e-openshift-test-scenario-1-periodic)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-dora-metrics-pelorus-master-4.16 -e2e-openshift-test-scenario-1-periodic)
+
+Supported OpenShift Versions:
+- 4.20

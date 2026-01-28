@@ -2,7 +2,7 @@
 
 The Pelorus engineering team will provide **best-effort** level support for it on the currently latest released stable minor version of the OpenShift 4.
 
-> **NOTE:** Pelorus is currently automated tested against version **4.13** of OpenShift.
+> **NOTE:** Pelorus is currently automated tested against version **4.20** of OpenShift.
 
 * To file a bug, please create a [Bug issue](https://github.com/dora-metrics/pelorus/issues/new?assignees=&labels=kind%2Fbug%2Cneeds-triage&template=bug.yml)
 
