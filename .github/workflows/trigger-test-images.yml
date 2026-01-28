@@ -13,6 +13,8 @@ on:
       - 'pelorus-operator/**'
       - '.github/workflows/trigger-test-images.yml'
     types: [opened, reopened, synchronize, closed]
+  workflow_dispatch:
+
 
 jobs:
   get-short-sha:
