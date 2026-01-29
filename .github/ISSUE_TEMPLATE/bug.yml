@@ -13,10 +13,9 @@ body:
       description: In what version of OpenShift the problem ocurred?
       options:
         - Not related to OpenShift
-        - '4.10'
-        - '4.11'
-        - '4.12'
-        - '4.13'
+        - '4.18'
+        - '4.19'
+        - '4.20'
     validations:
       required: true
   - type: textarea

@@ -32,8 +32,7 @@ HELM_FALLBACK_VERSION="v3.9.2"
 
 # Bats are required for conftest
 BATS_REPO_URL="https://github.com/bats-core/bats-core"
-
-
+PYTHON_BINARY=${PYTHON_BINARY:-python3}
 
 function download_file_from_url() {
     local url=$1
@@ -296,7 +295,7 @@ fi
 
 if should_cli_be_installed "poetry" "${cli_tools_arr[@]}" && \
     ! [ -x "$(command -v "${DEFAULT_VENV}/bin/poetry")" ]; then
-        curl -sSL https://install.python-poetry.org | POETRY_HOME="$DEFAULT_VENV" python3 -
+        curl -sSL https://install.python-poetry.org | POETRY_HOME="$DEFAULT_VENV" ${PYTHON_BINARY} -
 fi
 
 cleanup_and_exit 0

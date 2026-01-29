@@ -21,5 +21,6 @@ jobs:
       - name: Install dependencies
         run: make dev-env
 
-      - name: Check OpenShift versions used by the project
-        run: make openshift-check-versions
+      # Disable this check as it depends on upstream prow infrastructure which seems to have changed
+      # - name: Check OpenShift versions used by the project
+      #   run: make openshift-check-versions
