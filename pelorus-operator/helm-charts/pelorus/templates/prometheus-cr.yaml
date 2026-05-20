@@ -26,13 +26,20 @@ spec:
       key: thanos.yaml
       name: thanos-objstore-config
   {{- end }}
-  replicas: {{ .Values.oauth_proxy_enabled | ternary 2 1 }}
-  {{- if .Values.oauth_proxy_enabled }}
+  replicas: {{ .Values.prometheus_replicas | default 1 }}
+  {{- if and .Values.oauth_proxy_enabled (gt (.Values.prometheus_replicas | default 1 | int) 1) }}
   replicaExternalLabelName: ""
   {{- end }}
   retention: {{ .Values.prometheus_retention | default "1y" }}
   {{- if .Values.prometheus_retention_size }}
   retentionSize: {{ .Values.prometheus_retention_size }}
+  {{- end }}
+  {{- if .Values.prometheus_enable_admin_api }}
+  enableAdminAPI: true
+  {{- end }}
+  {{- if .Values.prometheus_out_of_order_time_window }}
+  tsdb:
+    outOfOrderTimeWindow: {{ .Values.prometheus_out_of_order_time_window | quote }}
   {{- end }}
   ruleNamespaceSelector: {}
   ruleSelector: {}
@@ -60,6 +67,7 @@ spec:
   secrets:
     - prometheus-pelorus-tls
     - prometheus-pelorus-htpasswd
+    - prometheus-oauth-cookie
   containers:
   - args:
     - -provider=openshift
@@ -74,13 +82,13 @@ spec:
     - -tls-cert=/etc/tls/private/tls.crt
     - -tls-key=/etc/tls/private/tls.key
     - -client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
-    - -cookie-secret={{ .Values.oauth_cookie_secret | default (randAlphaNum 32) }}
+    - -cookie-secret-file=/etc/proxy/secrets/session_secret
     - -openshift-ca=/etc/pki/tls/cert.pem
     - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 {{- if .Values.custom_ca }}
     - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
 {{- end}}
-    - -skip-auth-regex=^/metrics
+    - '-skip-auth-regex=^/metrics|^/-/(ready|healthy)'
     image: {{ .Values.oauth_proxy_image | default "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4" }}
     name: prometheus-proxy
     ports:
@@ -98,6 +106,8 @@ spec:
       name: secret-prometheus-pelorus-tls
     - mountPath: /etc/proxy/htpasswd
       name: secret-prometheus-pelorus-htpasswd
+    - mountPath: /etc/proxy/secrets
+      name: secret-prometheus-oauth-cookie
 {{- if .Values.custom_ca }}
     - name: configmap-cluster-ca-bundle
       readOnly: true

@@ -150,6 +150,29 @@ spec:
               prometheus_storage_pvc_storageclass:
                 description: Prometheus Persistent Volume storage class to be used.
                 type: string
+              prometheus_replicas:
+                description: >-
+                  Number of Prometheus replicas. Default 2 for HA. Set to 1 for single-node dev environments.
+                type: integer
+                default: 2
+                minimum: 1
+              prometheus_enable_admin_api:
+                description: >-
+                  Enable Prometheus admin API for delete operations. WARNING: Only enable in dev/demo environments.
+                  Allows deletion of time series data via /api/v1/admin/tsdb/delete_series endpoint.
+                type: boolean
+                default: false
+              prometheus_out_of_order_time_window:
+                description: >-
+                  Out-of-order sample time window for Prometheus. Allows ingesting samples older than the most recent sample.
+                  Set to "180d" for 6-month demo seed data. Set to "30m" for production use. If not set, out-of-order ingestion is disabled.
+                  Examples: "30m", "2h", "180d"
+                type: string
+              prometheus_oauth_cookie_secret:
+                description: >-
+                  OAuth cookie secret for Prometheus proxy. If not set, a random value will be generated
+                  once and persisted in a Secret. Setting this explicitly avoids pod restarts.
+                type: string
               federate_openshift_monitoring:
                 description: Optionally integrate Pelorus with the OpenShift monitoring stack to pull in system and pod level metrics
                 type: object

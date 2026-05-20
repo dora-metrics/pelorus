@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
 #
-# Install Pelorus on OpenShift using the Operator
+# Install or Update Pelorus on OpenShift using the Operator
 #
+# This script is idempotent and can be re-run to update configurations.
 # Builds all images on the cluster (base images pulled from external registries).
 # Supports both Red Hat and community operator sources.
+# Enables Prometheus admin API for demo/development use (allows metric deletion).
 #
 # Usage:
 #   ./demo/install.sh                         # auto-detect (prefer Red Hat)
 #   OPERATOR_SOURCE=redhat ./demo/install.sh  # force Red Hat operators
 #   OPERATOR_SOURCE=community ./demo/install.sh  # force community operators
 #   OAUTH_ENABLED=false ./demo/install.sh        # disable OAuth proxy (basic auth)
+#   FORCE_REBUILD=true ./demo/install.sh         # force rebuild all images
+#
+# Re-running:
+#   The script is idempotent - it safely updates existing resources:
+#   - Skips image builds if images already exist (unless FORCE_REBUILD=true)
+#   - Updates Pelorus CR with new configuration values
+#   - Recreates resources using declarative 'oc apply'
 #
 set -euo pipefail
 
@@ -19,38 +28,72 @@ TIMEOUT="${TIMEOUT:-900}"
 POLL=10
 OPERATOR_SOURCE="${OPERATOR_SOURCE:-auto}"
 PELORUS_PASSWORD="${PELORUS_PASSWORD:-$(openssl rand -base64 12)}"
+OAUTH_COOKIE_SECRET="${OAUTH_COOKIE_SECRET:-$(openssl rand -base64 24)}"
 OAUTH_ENABLED="${OAUTH_ENABLED:-true}"
+FORCE_REBUILD="${FORCE_REBUILD:-false}"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 fail() { log "FAIL: $*" >&2; exit 1; }
 
 wait_for_build() {
-  local name="$1" timeout="${2:-$TIMEOUT}"
-  log "Waiting for build $name..."
+  local build_config="$1" timeout="${2:-$TIMEOUT}"
+  log "Waiting for build $build_config..."
   local elapsed=0
   while [[ $elapsed -lt $timeout ]]; do
-    local phase
-    phase=$(oc get builds -n "$NAMESPACE" --no-headers 2>/dev/null \
-      | grep "$name" | tail -1 | awk '{print $4}' || echo "")
+    local phase latest_build
+    # Get the latest build for this BuildConfig
+    latest_build=$(oc get builds -n "$NAMESPACE" --no-headers 2>/dev/null \
+      | grep "^${build_config}-" | tail -1 | awk '{print $1}' || echo "")
+
+    if [[ -z "$latest_build" ]]; then
+      log "No builds found for $build_config yet..."
+      sleep "$POLL"
+      elapsed=$((elapsed + POLL))
+      continue
+    fi
+
+    phase=$(oc get build "$latest_build" -n "$NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+
     if [[ "$phase" == "Complete" ]]; then
-      log "Build $name complete"
+      log "Build $build_config complete"
       return 0
-    elif [[ "$phase" == "Failed" || "$phase" == "Error" ]]; then
-      oc logs "build/${name}" -n "$NAMESPACE" 2>&1 | tail -10
-      fail "Build $name failed"
+    elif [[ "$phase" == "Failed" || "$phase" == "Error" || "$phase" == "Cancelled" ]]; then
+      oc logs "build/${latest_build}" -n "$NAMESPACE" 2>&1 | tail -10
+      fail "Build $build_config failed"
     fi
     sleep "$POLL"
     elapsed=$((elapsed + POLL))
   done
-  fail "Timed out waiting for build $name"
+  fail "Timed out waiting for build $build_config"
+}
+
+check_image_exists() {
+  local name="$1"
+  # Check if ImageStream exists and has at least one tag
+  if oc get is "$name" -n "$NAMESPACE" &>/dev/null; then
+    local tags
+    tags=$(oc get is "$name" -n "$NAMESPACE" -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+    [[ -n "$tags" ]]
+  else
+    return 1
+  fi
 }
 
 wait_for_csv() {
   local name="$1" timeout="${2:-$TIMEOUT}"
+  local phase
+  phase=$(oc get csv -n "$NAMESPACE" --no-headers 2>/dev/null \
+    | grep "$name" | awk '{print $NF}' || echo "")
+
+  # If already succeeded, return immediately
+  if [[ "$phase" == "Succeeded" ]]; then
+    log "Operator $name already installed"
+    return 0
+  fi
+
   log "Waiting for operator $name..."
   local elapsed=0
   while [[ $elapsed -lt $timeout ]]; do
-    local phase
     phase=$(oc get csv -n "$NAMESPACE" --no-headers 2>/dev/null \
       | grep "$name" | awk '{print $NF}' || echo "")
     [[ "$phase" == "Succeeded" ]] && return 0
@@ -70,10 +113,18 @@ if [[ "$OPERATOR_SOURCE" == "auto" ]]; then
   log "Auto-detected operator source: $OPERATOR_SOURCE"
 fi
 
+# Check if this is an initial install or update
+if oc get pelorus pelorus -n "$NAMESPACE" &>/dev/null 2>&1; then
+  INSTALL_MODE="Updating"
+else
+  INSTALL_MODE="Installing"
+fi
+
 log "========================================="
-log "Installing Pelorus on OpenShift"
+log "$INSTALL_MODE Pelorus on OpenShift"
 log "  Operator source: $OPERATOR_SOURCE"
 log "  OAuth proxy:     $OAUTH_ENABLED"
+log "  Prometheus:      1 replica (dev mode)"
 log "========================================="
 
 # 1. Namespace
@@ -166,6 +217,35 @@ EOF
 
 else
   log "Installing community Prometheus and Grafana operators..."
+
+  # TODO: TEMPORARY WORKAROUND - Remove this when OpenShift community-operators is updated
+  # The OpenShift community-operators catalog only has Prometheus Operator v0.56.3 (from 2022)
+  # which doesn't support additionalArgs needed for out-of-order ingestion.
+  # We're temporarily using the k8s-operatorhub catalog which has v0.70.0.
+  # This should be removed once OpenShift community-operators catches up.
+  # See: demo/ADD_OPERATORHUBIO_CATALOG.md for details
+  log "Adding k8s-operatorhub catalog source (temporary workaround for demo)..."
+  oc apply -f - <<'EOF'
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: operatorhubio-catalog
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: quay.io/operatorhubio/catalog:latest
+  displayName: OperatorHub.io Operators
+  publisher: OperatorHub.io
+  updateStrategy:
+    registryPoll:
+      interval: 60m
+EOF
+
+  log "Waiting for operatorhubio-catalog to sync..."
+  sleep 15
+
+  # NOTE: Using operatorhubio-catalog to get Prometheus Operator v0.70.0
+  # which supports additionalArgs required for out-of-order ingestion
   oc apply -n "$NAMESPACE" -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
@@ -182,7 +262,7 @@ metadata:
 spec:
   channel: beta
   name: prometheus
-  source: community-operators
+  source: operatorhubio-catalog  # TODO: Change back to community-operators when it's updated
   sourceNamespace: openshift-marketplace
   installPlanApproval: Automatic
 ---
@@ -199,24 +279,105 @@ spec:
 EOF
   wait_for_csv "prometheusoperator"
   wait_for_csv "grafana-operator"
+
+  # Verify Prometheus Operator version supports additionalArgs (required for OOO ingestion)
+  log "Verifying Prometheus Operator version..."
+  prom_op_version=$(oc get csv -n "$NAMESPACE" -o jsonpath='{.items[?(@.metadata.name=="prometheusoperator.*")].spec.version}' 2>/dev/null || echo "unknown")
+  log "Prometheus Operator version: $prom_op_version"
+
+  if [[ "$prom_op_version" != "unknown" ]]; then
+    # Extract major.minor version (e.g., "0.70.0" -> "70")
+    minor_version=$(echo "$prom_op_version" | cut -d. -f2)
+    if [[ "$minor_version" -lt 59 ]]; then
+      log "WARNING: Prometheus Operator v$prom_op_version does not support additionalArgs"
+      log "WARNING: Out-of-order ingestion requires v0.59.0+. Historical backfill will NOT work."
+      log "WARNING: Consider using operatorhubio-catalog for v0.70.0"
+    else
+      log "✓ Prometheus Operator v$prom_op_version supports out-of-order ingestion"
+    fi
+  fi
 fi
 
 # 3. Build exporter image
-log "Building exporter image..."
+log "Ensuring exporter BuildConfig exists..."
 ln -sf Containerfile exporters/Dockerfile
-oc new-build --name=pelorus-exporter --strategy=docker --binary \
-  -n "$NAMESPACE" 2>/dev/null || true
-oc start-build pelorus-exporter --from-dir=exporters \
-  -n "$NAMESPACE" --follow 2>&1 | tail -5
-wait_for_build "pelorus-exporter-" 600
+
+# Create BuildConfig declaratively
+oc apply -n "$NAMESPACE" -f - <<EOF
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: pelorus-exporter
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: pelorus-exporter:latest
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+EOF
+
+# Create ImageStream if it doesn't exist
+oc apply -n "$NAMESPACE" -f - <<EOF
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: pelorus-exporter
+EOF
+
+# Only start a new build if image doesn't exist or force rebuild
+if [[ "$FORCE_REBUILD" == "true" ]] || ! check_image_exists "pelorus-exporter"; then
+  log "Building exporter image..."
+  oc start-build pelorus-exporter --from-dir=exporters \
+    -n "$NAMESPACE" --follow 2>&1 | tail -5 &
+  wait_for_build "pelorus-exporter" 600
+else
+  log "Exporter image already exists, skipping build (set FORCE_REBUILD=true to rebuild)"
+fi
 
 # 4. Build operator image
-log "Building operator image..."
-oc new-build --name=pelorus-operator --strategy=docker --binary \
-  -n "$NAMESPACE" 2>/dev/null || true
-oc start-build pelorus-operator --from-dir=pelorus-operator \
-  -n "$NAMESPACE" --follow 2>&1 | tail -5
-wait_for_build "pelorus-operator-" 600
+log "Ensuring operator BuildConfig exists..."
+
+# Create BuildConfig declaratively
+oc apply -n "$NAMESPACE" -f - <<EOF
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: pelorus-operator
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: pelorus-operator:latest
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+EOF
+
+# Create ImageStream if it doesn't exist
+oc apply -n "$NAMESPACE" -f - <<EOF
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: pelorus-operator
+EOF
+
+# Only start a new build if image doesn't exist or force rebuild
+if [[ "$FORCE_REBUILD" == "true" ]] || ! check_image_exists "pelorus-operator"; then
+  log "Building operator image..."
+  oc start-build pelorus-operator --from-dir=pelorus-operator \
+    -n "$NAMESPACE" --follow 2>&1 | tail -5 &
+  wait_for_build "pelorus-operator" 600
+else
+  log "Operator image already exists, skipping build (set FORCE_REBUILD=true to rebuild)"
+fi
 
 REGISTRY="image-registry.openshift-image-registry.svc:5000"
 OPERATOR_IMG="$REGISTRY/$NAMESPACE/pelorus-operator:latest"
@@ -256,7 +417,13 @@ if [[ "$OAUTH_ENABLED" == "true" && "$OPERATOR_SOURCE" == "community" ]]; then
   HTPASSWD_FIELD="openshift_prometheus_htpasswd_auth: \"$HTPASSWD\""
 fi
 
-log "Creating Pelorus instance (operator_source=$OPERATOR_SOURCE)..."
+# Check if Pelorus CR already exists
+if oc get pelorus pelorus -n "$NAMESPACE" &>/dev/null; then
+  log "Updating existing Pelorus instance (operator_source=$OPERATOR_SOURCE)..."
+else
+  log "Creating Pelorus instance (operator_source=$OPERATOR_SOURCE)..."
+fi
+
 oc apply -n "$NAMESPACE" -f - <<EOF
 apiVersion: charts.pelorus.dora-metrics.io/v1alpha1
 kind: Pelorus
@@ -267,9 +434,18 @@ spec:
   $HTPASSWD_FIELD
   operator_source: $OPERATOR_SOURCE
   oauth_proxy_enabled: $OAUTH_ENABLED
+  prometheus_oauth_cookie_secret: "$OAUTH_COOKIE_SECRET"
   prometheus_retention: 1y
   prometheus_retention_size: 1GB
-  prometheus_storage: false
+  # Enable persistent storage for Prometheus (required for backfilled demo data to survive pod restarts)
+  prometheus_storage: true
+  prometheus_storage_pvc_capacity: 5Gi
+  # Use 1 replica for single-node dev environments (default is 2 for HA)
+  prometheus_replicas: 1
+  # Enable admin API for demo seed/clear scripts
+  prometheus_enable_admin_api: true
+  # Enable out-of-order ingestion for 6-month historical demo data
+  prometheus_out_of_order_time_window: 180d
   exporters:
     instances:
       - app_name: deploytime-exporter
@@ -282,6 +458,7 @@ spec:
         exporter_type: webhook
         image_name: $REGISTRY/$NAMESPACE/pelorus-exporter:latest
         extraEnv:
+          # Allow backdated metrics (up to 1 year old) for demo seed script
           - name: PELORUS_TIMESTAMP_THRESHOLD_MINUTES
             value: "525600"
       - app_name: failuretime-exporter
@@ -338,15 +515,27 @@ while [[ $elapsed -lt 120 ]]; do
 done
 
 log "========================================="
-log "Pelorus installed successfully"
+if [[ "$INSTALL_MODE" == "Installing" ]]; then
+  log "Pelorus installed successfully"
+else
+  log "Pelorus updated successfully"
+fi
 log "  Operator source: $OPERATOR_SOURCE"
 log "  OAuth proxy:     $OAUTH_ENABLED"
+log "  Admin API:       enabled (for demo/development)"
 log "========================================="
 echo ""
 echo "  Grafana:  https://${GRAFANA_ROUTE:-pending}"
 echo "  Login:    admin / <password from \$PELORUS_PASSWORD>"
 echo ""
 echo "  Next steps:"
-echo "    ./demo/setup-demo.sh      # seed data and verify (one command)"
-echo "    ./demo/seed-metrics.sh    # seed data only"
+echo "    ./demo/seed-metrics.sh    # load 6 months of sample DORA metrics"
+echo "    ./demo/clear-metrics.sh   # clear all metrics (before re-seeding)"
+echo ""
+echo "  To update configuration:"
+echo "    Edit this script and re-run it - it's idempotent!"
+echo "    To force rebuild images: FORCE_REBUILD=true ./demo/install.sh"
+echo ""
+echo "  Note: Prometheus admin API is enabled for demo/dev use."
+echo "        Do not enable in production environments."
 echo ""

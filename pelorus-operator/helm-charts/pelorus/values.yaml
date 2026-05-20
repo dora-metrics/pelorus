@@ -42,9 +42,11 @@ federate_openshift_monitoring:
 # https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md
 
 # Set to true to use PVC for Prometheus
+# REQUIRED for demo seed scripts (backfilled metrics) to survive pod restarts
 prometheus_storage: false
 
 # Additional configuration options for Prometheus PVC
+# For demo/dev with 6 months of backfilled data, recommend 5Gi
 prometheus_storage_pvc_capacity: 2Gi
 prometheus_storage_pvc_storageclass: "gp2"
 
@@ -53,6 +55,18 @@ prometheus_retention: 1y
 # Set Prometheus retention size. If data grows over this size, old values are deleted.
 # This should be lower than what's defined in prometheus_storage_pvc_capacity.
 prometheus_retention_size: 1GB
+
+# Number of Prometheus replicas. Default 2 for HA. Set to 1 for single-node dev environments.
+prometheus_replicas: 2
+
+# Enable Prometheus admin API for delete operations (required for demo/seed scripts)
+# WARNING: This allows deletion of time series data. Only enable in dev/demo environments.
+prometheus_enable_admin_api: false
+
+# Enable out-of-order sample ingestion for historical data backfilling
+# Set to "180d" for 6-month demo seed data. Set to "30m" for production (default if unset: disabled)
+# REQUIRED for demo/seed scripts to work with backdated metrics
+# prometheus_out_of_order_time_window: 180d
 
 exporters:
   instances:

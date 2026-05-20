@@ -8,14 +8,18 @@ Scripts for deploying Pelorus and demonstrating DORA metrics capture.
 # 1. Install Pelorus (builds images, deploys operator)
 ./demo/install.sh
 
-# 2. Seed sample metrics for 4 teams
+# 2. (Optional) Clear existing metrics before seeding fresh data
+oc port-forward -n pelorus svc/prometheus 19090:9090 &
+./demo/clear-metrics.sh http://localhost:19090
+
+# 3. Seed sample metrics for 4 teams over 6 months
 oc port-forward -n pelorus svc/webhook-exporter 18080:8080 &
 ./demo/seed-metrics.sh http://localhost:18080
 
-# 3. Open Grafana (wait ~60s for Prometheus to scrape)
+# 4. Open Grafana (wait ~60s for Prometheus to scrape)
 #    Route: https://grafana-route-pelorus.apps-crc.testing
 #    Login: OpenShift SSO (default) or admin/$PELORUS_PASSWORD (OAUTH_ENABLED=false)
-#    Time range: Last 5 minutes
+#    Time range: Last 90 days
 ```
 
 ## Scripts
@@ -24,22 +28,23 @@ oc port-forward -n pelorus svc/webhook-exporter 18080:8080 &
 |---|---|
 | `install.sh` | Full install: namespace, operators, image builds, operator deploy, Pelorus CR |
 | `seed-metrics.sh` | Seeds 4 apps with realistic DORA metrics via webhook exporter |
+| `clear-metrics.sh` | Clears all Pelorus metrics from Prometheus (useful before re-seeding) |
 | `live-demo.sh` | Builds a real app from source and shows metrics capture |
 | `run-demo.sh` | Interactive Helm-based demo |
 | `demo-tekton.sh` | Tekton pipeline demo (requires OpenShift Pipelines) |
 
 ## Seed Metrics
 
-`seed-metrics.sh` creates two waves of data for 4 applications with different performance profiles:
+`seed-metrics.sh` creates 6 months of historical data for 4 applications with different performance profiles:
 
-| Application | Lead Time | Failure Rate | Profile |
+| Application | Lead Time | Deploy Freq | Profile |
 |---|---|---|---|
-| frontend | ~35s | ~10% | Elite performer |
-| api-gateway | ~3-4 min | ~22% | Medium performer |
-| inventory-service | ~7-8 min | ~15% | Improving |
-| payment-service | ~13 min | ~40% | Struggling |
+| frontend | 25s (improving) | ~30/month | Elite performer - trunk-based dev, feature flags |
+| api-gateway | 3min (was 15min) | 8→20/month | Medium performer - post-monolith migration, improving |
+| payment-service | 25min (worsening) | 8→5/month | Low performer - tech debt accumulating |
+| inventory-service | 3min (was 20min) | 5→20/month | Turnaround story - dramatic improvement in last 3 months |
 
-The two-wave approach (data at ~20 min ago and ~5 min ago) ensures Grafana dashboard comparison panels show real change percentages.
+This creates realistic trends showing performance changes over time. Set Grafana to "Last 90 days" or "Last 6 months" to see the full history.
 
 ## Presales Demo
 

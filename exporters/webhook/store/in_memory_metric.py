@@ -158,6 +158,14 @@ class PelorusGaugeMetricFamily(GaugeMetricFamily):
                     del self.added_metrics[oldest]
                     if self.samples:
                         self.samples.popleft()
+
+                # For historical DORA metrics, use the timestamp value as both the gauge value
+                # AND the explicit sample timestamp so Grafana time-series filtering works correctly.
+                # args should be (labels, value) where value is a Unix timestamp
+                if len(args) >= 2 and isinstance(args[1], (int, float)) and 'timestamp' not in kwargs:
+                    # Pass timestamp as both value and explicit sample timestamp
+                    kwargs['timestamp'] = int(args[1])
+
                 super().add_metric(*args, **kwargs)
                 self.added_metrics[metric_id] = None
             _store_utilization.labels(metric_family=self.name).set(

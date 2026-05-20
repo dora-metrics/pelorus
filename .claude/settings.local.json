@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(oc get *)",
+      "Bash(oc logs *)",
+      "Bash(oc describe *)",
+      "Bash(oc rollout *)",
+      "Bash(oc delete *)",
+      "Bash(awk '{print strftime\\(\"%Y-%m-%d %H:%M:%S\", $1\\)}')",
+      "Bash(oc exec *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import sys, json; d=json.load\\(sys.stdin\\); print\\('Result count:', len\\(d['data']['result']\\)\\); print\\('Sample values:', d['data']['result'][0]['values'][:5] if d['data']['result'] else 'empty'\\)\")",
+      "Bash(oc route *)",
+      "Bash(python3 -c \"import sys, json; d=json.load\\(sys.stdin\\); print\\('Rule groups:', len\\(d['data']['groups']\\) if 'groups' in d['data'] else 0\\)\")",
+      "Bash(python3 -c \"import sys, json; d=json.load\\(sys.stdin\\); import pprint; pprint.pprint\\(d\\)\")",
+      "Bash(python3 -c \"import sys, json; d=json.load\\(sys.stdin\\); print\\('Status:', d['status']\\); print\\('Results:', len\\(d['data']['result']\\)\\); print\\(json.dumps\\(d['data']['result'][:1], indent=2\\) if d['data']['result'] else 'No results'\\)\")",
+      "Bash(python3 -c \"import sys, json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d, indent=2\\)\\)\")",
+      "Bash(oc wait *)",
+      "Bash(WebSearch \"prometheus backfill query empty results historical data\")",
+      "WebSearch",
+      "Bash(python3 demo/test-remote-write.py --url http://localhost:9090 --days-back 30)"
+    ]
+  }
+}

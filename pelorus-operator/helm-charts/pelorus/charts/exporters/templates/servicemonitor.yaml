@@ -15,4 +15,4 @@ spec:
   endpoints:
   - port: http
     interval: {{ .Values.scrapeInterval | default "30s" }}
-    honorTimestamps: false
+    honorTimestamps: true
