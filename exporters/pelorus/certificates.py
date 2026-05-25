@@ -36,50 +36,49 @@ def _combine_certificates(dir_to_check: Path = DEFAULT_CERT_DIR) -> str:
     """
     target_fd, target_path = tempfile.mkstemp(suffix=".pem", prefix="custom-certs")
 
-    with open(target_fd, "wb") as target:
-        with open(certifi.where(), "rb") as source:
-            shutil.copyfileobj(source, target)
-
-        for source_path in dir_to_check.glob("*/*.pem"):
-            if source_path.is_symlink() or not source_path.resolve().is_relative_to(dir_to_check.resolve()):
-                logging.warning("Skipping certificate outside trust directory: %s", source_path)
-                continue
-            logging.info("Combining custom certificate file %s", source_path)
-
-            with source_path.open("rb") as source:
-                target.write(f"# custom cert from {source_path}\n".encode())
+    try:
+        with open(target_fd, "wb") as target:
+            with open(certifi.where(), "rb") as source:
                 shutil.copyfileobj(source, target)
+
+            for source_path in dir_to_check.glob("*/*.pem"):
+                if source_path.is_symlink() or not source_path.resolve().is_relative_to(dir_to_check.resolve()):
+                    logging.warning("Skipping certificate outside trust directory: %s", source_path)
+                    continue
+                logging.info("Combining custom certificate file %s", source_path)
+
+                try:
+                    with source_path.open("rb") as source:
+                        target.write(f"# custom cert from {source_path}\n".encode())
+                        shutil.copyfileobj(source, target)
+                except OSError:
+                    logging.error("Failed to read certificate file %s, skipping", source_path, exc_info=True)
+    except Exception:
+        os.unlink(target_path)
+        raise
 
     logging.debug("Combined certificate bundle created at %s", target_path)
     return target_path
 
 
 def _register_cleanup(path: str):
-    """
-    Clean up the tempfile at program exit.
-    """
-    atexit.register(os.remove, path)
+    def _safe_remove(p):
+        try:
+            os.remove(p)
+        except FileNotFoundError:
+            pass
+
+    atexit.register(_safe_remove, path)
 
 
 def set_up_requests_certs(verify: Optional[bool] = None) -> Union[bool, str]:
-    """
-    Set up custom certificates based on the way requests is configured.
+    """Return a value suitable for ``requests.Session.verify``.
 
-    In summary:
-
-    If you already ask for a `tls_verify` variable, you'd do:
-    `session.verify = set_up_requests_certs(tls_verify)`
-
-    Otherwise, just do `session.verify = set_up_requests_certs()`.
-
-    If `verify` is set to `True` or `None`, then this function will combine
-    the certifi certs and the custom certs under `/etc/pelorus/custom_certs/*/*.pem`.
-
-    It will combine them into a temporary file, the path of which is returned.
-    The result is cached so that multiple collectors share the same bundle.
-    It will also register that file for removal at program exit.
-
-    If `verify` is `False`, `False` is returned for ease of use with the above example.
+    - ``verify=False``: returns ``False`` (disables TLS verification).
+    - ``verify=True`` or ``None``: combines certifi's CA bundle with any
+      custom PEM files under ``/etc/pelorus/custom_certs/*/*.pem`` into a
+      temp file and returns its path. The result is cached across calls
+      and cleaned up at process exit.
     """
     global _cached_cert_path
 

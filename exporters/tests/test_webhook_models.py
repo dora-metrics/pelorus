@@ -29,26 +29,18 @@ from webhook.models.pelorus_webhook import (
     PelorusPayload,
 )
 
-CURRENT_TIMESTAMP = int(time.time())
 
-test_payload = {
-    "app": "todolist",
-    "timestamp": CURRENT_TIMESTAMP,
-}
-test_deploy = {
-    **test_payload,
-    "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
-    "namespace": "mynamespace",
-}
-test_commit = {
-    **test_deploy,
-    "commit_hash": "abc123f",
-}
-test_failure = {
-    **test_payload,
-    "failure_id": "test",
-    "failure_event": "created",
-}
+def _make_payloads():
+    ts = int(time.time())
+    payload = {"app": "todolist", "timestamp": ts}
+    deploy = {
+        **payload,
+        "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
+        "namespace": "mynamespace",
+    }
+    commit = {**deploy, "commit_hash": "abc123f"}
+    failure = {**payload, "failure_id": "test", "failure_event": "created"}
+    return ts, payload, deploy, commit, failure
 
 
 @pytest.mark.parametrize(
@@ -122,7 +114,7 @@ class FakePelorusPayload(BaseModel):
 )
 def test_pelorus_payload_success(app):
     """Valid app and timestamp values create a PelorusPayload successfully."""
-    payload = PelorusPayload(app=app, timestamp=CURRENT_TIMESTAMP)
+    payload = PelorusPayload(app=app, timestamp=int(time.time()))
     assert payload.get_metric_model_name() == "PelorusPayload"
 
 
@@ -169,8 +161,7 @@ def test_pelorus_payload_error(app, timestamp):
 )
 def test_failure_pelorus_payload_success(failure_id, failure_event):
     """Valid failure_id and failure_event create a FailurePelorusPayload."""
-    # Test for proper event types
-    # Ensure class name from get_metric_model_name() matches FailurePelorusPayload
+    _, test_payload, _, _, _ = _make_payloads()
     payload = FailurePelorusPayload(
         **test_payload,
         failure_id=failure_id,
@@ -182,7 +173,7 @@ def test_failure_pelorus_payload_success(failure_id, failure_event):
 
 @pytest.mark.parametrize("failure_id,failure_event", [("Issue-1", "Other")])
 def test_failure_pelorus_payload_error(failure_id, failure_event):
-    # Wrong event type. Only 'created' and 'resolved' events are supported
+    _, test_payload, _, _, _ = _make_payloads()
     with pytest.raises(ValidationError):
         FailurePelorusPayload(
             **test_payload,
@@ -202,8 +193,7 @@ def test_failure_pelorus_payload_error(failure_id, failure_event):
 )
 def test_deploy_time_pelorus_payload_success(image_sha, namespace):
     """Valid image_sha and namespace create a DeployTimePelorusPayload."""
-    # Test for proper image sha and proper namespace
-    # Ensure class name from get_metric_model_name() matches DeployTimePelorusPayload
+    _, test_payload, _, _, _ = _make_payloads()
     payload = DeployTimePelorusPayload(
         **test_payload, image_sha=image_sha, namespace=namespace
     )
@@ -227,6 +217,7 @@ def test_deploy_time_pelorus_payload_success(image_sha, namespace):
 )
 def test_deploy_time_pelorus_payload_error(image_sha, namespace):
     """Invalid image_sha or namespace are rejected by DeployTimePelorusPayload."""
+    _, test_payload, _, _, _ = _make_payloads()
     with pytest.raises(ValidationError):
         DeployTimePelorusPayload(
             **test_payload, image_sha=image_sha, namespace=namespace
@@ -236,10 +227,8 @@ def test_deploy_time_pelorus_payload_error(image_sha, namespace):
 @pytest.mark.parametrize("commit_hash_length", [7, 40])
 def test_commit_time_pelorus_payload_success(commit_hash_length):
     """Commit hashes of length 7 or 40 are accepted."""
-
+    _, _, test_deploy, _, _ = _make_payloads()
     commit_hash = "a" * commit_hash_length
-    # Test for proper commit hash
-    # Ensure class name from get_metric_model_name() matches DeployTimePelorusPayload
     payload = CommitTimePelorusPayload(
         **test_deploy,
         commit_hash=commit_hash,
@@ -250,8 +239,8 @@ def test_commit_time_pelorus_payload_success(commit_hash_length):
 
 @pytest.mark.parametrize("commit_hash_length", [6, 8, 10, 39, 41, 123])
 def test_commit_time_pelorus_payload_error(commit_hash_length):
+    _, _, test_deploy, _, _ = _make_payloads()
     commit_hash = "a" * commit_hash_length
-    # Test for wrong commit hash length which must be either 7 or 40 characters
     with pytest.raises(ValidationError) as v_error:
         CommitTimePelorusPayload(
             **test_deploy,
@@ -261,32 +250,56 @@ def test_commit_time_pelorus_payload_error(commit_hash_length):
 
 
 @pytest.mark.parametrize(
-    "metric_spec,metric_data",
+    "metric_spec_key,payload_key",
     [
-        (PelorusMetricSpec.COMMIT_TIME, CommitTimePelorusPayload(**test_commit)),
-        ("committime", CommitTimePelorusPayload(**test_commit)),
-        (PelorusMetricSpec.DEPLOY_TIME, DeployTimePelorusPayload(**test_deploy)),
-        (PelorusMetricSpec.FAILURE, FailurePelorusPayload(**test_failure)),
-        (PelorusMetricSpec.PING, PelorusPayload(**test_payload)),
+        ("COMMIT_TIME", "commit"),
+        ("COMMIT_TIME_STR", "commit"),
+        ("DEPLOY_TIME", "deploy"),
+        ("FAILURE", "failure"),
+        ("PING", "payload"),
     ],
+    ids=["commit_enum", "commit_str", "deploy", "failure", "ping"],
 )
-def test_pelorus_metric_success(metric_spec, metric_data):
+def test_pelorus_metric_success(metric_spec_key, payload_key):
     """PelorusMetric accepts valid metric_spec and metric_data combinations."""
+    _, test_payload, test_deploy, test_commit, test_failure = _make_payloads()
 
+    payloads = {
+        "commit": CommitTimePelorusPayload(**test_commit),
+        "deploy": DeployTimePelorusPayload(**test_deploy),
+        "failure": FailurePelorusPayload(**test_failure),
+        "payload": PelorusPayload(**test_payload),
+    }
+    specs = {
+        "COMMIT_TIME": PelorusMetricSpec.COMMIT_TIME,
+        "COMMIT_TIME_STR": "committime",
+        "DEPLOY_TIME": PelorusMetricSpec.DEPLOY_TIME,
+        "FAILURE": PelorusMetricSpec.FAILURE,
+        "PING": PelorusMetricSpec.PING,
+    }
+
+    metric_spec = specs[metric_spec_key]
+    metric_data = payloads[payload_key]
     metric = PelorusMetric(metric_spec=metric_spec, metric_data=metric_data)
     assert metric.metric_spec == PelorusMetricSpec(metric_spec)
     assert metric.metric_data == metric_data
 
 
 @pytest.mark.parametrize(
-    "metric_spec,metric_data",
+    "metric_spec,use_fake_payload",
     [
-        # Ensure the value is an enumeration number from the PelorusMetricSpec
-        ("spec_name", DeployTimePelorusPayload(**test_deploy)),
-        # Ensure payload is inheriting from PelorusPayload
-        (PelorusMetricSpec.COMMIT_TIME, FakePelorusPayload(**test_deploy)),
+        ("spec_name", False),
+        (PelorusMetricSpec.COMMIT_TIME, True),
     ],
+    ids=["invalid_spec", "non_pelorus_payload"],
 )
-def test_pelorus_metric_error(metric_spec, metric_data):
+def test_pelorus_metric_error(metric_spec, use_fake_payload):
+    _, _, test_deploy, _, _ = _make_payloads()
+
+    metric_data = (
+        FakePelorusPayload(**test_deploy)
+        if use_fake_payload
+        else DeployTimePelorusPayload(**test_deploy)
+    )
     with pytest.raises(ValidationError):
         PelorusMetric(metric_spec=metric_spec, metric_data=metric_data)

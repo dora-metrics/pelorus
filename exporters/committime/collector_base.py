@@ -19,9 +19,11 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
 import time
 from abc import abstractmethod
-from typing import ClassVar, Iterable, Optional
+from collections import OrderedDict
+from typing import Iterable, Optional
 
 import attrs
 from attrs import define, field
@@ -67,9 +69,7 @@ _last_collection_count = Gauge(
 
 
 class UnsupportedGITProvider(Exception):
-    def __init__(self, message):
-        self.message = message
-        super().__init__(message)
+    pass
 
 
 _KNOWN_GIT_PROVIDERS = frozenset({"github", "gitlab", "gitea", "bitbucket", "azure"})
@@ -86,12 +86,7 @@ def check_provider_support(server_string: str, provider_name: str) -> None:
 
 @define(kw_only=True)
 class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
-    """
-    Base class for a CommitCollector.
-    This class should be extended for the system which contains the commit information.
-    """
-
-    collector_name: ClassVar[str]
+    """Base class for commit time collectors that fetch timestamps from different git providers."""
 
     kube_client: DynamicClient = field()
 
@@ -109,8 +104,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     tls_verify: bool = field(default=True)
 
-    commit_dict: dict[str, Optional[CommitMetric]] = field(factory=dict, init=False)
-    _build_config_cache: dict[tuple[str, str], Optional[str]] = field(factory=dict, init=False)
+    commit_dict: OrderedDict[str, tuple[Optional[str], Optional[float], Optional[str]]] = field(factory=OrderedDict, init=False)
+    _build_config_cache: OrderedDict[tuple[str, str], Optional[str]] = field(factory=OrderedDict, init=False)
+    _cache_lock: threading.Lock = field(factory=threading.Lock, init=False)
+
+    _COMMIT_CACHE_MAX = 10_000
+    _BUILD_CONFIG_CACHE_MAX = 1_000
 
     hash_annotation_name: str = field(
         default=CommitMetric._ANNOTATION_MAPPING["commit_hash"],
@@ -127,6 +126,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     _COMMIT_METRIC_LABELS = ["namespace", "app", "commit", "image_sha", "commit_link"]
 
     def __attrs_post_init__(self):
+        if not _VALID_APP_LABEL_RE.match(str(self.app_label)):
+            raise ValueError(f"Invalid app_label: {self.app_label!r}")
         if bool(self.username) != bool(self.token):
             logging.warning(
                 "username and token must both be set, or neither should be set. Unsetting both."
@@ -158,6 +159,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             commit_metrics = self.generate_metrics()
 
             for my_metric in commit_metrics:
+                if my_metric.commit_timestamp is None:
+                    logging.warning(
+                        "Skipping metric with no commit_timestamp: app=%s, commit=%s",
+                        my_metric.name, my_metric.commit_hash,
+                    )
+                    continue
                 logging.debug(
                     "Collected commit_timestamp{ namespace=%s, app=%s, commit=%s, image_sha=%s, commit_link=%s } %s",
                     my_metric.namespace,
@@ -165,7 +172,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     my_metric.commit_hash,
                     my_metric.image_hash,
                     my_metric.commit_link,
-                    float(my_metric.commit_timestamp),
+                    my_metric.commit_timestamp,
                 )
                 commit_metric.add_metric(
                     [
@@ -202,15 +209,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         logging.debug("Watching namespaces: %s", watched_namespaces)
         return watched_namespaces
 
-    def _get_openshift_obj_by_app(self, openshift_obj: str) -> Optional[dict]:
+    def _get_openshift_obj_by_app(self, openshift_obj) -> dict[str, list]:
         app_label = self.app_label
-
-        if not _VALID_APP_LABEL_RE.match(str(app_label)):
-            raise ValueError(f"Invalid app_label: {app_label!r}")
 
         items = getattr(openshift_obj, "items", None)
         if not items:
-            return None
+            return {}
 
         items_by_app: dict[str, list] = {}
 
@@ -219,7 +223,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             if app_name:
                 items_by_app.setdefault(app_name, []).append(item)
 
-        return items_by_app or None
+        return items_by_app
 
     def generate_metrics(self) -> Iterable[CommitMetric]:
         """Generate metrics from builds across watched namespaces."""
@@ -252,8 +256,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         """Expects a dict of builds grouped by app label."""
         failed_builds = 0
         total_builds = 0
-        for app in apps:
-            builds = apps[app]
+        for app, builds in apps.items():
             jenkins_builds = []
             code_builds = []
             for b in builds:
@@ -263,7 +266,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 elif strategy_type in ("Source", "Binary", "Docker"):
                     code_builds.append(b)
             # For Jenkins pipelines, grab repo data then find associated
-            # s2i/docker builds from which to pull commit & image data
+            # Source/Binary/Docker builds from which to pull commit & image data
             repo_url = self.get_repo_from_jenkins(jenkins_builds)
             logging.debug("Repo URL for app %s is currently %s", app, repo_url)
 
@@ -299,8 +302,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             # Populate annotations and labels required by
             # subsequent _set_ functions.
-            metric.annotations = vars(build.metadata.annotations)
-            metric.labels = vars(build.metadata.labels)
+            metric.annotations = vars(build.metadata.annotations) if build.metadata.annotations else {}
+            metric.labels = vars(build.metadata.labels) if build.metadata.labels else {}
 
             metric = self._set_repo_url(metric, repo_url, build, errors)
 
@@ -319,6 +322,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
             return metric
         except AttributeError as e:
+            _build_failures.inc()
             logging.warning(
                 "Build %s/%s in app %s is missing required attributes to collect data. Skipping.",
                 namespace,
@@ -328,6 +332,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             logging.debug("Missing attributes: %s", e, exc_info=True)
             return None
         except Exception:
+            _build_failures.inc()
             logging.error(
                 "Error getting CommitMetric for build %s/%s in app %s",
                 namespace, build.metadata.name, app, exc_info=True,
@@ -421,36 +426,48 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         Check the cache for the commit_time.
         If absent, call the API implemented by the subclass.
         """
-        if metric.commit_hash and metric.commit_hash not in self.commit_dict:
-            logging.debug(
-                "sha: %s, commit_timestamp not found in cache, executing API call.",
-                metric.commit_hash,
-            )
-            try:
-                metric = self.get_commit_time(metric)
-                logging.debug("Metric returned from git provider: %s", metric)
-            except UnsupportedGITProvider as ex:
-                errors.append(ex.message)
-                return None
-            if metric is None:
-                errors.append("get_commit_time returned None")
-                return None
-            # If commit time is None, then we could not get the value from the API
-            if metric.commit_time is None:
-                errors.append("Couldn't get commit time")
-            else:
-                # Add the timestamp to the cache
-                self.commit_dict[metric.commit_hash] = metric
-        elif metric.commit_hash:
-            metric = self.commit_dict[metric.commit_hash]
-            logging.debug("Returning metric from cache %s", metric)
+        with self._cache_lock:
+            if metric.commit_hash and metric.commit_hash in self.commit_dict:
+                commit_time, commit_timestamp, commit_link = self.commit_dict[metric.commit_hash]
+                # Move to end for LRU eviction
+                self.commit_dict.move_to_end(metric.commit_hash)
+                metric.commit_time = commit_time
+                metric.commit_timestamp = commit_timestamp
+                metric.commit_link = commit_link
+                logging.debug("Returning metric from cache for hash %s", metric.commit_hash)
+                return metric
+            needs_fetch = bool(metric.commit_hash)
+
+        if not needs_fetch:
+            return metric
+
+        logging.debug(
+            "sha: %s, commit_timestamp not found in cache, executing API call.",
+            metric.commit_hash,
+        )
+        try:
+            metric = self.get_commit_time(metric)
+            logging.debug("Metric returned from git provider: %s", metric)
+        except UnsupportedGITProvider as ex:
+            errors.append(str(ex))
+            return None
+        if metric is None:
+            errors.append("get_commit_time returned None")
+            return None
+        if metric.commit_time is None:
+            errors.append("Couldn't get commit time")
+        else:
+            with self._cache_lock:
+                if len(self.commit_dict) >= self._COMMIT_CACHE_MAX:
+                    self.commit_dict.popitem(last=False)
+                self.commit_dict[metric.commit_hash] = (metric.commit_time, metric.commit_timestamp, metric.commit_link)
 
         return metric
 
     def get_repo_from_jenkins(self, jenkins_builds):
         if jenkins_builds:
             # First, check for cases where the source url is in pipeline params
-            for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env:
+            for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env or []:
                 logging.debug("Searching %s=%s for git urls", env.name, env.value)
                 try:
                     result = _GIT_REPO_RE.match(env.value)
@@ -477,8 +494,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         bc_name = build.status.config.name
         cache_key = (bc_ns, bc_name)
 
-        if cache_key in self._build_config_cache:
-            return self._build_config_cache[cache_key]
+        with self._cache_lock:
+            if cache_key in self._build_config_cache:
+                self._build_config_cache.move_to_end(cache_key)
+                return self._build_config_cache[cache_key]
 
         result = None
         v1_build_configs = self.kube_client.resources.get(
@@ -492,5 +511,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     git_uri = git_uri + ".git"
                 result = git_uri
 
-        self._build_config_cache[cache_key] = result
+        with self._cache_lock:
+            if len(self._build_config_cache) >= self._BUILD_CONFIG_CACHE_MAX:
+                self._build_config_cache.popitem(last=False)
+            self._build_config_cache[cache_key] = result
         return result

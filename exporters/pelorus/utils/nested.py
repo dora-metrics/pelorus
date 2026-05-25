@@ -32,6 +32,7 @@ dots itself, such as when accessing openshift labels or annotations.
 """
 import contextlib
 import enum
+import functools
 from typing import Any, Literal, Mapping, Optional, Sequence, TypeVar, Union, overload
 
 import attrs
@@ -113,6 +114,11 @@ def get_nested(
     return item
 
 
+@functools.lru_cache(maxsize=128)
+def _cached_split(path: str) -> tuple[str, ...]:
+    return tuple(part for part in path.split(".") if part)
+
+
 def split_path(path: Union[str, Sequence[str]]) -> Sequence[str]:
     """
     Idempotently split a path for use in nested access.
@@ -121,8 +127,7 @@ def split_path(path: Union[str, Sequence[str]]) -> Sequence[str]:
     >>> assert split_path(["foo", "has.dots", "bar"]) == ["foo", "has.dots", "bar"]
     """
     if isinstance(path, str):
-        # `if part` filters out leading dot (or accidental double dots, technically)
-        return tuple(part for part in path.split(".") if part)
+        return _cached_split(path)
     else:
         return path
 

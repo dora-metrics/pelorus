@@ -16,6 +16,7 @@
 #
 
 import logging
+from collections import OrderedDict
 
 import gitlab
 import requests
@@ -38,7 +39,9 @@ class GitLabCommitCollector(AbstractCommitCollector):
     _gitlab_clients: dict = field(factory=dict, init=False)
 
     # Cache GitLab project objects per namespaced path to avoid N+1 lookups
-    _project_cache: dict = field(factory=dict, init=False)
+    _project_cache: OrderedDict = field(factory=OrderedDict, init=False)
+
+    _PROJECT_CACHE_MAX = 1_000
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -53,8 +56,6 @@ class GitLabCommitCollector(AbstractCommitCollector):
         if git_server in self._gitlab_clients:
             return self._gitlab_clients[git_server]
 
-        gitlab_client = None
-
         if self.token:
             logging.debug("Connecting to GitLab server (authenticated): %s", git_server)
             gitlab_client = gitlab.Gitlab(
@@ -62,13 +63,14 @@ class GitLabCommitCollector(AbstractCommitCollector):
                 private_token=self.token,
                 api_version=4,
                 session=self.session,
+                timeout=30,
             )
         else:
             logging.debug(
                 "Connecting to GitLab server (unauthenticated): %s", git_server
             )
             gitlab_client = gitlab.Gitlab(
-                git_server, api_version=4, session=self.session
+                git_server, api_version=4, session=self.session, timeout=30
             )
 
         self._gitlab_clients[git_server] = gitlab_client
@@ -82,22 +84,24 @@ class GitLabCommitCollector(AbstractCommitCollector):
         check_provider_support(git_server, "gitlab")
 
         gl = self._connect_to_gitlab(metric)
-        if not gl:
-            return metric
 
         project_namespace = metric.repo_group
         project_name = metric.repo_project
 
-        # namespaced project allows to get it by it's name
-        project_namespaced = "%s/%s" % (project_namespace, project_name)
+        # namespaced project allows fetching by name
+        project_namespaced = f"{project_namespace}/{project_name}"
 
         cache_key = (git_server, project_namespaced)
         project = self._project_cache.get(cache_key)
 
-        if project is None:
+        if project is not None:
+            self._project_cache.move_to_end(cache_key)
+        else:
             try:
                 logging.debug("Getting project: %s", project_namespaced)
                 project = gl.projects.get(project_namespaced)
+                if len(self._project_cache) >= self._PROJECT_CACHE_MAX:
+                    self._project_cache.popitem(last=False)
                 self._project_cache[cache_key] = project
             except Exception:
                 logging.error(
@@ -108,8 +112,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
                 raise
         try:
             # get the commit from the project using the hash
-            short_hash = metric.commit_hash[:8]
-            commit = project.commits.get(short_hash)
+            commit = project.commits.get(metric.commit_hash)
 
             commit_time_str: str = commit.committed_date
             metric.commit_time = commit_time_str

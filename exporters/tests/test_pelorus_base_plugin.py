@@ -117,7 +117,7 @@ class SimplePelorusWebhookPlugin(PelorusWebhookPlugin):
         pass
 
     @override
-    async def _receive_pelorus_payload(self, Any) -> Awaitable[PelorusMetric]:
+    async def _receive_pelorus_payload(self, payload) -> Awaitable[PelorusMetric]:
         pass
 
 
@@ -168,6 +168,11 @@ def test_check_can_handle_methods():
     # user_agent_str not defined
     assert not WithoutUserAgentWebhookPlugin.can_handle(None)
     assert not WithoutUserAgentWebhookPlugin.can_handle("")
+
+    # user_agent_str set to ""
+    assert not EmptyUserAgentWebhookPlugin.can_handle(None)
+    assert not EmptyUserAgentWebhookPlugin.can_handle("")
+    assert not EmptyUserAgentWebhookPlugin.can_handle("Pelorus-Webhook/")
 
 
 def test_plugin_register_methods():
@@ -320,7 +325,7 @@ async def test_proper_receive_metric():
         mock_receive.return_value = payload_data
         plugin = UserAgentWebhookPlugin(None, request=None)
         metric_data = await plugin.receive()
-        assert issubclass(type(metric_data), PelorusMetric)
+        assert isinstance(metric_data, PelorusMetric)
 
 
 @pytest.mark.asyncio

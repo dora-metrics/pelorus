@@ -1,12 +1,20 @@
 import logging
+import os
 import pathlib
 from abc import ABC
-from typing import Optional, Sequence
-
 from attrs import define
 from prometheus_client.registry import Collector
 
 from . import utils
+from .timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES
+
+_port_raw = os.environ.get("PELORUS_PORT", "8080")
+try:
+    EXPORTER_PORT = int(_port_raw)
+except ValueError as exc:
+    raise ValueError(f"PELORUS_PORT must be an integer, got: {_port_raw!r}") from exc
+if not (1 <= EXPORTER_PORT <= 65535):
+    raise ValueError(f"PELORUS_PORT must be between 1 and 65535, got: {EXPORTER_PORT}")
 
 DEFAULT_APP_LABEL = "app.kubernetes.io/name"
 DEFAULT_PROD_LABEL = ""
@@ -14,7 +22,6 @@ DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_LOG_FORMAT = "%(asctime)-15s %(levelname)-8s [%(name)s] %(message)s"
 DEFAULT_LOG_DATE_FORMAT = "%m-%d-%Y %H:%M:%S"
 DEFAULT_GIT = "github"
-DEFAULT_GIT_API = ""
 DEFAULT_TLS_VERIFY = True
 DEFAULT_TRACKER = "jira"
 DEFAULT_TRACKER_APP_LABEL = "unknown"
@@ -22,11 +29,6 @@ DEFAULT_TRACKER_APP_FIELD = "u_application"
 
 
 def _print_version():
-    """
-    Print the version of the currently running collector.
-    Gets the collector name from inspecting `__main__`.
-    Gets version information from environment variables in container image.
-    """
     import __main__
 
     file = getattr(__main__, "__file__", None)
@@ -49,7 +51,6 @@ def _print_version():
             logging.info("Running %s exporter. No version information found.", exporter_name)
 
 
-# region: logging setup
 _VALID_LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
 
 
@@ -70,14 +71,9 @@ def setup_logging(prod: bool = True):
     root_logger.addHandler(handler)
     root_logger.setLevel(numeric_level)
     logging.info("Initializing Logger with LogLevel: %s", loglevel)
+    logging.info("PELORUS_TIMESTAMP_THRESHOLD_MINUTES=%d", METRIC_TIMESTAMP_THRESHOLD_MINUTES)
     _print_version()
 
-
-# endregion
-
-# A NamespaceSpec lists namespaces to restrict the search to.
-# Use None or an empty list to include all namespaces.
-NamespaceSpec = Optional[Sequence[str]]
 
 
 def url_joiner(base: str, *parts: str) -> str:

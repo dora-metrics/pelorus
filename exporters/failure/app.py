@@ -77,7 +77,8 @@ if __name__ == "__main__":
             exc_info=True,
         )
 
-    start_http_server(8080)
+    start_http_server(pelorus.EXPORTER_PORT)
+    logging.info("Failure exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
 
     while True:
         time.sleep(1)

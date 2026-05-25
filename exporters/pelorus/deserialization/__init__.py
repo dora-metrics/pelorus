@@ -64,6 +64,7 @@ from typing import (
     Mapping,
     MutableSequence,
     NamedTuple,
+    NoReturn,
     Optional,
     Sequence,
     TypeGuard,
@@ -85,7 +86,7 @@ from pelorus.deserialization.errors import (
     TypeCheckError,
 )
 from pelorus.utils import BadAttributePathError, format_path, get_nested, split_path
-from pelorus.utils._attrs_compat import NOTHING
+from attrs import NOTHING
 
 # metadata
 _NESTED_PATH_KEY = "__pelorus_structure_nested_path"
@@ -385,6 +386,19 @@ class _Deserializer:
             self.unstructured_data_path.pop()
             self.structured_field_name_path.pop()
 
+    def _raise_field_errors(self, errors: list) -> NoReturn:
+        unstructured_src = self.unstructured_data_path[-1]
+        src_name = (
+            unstructured_src
+            if isinstance(unstructured_src, str)
+            else format_path(unstructured_src)
+        )
+        raise DeserializationErrors(
+            errors,
+            target_name=self.structured_field_name_path[-1],
+            src_name=src_name,
+        )
+
     def _deserialize_attrs_class(self, src: Mapping[str, Any], to: type[T]) -> T:
         "Initialize an attrs class field-by-field."
         assert _is_attrs_class(to), f"class was not an attrs class: {to.__name__}"
@@ -414,17 +428,7 @@ class _Deserializer:
         if not field_errors:
             return to(**class_kwargs)  # type: ignore
         else:
-            unstructured_src = self.unstructured_data_path[-1]
-            src_name = (
-                unstructured_src
-                if isinstance(unstructured_src, str)
-                else format_path(unstructured_src)
-            )
-            raise DeserializationErrors(
-                field_errors,
-                target_name=self.structured_field_name_path[-1],
-                src_name=src_name,
-            )
+            self._raise_field_errors(field_errors)
 
     def _deserialize_dict(
         self, src: Mapping[str, Any], target_value_type: type[T]
@@ -456,17 +460,7 @@ class _Deserializer:
         if not errors:
             return dict_
         else:
-            unstructured_src = self.unstructured_data_path[-1]
-            src_name = (
-                unstructured_src
-                if isinstance(unstructured_src, str)
-                else format_path(unstructured_src)
-            )
-            raise DeserializationErrors(
-                errors,
-                src_name=src_name,
-                target_name=self.structured_field_name_path[-1],
-            )
+            self._raise_field_errors(errors)
 
     def _deserialize_list(
         self, src: Iterable[Any], target_value_type: type[T]
@@ -477,8 +471,8 @@ class _Deserializer:
         list_ = []
         errors = []
 
-        for i, item in enumerate(iter(src)):
-            i = str(i)
+        for idx, item in enumerate(iter(src)):
+            i = str(idx)
             try:
                 # it's a little bit weird, because a list is both structured and unstructured.
                 self.unstructured_data_path.append(i)
@@ -500,17 +494,7 @@ class _Deserializer:
         if not errors:
             return list_
         else:
-            unstructured_src = self.unstructured_data_path[-1]
-            src_name = (
-                unstructured_src
-                if isinstance(unstructured_src, str)
-                else format_path(unstructured_src)
-            )
-            raise DeserializationErrors(
-                errors,
-                src_name=src_name,
-                target_name=self.structured_field_name_path[-1],
-            )
+            self._raise_field_errors(errors)
 
     def _deserialize_primitive(self, value: Any, target_type: type[T]) -> T:
         "Deserialize a primitive by checking it is the target type."

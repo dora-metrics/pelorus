@@ -75,7 +75,7 @@ def test_pelorus_webhook_no_headers(client, webhook_data_payload):
     webhook_response = client.post(WEBHOOK_ENDPOINT, json=webhook_data_payload[0])
 
     assert webhook_response.status_code == HTTPStatus.BAD_REQUEST
-    assert webhook_response.text == '{"detail":"Unsupported User-Agent."}'
+    assert webhook_response.json() == {"detail": "Unsupported User-Agent."}
 
 
 @pytest.mark.parametrize(
@@ -107,10 +107,10 @@ def test_pelorus_webhook_post_data_no_secret(client, webhook_data_payload, event
         )
 
         assert webhook_response.status_code == HTTPStatus.ACCEPTED
-        assert (
-            webhook_response.text
-            == '{"http_response":"Webhook Received","http_response_code":202}'
-        )
+        assert webhook_response.json() == {
+            "http_response": "Webhook Received",
+            "http_response_code": 202,
+        }
 
 
 @pytest.mark.parametrize(
@@ -147,7 +147,7 @@ def test_pelorus_webhook_post_data_wrong_x_signature_mismatch(
         )
 
         assert webhook_response.status_code == HTTPStatus.UNAUTHORIZED
-        assert webhook_response.text == '{"detail":"Invalid signature."}'
+        assert webhook_response.json() == {"detail": "Invalid signature."}
 
 
 @pytest.mark.parametrize(
@@ -190,7 +190,7 @@ def test_pelorus_webhook_post_data_wrong_x_signature_format(
         )
 
         assert webhook_response.status_code == HTTPStatus.BAD_REQUEST
-        assert webhook_response.text == '{"detail":"Improper headers."}'
+        assert webhook_response.json() == {"detail": "Improper headers."}
 
 
 @pytest.mark.parametrize(
@@ -221,7 +221,7 @@ def test_pelorus_webhook_post_data_missing_x_signature(
         )
 
         assert webhook_response.status_code == HTTPStatus.UNAUTHORIZED
-        assert webhook_response.text == '{"detail":"Non existing signature."}'
+        assert webhook_response.json() == {"detail": "Non existing signature."}
 
 
 @pytest.mark.parametrize(
@@ -268,10 +268,10 @@ def test_pelorus_webhook_post_data_x_signature_secret(client, webhook_data_paylo
         )
 
         assert webhook_response.status_code == HTTPStatus.ACCEPTED
-        assert (
-            webhook_response.text
-            == '{"http_response":"Webhook Received","http_response_code":202}'
-        )
+        assert webhook_response.json() == {
+            "http_response": "Webhook Received",
+            "http_response_code": 202,
+        }
 
 
 @pytest.mark.parametrize("post_request_json_file", ["webhook_pelorus_committime.json"])

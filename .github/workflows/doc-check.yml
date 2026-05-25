@@ -12,6 +12,10 @@ on:
       - 'mkdocs.yml'
       - 'Makefile'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   doc-check:
     runs-on: ubuntu-latest

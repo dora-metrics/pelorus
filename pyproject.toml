@@ -8,6 +8,7 @@ requires-python = ">=3.11"
 dependencies = [
     "attrs>=26.1.0",
     "azure-devops==7.1.0b4",
+    "certifi>=2026.2.25",
     "fastapi>=0.135.3",
     "git-url-parse>=1.2.2",
     "jira>=3.10.5",
@@ -16,6 +17,7 @@ dependencies = [
     "python-gitlab>=8.2.0",
     "requests>=2.33.1",
     "typing-extensions>=4.15.0",
+    "urllib3>=2.6.3",
     "uvicorn>=0.44.0",
     "pydantic>=2.12.5",
 ]
@@ -23,7 +25,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "black>=26.3.1",
-    "httpx>=0.28.1",
     "isort>=8.0.1",
     "pre-commit>=4.5.1",
     "pylama[toml]>=8.4.1",

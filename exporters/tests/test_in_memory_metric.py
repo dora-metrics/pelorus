@@ -29,8 +29,6 @@ from webhook.store.in_memory_metric import (
     pelorus_metric_to_prometheus,
 )
 
-CURRENT_TIMESTAMP = int(time.time())
-
 metric_labels = list(_pelorus_metric_to_dict(CommitTimePelorusPayload).keys())
 
 in_memory_test_committime_metrics = PelorusGaugeMetricFamily(
@@ -68,7 +66,7 @@ class TestInMemoryMetric:
         Prometheus.
         """
         name = "todolist"
-        timestamp = str(CURRENT_TIMESTAMP)
+        timestamp = str(int(time.time()))
         image_hash = "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d"
         namespace = "mynamespace"
         commit_hash = "5379bad65a3f83853a75aabec9e0e43c75fd18fc"
@@ -87,7 +85,7 @@ class TestInMemoryMetric:
             commit_payload.timestamp,
         )
 
-        metric_labels = {
+        query_labels = {
             "app": f"/{name}/",
             "image_sha": image_hash,
             "commit": commit_hash,
@@ -96,10 +94,10 @@ class TestInMemoryMetric:
 
         query_result = REGISTRY.get_sample_value(
             "test_committime_metrics",
-            labels=metric_labels,
+            labels=query_labels,
         )
 
-        assert str(query_result) == timestamp
+        assert query_result == float(timestamp)
 
 
 def test_all_models_have_prometheus_mappings():
@@ -114,7 +112,9 @@ def test_all_models_have_prometheus_mappings():
 
     for test_model in test_models:
         metric = _pelorus_metric_to_dict(test_model)
-        assert bool(metric)  # dict should not be empty
+        assert isinstance(metric, dict) and len(metric) > 0, (
+            f"{test_model.__name__} returned empty or non-dict Prometheus mapping"
+        )
 
 
 class NewPelorusPayloadModel(PelorusPayload):
@@ -133,7 +133,7 @@ def test_model_does_not_have_prometheus_mapping():
     "webhook.store.in_memory_metric._pelorus_metric_to_dict",
     return_value={"app": "nonexisting"},
 )
-def test_model_missing_value_in_model(*args):
+def test_model_missing_value_in_model(_mock_metric_to_dict):
     """Ensure TypeError is raised when Prometheus mapping references attributes not present in the model."""
 
     with pytest.raises(TypeError) as type_error:

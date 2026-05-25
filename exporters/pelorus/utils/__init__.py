@@ -16,11 +16,7 @@
 #
 
 
-"""
-Module utils contains helper utilities for common tasks in the codebase.
-They are mainly to help with type information and to deal with data structures
-in kubernetes that are not so idiomatic to deal with.
-"""
+"""Shared utilities: env var handling, Kubernetes client setup, HTTP/TLS helpers, and URL parsing."""
 import logging
 import os
 from typing import ClassVar, Generator, Optional, cast, overload
@@ -45,10 +41,6 @@ DEFAULT_VAR_KEYWORD = "default"
 
 
 class SpecializeDebugFormatter(logging.Formatter):
-    """
-    Uses a different format for DEBUG messages that has more information.
-    """
-
     DEBUG_FORMAT = "%(asctime)-15s %(levelname)-8s [%(name)s] %(pathname)s:%(lineno)d %(funcName)s() %(message)s"
 
     def __init__(self, *args, **kwargs):
@@ -115,30 +107,28 @@ def get_env_var(var_name: str, default_value: Optional[str] = None) -> Optional[
 
 
 def get_k8s_client():
-    """
-    `get_k8s_client` provides interface to get dynamic Kubernetes client to access cluster
-    information by the exporters.
-    """
-    k8s_client = None
     try:
         k8sconfig = config.new_client_from_config()
         k8s_client = DynamicClient(k8sconfig)
         logging.info("Kubernetes client initialized from kubeconfig")
+        return k8s_client
     except config.config_exception.ConfigException:
+        logging.debug("Kubeconfig not available, trying in-cluster config")
+    try:
         config.load_incluster_config()
         k8sconfig = client.Configuration().get_default_copy()
         client.Configuration.set_default(k8sconfig)
         k8s_client = DynamicClient(client.ApiClient(k8sconfig))
         logging.info("Kubernetes client initialized from in-cluster config")
-
-    return k8s_client
+        return k8s_client
+    except config.config_exception.ConfigException as exc:
+        raise RuntimeError(
+            "Could not configure Kubernetes client: "
+            "neither kubeconfig nor in-cluster config available"
+        ) from exc
 
 
 class TokenAuth(requests.auth.AuthBase):
-    """
-    Add token authentication to a requests Request or Session.
-    """
-
     def __init__(self, token: str, is_pagerduty: bool = False):
         self.auth_str = f"Token token={token}" if is_pagerduty else f"token {token}"
 
@@ -175,6 +165,7 @@ def set_up_requests_session(
     session: requests.Session, verify: Optional[bool], **kwargs
 ):
     "Configures a requests session for proper TLS handling and auth."
+    session.trust_env = False
     session.verify = set_up_requests_certs(verify)
     if "auth" in kwargs:
         auth: Optional[requests.auth.AuthBase] = kwargs["auth"]
@@ -193,12 +184,9 @@ def join_url_path_components(*components: str) -> str:
 def paginate_resource(
     resource: Resource,
     query: dict[str, str],
-    # completely arbitrary. Could experiment.
     limit: int = 50,
 ) -> Generator[ResourceInstance, None, None]:
-    """
-    Paginate requests for openshift resources.
-    """
+    """Paginate through Kubernetes API list responses using continue tokens."""
     client = cast(DynamicClient, resource.client)
 
     list_ = client.get(resource, **query, limit=limit)
@@ -210,6 +198,7 @@ def paginate_resource(
     while continue_token:
         list_ = client.get(resource, **query, limit=limit, _continue=continue_token)
         yield from list_.items
+        continue_token = list_.metadata.get("continue")
 
 
 class Url(urllib3.util.Url):

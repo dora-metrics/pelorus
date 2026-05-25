@@ -24,6 +24,10 @@ on:
       - 'Makefile'
       - 'scripts/run-mockoon-tests.sh'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   mockoon-test:
     runs-on: ubuntu-latest

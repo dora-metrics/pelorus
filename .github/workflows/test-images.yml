@@ -90,8 +90,8 @@ jobs:
           sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_deployment.yaml
           sed -i "s,$CURRENT_OPERATOR_VERSION,$TEST_VERSION,g" Makefile
           sed -i "s,pelorus-operator,rc-pelorus-operator,g" Makefile
-          find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
-          find . -type f | xargs sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
+          find . -not -path './.git/*' -type f -print0 | xargs -0 sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
+          find . -not -path './.git/*' -type f -print0 | xargs -0 sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
 
           grep "$TEST_OPERATOR_IMAGE" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
           grep "$TEST_EXPORTER_IMAGE" helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
@@ -100,7 +100,7 @@ jobs:
           grep rc-pelorus-operator Makefile
 
           helm dep update helm-charts/pelorus
-          rm -r helm-charts/pelorus/charts/*.tgz
+          rm -f helm-charts/pelorus/charts/*.tgz
 
       - name: Build and push operator test image
         working-directory: ./pelorus-operator

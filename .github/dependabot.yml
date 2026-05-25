@@ -14,3 +14,17 @@ updates:
       interval: "daily"
     commit-message:
       prefix: ⬆
+  # Docker - exporters
+  - package-ecosystem: "docker"
+    directory: "/exporters"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆
+  # Docker - operator
+  - package-ecosystem: "docker"
+    directory: "/pelorus-operator"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆

@@ -131,29 +131,36 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
         replica_pods_dict = filter_pods_by_replica_uid(pods)
 
         for uid, pod in replica_pods_dict.items():
-            replicas = get_owner_object_from_child(self.client, uid, pod)
+            try:
+                replicas = get_owner_object_from_child(self.client, uid, pod)
 
-            replica = replicas.get(uid)
-            if replica is None:
-                logging.debug(
-                    "Parent object not found for pod %s (uid=%s), skipping",
-                    pod.metadata.name, uid,
+                replica = replicas.get(uid)
+                if replica is None:
+                    logging.debug(
+                        "Parent object not found for pod %s (uid=%s), skipping",
+                        pod.metadata.name, uid,
+                    )
+                    continue
+
+                # Multiple containers (images) per pod: emit one metric per image
+                images = get_images_from_pod(pod)
+
+                for sha in images:
+                    metric = DeployTimeMetric(
+                        name=pod.metadata.labels[self.app_label],
+                        namespace=pod.metadata.namespace,
+                        labels=pod.metadata.labels,
+                        deploy_time=replica.metadata.creationTimestamp,
+                        image_sha=sha,
+                    )
+                    yield metric
+            except Exception:
+                logging.error(
+                    "Failed to process pod %s/%s, skipping",
+                    getattr(getattr(pod, "metadata", None), "namespace", "?"),
+                    getattr(getattr(pod, "metadata", None), "name", "?"),
+                    exc_info=True,
                 )
-                continue
-
-            # Since there could be multiple containers (images) per pod,
-            # we push one metric per image/container in the pod template
-            images = get_images_from_pod(pod)
-
-            for sha in images.keys():
-                metric = DeployTimeMetric(
-                    name=pod.metadata.labels[self.app_label],
-                    namespace=pod.metadata.namespace,
-                    labels=pod.metadata.labels,
-                    deploy_time=replica.metadata.creationTimestamp,
-                    image_sha=sha,
-                )
-                yield metric
 
 
 def set_up(prod: bool = True) -> DeployTimeCollector:
@@ -167,7 +174,18 @@ def set_up(prod: bool = True) -> DeployTimeCollector:
 
 
 if __name__ == "__main__":
-    set_up()
-    start_http_server(8080)
+    try:
+        set_up()
+    except Exception as e:
+        logging.error(
+            "Failed to configure deploytime exporter: %s. "
+            "Check NAMESPACES and PROD_LABEL settings. "
+            "Starting metrics server anyway - configure and restart to collect deploy data.",
+            e,
+            exc_info=True,
+        )
+
+    start_http_server(pelorus.EXPORTER_PORT)
+    logging.info("Deploytime exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
     while True:
         time.sleep(1)

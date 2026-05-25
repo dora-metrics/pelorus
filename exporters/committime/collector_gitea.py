@@ -6,12 +6,10 @@ from attrs import define, field
 
 from committime import CommitMetric
 from pelorus.config.converters import pass_through
-from pelorus.timeutil import parse_assuming_utc, second_precision
+from pelorus.timeutil import ISO_ZULU_FMT, parse_assuming_utc, second_precision
 from pelorus.utils import Url, set_up_requests_session
 
 from .collector_base import AbstractCommitCollector, check_provider_support
-
-_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 DEFAULT_GITEA_API = Url.parse("https://try.gitea.io")
 
@@ -66,26 +64,36 @@ class GiteaCommitCollector(AbstractCommitCollector):
                 metric.repo_url,
                 response.status_code,
             )
-        else:
+            return metric
+        try:
             commit = response.json()
-            try:
-                commit_time_str: str = commit["commit"]["committer"]["date"]
-                metric.commit_time = commit_time_str
+        except requests.JSONDecodeError:
+            logging.error(
+                "Invalid JSON response for build: %s, hash: %s, url: %s",
+                metric.build_name,
+                metric.commit_hash,
+                metric.repo_url,
+                exc_info=True,
+            )
+            return metric
+        try:
+            commit_time_str: str = commit["commit"]["committer"]["date"]
+            metric.commit_time = commit_time_str
 
-                commit_time = parse_assuming_utc(
-                    commit_time_str, format=_DATETIME_FORMAT
-                )
-                commit_time = second_precision(commit_time)
+            commit_time = parse_assuming_utc(
+                commit_time_str, format=ISO_ZULU_FMT
+            )
+            commit_time = second_precision(commit_time)
 
-                logging.debug("metric.commit_time %s", commit_time)
-                metric.commit_timestamp = commit_time.timestamp()
-                metric.commit_link = commit["html_url"]
-            except Exception:
-                logging.error(
-                    "Failed processing commit time for build %s",
-                    metric.build_name,
-                    exc_info=True,
-                )
-                logging.debug("Raw commit response keys: %s", list(commit.keys()) if isinstance(commit, dict) else type(commit).__name__)
-                raise
+            logging.debug("metric.commit_time %s", commit_time)
+            metric.commit_timestamp = commit_time.timestamp()
+            metric.commit_link = commit["html_url"]
+        except Exception:
+            logging.error(
+                "Failed processing commit time for build %s",
+                metric.build_name,
+                exc_info=True,
+            )
+            logging.debug("Raw commit response keys: %s", list(commit.keys()) if isinstance(commit, dict) else type(commit).__name__)
+            raise
         return metric

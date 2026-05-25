@@ -2,6 +2,7 @@ import logging
 import re
 import threading
 import time
+from collections import OrderedDict
 from datetime import datetime
 from typing import Optional
 
@@ -9,17 +10,15 @@ from kubernetes.dynamic import DynamicClient, ResourceInstance
 from kubernetes.dynamic.exceptions import ResourceNotFoundError
 from kubernetes.dynamic.resource import ResourceField
 
-from pelorus.timeutil import parse_assuming_utc
-
-# Kubernetes ObjectMeta uses RFC 3339 timestamps in this format
-_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+from pelorus.timeutil import ISO_ZULU_FMT, parse_assuming_utc
 
 SUPPORTED_REPLICA_OBJECTS = ["ReplicaSet", "ReplicationController"]
 _SUPPORTED_REPLICA_OBJECTS_SET = frozenset(SUPPORTED_REPLICA_OBJECTS)
 
 # Cache threshold in seconds, used by every cached_parents_dict entry
 CACHE_THRESHOLD_1_DAY = 60 * 60 * 24
-cached_parents_dict: dict[str, tuple[ResourceInstance, float]] = {}
+_CACHE_MAX_SIZE = 10_000
+cached_parents_dict: OrderedDict[str, tuple[ResourceInstance, float]] = OrderedDict()
 _cache_lock = threading.Lock()
 
 # Pre-compiled regex for container image URI parsing
@@ -36,16 +35,22 @@ def _add_object_to_cache(uid: str, k8s_obj: ResourceInstance) -> None:
     """Cache a K8S object by UID. Entries expire after CACHE_THRESHOLD_1_DAY."""
     with _cache_lock:
         if uid not in cached_parents_dict:
+            if len(cached_parents_dict) >= _CACHE_MAX_SIZE:
+                cached_parents_dict.popitem(last=False)
             cached_parents_dict[uid] = (k8s_obj, time.time())
 
 
-def _get_object_from_cache(uid: str) -> ResourceInstance:
+def _get_object_from_cache(uid: str) -> Optional[ResourceInstance]:
     """
     Gets the object from the cache by its uid.
     """
     with _cache_lock:
-        k8s_obj, _ = cached_parents_dict.get(uid) or (None, None)
-    return k8s_obj
+        entry = cached_parents_dict.get(uid)
+        if entry is not None:
+            cached_parents_dict.move_to_end(uid)
+    if entry is None:
+        return None
+    return entry[0]
 
 
 def _remove_expired_objects() -> None:
@@ -76,18 +81,11 @@ def _remove_expired_objects() -> None:
             del cached_parents_dict[uid]
 
 
-def parse_datetime(dt_str: str) -> datetime:
-    return parse_assuming_utc(dt_str, _DATETIME_FORMAT)
-
-
 def convert_datetime(dt: str | datetime) -> datetime:
-    """
-    For use with attrs.
-    """
+    """Attrs converter: parse an ISO 8601 Zulu string to a UTC datetime, or pass through."""
     if isinstance(dt, datetime):
         return dt
-    else:
-        return parse_datetime(dt)
+    return parse_assuming_utc(dt, ISO_ZULU_FMT)
 
 
 def get_running_pods(
@@ -200,6 +198,16 @@ def get_owner_object_from_child(
                 owner_ref.apiVersion,
                 owner_ref.uid,
             )
+        except Exception:
+            logging.warning(
+                "Failed to retrieve owner object %s (kind=%s, apiVersion=%s) for pod %s/%s",
+                owner_ref.uid,
+                owner_ref.kind,
+                owner_ref.apiVersion,
+                child_object.metadata.namespace,
+                child_object.metadata.name,
+                exc_info=True,
+            )
     return {}
 
 
@@ -229,6 +237,7 @@ def filter_pods_by_replica_uid(
         for pod in pods_list
         for owner_reference in pod.metadata.ownerReferences or []
         if hasattr(owner_reference, "uid")
+        and owner_reference.kind in _SUPPORTED_REPLICA_OBJECTS_SET
     }
 
 
@@ -300,7 +309,7 @@ def _parse_container_image_uri(
 
 def get_images_from_pod(pod: ResourceField) -> dict[str, str]:
     """
-    Get the image with it's sha256 from the pod (imageID). The parent object such as
+    Get the image with its sha256 from the pod (imageID). The parent object such as
     ReplicaSet may contain only image reference by label and not the unique
     sha256, which isn't ideal, so we need to aggregate the images from the
     running pods and corresponding parent objects.

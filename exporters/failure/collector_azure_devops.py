@@ -29,6 +29,7 @@ from failure.collector_base import (
     AbstractFailureCollector,
     FailureProviderAuthenticationError,
     TrackerIssue,
+    _issue_parse_failures,
 )
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated, pass_through
@@ -88,7 +89,7 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
             if error.type_key == "UnauthorizedRequestException":
                 logging.error(FailureProviderAuthenticationError.auth_message)
                 raise FailureProviderAuthenticationError from error
-            logging.error(error.message, exc_info=True)
+            logging.error("Azure DevOps connection error: %s", error.message, exc_info=True)
             raise
 
     def get_work_items(self) -> list[WorkItem]:
@@ -141,10 +142,10 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
             if error.type_key == "UnauthorizedRequestException":
                 logging.error(FailureProviderAuthenticationError.auth_message)
                 raise FailureProviderAuthenticationError from error
-            logging.error(error.message, exc_info=True)
+            logging.error("Azure DevOps API error: %s", error.message, exc_info=True)
             raise
         except Exception as error:
-            logging.error(error, exc_info=True)  # pragma: no cover
+            logging.error("Azure DevOps work item query failed: %s", error, exc_info=True)  # pragma: no cover
             raise  # pragma: no cover
 
     def filter_by_project(self, project: str) -> bool:
@@ -175,46 +176,65 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
         `issue` in Azure DevOps is called `work item`.
         """
         production_work_items = []
-        for work_item in self.get_work_items():
-            if self.filter_by_project(work_item.fields["System.TeamProject"]):
-                created_at = work_item.fields["System.CreatedDate"]
-                work_item_id = work_item.id
-                title = work_item.fields["System.Title"]
+        all_work_items = self.get_work_items()
+        total_count = len(all_work_items)
+        skipped = 0
+        for work_item in all_work_items:
+            try:
+                if self.filter_by_project(work_item.fields["System.TeamProject"]):
+                    created_at = work_item.fields["System.CreatedDate"]
+                    work_item_id = work_item.id
+                    title = work_item.fields["System.Title"]
 
-                created_tz = parse_assuming_utc_with_fallback(
-                    created_at, _DATETIME_FORMAT, _DATETIME_FORMAT_FALLBACK
+                    created_tz = parse_assuming_utc_with_fallback(
+                        created_at, _DATETIME_FORMAT, _DATETIME_FORMAT_FALLBACK
+                    )
+                    created_ts = second_precision(created_tz).timestamp()
+
+                    try:
+                        resolved_at = work_item.fields["Microsoft.VSTS.Common.ClosedDate"]
+                        resolution_tz = parse_assuming_utc_with_fallback(
+                            resolved_at, _DATETIME_FORMAT, _DATETIME_FORMAT_FALLBACK
+                        )
+                        resolution_ts = second_precision(resolution_tz).timestamp()
+
+                        logging.debug(
+                            "Found production incident closed: %s, %s: %s",
+                            resolved_at,
+                            work_item_id,
+                            title,
+                        )
+                    except KeyError:
+                        logging.debug(
+                            "Found production incident opened: %s, %s: %s",
+                            created_at,
+                            work_item_id,
+                            title,
+                        )
+                        resolution_ts = None
+
+                    tracker_issue = TrackerIssue(
+                        str(work_item_id),
+                        created_ts,
+                        resolution_ts,
+                        self.get_app_name(work_item),
+                    )
+                    production_work_items.append(tracker_issue)
+            except Exception:
+                skipped += 1
+                _issue_parse_failures.inc()
+                logging.error(
+                    "Failed to parse Azure DevOps work item %s, skipping",
+                    getattr(work_item, "id", "unknown"),
+                    exc_info=True,
                 )
-                created_ts = second_precision(created_tz).timestamp()
-
-                try:
-                    resolved_at = work_item.fields["Microsoft.VSTS.Common.ClosedDate"]
-                    resolution_tz = parse_assuming_utc_with_fallback(
-                        resolved_at, _DATETIME_FORMAT, _DATETIME_FORMAT_FALLBACK
-                    )
-                    resolution_ts = second_precision(resolution_tz).timestamp()
-
-                    logging.debug(
-                        "Found production incident closed: %s, %s: %s",
-                        resolved_at,
-                        work_item_id,
-                        title,
-                    )
-                except KeyError:
-                    logging.debug(
-                        "Found production incident opened: %s, %s: %s",
-                        created_at,
-                        work_item_id,
-                        title,
-                    )
-                    resolution_ts = None
-
-                tracker_issue = TrackerIssue(
-                    str(work_item_id),
-                    created_ts,
-                    resolution_ts,
-                    self.get_app_name(work_item),
-                )
-                production_work_items.append(tracker_issue)
+        if skipped:
+            logging.warning("Skipped %d unparseable Azure DevOps work items", skipped)
         if not production_work_items:
-            logging.debug("No issues were found")
+            logging.debug("No matching work items found out of %d total", total_count)
+        else:
+            logging.info(
+                "Found %d matching work items out of %d total from Azure DevOps",
+                len(production_work_items), total_count,
+            )
         return production_work_items

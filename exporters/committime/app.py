@@ -90,9 +90,6 @@ class ImageCommittimeConfig:
 
     app_label: str = pelorus.DEFAULT_APP_LABEL
 
-    # Used to convert time and date found in the
-    # Docker Label io.openshift.build.commit.date
-    # or annotation for the Image
     date_format: str = field(
         default=DEFAULT_COMMIT_DATE_FORMAT, metadata=env_vars("COMMIT_DATE_FORMAT")
     )
@@ -210,8 +207,22 @@ def set_up(prod: bool = True) -> AbstractCommitCollector:
 
 
 if __name__ == "__main__":
-    set_up()
-    start_http_server(8080)
+    import logging
+
+    try:
+        set_up()
+    except Exception as e:
+        logging.error(
+            "Failed to configure committime exporter: %s. "
+            "Set GIT_PROVIDER (git/image/containerimage) "
+            "and required provider settings (e.g. TOKEN, GIT_API). "
+            "Starting metrics server anyway - configure and restart to collect commit data.",
+            e,
+            exc_info=True,
+        )
+
+    start_http_server(pelorus.EXPORTER_PORT)
+    logging.info("Committime exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
 
     while True:
         time.sleep(1)

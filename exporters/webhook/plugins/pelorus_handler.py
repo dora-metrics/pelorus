@@ -46,49 +46,22 @@ from .pelorus_handler_base import (
 
 _HEADERS_ADAPTER = TypeAdapter(PelorusDeliveryHeaders)
 
+_SEPARATOR_FORMATS = [
+    (", ", ": "),
+    (",", ":"),
+    (", ", ":"),
+    (",", " :"),
+    (", ", " :"),
+]
+
 
 def _verify_payload_signature(
     secret: bytes, signature_secret: str, json_payload_data: dict[str, str],
     raw_body: Optional[bytes] = None,
 ) -> bool:
-    """
-    This function attempts to match the hash of a payload to its data,
-    with the understanding that the input JSON may be formatted slightly
-    differently, such as having different separators or newlines.
-
-    Any change to a single character in the sender's JSON input will
-    change its hash signature. Therefore, on the webhook side,
-    this function attempts to ignore separators and newline characters
-    in order to match the incoming hash using variations of those formats
-    that do not affect the payload data.
-
-    To illustrate this point, consider the following variations of
-    the same JSON input, which are actually equivalent:
-
-    {"data": "value", "data2": "value2"}
-    {"data":"value","data2":"value2"}
-    {"data":"value", "data2":"value2"}
-    {"data" :"value","data2" :"value2"}
-    {"data" :"value", "data2" :"value2"}
-    {"data": "value", "data2": "value2"}\n
-    {"data":"value","data2":"value2"}\n
-    {"data":"value", "data2":"value2"}\n
-    {"data" :"value","data2" :"value2"}\n
-    {"data" :"value", "data2" :"value2"}\n
-    { "data": "value", "data2": "value2" }
-    { "data":"value","data2":"value2" }
-    { "data":"value", "data2":"value2" }
-    { "data" :"value","data2" :"value2" }
-    { "data" :"value", "data2" :"value2" }
-    { "data": "value", "data2": "value2" }\n
-    { "data":"value","data2":"value2" }\n
-    { "data":"value", "data2":"value2" }\n
-    { "data" :"value","data2" :"value2" }\n
-    { "data" :"value", "data2" :"value2" }\n
-
-    Returns:
-        bool: True when the matching hash was found, False otherwise
-    """
+    """Verify HMAC-SHA256 signature against the raw body first, then
+    fall back to re-serialized JSON variants (different separators/whitespace)
+    to tolerate formatting differences between sender and receiver."""
 
     # Fast path: verify against raw request body (standard webhook pattern).
     # This avoids re-serializing JSON in multiple formats when the sender
@@ -103,14 +76,7 @@ def _verify_payload_signature(
 
     # Fallback: try re-serialized JSON variants for senders that sign
     # a differently-formatted JSON string than what they transmit.
-    separator_formats = [
-        (", ", ": "),
-        (",", ":"),
-        (", ", ":"),
-        (",", " :"),
-        (", ", " :"),
-    ]
-    for separator in separator_formats:
+    for separator in _SEPARATOR_FORMATS:
         base_json = json.dumps(
             json_payload_data, separators=separator, indent=None
         ).rstrip("\n")
@@ -226,7 +192,7 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
                     status_code=http.HTTPStatus.UNAUTHORIZED,
                     detail="Non existing signature.",
                 )
-            return issubclass(type(self.payload_headers), PelorusDeliveryHeaders)
+            return isinstance(self.payload_headers, PelorusDeliveryHeaders)
         except ValidationError as ex:
             sensitive = ("x-hub-signature-256", "authorization")
             safe_headers = {
@@ -272,6 +238,10 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
                     json_payload_data,
                     raw_body=raw_body,
                 ):
+                    logging.warning(
+                        "HMAC signature verification failed for event %s",
+                        self.payload_headers.event_type,
+                    )
                     raise HTTPException(
                         status_code=http.HTTPStatus.UNAUTHORIZED,
                         detail="Invalid signature.",

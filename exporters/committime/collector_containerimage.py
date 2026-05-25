@@ -30,7 +30,7 @@ from prometheus_client import Counter
 
 from committime import CommitMetric
 from committime.collector_base import AbstractCommitCollector
-from pelorus.timeutil import parse_guessing_timezone_DYNAMIC, to_epoch_from_string
+from pelorus.timeutil import parse_commit_timestamp
 from provider_common.openshift import (
     filter_pods_by_replica_uid,
     get_and_log_namespaces,
@@ -43,13 +43,15 @@ _skopeo_worker_errors = Counter(
     "Total number of errors in the skopeo background worker",
 )
 
-# A queue to store image URI values to be processed
-image_shas_uris_queue = queue.Queue()
+# A queue to store image URI values to be processed.
+# Bounded to prevent unbounded memory growth when the skopeo worker
+# can't keep pace with new image discoveries.
+image_shas_uris_queue = queue.Queue(maxsize=1000)
 # Cache threshold in seconds for the in-memory image label cache.
 # Cached entries expire when the threshold is exceeded and the image SHA
 # is no longer in use by any running Pod. This avoids excessive skopeo calls
 # while still allowing pods to be temporarily not running before expiring its metric.
-CACHE_THRESHOLD_1_DAYS = 60 * 60 * 24
+CACHE_THRESHOLD_1_DAY = 60 * 60 * 24
 
 # We store skopeo failures and we re-try maximum SKOPEO_MAX_RETRY times per
 # one image URI. This is to prevent too many calls to the external container
@@ -89,7 +91,7 @@ def _cleanup_cache(active_shas: set) -> None:
         expired_shas = [
             sha
             for sha, (_, insertion_time) in image_label_cache.items()
-            if current_time - insertion_time > CACHE_THRESHOLD_1_DAYS
+            if current_time - insertion_time > CACHE_THRESHOLD_1_DAY
             and sha not in active_shas
         ]
         for sha_256 in expired_shas:
@@ -107,9 +109,8 @@ def _add_skopeo_failure(sha_256: str) -> None:
 
 def _remove_from_skopeo_failure(sha_256: str) -> None:
     with skopeo_failures_lock:
-        if sha_256 in skopeo_failures:
+        if skopeo_failures.pop(sha_256, None) is not None:
             logging.debug("Removing SHA256 from the failures: %s", sha_256)
-            skopeo_failures.pop(sha_256, None)
 
 
 def _sha256_valid_to_be_checked(sha_256: str) -> bool:
@@ -147,15 +148,15 @@ def get_labels_from_image(sha_256: str, image_uri: str) -> dict[str, str]:
     command = ["skopeo", "inspect", "--cert-dir", CA_CRT_DIR, image_uri]
     logging.debug("Running command: %s", shlex.join(command))
     process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     try:
         output, stderr = process.communicate(timeout=120)
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
         process.kill()
         process.communicate()
         _add_skopeo_failure(sha_256)
-        raise SkopeoDataException("skopeo timed out after 120s")
+        raise SkopeoDataException("skopeo timed out after 120s") from exc
     output = output.decode("utf-8").strip()
     if process.returncode != 0:
         _add_skopeo_failure(sha_256)
@@ -218,7 +219,10 @@ def _add_image_to_get_label_queue(sha_256: str, image_uri: str) -> None:
         if sha_256 in image_label_cache:
             return
     logging.debug("Adding SHA256 to the SKOPEO queue: %s", sha_256)
-    image_shas_uris_queue.put({sha_256: image_uri})
+    try:
+        image_shas_uris_queue.put_nowait({sha_256: image_uri})
+    except queue.Full:
+        logging.warning("Skopeo queue full, dropping image %s", sha_256)
 
 
 def _set_commit_metadata(
@@ -239,23 +243,15 @@ def _set_commit_metadata(
         commit_time = labels.get(date_label)
         if commit_time:
             try:
-                pod.metadata.commit_timestamp = to_epoch_from_string(
-                    commit_time
-                ).timestamp()
-            except (ValueError, AttributeError) as e:
-                logging.debug(
-                    "Primary timestamp parse failed for sha %s: %s, trying fallback",
-                    sha_256, e,
+                pod.metadata.commit_timestamp = parse_commit_timestamp(
+                    commit_time, date_format
                 )
-                try:
-                    pod.metadata.commit_timestamp = parse_guessing_timezone_DYNAMIC(
-                        commit_time, format=date_format
-                    ).timestamp()
-                except ValueError:
-                    logging.warning(
-                        "Can't parse commit timestamp for sha %s, raw value: %s",
-                        sha_256, commit_time,
-                    )
+            except (ValueError, AttributeError):
+                logging.warning(
+                    "Can't parse commit timestamp for sha %s, raw value: %s",
+                    sha_256, commit_time,
+                    exc_info=True,
+                )
         repo_url = labels.get(repo_url_label)
         if not repo_url:
             repo_url = "unknown"
@@ -277,14 +273,12 @@ class ContainerImageCommitCollector(AbstractCommitCollector):
 
     # overrides collector_base.generate_metrics()
     def generate_metrics(self) -> Iterable[CommitMetric]:
-        metrics = []
-
         namespaces = get_and_log_namespaces(
             self.kube_client, self.namespaces, self.prod_label
         )
 
         if not namespaces:
-            return metrics
+            return
 
         logging.debug("generate_metrics: start")
 

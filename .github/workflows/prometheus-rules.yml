@@ -10,6 +10,7 @@ on:
       - '_test/**'
       - 'pelorus-operator/helm-charts/pelorus/**'
       - '.github/workflows/prometheus-rules.yml'
+      - 'Makefile'
 
   pull_request:
     branches: [ main ]
@@ -17,6 +18,11 @@ on:
       - '_test/**'
       - 'pelorus-operator/helm-charts/pelorus/**'
       - '.github/workflows/prometheus-rules.yml'
+      - 'Makefile'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:

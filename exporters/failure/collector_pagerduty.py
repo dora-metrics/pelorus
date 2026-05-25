@@ -23,14 +23,13 @@ from failure.collector_base import (
     AbstractFailureCollector,
     FailureProviderAuthenticationError,
     TrackerIssue,
+    _issue_parse_failures,
 )
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.config.log import REDACT, log
-from pelorus.timeutil import parse_assuming_utc, second_precision
+from pelorus.timeutil import ISO_ZULU_FMT, parse_assuming_utc, second_precision
 from pelorus.utils import TokenAuth, set_up_requests_session
-
-_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 @define(kw_only=True)
@@ -66,9 +65,6 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
     headers = {"Accept": "application/vnd.pagerduty+json;version=2"}
 
     def __attrs_post_init__(self):
-        # disable .netrc
-        self.session.trust_env = False
-
         if self.token:
             set_up_requests_session(
                 self.session,
@@ -99,6 +95,10 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
             try:
                 resp.raise_for_status()
                 data = resp.json()
+                if "incidents" not in data:
+                    raise RuntimeError(
+                        f"PagerDuty response missing 'incidents' key (keys: {list(data.keys())})"
+                    )
                 incidents = data["incidents"]
                 all_incidents.extend(incidents)
                 logging.debug(
@@ -110,11 +110,14 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
                 if not data.get("more", False):
                     break
                 offset += self._PAGE_LIMIT
+            except requests.JSONDecodeError:
+                logging.error("Invalid JSON response from PagerDuty (offset=%d)", offset, exc_info=True)
+                raise
             except requests.HTTPError as error:
                 if resp.status_code == requests.codes.unauthorized:
                     logging.error(FailureProviderAuthenticationError.auth_message)
                     raise FailureProviderAuthenticationError from error
-                logging.error(error, exc_info=True)  # pragma: no cover
+                logging.error("PagerDuty API request failed: %s", error, exc_info=True)  # pragma: no cover
                 raise  # pragma: no cover
 
         return all_incidents
@@ -140,46 +143,65 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
         `issue` in PagerDuty is called `incident`.
         """
         production_incidents = []
-        for incident in self.get_incidents():
-            is_production_bug = self.filter_by_urgency(
-                incident["urgency"]
-            ) and self.filter_by_priority(incident["priority"])
+        all_incidents = self.get_incidents()
+        total_count = len(all_incidents)
+        skipped = 0
+        for incident in all_incidents:
+            try:
+                is_production_bug = self.filter_by_urgency(
+                    incident["urgency"]
+                ) and self.filter_by_priority(incident["priority"])
 
-            if is_production_bug:
-                created_at = incident["created_at"]
-                resolved_at = incident["last_status_change_at"]
-                incident_id = incident["incident_number"]
-                title = incident["title"]
+                if is_production_bug:
+                    created_at = incident["created_at"]
+                    resolved_at = incident["last_status_change_at"]
+                    incident_id = incident["incident_number"]
+                    title = incident["title"]
 
-                created_tz = parse_assuming_utc(created_at, _DATETIME_FORMAT)
-                created_ts = second_precision(created_tz).timestamp()
+                    created_tz = parse_assuming_utc(created_at, ISO_ZULU_FMT)
+                    created_ts = second_precision(created_tz).timestamp()
 
-                resolution_tz = parse_assuming_utc(resolved_at, _DATETIME_FORMAT)
-                resolution_ts = second_precision(resolution_tz).timestamp()
+                    resolution_tz = parse_assuming_utc(resolved_at, ISO_ZULU_FMT)
+                    resolution_ts = second_precision(resolution_tz).timestamp()
 
-                if resolution_ts > created_ts:
-                    logging.debug(
-                        "Found production incident closed: %s, %s: %s",
-                        resolved_at,
-                        incident_id,
-                        title,
+                    if resolution_ts > created_ts:
+                        logging.debug(
+                            "Found production incident closed: %s, %s: %s",
+                            resolved_at,
+                            incident_id,
+                            title,
+                        )
+                    else:
+                        logging.debug(
+                            "Found production incident opened: %s, %s: %s",
+                            created_at,
+                            incident_id,
+                            title,
+                        )
+                        resolution_ts = None
+
+                    tracker_issue = TrackerIssue(
+                        str(incident_id),
+                        created_ts,
+                        resolution_ts,
+                        incident["service"]["summary"],
                     )
-                else:
-                    logging.debug(
-                        "Found production incident opened: %s, %s: %s",
-                        created_at,
-                        incident_id,
-                        title,
-                    )
-                    resolution_ts = None
-
-                tracker_issue = TrackerIssue(
-                    str(incident_id),
-                    created_ts,
-                    resolution_ts,
-                    incident["service"]["summary"],
+                    production_incidents.append(tracker_issue)
+            except Exception:
+                skipped += 1
+                _issue_parse_failures.inc()
+                logging.error(
+                    "Failed to parse PagerDuty incident %s, skipping",
+                    incident.get("incident_number", "unknown"),
+                    exc_info=True,
                 )
-                production_incidents.append(tracker_issue)
+        if skipped:
+            logging.warning("Skipped %d unparseable PagerDuty incidents", skipped)
         if not production_incidents:
-            logging.debug("No issues were found")
+            logging.debug("No matching incidents found out of %d total", total_count)
+        else:
+            logging.info(
+                "Found %d matching incidents out of %d total",
+                len(production_incidents), total_count,
+            )
         return production_incidents

@@ -26,10 +26,6 @@ import giturlparse
 
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
-DEFAULT_PROVIDER = "git"
-PROVIDER_TYPES = {"git", "image"}
-GIT_PROVIDER_TYPES = {"github", "bitbucket", "gitea", "azure-devops", "gitlab"}
-
 SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 
 # Pre-compiled regexes for Azure DevOps repo URL parsing
@@ -95,7 +91,7 @@ class CommitMetric:
         Setting this will parse it and populate the following properties:
 
         repo_protocol, repo_group, repo_name, repo_project,
-        repo_port, azure_project, git_server, git_fqdn
+        azure_project, git_server, git_fqdn
         """
         return self.__repo_url
 
@@ -167,7 +163,7 @@ class CommitMetric:
         else:
             parsed = giturlparse.parse(self.__repo_url)
         logging.debug("Parsed: %s", parsed)
-        if len(parsed.protocols) > 0 and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
+        if parsed.protocols and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
             raise ValueError(f"Unsupported protocol: {parsed.protocols[0]}")
         self.__repo_protocol = parsed.protocol
         # In the case of multiple subgroups the host will be in the pathname

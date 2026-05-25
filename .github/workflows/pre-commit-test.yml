@@ -18,6 +18,10 @@ on:
       - '.github/workflows/pre-commit-test.yml'
       - 'Makefile'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pre-commit-test:
     strategy:

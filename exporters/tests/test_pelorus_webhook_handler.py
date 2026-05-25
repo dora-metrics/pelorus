@@ -40,23 +40,23 @@ from webhook.plugins.pelorus_handler import (
 )
 from webhook.plugins.pelorus_handler_base import Headers, HTTPException
 
-CURRENT_TIMESTAMP = int(time.time())
+def _current_timestamp():
+    return int(time.time())
 
 
 @pytest.mark.asyncio
 async def test_pelorus_payload_ping_function():
     """Verify 'ping' event raises HTTPException with 'pong' response."""
     event_type = "ping"
+    handler = PelorusWebhookHandler.handler_functions[event_type]
     with pytest.raises(HTTPException) as http_exception:
-        PelorusWebhookHandler.handler_functions.get(event_type, lambda payload: None)(
-            None
-        )
+        handler(None)
     assert http_exception.value.detail == "pong"
     assert http_exception.value.status_code == http.HTTPStatus.OK
 
 
 @pytest.mark.parametrize(
-    "event_type,json_payload",
+    "event_type,json_payload,expected_model",
     [
         (
             "committime",
@@ -66,6 +66,7 @@ async def test_pelorus_payload_ping_function():
             "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
             "namespace": "mongo-persistent"
             }""",
+            CommitTimePelorusPayload,
         ),
         (
             "failure",
@@ -74,6 +75,7 @@ async def test_pelorus_payload_ping_function():
             "failure_id": "Issue-1",
             "failure_event": "created"
             }""",
+            FailurePelorusPayload,
         ),
         (
             "deploytime",
@@ -82,41 +84,21 @@ async def test_pelorus_payload_ping_function():
             "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
             "namespace": "mongo-persistent"
             }""",
+            DeployTimePelorusPayload,
         ),
     ],
 )
 @pytest.mark.asyncio
-async def test_pelorus_payload_functions(event_type, json_payload):
+async def test_pelorus_payload_functions(event_type, json_payload, expected_model):
     """Verify handler functions return correct payload models for each event type."""
-    # We need to use patch as it's async call
-    with patch(
-        "webhook.plugins.pelorus_handler_base.Request.json",
-        new_callable=AsyncMock,
-    ) as mock_receive:
-        json_data = json.loads(json_payload)
-        json_data["timestamp"] = CURRENT_TIMESTAMP
-        mock_receive.return_value = json_data
-        mock_request = AsyncMock()
-        mock_request.json = mock_receive
+    json_data = json.loads(json_payload)
+    json_data["timestamp"] = _current_timestamp()
 
-        json_payload_data = await mock_request.json()
+    handler = PelorusWebhookHandler.handler_functions[event_type]
+    data = handler(json_data)
 
-        # Handler function for the event_type
-        # Passing json_payload_data to it
-        data = PelorusWebhookHandler.handler_functions.get(
-            event_type, lambda payload: None
-        )(json_payload_data)
-
-        # Compare the received payload data from the handler
-        # with the expected data model for the given event type.
-        if event_type == PelorusMetricSpec.COMMIT_TIME:
-            data_model = TypeAdapter(CommitTimePelorusPayload).validate_python(json_payload_data)
-        elif event_type == PelorusMetricSpec.FAILURE:
-            data_model = TypeAdapter(FailurePelorusPayload).validate_python(json_payload_data)
-        elif event_type == PelorusMetricSpec.DEPLOY_TIME:
-            data_model = TypeAdapter(DeployTimePelorusPayload).validate_python(json_payload_data)
-
-        assert data == data_model
+    data_model = TypeAdapter(expected_model).validate_python(json_data)
+    assert data == data_model
 
 
 @pytest.mark.parametrize(
@@ -196,14 +178,14 @@ async def test_pelorus_receive_pelorus_payload_success(headers, json_payload):
     """
     handler_headers = Headers(headers)
     json_payload_data = json.loads(json_payload)
-    json_payload_data["timestamp"] = CURRENT_TIMESTAMP
+    json_payload_data["timestamp"] = _current_timestamp()
     handler = PelorusWebhookHandler(None, request=None)
     handler.payload_headers = TypeAdapter(PelorusDeliveryHeaders).validate_python(dict(handler_headers))
     pelorus_metric = await handler._receive_pelorus_payload(json_payload_data)
 
-    assert issubclass(type(pelorus_metric), PelorusMetric)
+    assert isinstance(pelorus_metric, PelorusMetric)
     assert pelorus_metric.metric_spec == handler.payload_headers.event_type
-    assert issubclass(type(pelorus_metric.metric_data), PelorusPayload)
+    assert isinstance(pelorus_metric.metric_data, PelorusPayload)
 
 
 @pytest.mark.parametrize(

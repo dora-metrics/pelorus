@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Optional, cast
+from typing import Optional
 
 import giturlparse
 import requests
@@ -66,7 +66,11 @@ class Version1(APIVersion):
 
     def update_metric_from_api(self, metric: CommitMetric, api_response: dict):
         # API V1 uses unix time
-        commit_timestamp = api_response["committerTimestamp"]
+        commit_timestamp = api_response.get("committerTimestamp")
+        if commit_timestamp is None:
+            raise KeyError(
+                f"Bitbucket API v1 response missing 'committerTimestamp' for commit {metric.commit_hash}"
+            )
 
         # Convert timestamp from milliseconds to seconds
         converted_timestamp = commit_timestamp / 1000
@@ -96,7 +100,7 @@ class Version2(APIVersion):
         server = metric.git_server
 
         project = metric.repo_project
-        commit = cast(str, metric.commit_hash)
+        commit = metric.commit_hash
         group = metric.repo_group
 
         return pelorus.url_joiner(
@@ -106,9 +110,14 @@ class Version2(APIVersion):
         )
 
     def update_metric_from_api(self, metric: CommitMetric, api_response: dict):
-        commit_time = api_response["date"]
+        commit_time = api_response.get("date")
+        if commit_time is None:
+            raise KeyError(
+                f"Bitbucket API v2 response missing 'date' for commit {metric.commit_hash}"
+            )
         timestamp = parse_tz_aware(commit_time, _DATETIME_FORMAT)
-        commit_link = api_response["links"]["html"]
+        html_link = api_response.get("links", {}).get("html", {})
+        commit_link = html_link.get("href", "unknown") if isinstance(html_link, dict) else "unknown"
 
         logging.debug(
             "API v2 returned sha: %s, timestamp: %s (%s)",
@@ -175,7 +184,6 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                 exc_info=True,
             )
             raise
-        return metric
 
     def get_commit_information(
         self,
@@ -194,7 +202,6 @@ class BitbucketCommitCollector(AbstractCommitCollector):
 
         You may assume all of these cases have already been logged.
         """
-        api_response = None
         try:
             url = api_version.commit_url(metric)
 
@@ -205,7 +212,11 @@ class BitbucketCommitCollector(AbstractCommitCollector):
             json_body = response.json()
 
             if not isinstance(json_body, dict):
-                raise requests.exceptions.JSONDecodeError("JSON was not an object")
+                logging.error(
+                    "Bitbucket API returned non-object JSON for build %s",
+                    metric.build_name,
+                )
+                return None
 
             logging.debug(
                 (
@@ -252,7 +263,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                 ),
                 exc_info=True,
             )
-        return api_response
+        return None
 
     def get_api_version(self, server: str) -> Optional[APIVersion]:
         """

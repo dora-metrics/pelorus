@@ -16,8 +16,6 @@ DEFAULT_AZURE_API = Url.parse("https://dev.azure.com")
 
 @define(kw_only=True)
 class AzureDevOpsCommitCollector(AbstractCommitCollector):
-    collector_name = "Azure-DevOps"
-
     # overrides with default
     git_api: Url = field(
         default=DEFAULT_AZURE_API,

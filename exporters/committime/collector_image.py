@@ -21,7 +21,7 @@ from typing import Iterable, Optional
 from attrs import define
 
 from committime import CommitMetric
-from pelorus.timeutil import parse_guessing_timezone_DYNAMIC, to_epoch_from_string
+from pelorus.timeutil import parse_commit_timestamp
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
 from .collector_base import AbstractCommitCollector
@@ -116,27 +116,18 @@ class ImageCommitCollector(AbstractCommitCollector):
     def _set_commit_timestamp(self, metric: CommitMetric, errors) -> CommitMetric:
         if metric.commit_time:
             try:
-                metric.commit_timestamp = to_epoch_from_string(
-                    metric.commit_time
-                ).timestamp()
-            except (ValueError, AttributeError) as e:
-                logging.debug(
-                    "Primary timestamp parse failed for image %s: %s, trying fallback",
-                    metric.image_hash, e,
+                metric.commit_timestamp = parse_commit_timestamp(
+                    metric.commit_time, self.date_format
                 )
-                try:
-                    metric.commit_timestamp = parse_guessing_timezone_DYNAMIC(
-                        metric.commit_time, format=self.date_format
-                    ).timestamp()
-                except (ValueError, AttributeError):
-                    errors.append(
-                        f"Cannot parse commit_time '{metric.commit_time}' "
-                        f"with format '{self.date_format}'"
-                    )
+            except (ValueError, AttributeError):
+                errors.append(
+                    f"Cannot parse commit_time '{metric.commit_time}' "
+                    f"with format '{self.date_format}'"
+                )
         return metric
 
     def get_commit_time(self, metric) -> Optional[CommitMetric]:
-        return super().get_commit_time(metric)
+        return None
 
     def _set_commit_time_from_annotations(
         self, metric: CommitMetric, errors: list
@@ -174,8 +165,7 @@ class ImageCommitCollector(AbstractCommitCollector):
             yield from self._get_metrics_by_apps_from_images(images_by_app)
 
     def _get_metrics_by_apps_from_images(self, images_by_app):
-        for app in images_by_app:
-            images = images_by_app[app]
+        for app, images in images_by_app.items():
             for image in images:
                 errors = []
 

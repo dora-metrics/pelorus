@@ -19,6 +19,7 @@ import http
 import importlib
 import logging
 import sys
+from collections import OrderedDict
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -30,7 +31,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse as StarletteJSONResponse, Response
 
 import pelorus
-from pelorus.config import load_and_log
+from pelorus.config import env_vars, load_and_log
 from pelorus.config.log import REDACT, log
 from webhook.models.pelorus_webhook import (
     FailurePelorusPayload,
@@ -100,7 +101,7 @@ class WebhookCollector(pelorus.AbstractPelorusExporter):
     """
 
     secret_token: Optional[str] = field(
-        default=None, metadata=log(REDACT), repr=False
+        default=None, metadata=env_vars("SECRET_TOKEN") | log(REDACT), repr=False
     )
 
     def describe(self) -> list[PelorusGaugeMetricFamily]:
@@ -168,23 +169,35 @@ async def prometheus_metric(received_metric: PelorusMetric):
             )
             webhook_errors.inc()
             return
-        # Increase the number of webhooks processed
         webhook_processed.inc()
-        logging.debug(
+        logging.info(
             "Webhook processed: type=%s, app=%s",
             received_metric_type.value if hasattr(received_metric_type, 'value') else received_metric_type,
             getattr(metric, 'app', 'unknown'),
         )
-    except Exception as exc:
-        logging.error("Failed to process webhook metric: %s", type(exc).__name__)
+    except Exception:
+        logging.error("Failed to process webhook metric", exc_info=True)
         webhook_errors.inc()
+        raise
+
+
+_handler_cache: OrderedDict[str, Optional[type[PelorusWebhookPlugin]]] = OrderedDict()
+_HANDLER_CACHE_MAX = 1_000
 
 
 async def get_handler(user_agent: str) -> Optional[type[PelorusWebhookPlugin]]:
+    if user_agent in _handler_cache:
+        _handler_cache.move_to_end(user_agent)
+        return _handler_cache[user_agent]
+    result: Optional[type[PelorusWebhookPlugin]] = None
     for handler in plugins.values():
         if handler.can_handle(user_agent):
-            return handler
-    return None
+            result = handler
+            break
+    if len(_handler_cache) >= _HANDLER_CACHE_MAX:
+        _handler_cache.popitem(last=False)
+    _handler_cache[user_agent] = result
+    return result
 
 
 MAX_BODY_SIZE = 100_000  # 100KB
@@ -194,10 +207,16 @@ class LimitRequestBodyMiddleware(BaseHTTPMiddleware):
     """Reject requests whose actual body exceeds MAX_BODY_SIZE."""
 
     async def dispatch(self, request: Request, call_next):
+        if request.method in ("GET", "HEAD", "OPTIONS"):
+            return await call_next(request)
         content_length = request.headers.get("content-length")
         if content_length:
             try:
                 if int(content_length) > MAX_BODY_SIZE:
+                    logging.warning(
+                        "Rejected request: Content-Length %s exceeds limit %d",
+                        content_length, MAX_BODY_SIZE,
+                    )
                     return StarletteJSONResponse(
                         {"detail": "Content too large"},
                         status_code=http.HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
@@ -209,11 +228,26 @@ class LimitRequestBodyMiddleware(BaseHTTPMiddleware):
                 )
         body = await request.body()
         if len(body) > MAX_BODY_SIZE:
+            logging.warning(
+                "Rejected request: body size %d exceeds limit %d",
+                len(body), MAX_BODY_SIZE,
+            )
             return StarletteJSONResponse(
                 {"detail": "Content too large"},
                 status_code=http.HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
             )
         return await call_next(request)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add standard security headers to all responses."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
 
 app = FastAPI(
@@ -223,6 +257,7 @@ app = FastAPI(
     redoc_url=None,
 )
 app.add_middleware(LimitRequestBodyMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 def _get_hash_token() -> str:
@@ -267,15 +302,24 @@ async def pelorus_webhook(
 
     try:
         received_pelorus_metric = await handler.receive()
-    except TypeError as e:
+    except HTTPException:
+        raise
+    except Exception as e:
         webhook_errors.inc()
-        logging.error("Webhook payload type error: %s", e)
+        logging.error("Webhook payload processing error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
-            detail="Invalid webhook payload type.",
+            detail="Invalid webhook payload.",
         )
 
-    await prometheus_metric(received_pelorus_metric)
+    try:
+        await prometheus_metric(received_pelorus_metric)
+    except Exception as e:
+        logging.error("Failed to store metric: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to store metric.",
+        )
 
     return PelorusWebhookResponse(
         http_response="Webhook Received", http_response_code=http.HTTPStatus.ACCEPTED
@@ -335,4 +379,4 @@ if __name__ == "__main__":
 
     REGISTRY.register(collector)
 
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=pelorus.EXPORTER_PORT)

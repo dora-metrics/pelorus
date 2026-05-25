@@ -195,9 +195,14 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
             )
             for release in paginate_github(self._session, first_url):
                 release = cast(dict[str, Any], release)
-                if release["draft"]:
-                    continue
-                yield Release.from_json(release)
+                try:
+                    if release.get("draft", False):
+                        continue
+                    yield Release.from_json(release)
+                except (KeyError, ValueError, TypeError) as e:
+                    logging.warning(
+                        "Skipping malformed release in %s: %s", project, e,
+                    )
         except GitHubError as e:
             logging.error(
                 "Error while getting GitHub response for project %s: %s",
@@ -230,10 +235,14 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
                 "repos", project.organization, project.repo, "tags"
             )
             for tag in paginate_github(self._session, url):
-                tag_name = tag["name"]
-
-                if tag_name in tags:
-                    tags_to_commits[tag_name] = tag["commit"]["sha"]
+                try:
+                    tag_name = tag["name"]
+                    if tag_name in tags:
+                        tags_to_commits[tag_name] = tag["commit"]["sha"]
+                except (KeyError, TypeError) as e:
+                    logging.warning(
+                        "Skipping malformed tag in %s: %s", project, e,
+                    )
         except GitHubError as e:
             logging.error(
                 "Error talking to GitHub while getting tags for project %s: %s",

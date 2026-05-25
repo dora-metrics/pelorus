@@ -15,8 +15,10 @@
 #
 
 import logging
+import os as _os
 import threading
-from collections import deque
+import time as _time
+from collections import OrderedDict, deque
 from typing import Optional, Sequence, Union
 
 from prometheus_client import Gauge
@@ -65,10 +67,8 @@ def _pelorus_metric_to_dict(
     Mapping between Pelorus Payload Metrics defined as pydantic classes and the
     Prometheus expected metrics.
 
-    Attributes:
-        pelorus_model Union[PelorusPayload, type[BaseModel]]: imported
-                        class that is subclass of the PelorusPayload.
-                        This can be either class or its instance.
+    Args:
+        pelorus_model: A PelorusPayload subclass or instance.
 
     Returns:
         dict[str, str]: First item is the Prometheus expected label and second
@@ -86,12 +86,15 @@ def _pelorus_metric_to_dict(
     raise TypeError(f"Improper prometheus data model: {cls.__name__}")
 
 
+_ATTR_SENTINEL = object()
+
+
 def pelorus_metric_to_prometheus(pelorus_model: PelorusPayload) -> list[str]:
     """
     Returns prometheus metrics directly from the PelorusPayload objects.
 
-    Attributes:
-        pelorus_model PelorusPayloadType: object from which the prometheus
+    Args:
+        pelorus_model: PelorusPayload instance from which prometheus
             data will be created.
 
     Returns:
@@ -101,12 +104,11 @@ def pelorus_metric_to_prometheus(pelorus_model: PelorusPayload) -> list[str]:
         TypeError: If the expected data model did not match provided pelorus_model
     """
     data_model = _pelorus_metric_to_dict(pelorus_model)
-    _sentinel = object()
     data_values = []
 
     for metric_value in data_model.values():
-        value = getattr(pelorus_model, metric_value, _sentinel)
-        if value is _sentinel:
+        value = getattr(pelorus_model, metric_value, _ATTR_SENTINEL)
+        if value is _ATTR_SENTINEL:
             raise TypeError(
                 f"Attribute {metric_value} was not found in the {pelorus_model.__class__.__qualname__} metric model"
             )
@@ -117,7 +119,17 @@ def pelorus_metric_to_prometheus(pelorus_model: PelorusPayload) -> list[str]:
     return data_values
 
 
-_MAX_METRICS = 10_000
+_max_metrics_raw = _os.environ.get("PELORUS_WEBHOOK_MAX_METRICS", "10000")
+try:
+    _MAX_METRICS = int(_max_metrics_raw)
+except ValueError:
+    raise ValueError(
+        f"PELORUS_WEBHOOK_MAX_METRICS must be an integer, got: {_max_metrics_raw!r}"
+    )
+if _MAX_METRICS < 1:
+    raise ValueError(
+        f"PELORUS_WEBHOOK_MAX_METRICS must be >= 1, got: {_MAX_METRICS}"
+    )
 
 _store_utilization = Gauge(
     "pelorus_webhook_store_utilization",
@@ -143,19 +155,28 @@ class PelorusGaugeMetricFamily(GaugeMetricFamily):
         super().__init__(name, documentation, value, labels, unit)
         self.samples = deque(self.samples)
         self.lock = threading.Lock()
-        self.added_metrics: dict[str, None] = {}
+        self.added_metrics: OrderedDict[str, None] = OrderedDict()
         self._utilization_gauge = _store_utilization.labels(metric_family=name)
+        self._last_full_warning: float = 0.0
+        self._full_drops_since_warning: int = 0
+
+    _FULL_WARNING_INTERVAL = 60.0
 
     def add_metric(self, metric_id, *args, **kwargs):
         with self.lock:
             if metric_id and metric_id not in self.added_metrics:
                 if len(self.added_metrics) >= _MAX_METRICS:
-                    logging.warning(
-                        "In-memory metric store full (%d), dropping oldest entry",
-                        _MAX_METRICS,
-                    )
-                    oldest = next(iter(self.added_metrics))
-                    del self.added_metrics[oldest]
+                    self._full_drops_since_warning += 1
+                    now = _time.monotonic()
+                    if now - self._last_full_warning >= self._FULL_WARNING_INTERVAL:
+                        logging.warning(
+                            "In-memory metric store full (%d), dropped %d oldest entries since last warning",
+                            _MAX_METRICS,
+                            self._full_drops_since_warning,
+                        )
+                        self._last_full_warning = now
+                        self._full_drops_since_warning = 0
+                    self.added_metrics.popitem(last=False)
                     if self.samples:
                         self.samples.popleft()
                 super().add_metric(*args, **kwargs)

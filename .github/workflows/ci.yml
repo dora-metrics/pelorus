@@ -8,8 +8,18 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/ci.yml'
+      - 'scripts/check_openshift_version.py'
+      - 'README.md'
+      - '.github/ISSUE_TEMPLATE/bug.yml'
+      - 'docs/UpstreamSupport.md'
+      - 'pyproject.toml'
+      - 'Makefile'
   schedule:
     - cron:  '0 0 * * 1' # Every Monday at 00:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   project-check:

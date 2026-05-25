@@ -2,13 +2,12 @@ import logging
 from datetime import datetime, timezone
 from itertools import chain
 from typing import Any, Iterable, Iterator
-from urllib.error import HTTPError
 from urllib.parse import urlparse
 
 import requests
 from attrs import frozen
 
-from pelorus.timeutil import parse_assuming_utc
+from pelorus.timeutil import ISO_ZULU_FMT, parse_assuming_utc
 from pelorus.utils import BadAttributePathError, get_nested
 
 # The maximum number of requests you're permitted to make per hour.
@@ -17,9 +16,6 @@ RATELIMIT_LIMIT_HEADER = "x-ratelimit-limit"
 RATELIMIT_REMAINING_HEADER = "x-ratelimit-remaining"
 # The time at which the current rate limit window resets in UTC epoch seconds.
 RATELIMIT_RESET_HEADER = "x-ratelimit-reset"
-
-_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-
 
 def parse_datetime(datetime_str: str) -> datetime:
     """
@@ -30,7 +26,7 @@ def parse_datetime(datetime_str: str) -> datetime:
 
     May throw a ValueError if it doesn't match the expected format.
     """
-    return parse_assuming_utc(datetime_str, format=_DATETIME_FORMAT)
+    return parse_assuming_utc(datetime_str, format=ISO_ZULU_FMT)
 
 
 @frozen
@@ -56,8 +52,9 @@ def _log_and_validate_ratelimit(response: requests.Response):
 
         if response.status_code == 403:
             json = response.json()
-            if "rate limit" in json["message"]:
-                rate_limit_message = json["message"]
+            msg = json.get("message", "")
+            if "rate limit" in msg:
+                rate_limit_message = msg
 
         log_level = logging.ERROR if rate_limit_message else logging.DEBUG
 
@@ -71,7 +68,7 @@ def _log_and_validate_ratelimit(response: requests.Response):
             RATELIMIT_RESET_HEADER,
             reset_time,
         )
-    except Exception as e:
+    except (KeyError, ValueError, TypeError, OSError, OverflowError) as e:
         logging.error(
             "Issue with github rate limit headers: %s",
             e,
@@ -121,17 +118,19 @@ class GitHubPageResponse:
         return iter(self.items)
 
 
-def _validate_same_origin(start_url: str, next_url: str) -> None:
+def _validate_same_origin(start_origin: tuple, next_url: str) -> None:
     """Verify that a pagination URL stays on the same origin as the initial request.
 
     Prevents SSRF if a compromised API response injects a malicious ``next`` link
     that would redirect the authenticated session to an internal service.
+
+    start_origin should be a (scheme, hostname, port) tuple from the initial URL.
     """
-    start = urlparse(start_url)
     target = urlparse(next_url)
-    if (start.scheme, start.hostname, start.port) != (target.scheme, target.hostname, target.port):
+    target_origin = (target.scheme, target.hostname, target.port)
+    if start_origin != target_origin:
         raise ValueError(
-            f"Pagination URL origin mismatch: expected {start.scheme}://{start.hostname}, "
+            f"Pagination URL origin mismatch: expected {start_origin[0]}://{start_origin[1]}, "
             f"got {target.scheme}://{target.hostname}"
         )
 
@@ -161,6 +160,8 @@ def paginate_github_with_page(
         last_url: str = get_nested(response.links, "last.url", default="")
 
         url = start_url
+        parsed_start = urlparse(start_url)
+        start_origin = (parsed_start.scheme, parsed_start.hostname, parsed_start.port)
 
         while True:
             yield GitHubPageResponse(json, response)
@@ -172,11 +173,11 @@ def paginate_github_with_page(
                 break
 
             url = get_nested(response.links, "next.url")
-            _validate_same_origin(start_url, url)
+            _validate_same_origin(start_origin, url)
             response = session.get(url, timeout=30)
             json = _validate_github_response(response)
     except (
-        HTTPError,
+        requests.HTTPError,
         requests.JSONDecodeError,
         ValueError,
         BadAttributePathError,

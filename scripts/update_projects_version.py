@@ -24,6 +24,7 @@ import argparse
 import json
 import logging
 import re
+import shlex
 import shutil
 import subprocess
 from http.client import HTTPResponse
@@ -98,8 +99,7 @@ def run_command(
 ) -> "subprocess.CompletedProcess[str]":
     try:
         return subprocess.run(
-            command,
-            shell=True,
+            shlex.split(command),
             check=True,
             capture_output=True,
             encoding="utf-8",

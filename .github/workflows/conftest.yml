@@ -20,6 +20,10 @@ on:
       - '.github/workflows/conftest.yml'
       - 'Makefile'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   conftest:
     runs-on: ubuntu-latest

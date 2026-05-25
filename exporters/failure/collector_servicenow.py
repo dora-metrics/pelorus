@@ -6,7 +6,7 @@ import requests
 from attrs import converters, define, field
 
 import pelorus
-from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from failure.collector_base import AbstractFailureCollector, TrackerIssue, _issue_parse_failures
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.log import REDACT, log
 from pelorus.timeutil import parse_assuming_utc, second_precision
@@ -50,8 +50,6 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
     tls_verify: bool = field(default=True, converter=converters.to_bool)
     session: requests.Session = field(factory=requests.Session, init=False)
 
-    offset: int = field(default=0, init=False)
-
     def __attrs_post_init__(self):
         parsed = urlparse(self.server)
         if parsed.scheme not in ("http", "https"):
@@ -66,57 +64,70 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         self.session.headers.update(SN_HEADERS)
 
     def search_issues(self):
-        self.offset = 0
-
         critical_issues = []
-        data = self.query_servicenow()
+        offset = 0
+        data = self._query_servicenow(offset)
+        skipped = 0
         while len(data["result"]) > 0:
+            offset += PAGE_SIZE
             logging.debug(
                 "Returned %s Records, current offset is: %s",
                 len(data["result"]),
-                self.offset,
+                offset,
             )
             for issue in data["result"]:
-                logging.debug(
-                    "Found issue opened: %s, %s: %s",
-                    issue.get("number"),
-                    issue.get(SN_OPENED_FIELD),
-                    issue.get(SN_RESOLVED_FIELD),
-                )
-                created_ts = parse_assuming_utc(
-                    issue[SN_OPENED_FIELD], _DATETIME_FORMAT
-                )
-                created_ts = second_precision(created_ts).timestamp()
-                resolution_ts = None
-                if issue[SN_RESOLVED_FIELD]:
+                try:
                     logging.debug(
-                        "Found issue close: %s, %s: %s",
-                        issue.get(SN_RESOLVED_FIELD),
+                        "Found issue opened: %s, %s: %s",
                         issue.get("number"),
                         issue.get(SN_OPENED_FIELD),
+                        issue.get(SN_RESOLVED_FIELD),
                     )
-                    resolution_ts = parse_assuming_utc(
-                        issue.get(SN_RESOLVED_FIELD), _DATETIME_FORMAT
+                    created_ts = parse_assuming_utc(
+                        issue[SN_OPENED_FIELD], _DATETIME_FORMAT
                     )
-                    resolution_ts = second_precision(resolution_ts).timestamp()
+                    created_ts = second_precision(created_ts).timestamp()
+                    resolution_ts = None
+                    if issue[SN_RESOLVED_FIELD]:
+                        logging.debug(
+                            "Found issue close: %s, %s: %s",
+                            issue.get(SN_RESOLVED_FIELD),
+                            issue.get("number"),
+                            issue.get(SN_OPENED_FIELD),
+                        )
+                        resolution_ts = parse_assuming_utc(
+                            issue.get(SN_RESOLVED_FIELD), _DATETIME_FORMAT
+                        )
+                        resolution_ts = second_precision(resolution_ts).timestamp()
 
-                tracker_issue = TrackerIssue(
-                    issue.get("number"),
-                    created_ts,
-                    resolution_ts,
-                    self.get_app_name(issue),
-                )
-                critical_issues.append(tracker_issue)
-            data = self.query_servicenow()
+                    tracker_issue = TrackerIssue(
+                        issue.get("number"),
+                        created_ts,
+                        resolution_ts,
+                        self.get_app_name(issue),
+                    )
+                    critical_issues.append(tracker_issue)
+                except Exception:
+                    skipped += 1
+                    _issue_parse_failures.inc()
+                    logging.error(
+                        "Failed to parse ServiceNow issue %s, skipping",
+                        issue.get("number", "unknown"),
+                        exc_info=True,
+                    )
+            data = self._query_servicenow(offset)
+        if skipped:
+            logging.warning("Skipped %d unparseable ServiceNow issues", skipped)
+        logging.info("Found %d issues from ServiceNow", len(critical_issues))
         return critical_issues
 
-    def query_servicenow(self):
+    def _query_servicenow(self, offset: int):
         tracker_query = SN_QUERY.format(
             SN_OPENED_FIELD,
             SN_RESOLVED_FIELD,
             self.app_name_field,
             PAGE_SIZE,
-            self.offset,
+            offset,
         )
         tracker_url = self.server + tracker_query
 
@@ -128,7 +139,15 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                 tracker_url,
             )
             raise RuntimeError(f"Error connecting to ServiceNow (HTTP {response.status_code})")
-        data = response.json()
+        try:
+            data = response.json()
+        except requests.JSONDecodeError as exc:
+            logging.error(
+                "Invalid JSON response from ServiceNow, url: %s",
+                tracker_url,
+                exc_info=True,
+            )
+            raise RuntimeError("ServiceNow returned non-JSON response") from exc
         if "result" not in data:
             logging.error(
                 "ServiceNow response missing 'result' key, url: %s, keys: %s",
@@ -137,7 +156,6 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
             )
             raise RuntimeError("ServiceNow response missing 'result' key")
         logging.debug("ServiceNow query result: %s", data.get("result"))
-        self.offset += PAGE_SIZE
         return data
 
     def get_app_name(self, issue):

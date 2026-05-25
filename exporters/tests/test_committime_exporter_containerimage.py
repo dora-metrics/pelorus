@@ -84,11 +84,13 @@ def test_get_labels_from_image(mock_popen, returncode, json_file, expected_label
     result = get_labels_from_image("sha256_value", "image_uri")
 
     for key, value in expected_labels.items():
-        assert key in result and result[key] == value
+        assert key in result, f"Expected label '{key}' not found in result"
+        assert result[key] == value, f"Label '{key}': expected '{value}', got '{result[key]}'"
 
     command = ["skopeo", "inspect", "--cert-dir", "/var/run/secrets/kubernetes.io/serviceaccount/", "image_uri"]
     mock_popen.assert_called_once_with(
         command,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -114,6 +116,7 @@ def test_missing_labels_from_image(mock_popen):
     command = ["skopeo", "inspect", "--cert-dir", "/var/run/secrets/kubernetes.io/serviceaccount/", "image_uri"]
     mock_popen.assert_called_once_with(
         command,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -137,6 +140,7 @@ def test_malformed_json_response(mock_popen):
     command = ["skopeo", "inspect", "--cert-dir", "/var/run/secrets/kubernetes.io/serviceaccount/", "image_uri"]
     mock_popen.assert_called_once_with(
         command,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

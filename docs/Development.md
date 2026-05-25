@@ -177,11 +177,11 @@ The following outlines a workflow for working on a dashboard:
 
         > Be sure to match the indentation of the previous dashboard JSON. Your git diffs should still show only the lines changed like the example below.
 
-             $ git diff pelorus-operator/helm-charts/pelorus/templates/metrics-dashboard.yaml
-             diff --git a/pelorus-operator/helm-charts/pelorus/templates/metrics-dashboard.yaml b/pelorus-operator/helm-charts/pelorus/templates/metrics-dashboard.yaml
+             $ git diff pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml
+             diff --git a/pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml b/pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml
              index 73151ad..c470afc 100644
-             --- a/pelorus-operator/helm-charts/pelorus/templates/metrics-dashboard.yaml
-             +++ b/pelorus-operator/helm-charts/pelorus/templates/metrics-dashboard.yaml
+             --- a/pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml
+             +++ b/pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml
              @@ -25,7 +25,7 @@ spec:
                          "editable": true,
                          "gnetId": null,
@@ -237,7 +237,6 @@ If not defined specifically, exporters are using pre-built container images with
   * Quay repository for the [committime-exporter](https://quay.io/repository/pelorus/pelorus-committime-exporter)
   * Quay repository for the [failure-exporter](https://quay.io/repository/pelorus/pelorus-failure-exporter)
   * Quay repository for the [deploytime-exporter](https://quay.io/repository/pelorus/pelorus-deploytime-exporter)
-  * Quay repository for the [releasetime-exporter](https://quay.io/repository/pelorus/pelorus-releasetime-exporter)
   * Quay repository for the [webhook-exporter](https://quay.io/repository/pelorus/pelorus-webhook-exporter)
 
 #### Pre-built Quay images
@@ -542,7 +541,7 @@ To deploy it to OpenShift marketplace, a pull request must be created in [Opensh
 
 ### API specification
 
-Operator uses OpenAPI Specification under the rugs. This is useful when we want to add field validations, for example.
+Operator uses OpenAPI Specification under the hood. This is useful when we want to add field validations, for example.
 
 Helpful links for understanding Operator API specification:
 

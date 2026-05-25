@@ -22,4 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=1001:0 ./ $WORK_DIR
 
-CMD exec python ${APP_FILE}
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/metrics')" || exit 1
+
+CMD exec python "${APP_FILE}"

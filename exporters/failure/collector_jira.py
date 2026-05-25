@@ -23,7 +23,7 @@ from attrs import converters, define, field
 from jira import JIRA, Issue
 from jira.exceptions import JIRAError
 
-from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from failure.collector_base import AbstractFailureCollector, TrackerIssue, _issue_parse_failures
 from pelorus.certificates import set_up_requests_certs
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
@@ -46,20 +46,6 @@ _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
 def remove_quotes(text: str) -> str:
-    """
-    Remove surroundings single (or double) quotes from text
-
-    Parameters
-    ----------
-    text : str
-        Text to remove quotes from.
-
-    Returns
-    -------
-    str
-        text without surroundings single (or double) quotes, if it does have
-        surroundings quotes; otherwise, return the text without changing it.
-    """
     if len(text) < 2:
         return text
     if text[0] == text[-1] and text.startswith(("'", '"')):
@@ -225,7 +211,22 @@ class JiraFailureCollector(AbstractFailureCollector):
             fields=self.query_result_fields_string,
         )
 
-        return [self._parse_issue(issue) for issue in jira_issues]
+        results = []
+        skipped = 0
+        for issue in jira_issues:
+            try:
+                results.append(self._parse_issue(issue))
+            except Exception:
+                skipped += 1
+                _issue_parse_failures.inc()
+                logging.error(
+                    "Failed to parse JIRA issue %s, skipping",
+                    getattr(issue, "key", "unknown"),
+                    exc_info=True,
+                )
+        if skipped:
+            logging.warning("Skipped %d unparseable JIRA issues", skipped)
+        return results
 
     def _parse_issue(self, issue: Issue) -> TrackerIssue:
         """Parse issue collected from JIRA."""
@@ -271,10 +272,7 @@ class JiraFailureCollector(AbstractFailureCollector):
     def _get_resolved_timestamp(
         self, issue: Issue, resolved_statuses: Optional[str] = None
     ) -> Optional[float]:
-        """
-        `_get_resolved_timestamp` finds timestamp when the issue was resolved or moved
-        to the status that is within resolved_statuses comma separated list.
-        """
+        """Find timestamp when the issue was resolved or moved to a status in resolved_statuses."""
         resolution_ts = None
         resolution_tz = None
         if resolved_statuses:

@@ -24,13 +24,13 @@ _last_collection_count = Gauge(
     "pelorus_failure_last_collection_count",
     "Number of metrics returned by the last failure collection",
 )
+_issue_parse_failures = Counter(
+    "pelorus_failure_issue_parse_failures_total",
+    "Total number of individual issue/incident parse failures",
+)
 
 
 class FailureProviderAuthenticationError(Exception):
-    """
-    Exception raised for authentication issues
-    """
-
     auth_message = "Check the TOKEN: not authorized, invalid credentials"
 
     def __init__(self, message=auth_message):
@@ -38,10 +38,7 @@ class FailureProviderAuthenticationError(Exception):
 
 
 class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
-    """
-    Base class for a FailureCollector.
-    This class should be extended for the system which contains the failure records.
-    """
+    """Base class for failure collectors that fetch issue data from different trackers."""
 
     _FAILURE_METRIC_LABELS = ["app", "issue_number"]
 

@@ -15,12 +15,14 @@ To send some data you can use simple curl:
 ```shell
 $ cd exporters/tests/data
 
-# Set times when the events actually happens
+# Set times when the events actually happened
+# Note: `date -d` is GNU coreutils syntax (Linux). On macOS use `date -v` instead,
+# e.g. date -v-1d +%s, or install GNU coreutils (`brew install coreutils`, then `gdate`).
 
 # Commit happened 1 day ago:
 $ COMMIT_EVENT_TIMESTAMP=$(date -d '1 day ago' +%s)
 
-# Deploy event must have happened maximum 30min ago:
+# Deploy event must have happened within the threshold window (default 30min):
 $ DEPLOY_EVENT_TIMESTAMP=$(date -d '20 min ago' +%s)
 
 # Failure happened just after deployment, let's say 19min ago
@@ -29,12 +31,13 @@ $ FAILURE_CREATE_TIMESTAMP=$(date -d '19 min ago' +%s)
 # Failure was resolved now
 $ FAILURE_RESOLVED_TIMESTAMP=$(date +%s)
 
-# Copy test files to the temp directory, so we don't modify the ones from the git repository
+# Copy test files to a temp directory so we don't modify the ones in the git repository
 $ TMP_DIR=$(mktemp -d)
 $ cp webhook_pelorus_*.json "$TMP_DIR"
 $ pushd "$TMP_DIR"
 
 # Modify the temporary files with the proper timestamps
+# Note: `sed -i` without a suffix is GNU syntax. On macOS use `sed -i '' ...` instead.
 $ sed -i "s/\"timestamp\":.*/\"timestamp\": $COMMIT_EVENT_TIMESTAMP/" ./webhook_pelorus_committime.json
 $ sed -i "s/\"timestamp\":.*/\"timestamp\": $DEPLOY_EVENT_TIMESTAMP/" ./webhook_pelorus_deploytime.json
 $ sed -i "s/\"timestamp\":.*/\"timestamp\": $FAILURE_CREATE_TIMESTAMP/" ./webhook_pelorus_failure_created.json

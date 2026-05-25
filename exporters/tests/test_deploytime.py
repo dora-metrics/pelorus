@@ -145,7 +145,7 @@ def random_time() -> datetime:
 
 
 def random_uid() -> str:
-    return str(uuid.uuid4())
+    return str(uuid.UUID(int=_rng.getrandbits(128), version=4))
 
 
 def pod(
