@@ -60,7 +60,7 @@ class PelorusWebhookResponse(BaseModel):
         Some webhook services uses this "ping-pong" communication to
         register the webhook on the client side as valid one.
 
-        It raises exception to immediately sent response msg.
+        It raises exception to immediately send response msg.
 
         Raises:
             HTTPException: "pong" with valid HTTP Status.
@@ -107,13 +107,13 @@ class PelorusWebhookPlugin(ABC):
 
     @abstractmethod
     async def _handshake(self, headers: Headers) -> bool:
-        raise NotImplementedError  # pragma no cover
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     async def _receive_pelorus_payload(
         self, json_payload_data: Any
     ) -> PelorusMetric:
-        raise NotImplementedError  # pragma no cover
+        raise NotImplementedError  # pragma: no cover
 
     async def handshake(self) -> Optional[bool]:
         """

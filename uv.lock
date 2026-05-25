@@ -953,7 +953,6 @@ dependencies = [
     { name = "pydantic" },
     { name = "python-gitlab" },
     { name = "requests" },
-    { name = "typing-extensions" },
     { name = "urllib3" },
     { name = "uvicorn" },
 ]
@@ -993,7 +992,6 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "python-gitlab", specifier = ">=8.2.0" },
     { name = "requests", specifier = ">=2.33.1" },
-    { name = "typing-extensions", specifier = ">=4.15.0" },
     { name = "urllib3", specifier = ">=2.6.3" },
     { name = "uvicorn", specifier = ">=0.44.0" },
 ]

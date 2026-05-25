@@ -28,6 +28,8 @@ from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
 SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 
+_URL_USERINFO_RE = re.compile(r"(https?://)([^@]+)@")
+
 # Pre-compiled regexes for Azure DevOps repo URL parsing
 _AZURE_HTTP_RE = re.compile(
     r"^(?P<protocol>https?)\://"
@@ -140,7 +142,7 @@ class CommitMetric:
 
     def __parse_repourl(self):
         """Parse the repo_url into individual pieces"""
-        logging.debug("repo url = %s", self.__repo_url)
+        logging.debug("repo url = %s", _URL_USERINFO_RE.sub(r"\1", self.__repo_url) if self.__repo_url else self.__repo_url)
         if self.__repo_url is None:
             return
         # http://user@dev.azure.com:8080/organization/project/_git/repository/

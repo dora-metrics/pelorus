@@ -7,13 +7,26 @@ updates:
       interval: "daily"
     commit-message:
       prefix: ⬆
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
   # Python
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     commit-message:
       prefix: ⬆
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "python"
   # Docker - exporters
   - package-ecosystem: "docker"
     directory: "/exporters"
@@ -21,6 +34,9 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: ⬆
+    labels:
+      - "dependencies"
+      - "docker"
   # Docker - operator
   - package-ecosystem: "docker"
     directory: "/pelorus-operator"
@@ -28,3 +44,36 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: ⬆
+    labels:
+      - "dependencies"
+      - "docker"
+  # Docker - demo
+  - package-ecosystem: "docker"
+    directory: "/demo/python-example"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆
+    labels:
+      - "dependencies"
+      - "docker"
+  # Docker - workflow template: comment-pr
+  - package-ecosystem: "docker"
+    directory: "/.github/workflow_templates/comment-pr"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆
+    labels:
+      - "dependencies"
+      - "docker"
+  # Docker - workflow template: create-market-place-pr
+  - package-ecosystem: "docker"
+    directory: "/.github/workflow_templates/create-market-place-pr"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆
+    labels:
+      - "dependencies"
+      - "docker"

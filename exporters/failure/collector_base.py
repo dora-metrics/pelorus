@@ -123,17 +123,18 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
                 )
 
     @abstractmethod
-    def search_issues(self) -> Collection[TrackerIssue]:
-        pass
+    def search_issues(self) -> Collection[TrackerIssue]: ...
 
 
 class TrackerIssue:
+    __slots__ = ("issue_number", "creationdate", "resolutiondate", "app")
+
     def __init__(
         self,
-        issue_number,
+        issue_number: str,
         creationdate: str | float | int,
-        resolutiondate: str | float | int,
-        app,
+        resolutiondate: str | float | int | None,
+        app: str,
     ):
         self.creationdate = creationdate
         self.resolutiondate = resolutiondate
@@ -142,6 +143,8 @@ class TrackerIssue:
 
 
 class FailureMetric:
+    __slots__ = ("time_stamp", "is_resolution", "labels")
+
     def __init__(
         self, time_stamp: str | float | int, is_resolution=False, labels=None
     ):

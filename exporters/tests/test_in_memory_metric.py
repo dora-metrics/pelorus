@@ -15,7 +15,6 @@
 #
 
 
-import time
 from unittest import mock
 
 import pytest
@@ -66,7 +65,7 @@ class TestInMemoryMetric:
         Prometheus.
         """
         name = "todolist"
-        timestamp = str(int(time.time()))
+        timestamp = "1700000000"
         image_hash = "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d"
         namespace = "mynamespace"
         commit_hash = "5379bad65a3f83853a75aabec9e0e43c75fd18fc"
@@ -126,7 +125,7 @@ def test_model_does_not_have_prometheus_mapping():
 
     with pytest.raises(TypeError) as type_error:
         _pelorus_metric_to_dict(NewPelorusPayloadModel)
-    assert "Improper prometheus data model" in str(type_error.value)
+    assert "Unsupported Prometheus data model" in str(type_error.value)
 
 
 @mock.patch(

@@ -47,7 +47,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         default=pelorus.DEFAULT_TRACKER_APP_FIELD, metadata=env_vars("APP_FIELD")
     )
 
-    tls_verify: bool = field(default=True, converter=converters.to_bool)
+    tls_verify: bool = field(default=pelorus.DEFAULT_TLS_VERIFY, converter=converters.to_bool)
     session: requests.Session = field(factory=requests.Session, init=False)
 
     def __attrs_post_init__(self):
@@ -63,7 +63,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         )
         self.session.headers.update(SN_HEADERS)
 
-    def search_issues(self):
+    def search_issues(self) -> list[TrackerIssue]:
         critical_issues = []
         offset = 0
         data = self._query_servicenow(offset)
@@ -96,12 +96,12 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                             issue.get(SN_OPENED_FIELD),
                         )
                         resolution_ts = parse_assuming_utc(
-                            issue.get(SN_RESOLVED_FIELD), _DATETIME_FORMAT
+                            issue[SN_RESOLVED_FIELD], _DATETIME_FORMAT
                         )
                         resolution_ts = second_precision(resolution_ts).timestamp()
 
                     tracker_issue = TrackerIssue(
-                        issue.get("number"),
+                        issue["number"],
                         created_ts,
                         resolution_ts,
                         self.get_app_name(issue),
@@ -121,7 +121,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         logging.info("Found %d issues from ServiceNow", len(critical_issues))
         return critical_issues
 
-    def _query_servicenow(self, offset: int):
+    def _query_servicenow(self, offset: int) -> dict:
         tracker_query = SN_QUERY.format(
             SN_OPENED_FIELD,
             SN_RESOLVED_FIELD,
@@ -158,5 +158,5 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         logging.debug("ServiceNow query returned %d results", len(data.get("result", [])))
         return data
 
-    def get_app_name(self, issue):
+    def get_app_name(self, issue: dict) -> str:
         return issue.get(self.app_name_field) or pelorus.DEFAULT_TRACKER_APP_LABEL

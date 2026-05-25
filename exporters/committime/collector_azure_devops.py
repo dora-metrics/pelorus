@@ -9,7 +9,7 @@ from committime import CommitMetric
 from pelorus.config.converters import pass_through
 from pelorus.utils import Url
 
-from .collector_base import AbstractCommitCollector, check_provider_support
+from .collector_base import AbstractCommitCollector, _sanitize_url, check_provider_support
 
 DEFAULT_AZURE_API = Url.parse("https://dev.azure.com")
 
@@ -22,8 +22,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
         converter=converters.optional(pass_through(Url, Url.parse)),
     )
 
-    # Cache of git_clients keyed by organization_url to avoid reconnecting per commit
-    _git_clients: dict = field(factory=dict, init=False)
+    _git_clients: dict[str, object] = field(factory=dict, init=False)
 
     def _get_git_client(self, organization_url: str):
         """Get or create a cached git client for the given organization URL."""
@@ -62,7 +61,7 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
                 "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Azure DevOps error: %s",
                 metric.build_name,
                 metric.commit_hash,
-                metric.repo_url,
+                _sanitize_url(metric.repo_url),
                 getattr(commit, "message", "unknown"),
             )
             return metric

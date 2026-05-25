@@ -17,7 +17,7 @@ import json
 import os
 from pathlib import Path
 from typing import Optional
-from unittest import mock  # NOQA
+from unittest import mock
 
 import pytest
 from jira.exceptions import JIRAError
@@ -419,6 +419,8 @@ def test_no_resolved_timestamp():
 
 def test_custom_resolved_timestamp():
     collector = setup_jira_collector()
+    collector.jira_resolved_statuses = "Done, Resolved, Other"
+    collector._resolved_statuses_list = ["done", "resolved", "other"]
 
     issue_fields = {
         "key": "EXAMPLE-1",
@@ -433,9 +435,7 @@ def test_custom_resolved_timestamp():
     }
     test_issue = Issue(None, None, issue_fields)  # type: ignore
 
-    resolution_timestamp = collector._get_resolved_timestamp(
-        test_issue, "Done, Resolved, Other"
-    )
+    resolution_timestamp = collector._get_resolved_timestamp(test_issue)
 
     assert int(resolution_timestamp) == 1652395843  # type: ignore
 

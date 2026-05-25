@@ -56,7 +56,7 @@ _SEPARATOR_FORMATS = [
 
 
 def _verify_payload_signature(
-    secret: bytes, signature_secret: str, json_payload_data: dict[str, str],
+    secret: bytes, signature_secret: str, json_payload_data: dict[str, Any],
     raw_body: Optional[bytes] = None,
 ) -> bool:
     """Verify HMAC-SHA256 signature against the raw body first, then
@@ -190,7 +190,7 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
             if self.secret and not self.payload_headers.x_hub_signature_256:
                 raise HTTPException(
                     status_code=http.HTTPStatus.UNAUTHORIZED,
-                    detail="Non existing signature.",
+                    detail="Missing signature.",
                 )
             return isinstance(self.payload_headers, PelorusDeliveryHeaders)
         except ValidationError as ex:
@@ -204,7 +204,7 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
             )
             raise HTTPException(
                 status_code=http.HTTPStatus.BAD_REQUEST,
-                detail="Improper headers.",
+                detail="Invalid headers.",
             )
 
     @override
@@ -260,9 +260,11 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
             )
         except ValidationError as ex:
             logging.error(
-                "Payload validation failed for event %s",
+                "Payload validation failed for event %s: %s",
                 self.payload_headers.event_type,
+                ex.error_count(),
             )
+            logging.debug("Validation errors: %s", ex.errors())
             raise HTTPException(
                 status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
                 detail="Invalid payload format.",

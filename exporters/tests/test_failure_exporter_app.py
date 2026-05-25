@@ -17,7 +17,6 @@ import logging
 import os
 
 import pytest
-from jira.exceptions import JIRAError
 
 from failure.app import set_up
 from pelorus.config.loading import MissingConfigDataError

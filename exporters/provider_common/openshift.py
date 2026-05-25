@@ -104,7 +104,7 @@ def get_running_pods(
 
     Args:
         client (DynamicClient): An OpenShift client object.
-        namespaces (Optional[Set[str]]): Namespaces for which to discover pods. If not provided,
+        namespaces (Optional[set[str]]): Namespaces for which to discover pods. If not provided,
                                          the function retrieves pods in all namespaces.
         app_label (Optional[str]): A label that a pod must have to be considered production.
                                    By default, no label is required.
@@ -112,7 +112,7 @@ def get_running_pods(
                                 By default, the function only returns pods with ownerReferences.
 
     Returns:
-        List[ResourceField]: A list of ResourceField objects representing the running pods in the
+        list[ResourceField]: A list of ResourceField objects representing the running pods in the
                              OpenShift cluster that meet the criteria.
     """
 
@@ -152,7 +152,7 @@ def get_owner_object_from_child(
         child_object (ResourceField): The Child object that contains the reference to the Parent object.
 
     Returns:
-        Dict[str, ResourceInstance]: A dictionary with the UID of the Parent object as the key
+        dict[str, ResourceInstance]: A dictionary with the UID of the Parent object as the key
                                      and the Parent object itself as the value.
                                      An empty dictionary is returned if the Parent object is not found
                                      or if there is an error during the retrieval.
@@ -226,10 +226,10 @@ def filter_pods_by_replica_uid(
     we can filter out unique ReplicaSet objects even if multiple Pods are deployed.
 
     Args:
-        pods_list (List[ResourceField]): A list of Pod objects.
+        pods_list (list[ResourceField]): A list of Pod objects.
 
     Returns:
-        Dict[str, ResourceField]
+        dict[str, ResourceField]
                 A dictionary with ReplicaSet or ReplicationController UIDs as keys and Pod objects as values.
     """
     return {
@@ -284,8 +284,8 @@ def _parse_container_image_uri(
     Parses the container image URI and extracts image registry, image name and image SHA256 value.
 
     Args:
-        image_uri[str]: Container image URI.
-            Expected is an URI with registry URI and SHA256 value.
+        image_uri (str): Container image URI.
+            Expected is a URI with registry URI and SHA256 value.
 
     Returns:
         tuple[str, str, str]

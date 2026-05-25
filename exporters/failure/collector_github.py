@@ -23,6 +23,7 @@ from urllib.parse import urlparse
 import requests
 from attrs import converters, define, field
 
+import pelorus
 from failure.collector_base import (
     AbstractFailureCollector,
     FailureProviderAuthenticationError,
@@ -62,7 +63,7 @@ class GitHubFailureCollector(AbstractFailureCollector):
         factory=set, converter=comma_or_whitespace_separated(set)
     )
 
-    tls_verify: bool = field(default=True, converter=converters.to_bool)
+    tls_verify: bool = field(default=pelorus.DEFAULT_TLS_VERIFY, converter=converters.to_bool)
 
     session: requests.Session = field(factory=requests.Session, init=False)
 

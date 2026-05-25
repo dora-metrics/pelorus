@@ -20,7 +20,6 @@ import hmac
 import http
 import json
 import time
-from unittest.mock import AsyncMock, patch
 
 import pytest
 from pydantic import TypeAdapter
@@ -31,7 +30,6 @@ from webhook.models.pelorus_webhook import (
     FailurePelorusPayload,
     PelorusDeliveryHeaders,
     PelorusMetric,
-    PelorusMetricSpec,
     PelorusPayload,
 )
 from webhook.plugins.pelorus_handler import (
@@ -136,7 +134,7 @@ async def test_failed_handshake(header):
     handler = PelorusWebhookHandler(None, request=None)
     with pytest.raises(HTTPException) as http_exception:
         await handler._handshake(headers)
-    assert http_exception.value.detail == "Improper headers."
+    assert http_exception.value.detail == "Invalid headers."
     assert http_exception.value.status_code == http.HTTPStatus.BAD_REQUEST
 
 

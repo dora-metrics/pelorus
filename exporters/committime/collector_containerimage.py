@@ -22,6 +22,7 @@ import shlex
 import subprocess
 import threading
 import time
+from collections import OrderedDict
 from typing import Iterable, Optional
 
 from attrs import define
@@ -29,7 +30,7 @@ from kubernetes.dynamic.resource import ResourceField
 from prometheus_client import Counter
 
 from committime import CommitMetric
-from committime.collector_base import AbstractCommitCollector
+from committime.collector_base import AbstractCommitCollector, _build_failures
 from pelorus.timeutil import parse_commit_timestamp
 from provider_common.openshift import (
     filter_pods_by_replica_uid,
@@ -60,13 +61,16 @@ CACHE_THRESHOLD_1_DAY = 60 * 60 * 24
 # right away.
 skopeo_failures_lock = threading.RLock()
 # The dictionary where the key is an uuid and the value a Tuple
-# where we store number of retries and the time of last check
-skopeo_failures: dict[str, tuple[int, float]] = {}
+# where we store number of retries and the time of last check.
+# OrderedDict enables O(1) eviction of the oldest entry when at capacity.
+skopeo_failures: OrderedDict[str, tuple[int, float]] = OrderedDict()
 SKOPEO_MAX_RETRY = 3
 CACHE_SKOPEO_FAILURE_THRESHOLD_2_DAYS = 60 * 60 * 24 * 2
+_SKOPEO_FAILURES_MAX = 5_000
 
 image_label_cache_lock = threading.Lock()
-image_label_cache: dict[str, tuple[dict, float]] = {}
+image_label_cache: OrderedDict[str, tuple[dict, float]] = OrderedDict()
+_IMAGE_LABEL_CACHE_MAX = 10_000
 
 
 # The directory where ca.crt is mounted
@@ -80,6 +84,8 @@ class SkopeoDataException(Exception):
 def _cache_container_images_labels(sha_256: str, labels: dict) -> None:
     with image_label_cache_lock:
         if sha_256 not in image_label_cache:
+            if len(image_label_cache) >= _IMAGE_LABEL_CACHE_MAX:
+                image_label_cache.popitem(last=False)
             logging.debug("Adding SHA256 to the cache: %s", sha_256)
             image_label_cache[sha_256] = (labels, time.time())
 
@@ -102,9 +108,12 @@ def _add_skopeo_failure(sha_256: str) -> None:
     with skopeo_failures_lock:
         logging.debug("Adding SHA256 to the failures: %s", sha_256)
         if sha_256 not in skopeo_failures:
+            if len(skopeo_failures) >= _SKOPEO_FAILURES_MAX:
+                skopeo_failures.popitem(last=False)
             skopeo_failures[sha_256] = (1, time.time())
         else:
             skopeo_failures[sha_256] = (skopeo_failures[sha_256][0] + 1, time.time())
+            skopeo_failures.move_to_end(sha_256)
 
 
 def _remove_from_skopeo_failure(sha_256: str) -> None:
@@ -157,10 +166,10 @@ def get_labels_from_image(sha_256: str, image_uri: str) -> dict[str, str]:
         process.communicate()
         _add_skopeo_failure(sha_256)
         raise SkopeoDataException("skopeo timed out after 120s") from exc
-    output = output.decode("utf-8").strip()
+    output = output.decode("utf-8", errors="replace").strip()
     if process.returncode != 0:
         _add_skopeo_failure(sha_256)
-        stderr = stderr.decode().strip()
+        stderr = stderr.decode("utf-8", errors="replace").strip()
         logging.warning("Error from skopeo for %s: %s", command, stderr)
         raise SkopeoDataException(stderr)
 
@@ -290,32 +299,48 @@ class ContainerImageCommitCollector(AbstractCommitCollector):
         replica_pods_dict = filter_pods_by_replica_uid(pods)
 
         for pod in replica_pods_dict.values():
-            # Since a commit will be built into a particular image and there could be multiple
-            # containers (images) per pod, we will push one metric per image/container in the
-            # pod template
-            images = get_images_from_pod(pod)
+            try:
+                # Since a commit will be built into a particular image and there could be multiple
+                # containers (images) per pod, we will push one metric per image/container in the
+                # pod template
+                images = get_images_from_pod(pod)
 
-            for sha, image_uri in images.items():
-                active_shas.add(sha)
-                _add_image_to_get_label_queue(sha, image_uri)
-                _set_commit_metadata(
-                    pod,
-                    self.date_annotation_name,
-                    self.hash_annotation_name,
-                    self.repo_url_annotation_name,
-                    sha,
-                    self.date_format,
-                )
-                if pod.metadata.commit_timestamp and pod.metadata.commit_hash:
-                    metric = CommitMetric(
-                        name=pod.metadata.labels[self.app_label],
-                        namespace=pod.metadata.namespace,
-                        labels=pod.metadata.labels,
-                        commit_hash=pod.metadata.commit_hash,
-                        commit_timestamp=pod.metadata.commit_timestamp,
-                        image_hash=sha,
+                for sha, image_uri in images.items():
+                    active_shas.add(sha)
+                    _add_image_to_get_label_queue(sha, image_uri)
+                    _set_commit_metadata(
+                        pod,
+                        self.date_annotation_name,
+                        self.hash_annotation_name,
+                        self.repo_url_annotation_name,
+                        sha,
+                        self.date_format,
                     )
-                    metric.commit_link = pod.metadata.repo_url
-                    yield metric
+                    if pod.metadata.commit_timestamp and pod.metadata.commit_hash:
+                        app_name = pod.metadata.labels.get(self.app_label)
+                        if not app_name:
+                            logging.warning(
+                                "Pod %s/%s missing app label %s, skipping",
+                                pod.metadata.namespace, pod.metadata.name, self.app_label,
+                            )
+                            continue
+                        metric = CommitMetric(
+                            name=app_name,
+                            namespace=pod.metadata.namespace,
+                            labels=pod.metadata.labels,
+                            commit_hash=pod.metadata.commit_hash,
+                            commit_timestamp=pod.metadata.commit_timestamp,
+                            image_hash=sha,
+                        )
+                        metric.commit_link = pod.metadata.repo_url
+                        yield metric
+            except Exception:
+                _build_failures.inc()
+                logging.error(
+                    "Failed to process pod %s/%s, skipping",
+                    getattr(getattr(pod, "metadata", None), "namespace", "?"),
+                    getattr(getattr(pod, "metadata", None), "name", "?"),
+                    exc_info=True,
+                )
 
         _cleanup_cache(active_shas)

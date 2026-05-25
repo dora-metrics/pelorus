@@ -1,5 +1,5 @@
 """
-EXPERIMENTAL. Reports github releases as "deployments", using the tag's SHA as the image_sha.
+EXPERIMENTAL. Reports github releases as "deployments", using each tag's commit SHA as the image_sha.
 """
 from __future__ import annotations
 
@@ -108,8 +108,6 @@ class ProjectSpec(NamedTuple):
 
 @frozen
 class GitHubReleaseCollector(AbstractPelorusExporter):
-    # TODO: regex to determine which releases are "prod"?
-
     projects: set[ProjectSpec] = field(converter=ProjectSpec.all_from_env_var)
     host: str = field(default="api.github.com", metadata=env_vars("GIT_API"))
     token: Optional[str] = field(default=None, metadata=log(REDACT), repr=False)
@@ -125,15 +123,25 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
         if self.token:
             self._session.auth = TokenAuth(self.token)
 
+    _DEPLOY_METRIC_NAME = "deploy_timestamp"
+    _DEPLOY_METRIC_HELP = "Deployment timestamp"
+    _DEPLOY_METRIC_LABELS = ["namespace", "app", "image_sha", "release_tag", "commit_id"]
+
+    def _new_deploy_metric(self) -> GaugeMetricFamily:
+        return GaugeMetricFamily(
+            self._DEPLOY_METRIC_NAME,
+            self._DEPLOY_METRIC_HELP,
+            labels=self._DEPLOY_METRIC_LABELS,
+        )
+
+    def describe(self) -> list[GaugeMetricFamily]:
+        return [self._new_deploy_metric()]
+
     def collect(self) -> Iterable[GaugeMetricFamily]:
         logging.debug("collect: start")
         start = time.monotonic()
         collected_count = 0
-        metric = GaugeMetricFamily(
-            "deploy_timestamp",
-            "Deployment timestamp",
-            labels=["namespace", "app", "image_sha", "release_tag", "commit_id"],
-        )
+        metric = self._new_deploy_metric()
 
         try:
             for project in self.projects:
@@ -163,7 +171,7 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
                         )
                         collected_count += 1
                     else:
-                        logging.error(
+                        logging.warning(
                             "Project %s's release %s (tag %s) did not have a matching commit",
                             project,
                             release.name,

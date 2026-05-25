@@ -25,6 +25,8 @@ def get_number_of_info_logs(log_record_tuples: List[Tuple[str, int, str]]) -> in
 def run_prometheus_register(collector: AbstractPelorusExporter) -> None:
     try:
         REGISTRY.register(collector)
+        metrics = list(collector.collect())
+        assert metrics is not None
     finally:
         REGISTRY.unregister(collector)
 

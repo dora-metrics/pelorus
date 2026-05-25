@@ -17,7 +17,7 @@
 import http
 import json
 import time
-from typing import Any, Awaitable
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -113,12 +113,12 @@ def test_abstract_classes():
 
 class SimplePelorusWebhookPlugin(PelorusWebhookPlugin):
     @override
-    async def _handshake(self) -> Awaitable[bool]:
-        pass
+    async def _handshake(self) -> bool:
+        return False
 
     @override
-    async def _receive_pelorus_payload(self, payload) -> Awaitable[PelorusMetric]:
-        pass
+    async def _receive_pelorus_payload(self, payload):
+        return payload
 
 
 def test_pelorus_webhook_plugin_abc():
@@ -214,13 +214,13 @@ def test_check_is_pelorus_not_webhook_handler():
 
 class UserAgentWebhookPlugin(PelorusWebhookPlugin):
     @override
-    async def _handshake(self, headers: Headers) -> Awaitable[bool]:
+    async def _handshake(self, headers: Headers) -> bool:
         return True
 
     @override
     async def _receive_pelorus_payload(
         self, json_payload_data: Any
-    ) -> Awaitable[PelorusMetric]:
+    ) -> PelorusMetric:
         pelorus_data = TypeAdapter(CommitTimePelorusPayload).validate_python(json_payload_data)
         metric = PelorusMetric(
             metric_spec=PelorusMetricSpec.COMMIT_TIME, metric_data=pelorus_data

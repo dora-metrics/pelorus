@@ -46,7 +46,9 @@ COMMIT_REPO_URL_ANNOTATION_ENV = "COMMIT_REPO_URL_ANNOTATION"
 COMMIT_DATE_ANNOTATION_ENV = "COMMIT_DATE_ANNOTATION"
 
 # Pre-compiled regex for matching git repo URLs in Jenkins pipeline env vars
-_GIT_REPO_RE = re.compile(r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
+_GIT_REPO_RE = re.compile(r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+)?/*(.*)")
+# Regex to strip embedded credentials from URLs before logging
+_URL_USERINFO_RE = re.compile(r"(https?://)([^@]+)@")
 # Pre-compiled regex for validating app_label values
 _VALID_APP_LABEL_RE = re.compile(r"^[A-Za-z0-9_./-]+$")
 
@@ -73,6 +75,13 @@ class UnsupportedGITProvider(Exception):
 
 
 _KNOWN_GIT_PROVIDERS = frozenset({"github", "gitlab", "gitea", "bitbucket", "azure"})
+
+
+def _sanitize_url(url: str) -> str:
+    """Strip embedded credentials (user:pass@) from a URL for safe logging."""
+    if not url:
+        return url
+    return _URL_USERINFO_RE.sub(r"\1", url)
 
 
 def check_provider_support(server_string: str, provider_name: str) -> None:
@@ -250,7 +259,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     @abstractmethod
     def get_commit_time(self, metric) -> Optional[CommitMetric]:
         """Get commit timestamp from the git provider API for the given metric."""
-        pass
 
     def get_metrics_from_apps(self, apps, namespace):
         """Expects a dict of builds grouped by app label."""
@@ -260,7 +268,15 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             jenkins_builds = []
             code_builds = []
             for b in builds:
-                strategy_type = b.spec.strategy.type
+                try:
+                    strategy_type = b.spec.strategy.type
+                except (AttributeError, TypeError):
+                    _build_failures.inc()
+                    logging.warning(
+                        "Build %s/%s has no strategy type, skipping",
+                        namespace, getattr(getattr(b, "metadata", None), "name", "?"),
+                    )
+                    continue
                 if strategy_type == "JenkinsPipeline":
                     jenkins_builds.append(b)
                 elif strategy_type in ("Source", "Binary", "Docker"):
@@ -268,7 +284,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # For Jenkins pipelines, grab repo data then find associated
             # Source/Binary/Docker builds from which to pull commit & image data
             repo_url = self.get_repo_from_jenkins(jenkins_builds)
-            logging.debug("Repo URL for app %s is currently %s", app, repo_url)
+            logging.debug("Repo URL for app %s is currently %s", app, _sanitize_url(repo_url) if repo_url else repo_url)
 
             for build in code_builds:
                 total_builds += 1
@@ -369,7 +385,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 "Repo URL for build %s provided by '%s': %s",
                 metric.build_name,
                 CommitMetric._BUILD_MAPPING["repo_url"][0],
-                metric.repo_url,
+                _sanitize_url(metric.repo_url),
             )
         elif repo_url:
             metric.repo_url = repo_url
@@ -380,7 +396,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 logging.debug(
                     "Repo URL for build %s provided by '%s'",
                     metric.build_name,
-                    metric.repo_url,
+                    _sanitize_url(metric.repo_url),
                 )
             else:
                 metric.repo_url = self._get_repo_from_build_config(build)
@@ -468,7 +484,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         if jenkins_builds:
             # First, check for cases where the source url is in pipeline params
             for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env or []:
-                logging.debug("Searching %s=%s for git urls", env.name, env.value)
+                logging.debug("Searching env var %s for git urls", env.name)
                 try:
                     result = _GIT_REPO_RE.match(env.value)
                 except TypeError:

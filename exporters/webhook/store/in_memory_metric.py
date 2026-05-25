@@ -23,8 +23,6 @@ from typing import Optional, Sequence, Union
 
 from prometheus_client import Gauge
 from prometheus_client.core import GaugeMetricFamily
-from pydantic import BaseModel
-
 from provider_common import format_app_name
 from webhook.models.pelorus_webhook import (
     CommitTimePelorusPayload,
@@ -61,7 +59,7 @@ _CLASS_TO_LABEL_MAP: dict[type, dict[str, str]] = {
 
 
 def _pelorus_metric_to_dict(
-    pelorus_model: Union[PelorusPayload, type[BaseModel]]
+    pelorus_model: Union[PelorusPayload, type[PelorusPayload]]
 ) -> dict[str, str]:
     """
     Mapping between Pelorus Payload Metrics defined as pydantic classes and the
@@ -83,7 +81,7 @@ def _pelorus_metric_to_dict(
     if result is not None:
         return result
 
-    raise TypeError(f"Improper prometheus data model: {cls.__name__}")
+    raise TypeError(f"Unsupported Prometheus data model: {cls.__name__}")
 
 
 _ATTR_SENTINEL = object()

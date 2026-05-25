@@ -23,6 +23,7 @@ from attrs import converters, define, field
 from jira import JIRA, Issue
 from jira.exceptions import JIRAError
 
+import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue, _issue_parse_failures
 from pelorus.certificates import set_up_requests_certs
 from pelorus.config import env_var_names, env_vars
@@ -74,7 +75,7 @@ class JiraFailureCollector(AbstractFailureCollector):
     jql_query_string: str = field(
         default=DEFAULT_JQL_SEARCH_QUERY, metadata=env_vars(JQL_SEARCH_QUERY_ENV)
     )
-    tls_verify: bool = field(default=True, converter=converters.to_bool)
+    tls_verify: bool = field(default=pelorus.DEFAULT_TLS_VERIFY, converter=converters.to_bool)
 
     jira_resolved_statuses: Optional[str] = field(
         default=None, metadata=env_vars(RESOLVED_STATUS_ENV)
@@ -237,7 +238,7 @@ class JiraFailureCollector(AbstractFailureCollector):
         )
         created_tz = parse_tz_aware(issue.fields.created, _DATETIME_FORMAT)
         created_ts = second_precision(created_tz).timestamp()
-        resolution_ts = self._get_resolved_timestamp(issue, self.jira_resolved_statuses)
+        resolution_ts = self._get_resolved_timestamp(issue)
         return TrackerIssue(
             issue.key, created_ts, resolution_ts, self.get_app_name(issue)
         )
@@ -265,21 +266,14 @@ class JiraFailureCollector(AbstractFailureCollector):
                     if new_query:
                         return self._jql_query_issues(jira_client, new_query)
                 return []
+            self._jira_client = None
             raise
 
-    def _get_resolved_timestamp(
-        self, issue: Issue, resolved_statuses: Optional[str] = None
-    ) -> Optional[float]:
-        """Find timestamp when the issue was resolved or moved to a status in resolved_statuses."""
-        resolution_ts = None
+    def _get_resolved_timestamp(self, issue: Issue) -> Optional[float]:
+        """Find timestamp when the issue was resolved or moved to a configured resolved status."""
         resolution_tz = None
-        if resolved_statuses:
-            # Use pre-computed list when the parameter matches the configured value
-            if resolved_statuses == self.jira_resolved_statuses and self._resolved_statuses_list is not None:
-                statuses = self._resolved_statuses_list
-            else:
-                statuses = [s.strip().lower() for s in resolved_statuses.split(",")]
-            if issue.fields.status.name.lower() in statuses:
+        if self._resolved_statuses_list:
+            if issue.fields.status.name.lower() in self._resolved_statuses_list:
                 logging.debug(
                     "Found issue %s: %s, %s",
                     issue.fields.status.name,
@@ -300,9 +294,8 @@ class JiraFailureCollector(AbstractFailureCollector):
                     issue.fields.resolutiondate, _DATETIME_FORMAT
                 )
         if resolution_tz:
-            resolution_ts = second_precision(resolution_tz).timestamp()
-
-        return resolution_ts
+            return second_precision(resolution_tz).timestamp()
+        return None
 
     def get_app_name(self, issue: Issue) -> str:
         prefix = self._app_label_prefix

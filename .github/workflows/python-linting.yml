@@ -1,9 +1,10 @@
-name: Pylava
+name: Pylama
 
 permissions:
   contents: read
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [ main ]
     paths:

@@ -75,7 +75,6 @@ def setup_logging(prod: bool = True):
     _print_version()
 
 
-
 def url_joiner(base: str, *parts: str) -> str:
     """
     Joins each part together (including the base url) with a slash, stripping any leading or trailing slashes.

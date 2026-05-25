@@ -16,7 +16,6 @@ dependencies = [
     "prometheus-client>=0.24.1",
     "python-gitlab>=8.2.0",
     "requests>=2.33.1",
-    "typing-extensions>=4.15.0",
     "urllib3>=2.6.3",
     "uvicorn>=0.44.0",
     "pydantic>=2.12.5",

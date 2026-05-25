@@ -134,10 +134,17 @@ def rc(
     )
 
 
-_rng = random.Random(42)
-
-
 _BASE_TIME = datetime(2024, 1, 15, 12, 0, 0)
+
+
+@pytest.fixture(autouse=True)
+def _reset_rng():
+    """Reset RNG before each test so results don't depend on test ordering."""
+    global _rng
+    _rng = random.Random(42)
+
+
+_rng = random.Random(42)
 
 
 def random_time() -> datetime:

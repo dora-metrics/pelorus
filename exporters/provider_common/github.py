@@ -142,7 +142,7 @@ def paginate_github_with_page(
     Paginate github requests the way their API dictates:
     https://docs.github.com/en/rest/guides/traversing-with-pagination
 
-    Yields lists and the response they came from. This is solely so you can inspect the response.
+    Yields `GitHubPageResponse` objects containing the list and the response.
     For higher-level usage, use `paginate_github`, which flattens each item in each list for you.
 
     Will raise a GitHubError with any of the following set to the __cause__ if they occur:

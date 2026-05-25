@@ -36,6 +36,15 @@ WEBHOOK_ENDPOINT = "/pelorus/webhook"
 SECRET_TOKEN = "My Secret Token"
 
 
+@pytest.fixture(autouse=True)
+def _restore_plugins():
+    """Prevent load_plugins() from leaking state between tests."""
+    saved = dict(plugins)
+    yield
+    plugins.clear()
+    plugins.update(saved)
+
+
 @pytest.fixture
 def client():
     return TestClient(app)
@@ -190,7 +199,7 @@ def test_pelorus_webhook_post_data_wrong_x_signature_format(
         )
 
         assert webhook_response.status_code == HTTPStatus.BAD_REQUEST
-        assert webhook_response.json() == {"detail": "Improper headers."}
+        assert webhook_response.json() == {"detail": "Invalid headers."}
 
 
 @pytest.mark.parametrize(
@@ -221,7 +230,7 @@ def test_pelorus_webhook_post_data_missing_x_signature(
         )
 
         assert webhook_response.status_code == HTTPStatus.UNAUTHORIZED
-        assert webhook_response.json() == {"detail": "Non existing signature."}
+        assert webhook_response.json() == {"detail": "Missing signature."}
 
 
 @pytest.mark.parametrize(
@@ -287,7 +296,7 @@ def test_pelorus_webhook_too_large_payload(client, webhook_data_payload):
     webhook_response = client.post(WEBHOOK_ENDPOINT, json=payload)
 
     assert webhook_response.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-    assert webhook_response.json() == {"detail": "Content too large"}
+    assert webhook_response.json() == {"detail": "Content too large."}
 
 
 def test_register_plugin_not_implemented():

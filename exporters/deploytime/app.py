@@ -34,6 +34,10 @@ _last_collection_count = Gauge(
     "pelorus_deploytime_last_collection_count",
     "Number of metrics returned by the last deploytime collection",
 )
+_pod_failures = Counter(
+    "pelorus_deploytime_pod_failures_total",
+    "Total number of individual pod metric collection failures",
+)
 
 
 @frozen
@@ -155,6 +159,7 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
                     )
                     yield metric
             except Exception:
+                _pod_failures.inc()
                 logging.error(
                     "Failed to process pod %s/%s, skipping",
                     getattr(getattr(pod, "metadata", None), "namespace", "?"),

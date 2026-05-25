@@ -18,14 +18,14 @@
 import http
 import importlib
 import logging
-import sys
+import time as _time
 from collections import OrderedDict
 from pathlib import Path
 from typing import Iterable, Optional
 
 from attrs import field, frozen
 from fastapi import FastAPI, Header, HTTPException, Request
-from prometheus_client import Counter, CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import Counter, Histogram, CONTENT_TYPE_LATEST, generate_latest
 from prometheus_client.core import REGISTRY
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse as StarletteJSONResponse, Response
@@ -92,6 +92,11 @@ def load_plugins(plugins_dir_name: Optional[str] = "plugins"):
 webhook_received = Counter("webhook_received_total", "Number of received webhooks")
 webhook_processed = Counter("webhook_processed_total", "Number of processed webhooks")
 webhook_errors = Counter("webhook_errors_total", "Number of webhook processing errors")
+webhook_request_duration = Histogram(
+    "webhook_request_duration_seconds",
+    "Latency of webhook request processing",
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+)
 
 
 @frozen
@@ -218,7 +223,7 @@ class LimitRequestBodyMiddleware(BaseHTTPMiddleware):
                         content_length, MAX_BODY_SIZE,
                     )
                     return StarletteJSONResponse(
-                        {"detail": "Content too large"},
+                        {"detail": "Content too large."},
                         status_code=http.HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                     )
             except ValueError:
@@ -233,21 +238,37 @@ class LimitRequestBodyMiddleware(BaseHTTPMiddleware):
                 len(body), MAX_BODY_SIZE,
             )
             return StarletteJSONResponse(
-                {"detail": "Content too large"},
+                {"detail": "Content too large."},
                 status_code=http.HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
             )
         return await call_next(request)
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Add standard security headers to all responses."""
+class SecurityHeadersMiddleware:
+    """Add standard security headers to all responses (pure ASGI, no body buffering)."""
 
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Cache-Control"] = "no-store"
-        return response
+    _HEADERS = [
+        (b"x-content-type-options", b"nosniff"),
+        (b"x-frame-options", b"DENY"),
+        (b"cache-control", b"no-store"),
+    ]
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def inject_headers(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.extend(SecurityHeadersMiddleware._HEADERS)
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, inject_headers)
 
 
 app = FastAPI(
@@ -260,7 +281,7 @@ app.add_middleware(LimitRequestBodyMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 
-def _get_hash_token() -> str:
+def _get_hash_token() -> Optional[str]:
     return collector.secret_token
 
 
@@ -273,6 +294,7 @@ async def pelorus_webhook(
     user_agent: Optional[str] = Header(None),
 ) -> PelorusWebhookResponse:
     webhook_received.inc()
+    start_time = _time.monotonic()
 
     if not user_agent:
         raise HTTPException(
@@ -314,12 +336,13 @@ async def pelorus_webhook(
 
     try:
         await prometheus_metric(received_pelorus_metric)
-    except Exception as e:
-        logging.error("Failed to store metric: %s", e, exc_info=True)
+    except Exception:
         raise HTTPException(
             status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to store metric.",
         )
+    finally:
+        webhook_request_duration.observe(_time.monotonic() - start_time)
 
     return PelorusWebhookResponse(
         http_response="Webhook Received", http_response_code=http.HTTPStatus.ACCEPTED
@@ -376,6 +399,8 @@ if __name__ == "__main__":
             "No SECRET_TOKEN configured. Webhook endpoint accepts "
             "unauthenticated requests. Set SECRET_TOKEN to enable HMAC verification."
         )
+
+    logging.info("PELORUS_WEBHOOK_MAX_METRICS=%d", _MAX_METRICS)
 
     REGISTRY.register(collector)
 

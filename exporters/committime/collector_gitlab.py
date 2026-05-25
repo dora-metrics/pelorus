@@ -26,7 +26,7 @@ from committime import CommitMetric
 from pelorus.timeutil import parse_tz_aware
 from pelorus.utils import set_up_requests_session
 
-from .collector_base import AbstractCommitCollector, check_provider_support
+from .collector_base import AbstractCommitCollector, _sanitize_url, check_provider_support
 
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
@@ -35,11 +35,9 @@ _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 class GitLabCommitCollector(AbstractCommitCollector):
     session: requests.Session = field(factory=requests.Session, init=False)
 
-    # Cache GitLab clients per server to avoid reconnecting per commit
-    _gitlab_clients: dict = field(factory=dict, init=False)
+    _gitlab_clients: dict[str, gitlab.Gitlab] = field(factory=dict, init=False)
 
-    # Cache GitLab project objects per namespaced path to avoid N+1 lookups
-    _project_cache: OrderedDict = field(factory=OrderedDict, init=False)
+    _project_cache: OrderedDict[tuple[str, str], object] = field(factory=OrderedDict, init=False)
 
     _PROJECT_CACHE_MAX = 1_000
 
@@ -106,7 +104,7 @@ class GitLabCommitCollector(AbstractCommitCollector):
             except Exception:
                 logging.error(
                     "Failed to get project: %s, repo: %s for build %s",
-                    metric.repo_url, project_name, metric.build_name,
+                    _sanitize_url(metric.repo_url), project_name, metric.build_name,
                     exc_info=True,
                 )
                 raise

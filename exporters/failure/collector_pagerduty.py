@@ -19,6 +19,7 @@ from typing import Optional
 import requests
 from attrs import converters, define, field
 
+import pelorus
 from failure.collector_base import (
     AbstractFailureCollector,
     FailureProviderAuthenticationError,
@@ -44,7 +45,7 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
         repr=False,
     )
 
-    tls_verify: bool = field(default=True, converter=converters.to_bool)
+    tls_verify: bool = field(default=pelorus.DEFAULT_TLS_VERIFY, converter=converters.to_bool)
 
     session: requests.Session = field(factory=requests.Session, init=False)
 

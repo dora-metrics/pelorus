@@ -7,7 +7,7 @@ which are necessary for correctness with `astimezone(tz)`, `timestamp()`, and ot
 """
 import os as _os
 import time as _time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 ISO_ZULU_FMT = "%Y-%m-%dT%H:%M:%SZ"
 

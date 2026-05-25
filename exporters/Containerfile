@@ -4,10 +4,12 @@ ARG WORK_DIR=/app/pelorus
 
 ENV APP_FILE=deploytime/app.py
 ENV PYTHONPATH=$WORK_DIR
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 USER root
 
-RUN dnf -y install skopeo && \
+RUN dnf -y --setopt=install_weak_deps=False install skopeo && \
     dnf clean all && \
     mkdir -p $WORK_DIR && \
     chown -R 1001:0 $WORK_DIR

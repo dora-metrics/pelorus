@@ -53,10 +53,10 @@ class ImageCommitCollector(AbstractCommitCollector):
         Create a CommitMetric from image.openshift.io/v1 information or Image annotation
 
         Some of the information such as image sha is gathered from the Image metadata,
-        which we expect to always exists.
+        which we expect to always exist.
 
-        For the commit time Image type exporter only commit time is required, however
-        additional data is also collected such as commit hash.
+        Both image_hash and commit_time are required; additional data such as
+        commit_hash is also collected when available.
 
         commit time which is converted to the commit timestamp is gathered from the
         Image Label, which normally is populated from the Docker build process as
@@ -177,7 +177,7 @@ class ImageCommitCollector(AbstractCommitCollector):
                         image.metadata.name,
                         exc_info=True,
                     )
-                    raise
+                    continue
 
                 if errors:
                     msg = (
