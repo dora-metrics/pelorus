@@ -19,7 +19,7 @@ import logging
 import re
 from typing import Optional
 
-from attrs import define, field
+from attrs import converters, define, field
 from jira import JIRA, Issue
 from jira.exceptions import JIRAError
 
@@ -60,6 +60,8 @@ def remove_quotes(text: str) -> str:
         text without surroundings single (or double) quotes, if it does have
         surroundings quotes; otherwise, return the text without changing it.
     """
+    if len(text) < 2:
+        return text
     if text[0] == text[-1] and text.startswith(("'", '"')):
         return text[1:-1]
     return text
@@ -86,7 +88,7 @@ class JiraFailureCollector(AbstractFailureCollector):
     jql_query_string: str = field(
         default=DEFAULT_JQL_SEARCH_QUERY, metadata=env_vars(JQL_SEARCH_QUERY_ENV)
     )
-    tls_verify: bool = field(default=True)
+    tls_verify: bool = field(default=True, converter=converters.to_bool)
 
     jira_resolved_statuses: Optional[str] = field(
         default=None, metadata=env_vars(RESOLVED_STATUS_ENV)

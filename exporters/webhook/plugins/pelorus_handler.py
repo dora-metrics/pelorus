@@ -19,10 +19,14 @@ import hmac
 import http
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pydantic import TypeAdapter, ValidationError
-from typing_extensions import override
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 
 from webhook.models.pelorus_webhook import (
     CommitTimePelorusPayload,
@@ -44,7 +48,7 @@ _HEADERS_ADAPTER = TypeAdapter(PelorusDeliveryHeaders)
 
 
 def _verify_payload_signature(
-    secret: bytes, signature_secret: str, json_payload_data: Dict[str, str],
+    secret: bytes, signature_secret: str, json_payload_data: dict[str, str],
     raw_body: Optional[bytes] = None,
 ) -> bool:
     """
@@ -174,12 +178,15 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
         super().__init__(*args, **kwargs)
         self.payload_headers = None
 
+    @staticmethod
     def _pelorus_committime(payload) -> CommitTimePelorusPayload:
         return CommitTimePelorusPayload(**payload)
 
+    @staticmethod
     def _pelorus_failure(payload) -> FailurePelorusPayload:
         return FailurePelorusPayload(**payload)
 
+    @staticmethod
     def _pelorus_deploytime(payload) -> DeployTimePelorusPayload:
         return DeployTimePelorusPayload(**payload)
 
@@ -228,7 +235,6 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
             }
             logging.error(
                 "Handshake failed: invalid headers: %s", safe_headers,
-                exc_info=True,
             )
             raise HTTPException(
                 status_code=http.HTTPStatus.BAD_REQUEST,
@@ -271,9 +277,14 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
                         detail="Invalid signature.",
                     )
 
-            data = self.handler_functions[self.payload_headers.event_type](
-                json_payload_data
-            )
+            handler_fn = self.handler_functions.get(self.payload_headers.event_type)
+            if handler_fn is None:
+                raise HTTPException(
+                    status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
+                    detail=f"Unsupported event type: {self.payload_headers.event_type}",
+                )
+
+            data = handler_fn(json_payload_data)
             return PelorusMetric(
                 metric_spec=self.payload_headers.event_type, metric_data=data
             )
@@ -281,7 +292,6 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
             logging.error(
                 "Payload validation failed for event %s",
                 self.payload_headers.event_type,
-                exc_info=True,
             )
             raise HTTPException(
                 status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,

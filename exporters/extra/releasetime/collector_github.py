@@ -4,12 +4,14 @@ EXPERIMENTAL. Reports github releases as "deployments", using the tag's SHA as t
 from __future__ import annotations
 
 import logging
+import time
 import urllib.parse
 from datetime import datetime
 from functools import partial
 from typing import Any, Iterable, NamedTuple, Optional, cast
 
 from attrs import field, frozen
+from prometheus_client import Counter, Gauge
 from prometheus_client.core import GaugeMetricFamily
 from requests import Session
 
@@ -19,6 +21,19 @@ from pelorus.config import REDACT, env_vars, load_and_log, log
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.utils import TokenAuth, join_url_path_components
 from provider_common.github import GitHubError, paginate_github, parse_datetime
+
+_collection_duration = Gauge(
+    "pelorus_releasetime_collection_duration_seconds",
+    "Duration of the last releasetime metric collection in seconds",
+)
+_collection_errors = Counter(
+    "pelorus_releasetime_collection_errors_total",
+    "Total number of releasetime metric collection errors",
+)
+_last_collection_count = Gauge(
+    "pelorus_releasetime_last_collection_count",
+    "Number of metrics returned by the last releasetime collection",
+)
 
 
 class Release(NamedTuple):
@@ -111,44 +126,57 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
             self._session.auth = TokenAuth(self.token)
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
+        logging.debug("collect: start")
+        start = time.monotonic()
+        collected_count = 0
         metric = GaugeMetricFamily(
             "deploy_timestamp",
             "Deployment timestamp",
             labels=["namespace", "app", "image_sha", "release_tag", "commit_id"],
         )
 
-        for project in self.projects:
-            releases = set(self._get_releases_for_project(project))
-            logging.debug("Got %d releases for project %s", len(releases), project)
+        try:
+            for project in self.projects:
+                releases = set(self._get_releases_for_project(project))
+                logging.debug("Got %d releases for project %s", len(releases), project)
 
-            commits = self._get_each_tag_commit(
-                project, set(release.tag_name for release in releases)
-            )
-            logging.debug("Got %d tagged commits for project %s", len(commits), project)
+                commits = self._get_each_tag_commit(
+                    project, set(release.tag_name for release in releases)
+                )
+                logging.debug("Got %d tagged commits for project %s", len(commits), project)
 
-            namespace, app = project.organization, project.app
+                namespace, app = project.organization, project.app
 
-            for release in releases:
-                if commit := commits.get(release.tag_name):
-                    logging.info(
-                        "Collected (release) deploy_timestamp{namespace/org=%s, app/repo=%s, image/commit=%s} %s",
-                        namespace,
-                        app,
-                        commit,
-                        release.published_at,
-                    )
-                    metric.add_metric(
-                        [namespace, app, commit, release.tag_name, commit],
-                        release.published_at.timestamp(),
-                        release.published_at.timestamp(),
-                    )
-                else:
-                    logging.error(
-                        "Project %s's release %s (tag %s) did not have a matching commit",
-                        project,
-                        release.name,
-                        release.tag_name,
-                    )
+                for release in releases:
+                    if commit := commits.get(release.tag_name):
+                        logging.debug(
+                            "Collected (release) deploy_timestamp{namespace/org=%s, app/repo=%s, image/commit=%s} %s",
+                            namespace,
+                            app,
+                            commit,
+                            release.published_at,
+                        )
+                        metric.add_metric(
+                            [namespace, app, commit, release.tag_name, commit],
+                            release.published_at.timestamp(),
+                            release.published_at.timestamp(),
+                        )
+                        collected_count += 1
+                    else:
+                        logging.error(
+                            "Project %s's release %s (tag %s) did not have a matching commit",
+                            project,
+                            release.name,
+                            release.tag_name,
+                        )
+        except Exception:
+            _collection_errors.inc()
+            logging.error("Release time metric collection failed", exc_info=True)
+        finally:
+            duration = time.monotonic() - start
+            _collection_duration.set(duration)
+            _last_collection_count.set(collected_count)
+            logging.info("collect: %d metrics in %.2fs", collected_count, duration)
 
         yield metric
 

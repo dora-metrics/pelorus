@@ -26,7 +26,9 @@ def comma_separated(
 
     def _converter(value: Union[str, CollectionType]):
         if isinstance(value, str):
-            return collection(part.strip() for part in value.split(","))
+            return collection(
+                part for part in (p.strip() for p in value.split(",")) if part
+            )
         else:
             return value
 
@@ -47,7 +49,9 @@ def comma_or_whitespace_separated(
     def _converter(value: Union[str, CollectionType]):
         if isinstance(value, str):
             replaced = _WHITESPACE_RE.sub(",", value)
-            return collection(part.strip() for part in replaced.split(","))
+            return collection(
+                part for part in (p.strip() for p in replaced.split(",")) if part
+            )
         else:
             return value
 

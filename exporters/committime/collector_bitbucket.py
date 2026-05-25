@@ -167,6 +167,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                 metric.build_name,
                 exc_info=True,
             )
+            raise
         except Exception:
             logging.error(
                 "Failed processing commit time for build %s",

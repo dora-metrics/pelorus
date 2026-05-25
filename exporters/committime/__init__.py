@@ -21,7 +21,7 @@ import logging
 import re
 from typing import Optional
 
-import attr
+import attrs
 import giturlparse
 
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
@@ -55,37 +55,37 @@ _AZURE_SSH_RE = re.compile(
     r"(?P<name>[\w\-\.]+)\/?)$"
 )
 
-@attr.define
+@attrs.define
 class CommitMetric:
-    name: str = attr.field()
-    annotations: dict = attr.field(default=None, kw_only=True)
-    labels: dict = attr.field(default=None, kw_only=True)
-    namespace: Optional[str] = attr.field(default=None, kw_only=True)
+    name: str = attrs.field()
+    annotations: dict = attrs.field(default=None, kw_only=True)
+    labels: dict = attrs.field(default=None, kw_only=True)
+    namespace: Optional[str] = attrs.field(default=None, kw_only=True)
 
-    __repo_url: str = attr.field(default=None, init=False)
-    __repo_protocol = attr.field(default=None, init=False)
-    __repo_fqdn: str = attr.field(default=None, init=False)
-    __repo_group = attr.field(default=None, init=False)
-    __repo_name = attr.field(default=None, init=False)
-    __repo_project = attr.field(default=None, init=False)
-    __repo_port = attr.field(default=None, init=False)
-    __azure_project = attr.field(default=None, init=False)
+    __repo_url: str = attrs.field(default=None, init=False)
+    __repo_protocol = attrs.field(default=None, init=False)
+    __repo_fqdn: str = attrs.field(default=None, init=False)
+    __repo_group = attrs.field(default=None, init=False)
+    __repo_name = attrs.field(default=None, init=False)
+    __repo_project = attrs.field(default=None, init=False)
+    __repo_port = attrs.field(default=None, init=False)
+    __azure_project = attrs.field(default=None, init=False)
 
-    committer: Optional[str] = attr.field(default=None, kw_only=True)
-    commit_hash: Optional[str] = attr.field(default=None, kw_only=True)
-    commit_time: Optional[str] = attr.field(default=None, kw_only=True)
+    committer: Optional[str] = attrs.field(default=None, kw_only=True, repr=False)
+    commit_hash: Optional[str] = attrs.field(default=None, kw_only=True)
+    commit_time: Optional[str] = attrs.field(default=None, kw_only=True)
     """A human-readable timestamp."""
-    commit_timestamp: Optional[float] = attr.field(default=None, kw_only=True)
+    commit_timestamp: Optional[float] = attrs.field(default=None, kw_only=True)
     """The unix timestamp."""
-    commit_link: Optional[str] = attr.field(default=None, kw_only=True)
+    commit_link: Optional[str] = attrs.field(default=None, kw_only=True)
 
-    build_name: Optional[str] = attr.field(default=None, kw_only=True)
-    build_config_name: Optional[str] = attr.field(default=None, kw_only=True)
+    build_name: Optional[str] = attrs.field(default=None, kw_only=True)
+    build_config_name: Optional[str] = attrs.field(default=None, kw_only=True)
 
-    image_location: Optional[str] = attr.field(default=None, kw_only=True)
-    image_name: Optional[str] = attr.field(default=None, kw_only=True)
-    image_tag: Optional[str] = attr.field(default=None, kw_only=True)
-    image_hash: Optional[str] = attr.field(default=None, kw_only=True)
+    image_location: Optional[str] = attrs.field(default=None, kw_only=True)
+    image_name: Optional[str] = attrs.field(default=None, kw_only=True)
+    image_tag: Optional[str] = attrs.field(default=None, kw_only=True)
+    image_hash: Optional[str] = attrs.field(default=None, kw_only=True)
 
     @property
     def repo_url(self):
@@ -168,7 +168,7 @@ class CommitMetric:
             parsed = giturlparse.parse(self.__repo_url)
         logging.debug("Parsed: %s", parsed)
         if len(parsed.protocols) > 0 and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
-            raise ValueError("Unsupported protocol %s", parsed.protocols[0])
+            raise ValueError(f"Unsupported protocol: {parsed.protocols[0]}")
         self.__repo_protocol = parsed.protocol
         # In the case of multiple subgroups the host will be in the pathname
         # Otherwise, it will be in the resource
@@ -200,7 +200,6 @@ class CommitMetric:
         image_hash=("status.output.to.imageDigest", True),
         commit_hash=("spec.revision.git.commit", False),
         repo_url=("spec.source.git.uri", False),
-        committer=("spec.revision.git.author.name", False),
     )
 
     _ANNOTATION_MAPPING = dict(

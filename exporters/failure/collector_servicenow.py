@@ -3,11 +3,12 @@ import re
 from urllib.parse import urlparse
 
 import requests
-from attrs import define, field
+from attrs import converters, define, field
 
 import pelorus
 from failure.collector_base import AbstractFailureCollector, TrackerIssue
-from pelorus.config import REDACT, env_var_names, env_vars, log
+from pelorus.config import env_var_names, env_vars
+from pelorus.config.log import REDACT, log
 from pelorus.timeutil import parse_assuming_utc, second_precision
 from pelorus.utils import set_up_requests_session
 
@@ -46,7 +47,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         default=pelorus.DEFAULT_TRACKER_APP_FIELD, metadata=env_vars("APP_FIELD")
     )
 
-    tls_verify: bool = field(default=True)
+    tls_verify: bool = field(default=True, converter=converters.to_bool)
     session: requests.Session = field(factory=requests.Session, init=False)
 
     offset: int = field(default=0, init=False)
@@ -110,14 +111,14 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         return critical_issues
 
     def query_servicenow(self):
-        self.tracker_query = SN_QUERY.format(
+        tracker_query = SN_QUERY.format(
             SN_OPENED_FIELD,
             SN_RESOLVED_FIELD,
             self.app_name_field,
             PAGE_SIZE,
             self.offset,
         )
-        tracker_url = self.server + self.tracker_query
+        tracker_url = self.server + tracker_query
 
         response = self.session.get(tracker_url, timeout=30)
         if response.status_code != 200:
@@ -128,12 +129,16 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
             )
             raise RuntimeError(f"Error connecting to ServiceNow (HTTP {response.status_code})")
         data = response.json()
+        if "result" not in data:
+            logging.error(
+                "ServiceNow response missing 'result' key, url: %s, keys: %s",
+                tracker_url,
+                list(data.keys()),
+            )
+            raise RuntimeError("ServiceNow response missing 'result' key")
         logging.debug("ServiceNow query result: %s", data.get("result"))
-        self.offset = self.offset + PAGE_SIZE
+        self.offset += PAGE_SIZE
         return data
 
     def get_app_name(self, issue):
-        if issue.get(self.app_name_field):
-            app_label = issue.get(self.app_name_field)
-            return app_label
-        return pelorus.DEFAULT_TRACKER_APP_LABEL
+        return issue.get(self.app_name_field) or pelorus.DEFAULT_TRACKER_APP_LABEL

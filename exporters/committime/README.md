@@ -3,7 +3,7 @@
 The Commit Time exporter is responsible for collecting the following metric:
 
 ```
-commit_timestamp{app, commit_hash, image_sha, namespace} timestamp
+commit_timestamp{namespace, app, commit, image_sha, commit_link} timestamp
 ```
 The job of the commit time exporter is to find and associate time of the relevant source code commit with a container image SHA built from that source code. Later the Deploy Time Exporter can associate that image SHA with a production deployment and allow to calculate Lead Time for Change metrics.
 

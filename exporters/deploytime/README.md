@@ -1,6 +1,6 @@
 # Deploy Time Exporter
 
-The job of the deploy time exporter is to capture the timestamp at which a deployment event happen in a production environment.
+The job of the deploy time exporter is to capture the timestamp at which a deployment event happens in a production environment.
 
 ```
 deploy_timestamp{app, image_sha, namespace} timestamp

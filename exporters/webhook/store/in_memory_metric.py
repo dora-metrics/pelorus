@@ -17,7 +17,7 @@
 import logging
 import threading
 from collections import deque
-from typing import Dict, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 from prometheus_client import Gauge
 from prometheus_client.core import GaugeMetricFamily
@@ -50,7 +50,7 @@ _COMMITTIME_PAYLOAD = {
     "commit": "commit_hash",
 }
 
-_CLASS_TO_LABEL_MAP: Dict[type, Dict[str, str]] = {
+_CLASS_TO_LABEL_MAP: dict[type, dict[str, str]] = {
     PelorusPayload: _PELORUS_PAYLOAD,
     FailurePelorusPayload: _FAILURE_PAYLOAD,
     DeployTimePelorusPayload: _DEPLOYTIME_PAYLOAD,
@@ -60,7 +60,7 @@ _CLASS_TO_LABEL_MAP: Dict[type, Dict[str, str]] = {
 
 def _pelorus_metric_to_dict(
     pelorus_model: Union[PelorusPayload, type[BaseModel]]
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Mapping between Pelorus Payload Metrics defined as pydantic classes and the
     Prometheus expected metrics.
@@ -71,7 +71,7 @@ def _pelorus_metric_to_dict(
                         This can be either class or its instance.
 
     Returns:
-        Dict[str, str]: First item is the Prometheus expected label and second
+        dict[str, str]: First item is the Prometheus expected label and second
                         the name of the value from the PelorusPayload model.
 
     Raises:
@@ -101,20 +101,19 @@ def pelorus_metric_to_prometheus(pelorus_model: PelorusPayload) -> list[str]:
         TypeError: If the expected data model did not match provided pelorus_model
     """
     data_model = _pelorus_metric_to_dict(pelorus_model)
+    _sentinel = object()
     data_values = []
 
     for metric_value in data_model.values():
-        if hasattr(pelorus_model, metric_value):
-            value = getattr(pelorus_model, metric_value)
-            if metric_value == "app":
-                data_values.append(format_app_name(value))
-            else:
-                data_values.append(value)
-        else:
-            # If the model do not match the payload dict, we should raise an error
+        value = getattr(pelorus_model, metric_value, _sentinel)
+        if value is _sentinel:
             raise TypeError(
                 f"Attribute {metric_value} was not found in the {pelorus_model.__class__.__qualname__} metric model"
             )
+        if metric_value == "app":
+            data_values.append(format_app_name(value))
+        else:
+            data_values.append(value)
     return data_values
 
 
@@ -144,7 +143,8 @@ class PelorusGaugeMetricFamily(GaugeMetricFamily):
         super().__init__(name, documentation, value, labels, unit)
         self.samples = deque(self.samples)
         self.lock = threading.Lock()
-        self.added_metrics: Dict[str, None] = {}
+        self.added_metrics: dict[str, None] = {}
+        self._utilization_gauge = _store_utilization.labels(metric_family=name)
 
     def add_metric(self, metric_id, *args, **kwargs):
         with self.lock:
@@ -160,9 +160,12 @@ class PelorusGaugeMetricFamily(GaugeMetricFamily):
                         self.samples.popleft()
                 super().add_metric(*args, **kwargs)
                 self.added_metrics[metric_id] = None
-            _store_utilization.labels(metric_family=self.name).set(
-                len(self.added_metrics)
-            )
+                self._utilization_gauge.set(len(self.added_metrics))
+
+    @property
+    def metric_count(self) -> int:
+        with self.lock:
+            return len(self.added_metrics)
 
     def __iter__(self):
         with self.lock:

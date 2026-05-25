@@ -66,6 +66,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    TypeGuard,
     TypeVar,
     Union,
     get_type_hints,
@@ -74,7 +75,6 @@ from typing import (
 
 import attr
 import attrs
-from typing_extensions import TypeGuard
 
 from pelorus.deserialization.errors import (
     DeserializationErrors,

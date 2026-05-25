@@ -154,6 +154,12 @@ class PelorusWebhookPlugin(ABC):
         Raises:
             HTTPException: If data was not proper json format
         """
+        content_type = self.request.headers.get("content-type", "")
+        if "application/json" not in content_type:
+            raise HTTPException(
+                status_code=http.HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                detail="Content-Type must be application/json.",
+            )
         try:
             return await self.request.json()
         except JSONDecodeError:

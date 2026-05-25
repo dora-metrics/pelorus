@@ -137,8 +137,11 @@ def rc(
 _rng = random.Random(42)
 
 
+_BASE_TIME = datetime(2024, 1, 15, 12, 0, 0)
+
+
 def random_time() -> datetime:
-    return datetime.now() - timedelta(hours=12) + timedelta(hours=_rng.randrange(0, 12))
+    return _BASE_TIME - timedelta(hours=12) + timedelta(hours=_rng.randrange(0, 12))
 
 
 def random_uid() -> str:

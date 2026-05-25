@@ -29,22 +29,23 @@ from fastapi.testclient import TestClient
 from webhook.app import app, load_plugins, plugins, register_plugin
 from webhook.plugins.pelorus_handler_base import PelorusWebhookPlugin
 
-client = TestClient(app)
-
 TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
 
 WEBHOOK_ENDPOINT = "/pelorus/webhook"
 
 SECRET_TOKEN = "My Secret Token"
-CURRENT_TIMESTAMP = int(time.time())
+
+
+@pytest.fixture
+def client():
+    return TestClient(app)
 
 
 @pytest.fixture
 def webhook_data_payload(post_request_json_file):
     with open(TEST_DATA_DIR / post_request_json_file) as f:
         data = json.load(f)
-        # Ensure timestamp is not an old one
-        data["timestamp"] = CURRENT_TIMESTAMP
+        data["timestamp"] = int(time.time())
         calculated_hash = (
             "sha256="
             + hmac.new(
@@ -65,7 +66,7 @@ def headers_data():
 
 
 @pytest.mark.parametrize("post_request_json_file", ["webhook_pelorus_committime.json"])
-def test_pelorus_webhook_no_headers(webhook_data_payload):
+def test_pelorus_webhook_no_headers(client, webhook_data_payload):
     """
     There were no headers passed to the request, so the
     preconditions to establish communication should fail.
@@ -86,7 +87,7 @@ def test_pelorus_webhook_no_headers(webhook_data_payload):
         ("webhook_pelorus_failure_resolved.json", "failure"),
     ],
 )
-def test_pelorus_webhook_post_data_no_secret(webhook_data_payload, event_type, headers_data):
+def test_pelorus_webhook_post_data_no_secret(client, webhook_data_payload, event_type, headers_data):
     """
     Proper post data for different metrics.
     No Secret configured.
@@ -123,7 +124,7 @@ def test_pelorus_webhook_post_data_no_secret(webhook_data_payload, event_type, h
     ],
 )
 def test_pelorus_webhook_post_data_wrong_x_signature_mismatch(
-    webhook_data_payload, event_type, hash_signature, headers_data
+    client, webhook_data_payload, event_type, hash_signature, headers_data
 ):
     """
     Proper post data for different metrics.
@@ -166,7 +167,7 @@ def test_pelorus_webhook_post_data_wrong_x_signature_mismatch(
     ],
 )
 def test_pelorus_webhook_post_data_wrong_x_signature_format(
-    webhook_data_payload, event_type, hash_signature, headers_data
+    client, webhook_data_payload, event_type, hash_signature, headers_data
 ):
     """
     Proper post data for different metrics.
@@ -199,7 +200,7 @@ def test_pelorus_webhook_post_data_wrong_x_signature_format(
     ],
 )
 def test_pelorus_webhook_post_data_missing_x_signature(
-    webhook_data_payload, event_type, headers_data
+    client, webhook_data_payload, event_type, headers_data
 ):
     """
     The webhook configured to share "My Secret Token", however
@@ -244,7 +245,7 @@ def test_pelorus_webhook_post_data_missing_x_signature(
         ),
     ],
 )
-def test_pelorus_webhook_post_data_x_signature_secret(webhook_data_payload, event_type, headers_data):
+def test_pelorus_webhook_post_data_x_signature_secret(client, webhook_data_payload, event_type, headers_data):
     """
     Proper post data for different metrics.
     Secret token is configured and expected to be sent together with the payload.
@@ -274,7 +275,7 @@ def test_pelorus_webhook_post_data_x_signature_secret(webhook_data_payload, even
 
 
 @pytest.mark.parametrize("post_request_json_file", ["webhook_pelorus_committime.json"])
-def test_pelorus_webhook_too_large_payload(webhook_data_payload):
+def test_pelorus_webhook_too_large_payload(client, webhook_data_payload):
     """
     Check for the case where payload is too large.
     """

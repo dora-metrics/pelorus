@@ -49,7 +49,7 @@ class SpecializeDebugFormatter(logging.Formatter):
     Uses a different format for DEBUG messages that has more information.
     """
 
-    DEBUG_FORMAT = "%(asctime)-15s %(levelname)-8s %(pathname)s:%(lineno)d %(funcName)s() %(message)s"
+    DEBUG_FORMAT = "%(asctime)-15s %(levelname)-8s [%(name)s] %(pathname)s:%(lineno)d %(funcName)s() %(message)s"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -123,12 +123,13 @@ def get_k8s_client():
     try:
         k8sconfig = config.new_client_from_config()
         k8s_client = DynamicClient(k8sconfig)
+        logging.info("Kubernetes client initialized from kubeconfig")
     except config.config_exception.ConfigException:
-        # Try load config from cluster
         config.load_incluster_config()
         k8sconfig = client.Configuration().get_default_copy()
         client.Configuration.set_default(k8sconfig)
         k8s_client = DynamicClient(client.ApiClient(k8sconfig))
+        logging.info("Kubernetes client initialized from in-cluster config")
 
     return k8s_client
 

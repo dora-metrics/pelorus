@@ -1,8 +1,11 @@
+import functools
+
 __all__ = ["format_app_name", "APP_NAME_SEPARATOR"]
 
 APP_NAME_SEPARATOR = "/"
 
 
+@functools.lru_cache(maxsize=256)
 def format_app_name(name: str) -> str:
     """
     Format application name to follow standard of being surrounded by "/".

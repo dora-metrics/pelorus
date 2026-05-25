@@ -3,7 +3,7 @@ import re
 import threading
 import time
 from datetime import datetime
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Optional
 
 from kubernetes.dynamic import DynamicClient, ResourceInstance
 from kubernetes.dynamic.exceptions import ResourceNotFoundError
@@ -11,14 +11,15 @@ from kubernetes.dynamic.resource import ResourceField
 
 from pelorus.timeutil import parse_assuming_utc
 
-# https://docs.openshift.com/container-platform/4.10/rest_api/objects/index.html#io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+# Kubernetes ObjectMeta uses RFC 3339 timestamps in this format
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 SUPPORTED_REPLICA_OBJECTS = ["ReplicaSet", "ReplicationController"]
+_SUPPORTED_REPLICA_OBJECTS_SET = frozenset(SUPPORTED_REPLICA_OBJECTS)
 
 # Cache threshold in seconds, used by every cached_parents_dict entry
 CACHE_THRESHOLD_1_DAY = 60 * 60 * 24
-cached_parents_dict: dict[str, Tuple[ResourceInstance, float]] = {}
+cached_parents_dict: dict[str, tuple[ResourceInstance, float]] = {}
 _cache_lock = threading.Lock()
 
 # Pre-compiled regex for container image URI parsing
@@ -32,13 +33,7 @@ _EXPIRATION_INTERVAL = 60.0
 
 
 def _add_object_to_cache(uid: str, k8s_obj: ResourceInstance) -> None:
-    """
-    Create in-memory cache for the K8S objects, so we don't have
-    to query them each time.
-
-    We have also 'timeout' for each cache entry, which means
-    we won't grow the cache infinitely.
-    """
+    """Cache a K8S object by UID. Entries expire after CACHE_THRESHOLD_1_DAY."""
     with _cache_lock:
         if uid not in cached_parents_dict:
             cached_parents_dict[uid] = (k8s_obj, time.time())
@@ -46,7 +41,7 @@ def _add_object_to_cache(uid: str, k8s_obj: ResourceInstance) -> None:
 
 def _get_object_from_cache(uid: str) -> ResourceInstance:
     """
-    Gets the object from the cache by it's uid.
+    Gets the object from the cache by its uid.
     """
     with _cache_lock:
         k8s_obj, _ = cached_parents_dict.get(uid) or (None, None)
@@ -59,6 +54,10 @@ def _remove_expired_objects() -> None:
     Throttled to run at most once per _EXPIRATION_INTERVAL seconds.
     """
     global _last_expiration_time
+
+    # Fast path: skip lock when interval hasn't elapsed (float read is atomic under GIL)
+    if time.time() - _last_expiration_time < _EXPIRATION_INTERVAL:
+        return
 
     with _cache_lock:
         current_time = time.time()
@@ -81,7 +80,7 @@ def parse_datetime(dt_str: str) -> datetime:
     return parse_assuming_utc(dt_str, _DATETIME_FORMAT)
 
 
-def convert_datetime(dt: Union[str, datetime]) -> datetime:
+def convert_datetime(dt: str | datetime) -> datetime:
     """
     For use with attrs.
     """
@@ -93,10 +92,10 @@ def convert_datetime(dt: Union[str, datetime]) -> datetime:
 
 def get_running_pods(
     client: DynamicClient,
-    namespaces: Optional[Set[str]] = None,
+    namespaces: Optional[set[str]] = None,
     app_label: Optional[str] = None,
     with_owner_only: bool = True,
-) -> List[ResourceField]:
+) -> list[ResourceField]:
     """
     Retrieves running pods in the OpenShift cluster that have a parent owner,
     which can be either a ReplicaSet or ReplicationController.
@@ -124,29 +123,27 @@ def get_running_pods(
     pods = []
 
     for ns in namespaces or {""}:
-        pods += v1_pods.get(
+        items = v1_pods.get(
             label_selector=app_label,
             field_selector="status.phase=Running",
             namespace=ns,
         ).items
-
-    if with_owner_only:
-        return [
-            ocp_object
-            for ocp_object in pods
-            if ocp_object.metadata.ownerReferences
-            and any(
-                owner_ref.kind in SUPPORTED_REPLICA_OBJECTS
-                for owner_ref in ocp_object.metadata.ownerReferences
-            )
-        ]
+        if with_owner_only:
+            for pod in items:
+                if pod.metadata.ownerReferences and any(
+                    ref.kind in _SUPPORTED_REPLICA_OBJECTS_SET
+                    for ref in pod.metadata.ownerReferences
+                ):
+                    pods.append(pod)
+        else:
+            pods.extend(items)
 
     return pods
 
 
 def get_owner_object_from_child(
     client: DynamicClient, uid: str, child_object: ResourceField
-) -> Dict[str, ResourceInstance]:
+) -> dict[str, ResourceInstance]:
     """
     Retrieves the OpenShift Parent object by its UID, using information about the API version and resource type
     from the given Child object.
@@ -186,11 +183,11 @@ def get_owner_object_from_child(
                 api_version=owner_ref.apiVersion, kind=owner_ref.kind
             )
 
-            # We don't need to limit by namespace, because Replica objects may live in a
-            # different namespace than the Pod, so we may get multiple replica objects for a given name.
-            # The field_selector does not work on the UID, that's why we need to match separately
+            # field_selector does not work on UID, so we match by name+namespace
+            # and verify UID separately
             replica_list = api_resource.get(
-                field_selector=f"metadata.name={owner_ref.name}"
+                field_selector=f"metadata.name={owner_ref.name}",
+                namespace=child_object.metadata.namespace,
             )
 
             for replica in replica_list.items:
@@ -207,8 +204,8 @@ def get_owner_object_from_child(
 
 
 def filter_pods_by_replica_uid(
-    pods_list: List[ResourceField],
-) -> Dict[str, ResourceField]:
+    pods_list: list[ResourceField],
+) -> dict[str, ResourceField]:
     """
     Filters out the given list of Pod objects to create a dictionary with ReplicaSet or
     ReplicationController UIDs as keys.
@@ -273,7 +270,7 @@ def get_and_log_namespaces(
 
 def _parse_container_image_uri(
     image_uri: str,
-) -> Union[Tuple[str, str, str], Tuple[None, None, None]]:
+) -> tuple[str, str, str] | tuple[None, None, None]:
     """
     Parses the container image URI and extracts image registry, image name and image SHA256 value.
 
@@ -282,8 +279,8 @@ def _parse_container_image_uri(
             Expected is an URI with registry URI and SHA256 value.
 
     Returns:
-        Tuple[str, str, str]
-            Parsed container URI into Tuple of registry URI, image name and SHA256 value.
+        tuple[str, str, str]
+            Parsed container URI into tuple of registry URI, image name and SHA256 value.
             If any of the expected values is not found it then returns (None, None, None).
     """
     match = _CONTAINER_IMAGE_URI_RE.match(image_uri)
@@ -301,7 +298,7 @@ def _parse_container_image_uri(
     return None, None, None
 
 
-def get_images_from_pod(pod: ResourceField) -> Dict[str, str]:
+def get_images_from_pod(pod: ResourceField) -> dict[str, str]:
     """
     Get the image with it's sha256 from the pod (imageID). The parent object such as
     ReplicaSet may contain only image reference by label and not the unique

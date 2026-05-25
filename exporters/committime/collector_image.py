@@ -46,7 +46,6 @@ class ImageCommitCollector(AbstractCommitCollector):
         commit_time="io.openshift.build.commit.date",
         commit_hash="io.openshift.build.commit.id",
         repo_url="io.openshift.build.source-location",
-        committer="io.openshift.build.commit.author",
     )
 
     def commit_metric_from_image(self, app: str, image, errors: list) -> CommitMetric:
@@ -115,8 +114,6 @@ class ImageCommitCollector(AbstractCommitCollector):
         return metric
 
     def _set_commit_timestamp(self, metric: CommitMetric, errors) -> CommitMetric:
-        # Only convert when commit_time is in metric, previously should be
-        # found from the Label with fallback to annotation
         if metric.commit_time:
             try:
                 metric.commit_timestamp = to_epoch_from_string(
@@ -127,9 +124,15 @@ class ImageCommitCollector(AbstractCommitCollector):
                     "Primary timestamp parse failed for image %s: %s, trying fallback",
                     metric.image_hash, e,
                 )
-                metric.commit_timestamp = parse_guessing_timezone_DYNAMIC(
-                    metric.commit_time, format=self.date_format
-                ).timestamp()
+                try:
+                    metric.commit_timestamp = parse_guessing_timezone_DYNAMIC(
+                        metric.commit_time, format=self.date_format
+                    ).timestamp()
+                except (ValueError, AttributeError):
+                    errors.append(
+                        f"Cannot parse commit_time '{metric.commit_time}' "
+                        f"with format '{self.date_format}'"
+                    )
         return metric
 
     def get_commit_time(self, metric) -> Optional[CommitMetric]:
@@ -155,7 +158,6 @@ class ImageCommitCollector(AbstractCommitCollector):
 
     # overrides collector_base.generate_metrics()
     def generate_metrics(self) -> Iterable[CommitMetric]:
-        metrics = []
         app_label = self.app_label
 
         logging.debug("Searching for images with label: %s", app_label)
@@ -169,16 +171,12 @@ class ImageCommitCollector(AbstractCommitCollector):
         images_by_app = self._get_openshift_obj_by_app(images)
 
         if images_by_app:
-            metrics += self._get_metrics_by_apps_from_images(images_by_app)
-
-        return metrics
+            yield from self._get_metrics_by_apps_from_images(images_by_app)
 
     def _get_metrics_by_apps_from_images(self, images_by_app):
-        metrics = []
         for app in images_by_app:
             images = images_by_app[app]
             for image in images:
-                metric = None
                 errors = []
 
                 try:
@@ -201,6 +199,4 @@ class ImageCommitCollector(AbstractCommitCollector):
                     continue
 
                 logging.debug("Adding metric for app %s", app)
-                metrics.append(metric)
-
-        return metrics
+                yield metric

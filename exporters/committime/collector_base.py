@@ -60,13 +60,13 @@ _build_failures = Counter(
     "pelorus_committime_build_failures_total",
     "Total number of individual build metric collection failures",
 )
+_last_collection_count = Gauge(
+    "pelorus_committime_last_collection_count",
+    "Number of metrics returned by the last committime collection",
+)
 
 
 class UnsupportedGITProvider(Exception):
-    """
-    Exception raised for unsupported GIT provider
-    """
-
     def __init__(self, message):
         self.message = message
         super().__init__(message)
@@ -110,6 +110,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     tls_verify: bool = field(default=True)
 
     commit_dict: dict[str, Optional[CommitMetric]] = field(factory=dict, init=False)
+    _build_config_cache: dict[tuple[str, str], Optional[str]] = field(factory=dict, init=False)
 
     hash_annotation_name: str = field(
         default=CommitMetric._ANNOTATION_MAPPING["commit_hash"],
@@ -126,17 +127,16 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     _COMMIT_METRIC_LABELS = ["namespace", "app", "commit", "image_sha", "commit_link"]
 
     def __attrs_post_init__(self):
-        self.commit_dict = dict()
-        if not (self.username and self.token):
-            logging.warning(
-                "No API_USER and no TOKEN given. This is okay for public repositories only."
-            )
-        elif (self.username and not self.token) or (not self.username and self.token):
+        if bool(self.username) != bool(self.token):
             logging.warning(
                 "username and token must both be set, or neither should be set. Unsetting both."
             )
             self.username = ""
             self.token = ""
+        elif not self.username and not self.token:
+            logging.warning(
+                "No API_USER and no TOKEN given. This is okay for public repositories only."
+            )
 
     def _new_commit_metric(self):
         return GaugeMetricFamily(
@@ -149,7 +149,9 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return [self._new_commit_metric()]
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
+        logging.debug("collect: start")
         start = time.monotonic()
+        collected_count = 0
         try:
             commit_metric = self._new_commit_metric()
 
@@ -175,6 +177,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     ],
                     my_metric.commit_timestamp,
                 )
+                collected_count += 1
             yield commit_metric
         except Exception:
             _collection_errors.inc()
@@ -183,7 +186,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         finally:
             duration = time.monotonic() - start
             _collection_duration.set(duration)
-            logging.debug("collect: finished in %.2fs", duration)
+            _last_collection_count.set(collected_count)
+            logging.info("collect: %d metrics in %.2fs", collected_count, duration)
 
     def _get_watched_namespaces(self) -> set[str]:
         watched_namespaces = self.namespaces
@@ -222,7 +226,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
         watched_namespaces = self._get_watched_namespaces()
 
-        metrics = []
         app_label = self.app_label
         v1_builds = self.kube_client.resources.get(
             api_version="build.openshift.io/v1", kind="Build"
@@ -233,15 +236,12 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 app_label, namespace,
             )
 
-            # only use builds that have the app label
             builds = v1_builds.get(namespace=namespace, label_selector=app_label)
 
             builds_by_app = self._get_openshift_obj_by_app(builds)
 
             if builds_by_app:
-                metrics.extend(self.get_metrics_from_apps(builds_by_app, namespace))
-
-        return metrics
+                yield from self.get_metrics_from_apps(builds_by_app, namespace)
 
     @abstractmethod
     def get_commit_time(self, metric) -> Optional[CommitMetric]:
@@ -250,7 +250,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     def get_metrics_from_apps(self, apps, namespace):
         """Expects a dict of builds grouped by app label."""
-        metrics = []
         failed_builds = 0
         total_builds = 0
         for app in apps:
@@ -263,9 +262,8 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     jenkins_builds.append(b)
                 elif strategy_type in ("Source", "Binary", "Docker"):
                     code_builds.append(b)
-            # assume for now that there will only be one repo/branch per app
-            # For jenkins pipelines, we need to grab the repo data
-            # then find associated s2i/docker builds from which to pull commit & image data
+            # For Jenkins pipelines, grab repo data then find associated
+            # s2i/docker builds from which to pull commit & image data
             repo_url = self.get_repo_from_jenkins(jenkins_builds)
             logging.debug("Repo URL for app %s is currently %s", app, repo_url)
 
@@ -275,7 +273,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     metric = self.get_metric_from_build(build, app, namespace, repo_url)
                     if metric:
                         logging.debug("Adding metric for app %s", app)
-                        metrics.append(metric)
+                        yield metric
                 except Exception:
                     failed_builds += 1
                     _build_failures.inc()
@@ -290,8 +288,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 "Failed to collect metrics from %d/%d builds in namespace %s",
                 failed_builds, total_builds, namespace,
             )
-
-        return metrics
 
     def get_metric_from_build(self, build, app, namespace, repo_url):
         errors = []
@@ -408,19 +404,15 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 build_status,
             )
             return False
-        elif build_status in {"New", "Pending", "Running"}:
-            if metric.image_hash is None:
-                logging.debug(
-                    "Build %s/%s has status %s and doesn't have an image_hash yet, skipping",
-                    namespace,
-                    build.metadata.name,
-                    build_status,
-                )
-                return False
-            else:
-                return True
-        else:
-            return True
+        if build_status in {"New", "Pending", "Running"} and metric.image_hash is None:
+            logging.debug(
+                "Build %s/%s has status %s and doesn't have an image_hash yet, skipping",
+                namespace,
+                build.metadata.name,
+                build_status,
+            )
+            return False
+        return True
 
     def _set_commit_timestamp(
         self, metric: CommitMetric, errors: list
@@ -480,24 +472,25 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         # If no repo is found, we will return None, which will be handled later on
 
     def _get_repo_from_build_config(self, build):
-        """
-        Determines the repository url from the parent BuildConfig that created the Build resource in case
-        the BuildConfig has the git uri but the Build does not
-        :param build: the Build resource
-        :return: repo_url as a str or None if not found
-        """
+        """Get repo URL from the parent BuildConfig when the Build itself lacks a git URI."""
+        bc_ns = build.status.config.namespace
+        bc_name = build.status.config.name
+        cache_key = (bc_ns, bc_name)
+
+        if cache_key in self._build_config_cache:
+            return self._build_config_cache[cache_key]
+
+        result = None
         v1_build_configs = self.kube_client.resources.get(
             api_version="build.openshift.io/v1", kind="BuildConfig"
         )
-        build_config = v1_build_configs.get(
-            namespace=build.status.config.namespace, name=build.status.config.name
-        )
+        build_config = v1_build_configs.get(namespace=bc_ns, name=bc_name)
         if build_config:
             if build_config.spec.source.git:
                 git_uri = str(build_config.spec.source.git.uri)
-                if git_uri.endswith(".git"):
-                    return git_uri
-                else:
-                    return git_uri + ".git"
+                if not git_uri.endswith(".git"):
+                    git_uri = git_uri + ".git"
+                result = git_uri
 
-        return None
+        self._build_config_cache[cache_key] = result
+        return result

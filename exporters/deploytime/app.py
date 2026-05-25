@@ -30,6 +30,10 @@ _collection_errors = Counter(
     "pelorus_deploytime_collection_errors_total",
     "Total number of deploytime metric collection errors",
 )
+_last_collection_count = Gauge(
+    "pelorus_deploytime_last_collection_count",
+    "Number of metrics returned by the last deploytime collection",
+)
 
 
 @frozen
@@ -38,30 +42,33 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
     namespaces: set[str] = field(factory=set, converter=comma_separated(set))
     prod_label: str = field(default=pelorus.DEFAULT_PROD_LABEL)
 
+    _DEPLOY_METRIC_NAME = "deploy_timestamp"
+    _DEPLOY_METRIC_HELP = "Deployment timestamp"
+    _DEPLOY_METRIC_LABELS = ["namespace", "app", "image_sha"]
+
     def __attrs_post_init__(self):
         if self.namespaces and (self.prod_label != pelorus.DEFAULT_PROD_LABEL):
             logging.warning("If NAMESPACES are given, PROD_LABEL is ignored.")
 
+    @staticmethod
+    def _new_deploy_metric():
+        return GaugeMetricFamily(
+            DeployTimeCollector._DEPLOY_METRIC_NAME,
+            DeployTimeCollector._DEPLOY_METRIC_HELP,
+            labels=DeployTimeCollector._DEPLOY_METRIC_LABELS,
+        )
+
     def describe(self) -> list[GaugeMetricFamily]:
-        return [
-            GaugeMetricFamily(
-                "deploy_timestamp",
-                "Deployment timestamp",
-                labels=["namespace", "app", "image_sha"],
-            )
-        ]
+        return [self._new_deploy_metric()]
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
         logging.debug("collect: start")
         start = time.monotonic()
+        collected_count = 0
         try:
             metrics = self.generate_metrics()
 
-            deploy_timestamp_metric = GaugeMetricFamily(
-                "deploy_timestamp",
-                "Deployment timestamp",
-                labels=["namespace", "app", "image_sha"],
-            )
+            deploy_timestamp_metric = self._new_deploy_metric()
 
             number_of_dropped = 0
 
@@ -80,6 +87,7 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
                         m.deploy_time_timestamp,
                         timestamp=m.deploy_time_timestamp,
                     )
+                    collected_count += 1
                 else:
                     number_of_dropped += 1
                     logging.debug(
@@ -91,24 +99,21 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
                         m.deploy_time,
                     )
             if number_of_dropped:
-                logging.debug(
-                    "Number of deployments that are older than %smin and won't be collected: %s",
-                    METRIC_TIMESTAMP_THRESHOLD_MINUTES,
+                logging.info(
+                    "Dropped %d deployments older than %dmin",
                     number_of_dropped,
+                    METRIC_TIMESTAMP_THRESHOLD_MINUTES,
                 )
             yield deploy_timestamp_metric
         except Exception:
             _collection_errors.inc()
             logging.error("Deploy time metric collection failed", exc_info=True)
-            yield GaugeMetricFamily(
-                "deploy_timestamp",
-                "Deployment timestamp",
-                labels=["namespace", "app", "image_sha"],
-            )
+            yield self._new_deploy_metric()
         finally:
             duration = time.monotonic() - start
             _collection_duration.set(duration)
-            logging.debug("collect: finished in %.2fs", duration)
+            _last_collection_count.set(collected_count)
+            logging.info("collect: %d metrics in %.2fs", collected_count, duration)
 
     def generate_metrics(self) -> Iterable[DeployTimeMetric]:
         namespaces = get_and_log_namespaces(

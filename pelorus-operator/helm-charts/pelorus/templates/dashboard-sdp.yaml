@@ -89,16 +89,16 @@ spec:
                             "mode": "absolute",
                             "steps": [
                                 {
-                                    "color": "green",
+                                    "color": "red",
                                     "value": null
                                 },
                                 {
                                     "color": "orange",
-                                    "value": 0.01
+                                    "value": 0.33
                                 },
                                 {
-                                    "color": "red",
-                                    "value": -0.01
+                                    "color": "green",
+                                    "value": 0.66
                                 }
                             ]
                         },
@@ -142,7 +142,7 @@ spec:
                 },
                 "fieldConfig": {
                     "defaults": {
-                        "unit": "short",
+                        "unit": "s",
                         "custom": {
                             "lineWidth": 2,
                             "fillOpacity": 10,
@@ -168,7 +168,7 @@ spec:
             {
                 "content": "# Lead Time for Change",
                 "datasource": null,
-                "description": "Lead Time for Change: The time it takes to move from code commited to code deployed in production.",
+                "description": "Lead Time for Change: The time it takes to move from code committed to code deployed in production.",
                 "gridPos": {
                     "h": 2,
                     "w": 6,
@@ -185,6 +185,7 @@ spec:
             {
                 "content": "# Deployment Frequency",
                 "datasource": null,
+                "description": "Deployment Frequency: How often code is deployed to production.",
                 "gridPos": {
                     "h": 2,
                     "w": 6,
@@ -201,6 +202,7 @@ spec:
             {
                 "content": "# Mean Time to Restore",
                 "datasource": null,
+                "description": "Mean Time to Restore: How long it takes to recover from a failure in production.",
                 "gridPos": {
                     "h": 2,
                     "w": 6,
@@ -217,6 +219,7 @@ spec:
             {
                 "content": "# Change Failure Rate",
                 "datasource": null,
+                "description": "Change Failure Rate: The percentage of deployments that cause a failure in production.",
                 "gridPos": {
                     "h": 2,
                     "w": 6,
@@ -233,7 +236,7 @@ spec:
             {
                 "type": "stat",
                 "id": 45,
-                "title": "Current interval",
+                "title": "Lead Time",
                 "gridPos": {
                     "h": 4,
                     "w": 6,
@@ -287,7 +290,7 @@ spec:
             {
                 "type": "stat",
                 "id": 44,
-                "title": "Current interval",
+                "title": "Deployments",
                 "gridPos": {
                     "h": 4,
                     "w": 6,
@@ -341,7 +344,7 @@ spec:
             {
                 "type": "stat",
                 "id": 47,
-                "title": "Current Interval",
+                "title": "Time to Restore",
                 "gridPos": {
                     "h": 4,
                     "w": 6,
@@ -395,7 +398,7 @@ spec:
             {
                 "type": "stat",
                 "id": 48,
-                "title": "Current Interval",
+                "title": "Change Failure Rate",
                 "gridPos": {
                     "h": 4,
                     "w": 6,
@@ -409,7 +412,7 @@ spec:
                 "targets": [
                     {
                         "expr": "sdp:change_failure_rate:global",
-                        "format": "heatmap",
+                        "format": "time_series",
                         "intervalFactor": 1,
                         "refId": "A",
                         "instant": true
@@ -449,7 +452,7 @@ spec:
             {
                 "type": "timeseries",
                 "id": 52,
-                "title": "Lead Time for Change over time",
+                "title": "Lead Time for Change Over Time",
                 "gridPos": {
                     "h": 6,
                     "w": 6,
@@ -509,7 +512,7 @@ spec:
             {
                 "type": "timeseries",
                 "id": 62,
-                "title": "Deployments over time",
+                "title": "Deployments Over Time",
                 "gridPos": {
                     "h": 6,
                     "w": 6,
@@ -567,7 +570,7 @@ spec:
             {
                 "type": "timeseries",
                 "id": 65,
-                "title": "MTTR over time",
+                "title": "Mean Time to Restore Over Time",
                 "gridPos": {
                     "h": 6,
                     "w": 6,
@@ -625,7 +628,7 @@ spec:
             {
                 "type": "timeseries",
                 "id": 56,
-                "title": "Change Failure Rate over time",
+                "title": "Change Failure Rate Over Time",
                 "gridPos": {
                     "h": 6,
                     "w": 6,
@@ -787,7 +790,7 @@ spec:
                 },
                 "targets": [
                     {
-                        "expr": "count( commit_timestamp and on (app, image_sha) deploy_timestamp )",
+                        "expr": "count( commit_timestamp unless on (app, image_sha) deploy_timestamp )",
                         "refId": "A",
                         "instant": true
                     }
@@ -1170,7 +1173,7 @@ spec:
         ],
         "refresh": "30s",
         "schemaVersion": 39,
-        "style": "light",
+        "style": "dark",
         "tags": [
             "global",
             "software-delivery-performance"

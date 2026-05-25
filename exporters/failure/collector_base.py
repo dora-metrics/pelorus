@@ -20,6 +20,10 @@ _collection_errors = Counter(
     "pelorus_failure_collection_errors_total",
     "Total number of failure metric collection errors",
 )
+_last_collection_count = Gauge(
+    "pelorus_failure_last_collection_count",
+    "Number of metrics returned by the last failure collection",
+)
 
 
 class FailureProviderAuthenticationError(Exception):
@@ -61,9 +65,9 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
         return [self._new_creation_metric(), self._new_resolution_metric()]
 
     def collect(self) -> Iterable[GaugeMetricFamily]:
-        # This function runs when the app starts and every time the /metrics
-        # endpoint is accessed
+        logging.debug("collect: start")
         start = time.monotonic()
+        collected_count = 0
         try:
             creation_metric = self._new_creation_metric()
             failure_metric = self._new_resolution_metric()
@@ -74,6 +78,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
             if critical_issues:
                 metrics = self.generate_metrics(critical_issues)
                 for m in metrics:
+                    collected_count += 1
                     if not m.is_resolution:
                         logging.debug(
                             "Collected failure_creation_timestamp{ app=%s, issue_number=%s } %s",
@@ -105,26 +110,20 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
         finally:
             duration = time.monotonic() - start
             _collection_duration.set(duration)
-            logging.debug("collect: finished in %.2fs", duration)
+            _last_collection_count.set(collected_count)
+            logging.info("collect: %d metrics in %.2fs", collected_count, duration)
 
     def generate_metrics(
         self, issues: Iterable[TrackerIssue]
     ) -> Iterable[FailureMetric]:
-        metrics = []
         for issue in issues:
-            # Create the FailureMetric
-            metric = FailureMetric(
+            yield FailureMetric(
                 issue.creationdate, False, labels=[issue.app, issue.issue_number]
             )
-            metrics.append(metric)
-            # If the issue has a resolution date, then
             if issue.resolutiondate:
-                # Add the end metric
-                metric = FailureMetric(
+                yield FailureMetric(
                     issue.resolutiondate, True, labels=[issue.app, issue.issue_number]
                 )
-                metrics.append(metric)
-        return metrics
 
     @abstractmethod
     def search_issues(self) -> Collection[TrackerIssue]:

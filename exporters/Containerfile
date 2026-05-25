@@ -22,4 +22,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=1001:0 ./ $WORK_DIR
 
-CMD python ${APP_FILE}
+CMD exec python ${APP_FILE}

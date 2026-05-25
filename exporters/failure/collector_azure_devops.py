@@ -25,11 +25,14 @@ from azure.devops.v7_1.work_item_tracking.work_item_tracking_client import (
 )
 from msrest.authentication import BasicAuthentication
 
-from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from failure.collector_base import (
+    AbstractFailureCollector,
+    FailureProviderAuthenticationError,
+    TrackerIssue,
+)
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated, pass_through
 from pelorus.config.log import REDACT, log
-from failure.collector_base import FailureProviderAuthenticationError
 from pelorus.timeutil import parse_assuming_utc_with_fallback, second_precision
 from pelorus.utils import Url
 
@@ -71,7 +74,10 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
         metadata=env_vars("AZURE_DEVOPS_PRIORITY"),
     )
 
+    _app_label_prefix: str = field(default="", init=False)
+
     def __attrs_post_init__(self):
+        self._app_label_prefix = f"{self.app_label}="
         try:
             credentials = BasicAuthentication("", self.token)
             connection = Connection(base_url=self.tracker_api.url, creds=credentials)
@@ -83,7 +89,7 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
                 logging.error(FailureProviderAuthenticationError.auth_message)
                 raise FailureProviderAuthenticationError from error
             logging.error(error.message, exc_info=True)
-            raise error
+            raise
 
     def get_work_items(self) -> list[WorkItem]:
         logging.debug("Collecting work items")
@@ -136,7 +142,7 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
                 logging.error(FailureProviderAuthenticationError.auth_message)
                 raise FailureProviderAuthenticationError from error
             logging.error(error.message, exc_info=True)
-            raise error
+            raise
         except Exception as error:
             logging.error(error, exc_info=True)  # pragma: no cover
             raise  # pragma: no cover
@@ -149,13 +155,12 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
     def get_app_name(self, work_item: WorkItem) -> str:
         try:
             labels: str = work_item.fields["System.Tags"]
-            labels = labels.split("; ")
+            prefix = self._app_label_prefix
+            prefix_len = len(prefix)
 
-            label_text = self.app_label + "="
-
-            for label in labels:
-                if label_text in label:
-                    return label.replace(label_text, "")
+            for label in labels.split("; "):
+                if label.startswith(prefix):
+                    return label[prefix_len:]
             return "unknown"
         except KeyError:
             logging.debug(

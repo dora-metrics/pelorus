@@ -20,9 +20,9 @@ import importlib
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Type
+from typing import Iterable, Optional
 
-from attr import field, frozen
+from attrs import field, frozen
 from fastapi import FastAPI, Header, HTTPException, Request
 from prometheus_client import Counter, CONTENT_TYPE_LATEST, generate_latest
 from prometheus_client.core import REGISTRY
@@ -31,6 +31,7 @@ from starlette.responses import JSONResponse as StarletteJSONResponse, Response
 
 import pelorus
 from pelorus.config import load_and_log
+from pelorus.config.log import REDACT, log
 from webhook.models.pelorus_webhook import (
     FailurePelorusPayload,
     PelorusMetric,
@@ -52,10 +53,10 @@ from webhook.store.in_memory_metric import (
 
 WEBHOOK_DIR = Path(__file__).resolve().parent
 
-plugins: Dict[str, Type[PelorusWebhookPlugin]] = {}
+plugins: dict[str, type[PelorusWebhookPlugin]] = {}
 
 
-def register_plugin(webhook_plugin: Type[PelorusWebhookPlugin]):
+def register_plugin(webhook_plugin: type[PelorusWebhookPlugin]):
     try:
         is_pelorus_plugin = getattr(webhook_plugin, "is_pelorus_webhook_handler", None)
         has_register = getattr(webhook_plugin, "register", None)
@@ -98,7 +99,9 @@ class WebhookCollector(pelorus.AbstractPelorusExporter):
     Collector for webhook-based Prometheus metrics.
     """
 
-    secret_token: Optional[str] = field(default=None)
+    secret_token: Optional[str] = field(
+        default=None, metadata=log(REDACT), repr=False
+    )
 
     def describe(self) -> list[PelorusGaugeMetricFamily]:
         return [
@@ -119,16 +122,17 @@ async def prometheus_metric(received_metric: PelorusMetric):
     try:
         received_metric_type = received_metric.metric_spec
         metric = received_metric.metric_data
-        prometheus_metric = pelorus_metric_to_prometheus(metric)
+        prom_labels = pelorus_metric_to_prometheus(metric)
 
         if received_metric_type == PelorusMetricSpec.COMMIT_TIME:
+            commit_metric_id = f"{metric.namespace}:{metric.app}:{metric.image_sha}:{metric.commit_hash}"
             in_memory_commit_metrics.add_metric(
-                metric.commit_hash, prometheus_metric, metric.timestamp
+                commit_metric_id, prom_labels, metric.timestamp
             )
         elif received_metric_type == PelorusMetricSpec.DEPLOY_TIME:
-            metric_id = f"{metric.app}:{metric.timestamp}"
+            metric_id = f"{metric.namespace}:{metric.app}:{metric.image_sha}:{metric.timestamp}"
             in_memory_deploy_timestamp_metric.add_metric(
-                metric_id, prometheus_metric, metric.timestamp
+                metric_id, prom_labels, metric.timestamp
             )
         elif received_metric_type == PelorusMetricSpec.FAILURE:
             failure_type = metric.failure_event
@@ -137,13 +141,13 @@ async def prometheus_metric(received_metric: PelorusMetric):
             if failure_type == FailurePelorusPayload.FailureEvent.CREATED:
                 in_memory_failure_creation_metric.add_metric(
                     metric_id,
-                    prometheus_metric,
+                    prom_labels,
                     metric.timestamp,
                 )
             elif failure_type == FailurePelorusPayload.FailureEvent.RESOLVED:
                 in_memory_failure_resolution_metric.add_metric(
                     metric_id,
-                    prometheus_metric,
+                    prom_labels,
                     metric.timestamp,
                 )
             else:
@@ -172,11 +176,11 @@ async def prometheus_metric(received_metric: PelorusMetric):
             getattr(metric, 'app', 'unknown'),
         )
     except Exception as exc:
-        logging.error("Failed to process webhook metric: %s", type(exc).__name__, exc_info=True)
+        logging.error("Failed to process webhook metric: %s", type(exc).__name__)
         webhook_errors.inc()
 
 
-async def get_handler(user_agent: str) -> Optional[Type[PelorusWebhookPlugin]]:
+async def get_handler(user_agent: str) -> Optional[type[PelorusWebhookPlugin]]:
     for handler in plugins.values():
         if handler.can_handle(user_agent):
             return handler
@@ -261,7 +265,15 @@ async def pelorus_webhook(
             detail="Handshake failed. Check required headers.",
         )
 
-    received_pelorus_metric = await handler.receive()
+    try:
+        received_pelorus_metric = await handler.receive()
+    except TypeError as e:
+        webhook_errors.inc()
+        logging.error("Webhook payload type error: %s", e)
+        raise HTTPException(
+            status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail="Invalid webhook payload type.",
+        )
 
     await prometheus_metric(received_pelorus_metric)
 
@@ -280,13 +292,21 @@ async def health():
         details["plugins"] = "no webhook plugins registered"
 
     store_counts = {
-        "commit_metrics": len(in_memory_commit_metrics.added_metrics),
-        "deploy_metrics": len(in_memory_deploy_timestamp_metric.added_metrics),
-        "failure_creation_metrics": len(in_memory_failure_creation_metric.added_metrics),
-        "failure_resolution_metrics": len(in_memory_failure_resolution_metric.added_metrics),
+        "commit_metrics": in_memory_commit_metrics.metric_count,
+        "deploy_metrics": in_memory_deploy_timestamp_metric.metric_count,
+        "failure_creation_metrics": in_memory_failure_creation_metric.metric_count,
+        "failure_resolution_metrics": in_memory_failure_resolution_metric.metric_count,
     }
+    total_metrics = sum(store_counts.values())
+    utilization_pct = round(total_metrics / _MAX_METRICS * 100, 1) if _MAX_METRICS else 0
+
+    if utilization_pct > 80:
+        status = "degraded"
+        details["store_warning"] = f"store utilization at {utilization_pct}%"
+
     details["store"] = store_counts
     details["store_capacity"] = _MAX_METRICS
+    details["store_utilization_pct"] = utilization_pct
 
     body = {"status": status, **details}
     status_code = 503 if status == "degraded" else 200
@@ -308,7 +328,7 @@ if __name__ == "__main__":
     collector = load_and_log(WebhookCollector)
 
     if not collector.secret_token:
-        logging.error(
+        logging.warning(
             "No SECRET_TOKEN configured. Webhook endpoint accepts "
             "unauthenticated requests. Set SECRET_TOKEN to enable HMAC verification."
         )

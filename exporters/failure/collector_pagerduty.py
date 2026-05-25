@@ -17,13 +17,16 @@ import logging
 from typing import Optional
 
 import requests
-from attrs import define, field
+from attrs import converters, define, field
 
-from failure.collector_base import AbstractFailureCollector, TrackerIssue
+from failure.collector_base import (
+    AbstractFailureCollector,
+    FailureProviderAuthenticationError,
+    TrackerIssue,
+)
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.config.log import REDACT, log
-from failure.collector_base import FailureProviderAuthenticationError
 from pelorus.timeutil import parse_assuming_utc, second_precision
 from pelorus.utils import TokenAuth, set_up_requests_session
 
@@ -42,7 +45,7 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
         repr=False,
     )
 
-    tls_verify: bool = field(default=True)
+    tls_verify: bool = field(default=True, converter=converters.to_bool)
 
     session: requests.Session = field(factory=requests.Session, init=False)
 
@@ -72,6 +75,11 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
                 self.tls_verify,
                 auth=TokenAuth(self.token, is_pagerduty=True),
             )
+        else:
+            logging.warning(
+                "No TOKEN configured for PagerDuty. API calls will fail with 401. "
+                "Set TOKEN to a valid PagerDuty API token."
+            )
 
     def get_incidents(self) -> list[dict]:
         logging.debug("Collecting incidents")
@@ -80,8 +88,14 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
         offset = 0
 
         while True:
-            url = f"{self._BASE_URL}?date_range=all&limit={self._PAGE_LIMIT}&offset={offset}"
-            resp = self.session.get(url, headers=self.headers, timeout=30)
+            params = {
+                "date_range": "all",
+                "limit": str(self._PAGE_LIMIT),
+                "offset": str(offset),
+            }
+            resp = self.session.get(
+                self._BASE_URL, headers=self.headers, params=params, timeout=30
+            )
             try:
                 resp.raise_for_status()
                 data = resp.json()

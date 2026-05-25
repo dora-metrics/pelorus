@@ -5,6 +5,8 @@ Note: `parse_assuming_utc`, `parse_tz_aware`, and `parse_guessing_timezone_DYNAM
 will _always_ produce timezone-aware objects,
 which are necessary for correctness with `astimezone(tz)`, `timestamp()`, and other methods.
 """
+import time as _time
+
 from datetime import datetime, timedelta, timezone
 
 _ISO_ZULU_FMT = "%Y-%m-%dT%H:%M:%SZ"
@@ -24,6 +26,7 @@ if METRIC_TIMESTAMP_THRESHOLD_MINUTES < 1:
     raise ValueError(
         f"PELORUS_TIMESTAMP_THRESHOLD_MINUTES must be >= 1, got: {METRIC_TIMESTAMP_THRESHOLD_MINUTES}"
     )
+_METRIC_TIMESTAMP_THRESHOLD_SECONDS = METRIC_TIMESTAMP_THRESHOLD_MINUTES * 60
 
 
 def is_zone_aware(d: datetime) -> bool:
@@ -155,9 +158,8 @@ def is_out_of_date(timestring: str) -> bool:
     the accepted time. This is to ensure Prometheus will not try to scrape too
     old metrics.
     """
-    return datetime.now(timezone.utc) - to_epoch_from_string(timestring) > timedelta(
-        minutes=METRIC_TIMESTAMP_THRESHOLD_MINUTES
-    )
+    epoch_dt = to_epoch_from_string(timestring)
+    return (datetime.now(timezone.utc) - epoch_dt).total_seconds() > _METRIC_TIMESTAMP_THRESHOLD_SECONDS
 
 
 def is_out_of_date_timestamp(timestamp: float) -> bool:
@@ -165,6 +167,4 @@ def is_out_of_date_timestamp(timestamp: float) -> bool:
     Like is_out_of_date, but takes a Unix timestamp directly
     instead of a string, avoiding unnecessary conversions.
     """
-    return datetime.now(timezone.utc) - datetime.fromtimestamp(
-        timestamp, tz=timezone.utc
-    ) > timedelta(minutes=METRIC_TIMESTAMP_THRESHOLD_MINUTES)
+    return _time.time() - timestamp > _METRIC_TIMESTAMP_THRESHOLD_SECONDS

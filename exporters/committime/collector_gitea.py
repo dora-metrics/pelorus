@@ -30,6 +30,12 @@ class GiteaCommitCollector(AbstractCommitCollector):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        if self.git_api == DEFAULT_GITEA_API:
+            logging.warning(
+                "GIT_API not set — using default %s (a public demo instance). "
+                "Set GIT_API to your Gitea server URL.",
+                DEFAULT_GITEA_API,
+            )
         set_up_requests_session(
             self.session, self.tls_verify, username=self.username, token=self.token
         )

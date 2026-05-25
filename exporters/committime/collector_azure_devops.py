@@ -59,33 +59,30 @@ class AzureDevOpsCommitCollector(AbstractCommitCollector):
             else metric.repo_project,
         )
 
-        timestamp: datetime = commit.committer.date
-        timestamp = timestamp.replace(microsecond=0)  # second precision
-
-        logging.debug("Commit %s", timestamp)
         if hasattr(commit, "innerException"):
-            # Azure DevOps returned an error response
             logging.warning(
-                "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s"
-                % (
-                    metric.build_name,
-                    metric.commit_hash,
-                    metric.repo_url,
-                    str(commit.message),
-                )
+                "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Azure DevOps error: %s",
+                metric.build_name,
+                metric.commit_hash,
+                metric.repo_url,
+                getattr(commit, "message", "unknown"),
             )
-        else:
-            try:
-                metric.commit_time = timestamp.isoformat("T", "auto")
-                logging.debug("metric.commit_time %s", timestamp)
-                metric.commit_timestamp = timestamp.timestamp()
-                metric.commit_link = metric.repo_url
-            except Exception:
-                logging.error(
-                    "Failed processing commit time for build %s",
-                    metric.build_name,
-                    exc_info=True,
-                )
-                logging.debug("Failed to process commit: %s", commit.commit_id if hasattr(commit, 'commit_id') else 'unknown')
-                raise
+            return metric
+
+        try:
+            timestamp: datetime = commit.committer.date
+            timestamp = timestamp.replace(microsecond=0)
+            logging.debug("Commit %s", timestamp)
+            metric.commit_time = timestamp.isoformat("T", "auto")
+            logging.debug("metric.commit_time %s", timestamp)
+            metric.commit_timestamp = timestamp.timestamp()
+            metric.commit_link = metric.repo_url
+        except Exception:
+            logging.error(
+                "Failed processing commit time for build %s",
+                metric.build_name,
+                exc_info=True,
+            )
+            logging.debug("Failed to process commit: %s", commit.commit_id if hasattr(commit, 'commit_id') else 'unknown')
+            raise
         return metric

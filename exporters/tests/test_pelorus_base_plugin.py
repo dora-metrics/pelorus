@@ -22,7 +22,11 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pydantic import TypeAdapter, ValidationError
-from typing_extensions import override
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 
 from webhook.models.pelorus_webhook import (
     CommitTimePelorusPayload,
@@ -234,12 +238,27 @@ async def test_receive_invalid_payload():
         mock_receive.side_effect = json.JSONDecodeError("Test Error", "{}", 0)
         mock_request = Mock()
         mock_request.json = mock_receive
+        mock_request.headers = {"content-type": "application/json"}
 
         plugin = UserAgentWebhookPlugin(None, request=mock_request)
         with pytest.raises(HTTPException) as http_error:
             await plugin._receive()
         assert http_error.value.status_code == http.HTTPStatus.BAD_REQUEST
         assert http_error.value.detail == "Invalid payload format."
+
+
+@pytest.mark.asyncio
+async def test_receive_wrong_content_type():
+    """Requests without application/json Content-Type are rejected."""
+
+    mock_request = Mock()
+    mock_request.headers = {"content-type": "text/plain"}
+
+    plugin = UserAgentWebhookPlugin(None, request=mock_request)
+    with pytest.raises(HTTPException) as http_error:
+        await plugin._receive()
+    assert http_error.value.status_code == http.HTTPStatus.UNSUPPORTED_MEDIA_TYPE
+    assert http_error.value.detail == "Content-Type must be application/json."
 
 
 @pytest.mark.asyncio
@@ -257,6 +276,7 @@ async def test_receive_valid_payload():
         mock_receive.return_value = json.loads(json_payload)
         mock_request = Mock()
         mock_request.json = mock_receive
+        mock_request.headers = {"content-type": "application/json"}
 
         # Test if the json was properly received from the request
         plugin = UserAgentWebhookPlugin(
