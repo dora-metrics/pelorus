@@ -117,10 +117,10 @@ class PelorusWebhookPlugin(ABC):
 
     async def handshake(self) -> Optional[bool]:
         """
-        Wrapper method to call plugin's _handshake().
+        Validates the request via the plugin's _handshake().
 
         Returns:
-            bool: True if handshake was successful
+            Optional[bool]: True if handshake was successful
 
         Raises:
             HTTPException: If handshake did not succeed
@@ -129,14 +129,13 @@ class PelorusWebhookPlugin(ABC):
 
     async def receive(self) -> PelorusMetric:
         """
-        Wrapper that calls _receive() to get the JSON payload,
-        then passes it to _receive_pelorus_payload() for validation.
+        Receives and validates the JSON payload as a PelorusMetric.
 
         Returns:
-            PelorusMetric: Pelorus Metric from the plugin
+            PelorusMetric: Validated metric from the plugin
 
         Raises:
-            TypeError: if data was not proper PelorusMetric
+            TypeError: if data was not a PelorusMetric subclass
         """
         payload_data = await self._receive()
         webhook_data = await self._receive_pelorus_payload(payload_data)

@@ -156,7 +156,6 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
                     created_at = incident["created_at"]
                     resolved_at = incident["last_status_change_at"]
                     incident_id = incident["incident_number"]
-                    title = incident["title"]
 
                     created_tz = parse_assuming_utc(created_at, ISO_ZULU_FMT)
                     created_ts = second_precision(created_tz).timestamp()
@@ -166,17 +165,15 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
 
                     if resolution_ts > created_ts:
                         logging.debug(
-                            "Found production incident closed: %s, %s: %s",
+                            "Found production incident closed: %s, %s",
                             resolved_at,
                             incident_id,
-                            title,
                         )
                     else:
                         logging.debug(
-                            "Found production incident opened: %s, %s: %s",
+                            "Found production incident opened: %s, %s",
                             created_at,
                             incident_id,
-                            title,
                         )
                         resolution_ts = None
 

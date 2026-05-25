@@ -230,12 +230,10 @@ class JiraFailureCollector(AbstractFailureCollector):
 
     def _parse_issue(self, issue: Issue) -> TrackerIssue:
         """Parse issue collected from JIRA."""
-        logging.debug(issue)
         logging.debug(
-            "Found issue opened: %s, %s: %s",
+            "Found issue opened: %s, %s",
             issue.fields.created,
             issue.key,
-            issue.fields.summary,
         )
         created_tz = parse_tz_aware(issue.fields.created, _DATETIME_FORMAT)
         created_ts = second_precision(created_tz).timestamp()
@@ -283,11 +281,10 @@ class JiraFailureCollector(AbstractFailureCollector):
                 statuses = [s.strip().lower() for s in resolved_statuses.split(",")]
             if issue.fields.status.name.lower() in statuses:
                 logging.debug(
-                    "Found issue %s: %s, %s: %s",
+                    "Found issue %s: %s, %s",
                     issue.fields.status.name,
                     issue.fields.statuscategorychangedate,
                     issue.key,
-                    issue.fields.summary,
                 )
                 resolution_tz = parse_tz_aware(
                     issue.fields.statuscategorychangedate, _DATETIME_FORMAT
@@ -295,10 +292,9 @@ class JiraFailureCollector(AbstractFailureCollector):
         else:
             if issue.fields.resolutiondate:
                 logging.debug(
-                    "Found issue close: %s, %s: %s",
+                    "Found issue close: %s, %s",
                     issue.fields.resolutiondate,
                     issue.key,
-                    issue.fields.summary,
                 )
                 resolution_tz = parse_tz_aware(
                     issue.fields.resolutiondate, _DATETIME_FORMAT

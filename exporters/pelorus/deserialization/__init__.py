@@ -112,17 +112,9 @@ def retain_source(retain: bool = True) -> dict[str, bool]:
     return {_RETAIN_SOURCE_KEY: retain}
 
 
-# python has some magic to make classes work with `issubclass` and instances work with `isinstance`,
-# even if they don't actually inherit from them. Some so-called "abstract base classes" just check
-# for the presence of certain methods. Cool!
-# However, some of them don't support that, for reasons outlined in their docs (see the first section):
-# https://docs.python.org/3.11/library/collections.abc.html
-
-# thus, we need to make our own checks. These have the same downsides as in the docs,
-# but they're "good enough". "Practicality beats purity".
-
-# we need this for mappings specifically, because a kubernetes.dynamic.resource.ResourceField has
-# __getitem__, which is actually all we care about.
+# kubernetes.dynamic.resource.ResourceField has __getitem__ but doesn't register
+# with collections.abc.Mapping, so we check for __getitem__ directly.
+# See: https://docs.python.org/3.11/library/collections.abc.html
 
 
 def _type_has_getitem(type_: type) -> bool:

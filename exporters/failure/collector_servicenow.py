@@ -155,7 +155,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                 list(data.keys()),
             )
             raise RuntimeError("ServiceNow response missing 'result' key")
-        logging.debug("ServiceNow query result: %s", data.get("result"))
+        logging.debug("ServiceNow query returned %d results", len(data.get("result", [])))
         return data
 
     def get_app_name(self, issue):

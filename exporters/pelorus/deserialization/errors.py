@@ -53,16 +53,14 @@ class TypeCheckError(TypeError):
     def __init__(self, expected_type: Union[type, str], actual_value: Any):
         self.expected_type = expected_type
         self.actual_value = actual_value
-        # "real" types (like a dict) / classes have a __name__.
-        # things like typing.Mapping have a _name instead for some reason.
-        # funnily enough, collections.abc.Mapping has a __name__. Weird!
+        # typing generics use _name instead of __name__
         if isinstance(expected_type, str):
             expected_name = expected_type
         else:
             expected_name = (
                 getattr(expected_type, "__name__", None)
                 or getattr(expected_type, "_name", None)
-                or str(expected_type)  # fallback just in case of true weirdness.
+                or str(expected_type)
             )
         msg = (
             f"needed a {expected_name},"

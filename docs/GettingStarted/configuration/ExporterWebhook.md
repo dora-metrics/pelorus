@@ -57,7 +57,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 - **Required:** no
 - **Type:** string
 
-: Set the secret token to ensure that the webhook receives only the intended payload. This secret token is used by the sender of the payload to calclate hash signature, which then is included with the headers of each request as `X-Hub-Signature-256`. Please refer to the [Securing Webhook](#securing-webhook) section for examples.
+: Set the secret token to ensure that the webhook receives only the intended payload. This secret token is used by the sender of the payload to calculate hash signature, which then is included with the headers of each request as `X-Hub-Signature-256`. Please refer to the [Securing Webhook](#securing-webhook) section for examples.
 
 ###### LOG_LEVEL
 

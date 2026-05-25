@@ -184,7 +184,6 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
                 if self.filter_by_project(work_item.fields["System.TeamProject"]):
                     created_at = work_item.fields["System.CreatedDate"]
                     work_item_id = work_item.id
-                    title = work_item.fields["System.Title"]
 
                     created_tz = parse_assuming_utc_with_fallback(
                         created_at, _DATETIME_FORMAT, _DATETIME_FORMAT_FALLBACK
@@ -199,17 +198,15 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
                         resolution_ts = second_precision(resolution_tz).timestamp()
 
                         logging.debug(
-                            "Found production incident closed: %s, %s: %s",
+                            "Found production incident closed: %s, %s",
                             resolved_at,
                             work_item_id,
-                            title,
                         )
                     except KeyError:
                         logging.debug(
-                            "Found production incident opened: %s, %s: %s",
+                            "Found production incident opened: %s, %s",
                             created_at,
                             work_item_id,
-                            title,
                         )
                         resolution_ts = None
 

@@ -193,7 +193,7 @@ $ oc get buildconfig.build.openshift.io/todolist --namespace mongo-persistent -o
 
 After a couple of minutes you should see at least one measurement for **Lead Time for Change** and **Deployment Frequency** in the Grafana dashboard, like in the following image:
 
-> **Note:** If the time elapsed from your `mongo-persistent` deployment is higher then **5 minutes**, you may want to adjust different relative time range <span style="color:red">⓵</span> e.g. **Last 3 hours**s.
+> **Note:** If the time elapsed from your `mongo-persistent` deployment is higher then **5 minutes**, you may want to adjust different relative time range <span style="color:red">⓵</span> e.g. **Last 3 hours**.
 
 ![gnome-shell-screenshot-3zh4l2](../img/initial_measurement.png)
 
