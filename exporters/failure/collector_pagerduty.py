@@ -24,20 +24,25 @@ from failure.collector_base import (
     AbstractFailureCollector,
     FailureProviderAuthenticationError,
     TrackerIssue,
-    _issue_parse_failures,
+    issue_parse_failures,
 )
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.config.log import REDACT, log
+from prometheus_client import Counter
+
 from pelorus.timeutil import ISO_ZULU_FMT, parse_assuming_utc, second_precision
 from pelorus.utils import TokenAuth, set_up_requests_session
+
+_pagerduty_api_errors = Counter(
+    "pelorus_failure_pagerduty_api_errors_total",
+    "Total PagerDuty API errors during failure incident collection",
+)
 
 
 @define(kw_only=True)
 class PagerDutyFailureCollector(AbstractFailureCollector):
-    """
-    PagerDuty implementation of a FailureCollector
-    """
+    """PagerDuty implementation of a FailureCollector."""
 
     token: str = field(
         default="",
@@ -63,26 +68,25 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
 
     _BASE_URL = "https://api.pagerduty.com/incidents"
     _PAGE_LIMIT = 100
-    headers = {"Accept": "application/vnd.pagerduty+json;version=2"}
+    _HEADERS = {"Accept": "application/vnd.pagerduty+json;version=2"}
 
     def __attrs_post_init__(self):
-        if self.token:
-            set_up_requests_session(
-                self.session,
-                self.tls_verify,
-                auth=TokenAuth(self.token, is_pagerduty=True),
+        if not self.token:
+            raise ValueError(
+                "TOKEN is required for PagerDuty. Set TOKEN to a valid PagerDuty API token."
             )
-        else:
-            logging.warning(
-                "No TOKEN configured for PagerDuty. API calls will fail with 401. "
-                "Set TOKEN to a valid PagerDuty API token."
-            )
+        set_up_requests_session(
+            self.session,
+            self.tls_verify,
+            auth=TokenAuth(self.token, is_pagerduty=True),
+        )
 
     def get_incidents(self) -> list[dict]:
         logging.debug("Collecting incidents")
 
         all_incidents = []
         offset = 0
+        sorted_urgencies = sorted(self.incident_urgency) if self.incident_urgency else None
 
         while True:
             params = {
@@ -90,8 +94,10 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
                 "limit": str(self._PAGE_LIMIT),
                 "offset": str(offset),
             }
+            if sorted_urgencies is not None:
+                params["urgencies[]"] = sorted_urgencies
             resp = self.session.get(
-                self._BASE_URL, headers=self.headers, params=params, timeout=30
+                self._BASE_URL, headers=self._HEADERS, params=params, timeout=self._API_TIMEOUT
             )
             try:
                 resp.raise_for_status()
@@ -112,11 +118,13 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
                     break
                 offset += self._PAGE_LIMIT
             except requests.JSONDecodeError:
+                _pagerduty_api_errors.inc()
                 logging.error("Invalid JSON response from PagerDuty (offset=%d)", offset, exc_info=True)
                 raise
             except requests.HTTPError as error:
+                _pagerduty_api_errors.inc()
                 if resp.status_code == requests.codes.unauthorized:
-                    logging.error(FailureProviderAuthenticationError.auth_message)
+                    logging.error(FailureProviderAuthenticationError.auth_message, exc_info=True)
                     raise FailureProviderAuthenticationError from error
                 logging.error("PagerDuty API request failed: %s", error, exc_info=True)  # pragma: no cover
                 raise  # pragma: no cover
@@ -124,25 +132,18 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
         return all_incidents
 
     def filter_by_urgency(self, urgency: str) -> bool:
-        if not self.incident_urgency:
-            return True
-        return urgency in self.incident_urgency
+        return not self.incident_urgency or urgency in self.incident_urgency
 
     def filter_by_priority(self, priority: Optional[dict[str, str]]) -> bool:
         if not self.incident_priority:
             return True
-        try:
-            return priority["summary"] in self.incident_priority
-        except TypeError:
-            # Incidents without priority come as None, instead of dict
+        if priority is None:
             logging.debug("Incident priority is None, checking if 'null' is in configured priorities")
             return "null" in self.incident_priority
+        return priority.get("summary", "") in self.incident_priority
 
     def search_issues(self) -> list[TrackerIssue]:
-        """
-        To maintain consistency, we call this method `search_issues`. An
-        `issue` in PagerDuty is called `incident`.
-        """
+        """Search PagerDuty incidents (called 'issues' for cross-provider consistency)."""
         production_incidents = []
         all_incidents = self.get_incidents()
         total_count = len(all_incidents)
@@ -178,16 +179,18 @@ class PagerDutyFailureCollector(AbstractFailureCollector):
                         )
                         resolution_ts = None
 
+                    service = incident.get("service")
+                    service_summary = service.get("summary", "unknown") if isinstance(service, dict) else "unknown"
                     tracker_issue = TrackerIssue(
                         str(incident_id),
                         created_ts,
                         resolution_ts,
-                        incident["service"]["summary"],
+                        service_summary,
                     )
                     production_incidents.append(tracker_issue)
             except Exception:
                 skipped += 1
-                _issue_parse_failures.inc()
+                issue_parse_failures.inc()
                 logging.error(
                     "Failed to parse PagerDuty incident %s, skipping",
                     incident.get("incident_number", "unknown"),

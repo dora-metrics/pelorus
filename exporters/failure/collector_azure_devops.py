@@ -16,7 +16,7 @@
 import logging
 import re
 
-from attrs import converters, define, field
+from attrs import define, field
 from azure.devops.connection import Connection
 from azure.devops.exceptions import AzureDevOpsServiceError
 from azure.devops.v7_1.work_item_tracking.models import Wiql, WorkItem
@@ -25,17 +25,25 @@ from azure.devops.v7_1.work_item_tracking.work_item_tracking_client import (
 )
 from msrest.authentication import BasicAuthentication
 
+import pelorus
 from failure.collector_base import (
     AbstractFailureCollector,
     FailureProviderAuthenticationError,
     TrackerIssue,
-    _issue_parse_failures,
+    issue_parse_failures,
 )
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated, pass_through
 from pelorus.config.log import REDACT, log
 from pelorus.timeutil import parse_assuming_utc_with_fallback, second_precision
+from prometheus_client import Counter
+
 from pelorus.utils import Url
+
+_azure_devops_api_errors = Counter(
+    "pelorus_failure_azure_devops_api_errors_total",
+    "Total Azure DevOps API errors during failure work item collection",
+)
 
 _SAFE_WIQL_VALUE = re.compile(r"^[A-Za-z0-9_ .-]+$")
 
@@ -43,11 +51,18 @@ _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 _DATETIME_FORMAT_FALLBACK = "%Y-%m-%dT%H:%M:%SZ"
 
 
+def _wiql_in_clause(field_name: str, values: set[str], label: str) -> str:
+    """Build a WIQL ``In`` clause, validating each value against ``_SAFE_WIQL_VALUE``."""
+    for v in values:
+        if not _SAFE_WIQL_VALUE.match(v):
+            raise ValueError(f"Invalid {label}: {v!r}")
+    joined = "', '".join(values)
+    return f"[{field_name}] In ('{joined}')"
+
+
 @define(kw_only=True)
 class AzureDevOpsFailureCollector(AbstractFailureCollector):
-    """
-    Azure DevOps implementation of a FailureCollector
-    """
+    """Azure DevOps implementation of a FailureCollector."""
 
     token: str = field(
         metadata=env_vars(*env_var_names.TOKEN) | log(REDACT),
@@ -56,7 +71,7 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
 
     tracker_api: Url = field(
         metadata=env_vars("SERVER"),
-        converter=converters.optional(pass_through(Url, Url.parse)),
+        converter=pass_through(Url, Url.parse),
     )
 
     projects: set[str] = field(
@@ -75,6 +90,7 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
         metadata=env_vars("AZURE_DEVOPS_PRIORITY"),
     )
 
+    _WORK_ITEM_CHUNK_SIZE = 200
     _app_label_prefix: str = field(default="", init=False)
 
     def __attrs_post_init__(self):
@@ -86,8 +102,9 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
                 connection.clients_v7_0.get_work_item_tracking_client()
             )
         except AzureDevOpsServiceError as error:
+            _azure_devops_api_errors.inc()
             if error.type_key == "UnauthorizedRequestException":
-                logging.error(FailureProviderAuthenticationError.auth_message)
+                logging.error(FailureProviderAuthenticationError.auth_message, exc_info=True)
                 raise FailureProviderAuthenticationError from error
             logging.error("Azure DevOps connection error: %s", error.message, exc_info=True)
             raise
@@ -97,36 +114,23 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
 
         try:
             query_string = "Select [System.Id] From WorkItems"
-            if self.work_item_type or self.work_item_priority:
+            if self.projects or self.work_item_type or self.work_item_priority:
                 query_filters = []
+                if self.projects:
+                    query_filters.append(_wiql_in_clause("System.TeamProject", self.projects, "project name"))
                 if self.work_item_type:
-                    for v in self.work_item_type:
-                        if not _SAFE_WIQL_VALUE.match(v):
-                            raise ValueError(f"Invalid work item type: {v!r}")
-                    query_type = "', '".join(self.work_item_type)
-                    query_filters.append(f"[System.WorkItemType] In ('{query_type}')")
+                    query_filters.append(_wiql_in_clause("System.WorkItemType", self.work_item_type, "work item type"))
                 if self.work_item_priority:
-                    for v in self.work_item_priority:
-                        if not _SAFE_WIQL_VALUE.match(v):
-                            raise ValueError(f"Invalid work item priority: {v!r}")
-                    query_priority = "', '".join(self.work_item_priority)
-                    query_filters.append(
-                        f"[Microsoft.VSTS.Common.Priority] In ('{query_priority}')"
-                    )
+                    query_filters.append(_wiql_in_clause("Microsoft.VSTS.Common.Priority", self.work_item_priority, "work item priority"))
                 query_string += f" Where {' AND '.join(query_filters)}"
 
             wiql = Wiql(query=query_string)
             wiql_results = self.client.query_by_wiql(wiql).work_items
-            chunk_size = 200
-            wiql_chunk_results = [
-                wiql_results[index : index + chunk_size]  # noqa
-                for index in range(0, len(wiql_results), chunk_size)
-            ]
             return [
                 work_item
-                for chunk in wiql_chunk_results
+                for index in range(0, len(wiql_results), self._WORK_ITEM_CHUNK_SIZE)
                 for work_item in self.client.get_work_items(
-                    ids=[str(result.id) for result in chunk],
+                    ids=[str(result.id) for result in wiql_results[index : index + self._WORK_ITEM_CHUNK_SIZE]],
                     fields=[
                         "System.Title",
                         "System.WorkItemType",
@@ -137,21 +141,21 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
                         "Microsoft.VSTS.Common.Priority",
                     ],
                 )
-            ]
+            ] if wiql_results else []
         except AzureDevOpsServiceError as error:
+            _azure_devops_api_errors.inc()
             if error.type_key == "UnauthorizedRequestException":
-                logging.error(FailureProviderAuthenticationError.auth_message)
+                logging.error(FailureProviderAuthenticationError.auth_message, exc_info=True)
                 raise FailureProviderAuthenticationError from error
             logging.error("Azure DevOps API error: %s", error.message, exc_info=True)
             raise
         except Exception as error:
+            _azure_devops_api_errors.inc()
             logging.error("Azure DevOps work item query failed: %s", error, exc_info=True)  # pragma: no cover
             raise  # pragma: no cover
 
     def filter_by_project(self, project: str) -> bool:
-        if not self.projects:
-            return True
-        return project in self.projects
+        return not self.projects or project in self.projects
 
     def get_app_name(self, work_item: WorkItem) -> str:
         try:
@@ -162,19 +166,16 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
             for label in labels.split("; "):
                 if label.startswith(prefix):
                     return label[prefix_len:]
-            return "unknown"
+            return pelorus.DEFAULT_TRACKER_APP_LABEL
         except KeyError:
             logging.debug(
                 "Work item %s has no 'System.Tags' field, returning 'unknown' app name",
                 work_item.id,
             )
-            return "unknown"
+            return pelorus.DEFAULT_TRACKER_APP_LABEL
 
     def search_issues(self) -> list[TrackerIssue]:
-        """
-        To maintain consistency, we call this method `search_issues`. An
-        `issue` in Azure DevOps is called `work item`.
-        """
+        """Search Azure DevOps work items (called 'issues' for cross-provider consistency)."""
         production_work_items = []
         all_work_items = self.get_work_items()
         total_count = len(all_work_items)
@@ -219,7 +220,7 @@ class AzureDevOpsFailureCollector(AbstractFailureCollector):
                     production_work_items.append(tracker_issue)
             except Exception:
                 skipped += 1
-                _issue_parse_failures.inc()
+                issue_parse_failures.inc()
                 logging.error(
                     "Failed to parse Azure DevOps work item %s, skipping",
                     getattr(work_item, "id", "unknown"),

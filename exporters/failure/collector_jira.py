@@ -18,18 +18,25 @@
 import logging
 import re
 from typing import Optional
+from urllib.parse import urlparse
 
 from attrs import converters, define, field
 from jira import JIRA, Issue
 from jira.exceptions import JIRAError
+from prometheus_client import Counter
 
 import pelorus
-from failure.collector_base import AbstractFailureCollector, TrackerIssue, _issue_parse_failures
+from failure.collector_base import AbstractFailureCollector, TrackerIssue, issue_parse_failures
 from pelorus.certificates import set_up_requests_certs
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.config.log import REDACT, log
 from pelorus.timeutil import parse_tz_aware, second_precision
+
+_jira_api_errors = Counter(
+    "pelorus_failure_jira_api_errors_total",
+    "Total JIRA API errors during failure issue collection",
+)
 
 _SAFE_JQL_VALUE = re.compile(r"^[A-Za-z0-9_ .-]+$")
 
@@ -82,7 +89,7 @@ class JiraFailureCollector(AbstractFailureCollector):
     )
 
     # Pre-computed lowercase status list from jira_resolved_statuses
-    _resolved_statuses_list: Optional[list[str]] = field(default=None, init=False)
+    _resolved_statuses_set: Optional[frozenset[str]] = field(default=None, init=False)
 
     query_result_fields_string: str = field(default=QUERY_RESULT_FIELDS, init=False)
 
@@ -94,12 +101,17 @@ class JiraFailureCollector(AbstractFailureCollector):
     _app_label_prefix: str = field(default="", init=False)
 
     def __attrs_post_init__(self):
+        parsed = urlparse(self.tracker_api)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"SERVER must use http or https scheme, got: {parsed.scheme!r}")
+        if not parsed.hostname:
+            raise ValueError("SERVER must include a hostname")
         self._app_label_prefix = f"{self.app_label}="
         if self.jira_resolved_statuses:
-            self._resolved_statuses_list = [
+            self._resolved_statuses_set = frozenset(
                 status.strip().lower()
                 for status in self.jira_resolved_statuses.split(",")
-            ]
+            )
         # Custom JQL queries manage their own fields, so clear the default fields string
         if self.jql_query_string != DEFAULT_JQL_SEARCH_QUERY:
             self.query_result_fields_string = ""
@@ -119,9 +131,8 @@ class JiraFailureCollector(AbstractFailureCollector):
             return self._jira_client
 
         try:
-            # Connect to JIRA
             verify = set_up_requests_certs(self.tls_verify)
-            options = {"server": self.tracker_api, "verify": verify}
+            options = {"server": self.tracker_api, "verify": verify, "timeout": self._API_TIMEOUT}
             if not self.username:
                 jira_client = JIRA(
                     options=options,
@@ -137,6 +148,7 @@ class JiraFailureCollector(AbstractFailureCollector):
             self._jira_client = jira_client
             return jira_client
         except JIRAError as error:
+            _jira_api_errors.inc()
             logging.error(
                 "JIRA connection failed with status: %s", error.status_code,
                 exc_info=True,
@@ -144,19 +156,9 @@ class JiraFailureCollector(AbstractFailureCollector):
             raise
 
     def _filter_projects_in_query_string(self, error_text: str) -> str:
-        """
-        Filter for only existing projects in JQL query string.
+        """Remove non-existing projects from the JQL query string based on the JIRA error response.
 
-        Parameters
-        ----------
-        error_text : str
-            Error text to get non existing projects.
-
-        Returns
-        -------
-        str
-            Filtered query string, if there is at least one existing project;
-            else, an empty string.
+        Returns the filtered query string, or an empty string if no valid projects remain.
         """
         non_existing_projects = {
             line.replace(NON_EXISTING_PROJECT_ERROR_START, "").replace(
@@ -170,8 +172,15 @@ class JiraFailureCollector(AbstractFailureCollector):
                 return f'{DEFAULT_JQL_SEARCH_QUERY} AND project in ("{_projects}")'
             return ""
         matcher = "project in ("
-        start_index = self.jql_query_string.find(matcher) + len(matcher)
+        matcher_pos = self.jql_query_string.find(matcher)
+        if matcher_pos == -1:
+            logging.warning("JQL query does not contain '%s', cannot filter projects", matcher)
+            return ""
+        start_index = matcher_pos + len(matcher)
         end_index = self.jql_query_string.find(")", start_index)
+        if end_index == -1:
+            logging.warning("JQL query has unclosed 'project in (', cannot filter projects")
+            return ""
         _projects = self.jql_query_string[start_index:end_index]
         _projects_parsed = ",".join(
             {remove_quotes(project) for project in _projects.split(",")}.difference(
@@ -189,21 +198,7 @@ class JiraFailureCollector(AbstractFailureCollector):
     def _jql_query_issues(
         self, jira_client: JIRA, query_string: str
     ) -> list[TrackerIssue]:
-        """
-        Apply JQL query in JIRA instance to get issues.
-
-        Parameters
-        ----------
-        jira_client : JIRA
-            JIRA instance.
-        query_string : str
-            JQL query string.
-
-        Returns
-        -------
-        list[TrackerIssue]
-            List of issues.
-        """
+        """Execute a JQL query and return parsed TrackerIssue results."""
         logging.debug("JIRA JQL query: %s", query_string)
         jira_issues = jira_client.search_issues(
             query_string,
@@ -219,7 +214,7 @@ class JiraFailureCollector(AbstractFailureCollector):
                 results.append(self._parse_issue(issue))
             except Exception:
                 skipped += 1
-                _issue_parse_failures.inc()
+                issue_parse_failures.inc()
                 logging.error(
                     "Failed to parse JIRA issue %s, skipping",
                     getattr(issue, "key", "unknown"),
@@ -244,21 +239,15 @@ class JiraFailureCollector(AbstractFailureCollector):
         )
 
     def search_issues(self) -> list[TrackerIssue]:
-        """
-        Search for the matching issues in JIRA.
-
-        Returns
-        -------
-        list[TrackerIssue]
-            A list with the issues, if no error occurs; else, an empty list.
-        """
+        """Search for matching issues in JIRA. Returns an empty list on query errors."""
         jira_client = self._connect_to_jira()
         try:
             return self._jql_query_issues(jira_client, self.jql_query_string)
         except JIRAError as error:
+            _jira_api_errors.inc()
             if error.status_code == 400:
                 logging.error(
-                    "Status: %s, Error Response: %s", error.status_code, error.text,
+                    "JIRA query failed with status: %s", error.status_code,
                     exc_info=True,
                 )
                 if NON_EXISTING_PROJECT_ERROR_END in error.text:
@@ -266,14 +255,20 @@ class JiraFailureCollector(AbstractFailureCollector):
                     if new_query:
                         return self._jql_query_issues(jira_client, new_query)
                 return []
+            logging.error(
+                "JIRA query failed with status: %s", error.status_code,
+                exc_info=True,
+            )
             self._jira_client = None
+            logging.warning("JIRA client invalidated, will reconnect on next collection")
             raise
 
     def _get_resolved_timestamp(self, issue: Issue) -> Optional[float]:
         """Find timestamp when the issue was resolved or moved to a configured resolved status."""
         resolution_tz = None
-        if self._resolved_statuses_list:
-            if issue.fields.status.name.lower() in self._resolved_statuses_list:
+        if self._resolved_statuses_set:
+            status = getattr(issue.fields, "status", None)
+            if status and getattr(status, "name", None) and status.name.lower() in self._resolved_statuses_set:
                 logging.debug(
                     "Found issue %s: %s, %s",
                     issue.fields.status.name,
@@ -304,5 +299,5 @@ class JiraFailureCollector(AbstractFailureCollector):
             if label.startswith(prefix):
                 return label[prefix_len:]
         if self.app_name is None:
-            return "unknown"
+            return pelorus.DEFAULT_TRACKER_APP_LABEL
         return self.app_name

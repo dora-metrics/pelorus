@@ -5,6 +5,13 @@ permissions:
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'pyproject.toml'
+      - '.github/workflows/python-linting.yml'
+      - 'Makefile'
+      - '**.py'
   pull_request:
     branches: [ main ]
     paths:

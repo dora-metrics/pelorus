@@ -58,12 +58,14 @@ def mocked(api_version, kind):
     return matcher[kind]
 
 
-mocked_commit_time_exporter = MockExporter(set_up=set_up, mock_kube_client=mocked)
+@pytest.fixture
+def mocked_commit_time_exporter():
+    return MockExporter(set_up=set_up, mock_kube_client=mocked)
 
 
 @pytest.mark.parametrize("provider", ["imagy", "zip"])
 @pytest.mark.integration
-def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
+def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture, mocked_commit_time_exporter):
     with pytest.raises(ValueError):
         mocked_commit_time_exporter.run_app({"PROVIDER": provider})
 
@@ -72,7 +74,7 @@ def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
 
 @pytest.mark.parametrize("provider", ["wrong", "git_hub", "GITHUB", "GitHub"])
 @pytest.mark.integration
-def test_app_git_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFixture):
+def test_app_git_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFixture, mocked_commit_time_exporter):
     with pytest.raises(ValueError):
         mocked_commit_time_exporter.run_app({"GIT_PROVIDER": provider})
 
@@ -80,7 +82,7 @@ def test_app_git_invalid_git_provider(provider: str, caplog: pytest.LogCaptureFi
 
 
 @pytest.mark.integration
-def test_app_git_azure_devops(caplog: pytest.LogCaptureFixture):
+def test_app_git_azure_devops(caplog: pytest.LogCaptureFixture, mocked_commit_time_exporter):
     mocked_exporter = mocked_commit_time_exporter.run_app(
         {
             "GIT_PROVIDER": "azure-devops",
@@ -112,7 +114,7 @@ def test_app_git_azure_devops(caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_git_with_all_options(caplog: pytest.LogCaptureFixture):
+def test_app_git_with_all_options(caplog: pytest.LogCaptureFixture, mocked_commit_time_exporter):
     mocked_exporter = mocked_commit_time_exporter.run_app(
         {
             "LOG_LEVEL": "DEBUG",
@@ -150,7 +152,7 @@ def test_app_git_with_all_options(caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_image(caplog: pytest.LogCaptureFixture):
+def test_app_image(caplog: pytest.LogCaptureFixture, mocked_commit_time_exporter):
     mocked_exporter = mocked_commit_time_exporter.run_app(
         {
             "PROVIDER": "image",
@@ -176,7 +178,7 @@ def test_app_image(caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_image_with_all_options(caplog: pytest.LogCaptureFixture):
+def test_app_image_with_all_options(caplog: pytest.LogCaptureFixture, mocked_commit_time_exporter):
     mocked_exporter = mocked_commit_time_exporter.run_app(
         {
             "LOG_LEVEL": "DEBUG",

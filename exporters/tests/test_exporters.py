@@ -1,6 +1,6 @@
 import pytest
 
-from committime.collector_base import CommitMetric
+from committime import CommitMetric
 
 
 def test_commitmetric_initial():
@@ -126,7 +126,7 @@ def test_commitmetric_azure_repos(
 
 
 @pytest.mark.parametrize(
-    "url,repo_protocol,fqdn,project_name,azure_organization,azure_project,user",
+    "url,repo_protocol,fqdn,project_name,azure_organization,azure_project",
     [
         (
             "https://User2@dev.azure.com/Organization1Name/Project-Name/_git/the-repository-name/",
@@ -135,7 +135,6 @@ def test_commitmetric_azure_repos(
             "the-repository-name",
             "Organization1Name",
             "Project-Name",
-            "User2",
         ),
         (
             "https://Bruce@enterprise.custom/Organization1Name/Project-Name/_git/the-repository-name/",
@@ -144,7 +143,6 @@ def test_commitmetric_azure_repos(
             "the-repository-name",
             "Organization1Name",
             "Project-Name",
-            "Bruce",
         ),
         (
             "https://User@dev.azure.com/Organization/Project/_git/repository/",
@@ -153,7 +151,6 @@ def test_commitmetric_azure_repos(
             "repository",
             "Organization",
             "Project",
-            "User",
         ),
         (
             "https://user@dev.azure.com/organization/project/_git/repository/",
@@ -162,7 +159,6 @@ def test_commitmetric_azure_repos(
             "repository",
             "organization",
             "project",
-            "user",
         ),
         (
             "https://user@dev.azure.com:8080/organization/project/_git/repository/",
@@ -171,7 +167,6 @@ def test_commitmetric_azure_repos(
             "repository",
             "organization",
             "project",
-            "user",
         ),
         (
             "http://user@dev.azure.com:8080/organization/project/_git/repository/",
@@ -180,12 +175,11 @@ def test_commitmetric_azure_repos(
             "repository",
             "organization",
             "project",
-            "user",
         ),
     ],
 )
 def test_commitmetric_azure_repos_with_user(
-    url, repo_protocol, fqdn, project_name, azure_organization, azure_project, user
+    url, repo_protocol, fqdn, project_name, azure_organization, azure_project
 ):
     metric = CommitMetric("pytest")
     metric.repo_url = url

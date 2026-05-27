@@ -42,8 +42,7 @@ def _current_timestamp():
     return int(time.time())
 
 
-@pytest.mark.asyncio
-async def test_pelorus_payload_ping_function():
+def test_pelorus_payload_ping_function():
     """Verify 'ping' event raises HTTPException with 'pong' response."""
     event_type = "ping"
     handler = PelorusWebhookHandler.handler_functions[event_type]
@@ -86,8 +85,7 @@ async def test_pelorus_payload_ping_function():
         ),
     ],
 )
-@pytest.mark.asyncio
-async def test_pelorus_payload_functions(event_type, json_payload, expected_model):
+def test_pelorus_payload_functions(event_type, json_payload, expected_model):
     """Verify handler functions return correct payload models for each event type."""
     json_data = json.loads(json_payload)
     json_data["timestamp"] = _current_timestamp()

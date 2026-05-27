@@ -4,6 +4,14 @@ permissions:
   contents: read
 
 on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/doc-check.yml'
+      - 'mkdocs.yml'
+      - 'Makefile'
   pull_request:
     branches: [ main ]
     paths:

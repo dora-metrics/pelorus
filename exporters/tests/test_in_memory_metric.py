@@ -37,6 +37,16 @@ in_memory_test_committime_metrics = PelorusGaugeMetricFamily(
 )
 
 
+@pytest.fixture(autouse=True)
+def _clean_metrics():
+    """Reset shared gauge metric family between tests to prevent state leakage."""
+    in_memory_test_committime_metrics.samples.clear()
+    in_memory_test_committime_metrics.added_metrics.clear()
+    yield
+    in_memory_test_committime_metrics.samples.clear()
+    in_memory_test_committime_metrics.added_metrics.clear()
+
+
 class CustomCommitCollector(Collector):
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -48,55 +58,55 @@ class CustomCommitCollector(Collector):
         yield in_memory_test_committime_metrics
 
 
-class TestInMemoryMetric:
-    def setup_method(self):
-        self.custom_collector = CustomCommitCollector()
-        REGISTRY.register(self.custom_collector)
+@pytest.fixture
+def _registered_collector():
+    collector = CustomCommitCollector()
+    REGISTRY.register(collector)
+    yield collector
+    REGISTRY.unregister(collector)
 
-    def teardown_method(self):
-        REGISTRY.unregister(self.custom_collector)
 
-    def test_pelorus_gauge_metric_family(self):
-        """
-        Verifies if the metric passed to the pelorus_metric_to_prometheus method
-        and then registered in our CustomCommitCollector is properly collected
-        by Prometheus. It does it by getting sample value and comparing the
-        timestamp of that metric to the timestamp of the data received from
-        Prometheus.
-        """
-        name = "todolist"
-        timestamp = "1700000000"
-        image_hash = "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d"
-        namespace = "mynamespace"
-        commit_hash = "5379bad65a3f83853a75aabec9e0e43c75fd18fc"
-        commit_payload = CommitTimePelorusPayload(
-            app=name,
-            timestamp=timestamp,
-            image_sha=image_hash,
-            namespace=namespace,
-            commit_hash=commit_hash,
-        )
+def test_pelorus_gauge_metric_family(_registered_collector):
+    """
+    Verifies if the metric passed to the pelorus_metric_to_prometheus method
+    and then registered in our CustomCommitCollector is properly collected
+    by Prometheus. It does it by getting sample value and comparing the
+    timestamp of that metric to the timestamp of the data received from
+    Prometheus.
+    """
+    name = "todolist"
+    timestamp = "1700000000"
+    image_hash = "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d"
+    namespace = "mynamespace"
+    commit_hash = "5379bad65a3f83853a75aabec9e0e43c75fd18fc"
+    commit_payload = CommitTimePelorusPayload(
+        app=name,
+        timestamp=timestamp,
+        image_sha=image_hash,
+        namespace=namespace,
+        commit_hash=commit_hash,
+    )
 
-        prometheus_commit_metric = pelorus_metric_to_prometheus(commit_payload)
-        in_memory_test_committime_metrics.add_metric(
-            commit_payload.commit_hash,
-            prometheus_commit_metric,
-            commit_payload.timestamp,
-        )
+    prometheus_commit_metric = pelorus_metric_to_prometheus(commit_payload)
+    in_memory_test_committime_metrics.add_metric(
+        commit_payload.commit_hash,
+        prometheus_commit_metric,
+        commit_payload.timestamp,
+    )
 
-        query_labels = {
-            "app": f"/{name}/",
-            "image_sha": image_hash,
-            "commit": commit_hash,
-            "namespace": namespace,
-        }
+    query_labels = {
+        "app": f"/{name}/",
+        "image_sha": image_hash,
+        "commit": commit_hash,
+        "namespace": namespace,
+    }
 
-        query_result = REGISTRY.get_sample_value(
-            "test_committime_metrics",
-            labels=query_labels,
-        )
+    query_result = REGISTRY.get_sample_value(
+        "test_committime_metrics",
+        labels=query_labels,
+    )
 
-        assert query_result == float(timestamp)
+    assert query_result == float(timestamp)
 
 
 def test_all_models_have_prometheus_mappings():
@@ -114,6 +124,10 @@ def test_all_models_have_prometheus_mappings():
         assert isinstance(metric, dict) and len(metric) > 0, (
             f"{test_model.__name__} returned empty or non-dict Prometheus mapping"
         )
+        for key, value in metric.items():
+            assert isinstance(key, str) and isinstance(value, str), (
+                f"{test_model.__name__} mapping has non-string key or value: {key!r}={value!r}"
+            )
 
 
 class NewPelorusPayloadModel(PelorusPayload):

@@ -115,6 +115,7 @@ class FakePelorusPayload(BaseModel):
 def test_pelorus_payload_success(app):
     """Valid app and timestamp values create a PelorusPayload successfully."""
     payload = PelorusPayload(app=app, timestamp=int(time.time()))
+    assert payload.app == app
     assert payload.get_metric_model_name() == "PelorusPayload"
 
 
@@ -167,7 +168,8 @@ def test_failure_pelorus_payload_success(failure_id, failure_event):
         failure_id=failure_id,
         failure_event=failure_event,
     )
-    assert payload.failure_event in ["created", "resolved"]
+    assert payload.failure_id == failure_id
+    assert payload.failure_event == failure_event
     assert payload.get_metric_model_name() == "FailurePelorusPayload"
 
 
@@ -197,6 +199,8 @@ def test_deploy_time_pelorus_payload_success(image_sha, namespace):
     payload = DeployTimePelorusPayload(
         **test_payload, image_sha=image_sha, namespace=namespace
     )
+    assert payload.image_sha == image_sha
+    assert payload.namespace == namespace
     assert payload.get_metric_model_name() == "DeployTimePelorusPayload"
 
 
@@ -241,6 +245,26 @@ def test_commit_time_pelorus_payload_success(commit_hash_length):
 def test_commit_time_pelorus_payload_error(commit_hash_length):
     _, _, test_deploy, _, _ = _make_payloads()
     commit_hash = "a" * commit_hash_length
+    with pytest.raises(ValidationError) as v_error:
+        CommitTimePelorusPayload(
+            **test_deploy,
+            commit_hash=commit_hash,
+        )
+    assert "commit_hash" in str(v_error.value)
+
+
+@pytest.mark.parametrize(
+    "commit_hash",
+    [
+        "g" * 7,
+        "z" * 40,
+        "xyz1234",
+        "abcdefg" * 5 + "xyzqw",
+    ],
+)
+def test_commit_time_pelorus_payload_non_hex_hash(commit_hash):
+    """Non-hexadecimal characters in commit hash are rejected."""
+    _, _, test_deploy, _, _ = _make_payloads()
     with pytest.raises(ValidationError) as v_error:
         CommitTimePelorusPayload(
             **test_deploy,

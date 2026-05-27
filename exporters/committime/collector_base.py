@@ -32,24 +32,29 @@ from prometheus_client import Counter, Gauge
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
-from committime import CommitMetric, commit_metric_from_build
+from committime import CommitMetric, sanitize_url, commit_metric_from_build
 from pelorus.config import env_vars
 from pelorus.config.converters import comma_separated, pass_through
 from pelorus.config.log import REDACT, log
 from pelorus.utils import Url, get_nested
 from provider_common import format_app_name
 
-# Custom annotations env for the Build
-# Default ones are in the CommitMetric._ANNOTATION_MAPPING
+__all__ = [
+    "AbstractCommitCollector",
+    "UnsupportedGITProvider",
+    "check_provider_support",
+    "fetch_commit_json",
+    "git_api_errors",
+    "COMMIT_HASH_ANNOTATION_ENV",
+    "COMMIT_REPO_URL_ANNOTATION_ENV",
+    "COMMIT_DATE_ANNOTATION_ENV",
+]
+
 COMMIT_HASH_ANNOTATION_ENV = "COMMIT_HASH_ANNOTATION"
 COMMIT_REPO_URL_ANNOTATION_ENV = "COMMIT_REPO_URL_ANNOTATION"
 COMMIT_DATE_ANNOTATION_ENV = "COMMIT_DATE_ANNOTATION"
 
-# Pre-compiled regex for matching git repo URLs in Jenkins pipeline env vars
 _GIT_REPO_RE = re.compile(r"((\w+://)|(.+@))([\w\d\.]+)(:[\d]+)?/*(.*)")
-# Regex to strip embedded credentials from URLs before logging
-_URL_USERINFO_RE = re.compile(r"(https?://)([^@]+)@")
-# Pre-compiled regex for validating app_label values
 _VALID_APP_LABEL_RE = re.compile(r"^[A-Za-z0-9_./-]+$")
 
 _collection_duration = Gauge(
@@ -68,6 +73,26 @@ _last_collection_count = Gauge(
     "pelorus_committime_last_collection_count",
     "Number of metrics returned by the last committime collection",
 )
+_cache_hits = Counter(
+    "pelorus_committime_cache_hits_total",
+    "Total number of commit timestamp cache hits",
+)
+_cache_misses = Counter(
+    "pelorus_committime_cache_misses_total",
+    "Total number of commit timestamp cache misses",
+)
+git_api_errors = Counter(
+    "pelorus_committimegit_api_errors_total",
+    "Total number of git provider API errors during commit time lookups",
+)
+_commit_cache_size = Gauge(
+    "pelorus_committime_commit_cache_size",
+    "Current number of entries in the commit timestamp cache",
+)
+_last_collection_success = Gauge(
+    "pelorus_committime_last_collection_success",
+    "Whether the last committime collection succeeded (1) or failed (0)",
+)
 
 
 class UnsupportedGITProvider(Exception):
@@ -76,21 +101,56 @@ class UnsupportedGITProvider(Exception):
 
 _KNOWN_GIT_PROVIDERS = frozenset({"github", "gitlab", "gitea", "bitbucket", "azure"})
 
-
-def _sanitize_url(url: str) -> str:
-    """Strip embedded credentials (user:pass@) from a URL for safe logging."""
-    if not url:
-        return url
-    return _URL_USERINFO_RE.sub(r"\1", url)
+_OTHER_PROVIDERS_CACHE: dict[str, frozenset[str]] = {
+    name: _KNOWN_GIT_PROVIDERS - {name} for name in _KNOWN_GIT_PROVIDERS
+}
 
 
 def check_provider_support(server_string: str, provider_name: str) -> None:
     """Raise UnsupportedGITProvider if server_string contains a known provider other than provider_name."""
-    for other in _KNOWN_GIT_PROVIDERS - {provider_name}:
+    others = _OTHER_PROVIDERS_CACHE.get(provider_name, _KNOWN_GIT_PROVIDERS - {provider_name})
+    for other in others:
         if other in server_string:
             raise UnsupportedGITProvider(
                 f"Skipping non {provider_name} server, found {server_string}"
             )
+
+
+def fetch_commit_json(
+    session, url: str, metric: CommitMetric, timeout: int, provider: str
+) -> Optional[dict]:
+    """Fetch commit JSON from a git provider API. Returns parsed dict or None on failure."""
+    import requests
+
+    try:
+        response = session.get(url, timeout=timeout)
+    except requests.RequestException:
+        git_api_errors.inc()
+        logging.error(
+            "Unable to connect to %s for build: %s, hash: %s, url: %s",
+            provider, metric.build_name, metric.commit_hash, sanitize_url(metric.repo_url),
+            exc_info=True,
+        )
+        return None
+    if response.status_code != 200:
+        git_api_errors.inc()
+        log_level = logging.ERROR if response.status_code in (401, 403) else logging.WARNING
+        logging.log(
+            log_level,
+            "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s",
+            metric.build_name, metric.commit_hash, sanitize_url(metric.repo_url), response.status_code,
+        )
+        return None
+    try:
+        return response.json()
+    except requests.JSONDecodeError:
+        git_api_errors.inc()
+        logging.error(
+            "Invalid JSON response for build: %s, hash: %s, url: %s",
+            metric.build_name, metric.commit_hash, sanitize_url(metric.repo_url),
+            exc_info=True,
+        )
+        return None
 
 
 @define(kw_only=True)
@@ -111,12 +171,13 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         converter=attrs.converters.optional(pass_through(Url, Url.parse)),
     )
 
-    tls_verify: bool = field(default=True)
+    tls_verify: bool = field(default=pelorus.DEFAULT_TLS_VERIFY)
 
     commit_dict: OrderedDict[str, tuple[Optional[str], Optional[float], Optional[str]]] = field(factory=OrderedDict, init=False)
     _build_config_cache: OrderedDict[tuple[str, str], Optional[str]] = field(factory=OrderedDict, init=False)
     _cache_lock: threading.Lock = field(factory=threading.Lock, init=False)
 
+    _API_TIMEOUT = 30
     _COMMIT_CACHE_MAX = 10_000
     _BUILD_CONFIG_CACHE_MAX = 1_000
 
@@ -135,7 +196,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     _COMMIT_METRIC_LABELS = ["namespace", "app", "commit", "image_sha", "commit_link"]
 
     def __attrs_post_init__(self):
-        if not _VALID_APP_LABEL_RE.match(str(self.app_label)):
+        if not _VALID_APP_LABEL_RE.match(self.app_label):
             raise ValueError(f"Invalid app_label: {self.app_label!r}")
         if bool(self.username) != bool(self.token):
             logging.warning(
@@ -162,6 +223,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         logging.debug("collect: start")
         start = time.monotonic()
         collected_count = 0
+        success = True
         try:
             commit_metric = self._new_commit_metric()
 
@@ -196,27 +258,18 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 collected_count += 1
             yield commit_metric
         except Exception:
+            success = False
             _collection_errors.inc()
             logging.error("Commit time metric collection failed", exc_info=True)
             yield self._new_commit_metric()
         finally:
+            _last_collection_success.set(success)
             duration = time.monotonic() - start
             _collection_duration.set(duration)
             _last_collection_count.set(collected_count)
+            with self._cache_lock:
+                _commit_cache_size.set(len(self.commit_dict))
             logging.info("collect: %d metrics in %.2fs", collected_count, duration)
-
-    def _get_watched_namespaces(self) -> set[str]:
-        watched_namespaces = self.namespaces
-        if not watched_namespaces:
-            logging.debug("No namespaces specified, watching all namespaces")
-            v1_namespaces = self.kube_client.resources.get(
-                api_version="v1", kind="Namespace"
-            )
-            watched_namespaces = {
-                namespace.metadata.name for namespace in v1_namespaces.get().items
-            }
-        logging.debug("Watching namespaces: %s", watched_namespaces)
-        return watched_namespaces
 
     def _get_openshift_obj_by_app(self, openshift_obj) -> dict[str, list]:
         app_label = self.app_label
@@ -228,7 +281,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         items_by_app: dict[str, list] = {}
 
         for item in items:
-            app_name = item.metadata.labels.get(app_label)
+            labels = getattr(item.metadata, "labels", None)
+            if not labels:
+                continue
+            app_name = labels.get(app_label)
             if app_name:
                 items_by_app.setdefault(app_name, []).append(item)
 
@@ -237,19 +293,23 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
     def generate_metrics(self) -> Iterable[CommitMetric]:
         """Generate metrics from builds across watched namespaces."""
 
-        watched_namespaces = self._get_watched_namespaces()
-
         app_label = self.app_label
         v1_builds = self.kube_client.resources.get(
             api_version="build.openshift.io/v1", kind="Build"
         )
-        for namespace in watched_namespaces:
+
+        # When specific namespaces are configured, query each individually.
+        # Otherwise do a single cluster-wide query instead of discovering
+        # all namespaces and then querying each one (N+1 API calls → 1).
+        for namespace in self.namespaces or {""}:
             logging.debug(
                 "Searching for builds with label: %s in namespace: %s",
-                app_label, namespace,
+                app_label, namespace or "(all)",
             )
 
-            builds = v1_builds.get(namespace=namespace, label_selector=app_label)
+            builds = v1_builds.get(
+                namespace=namespace or None, label_selector=app_label
+            )
 
             builds_by_app = self._get_openshift_obj_by_app(builds)
 
@@ -261,7 +321,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         """Get commit timestamp from the git provider API for the given metric."""
 
     def get_metrics_from_apps(self, apps, namespace):
-        """Expects a dict of builds grouped by app label."""
+        """Yield CommitMetrics from builds grouped by app label. Namespace is for log context."""
         failed_builds = 0
         total_builds = 0
         for app, builds in apps.items():
@@ -284,7 +344,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             # For Jenkins pipelines, grab repo data then find associated
             # Source/Binary/Docker builds from which to pull commit & image data
             repo_url = self.get_repo_from_jenkins(jenkins_builds)
-            logging.debug("Repo URL for app %s is currently %s", app, _sanitize_url(repo_url) if repo_url else repo_url)
+            logging.debug(
+                "Repo URL for app %s is currently %s",
+                app, sanitize_url(repo_url) if repo_url else repo_url,
+            )
 
             for build in code_builds:
                 total_builds += 1
@@ -316,8 +379,6 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             if not self._is_metric_ready(namespace, metric, build):
                 return None
 
-            # Populate annotations and labels required by
-            # subsequent _set_ functions.
             metric.annotations = vars(build.metadata.annotations) if build.metadata.annotations else {}
             metric.labels = vars(build.metadata.labels) if build.metadata.labels else {}
 
@@ -372,20 +433,20 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         return metric
 
     def _set_repo_url(
-        self, metric: CommitMetric, repo_url: str, build, errors: list
+        self, metric: CommitMetric, repo_url: Optional[str], build, errors: list
     ) -> CommitMetric:
-        # Logic to get repo_url, first condition wins
-        # 1. Gather repo_url from the build from spec.source.git.uri
-        # 2. Check if repo_url was passed to the function and use it
-        # 3. Get repo_url from annotations
-        # 4. Get repo_url from parent BuildConfig
+        # Repo URL resolution order (first match wins):
+        # 1. Already set on metric (from build's spec.source.git.uri)
+        # 2. Passed in from Jenkins pipeline (repo_url param)
+        # 3. Build annotation (repo_url_annotation_name)
+        # 4. Parent BuildConfig's spec.source.git.uri
 
         if metric.repo_url:
             logging.debug(
                 "Repo URL for build %s provided by '%s': %s",
                 metric.build_name,
                 CommitMetric._BUILD_MAPPING["repo_url"][0],
-                _sanitize_url(metric.repo_url),
+                sanitize_url(metric.repo_url),
             )
         elif repo_url:
             metric.repo_url = repo_url
@@ -394,9 +455,10 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             if repo_from_annotation:
                 metric.repo_url = repo_from_annotation
                 logging.debug(
-                    "Repo URL for build %s provided by '%s'",
+                    "Repo URL for build %s provided by annotation '%s': %s",
                     metric.build_name,
-                    _sanitize_url(metric.repo_url),
+                    self.repo_url_annotation_name,
+                    sanitize_url(metric.repo_url),
                 )
             else:
                 metric.repo_url = self._get_repo_from_build_config(build)
@@ -444,19 +506,22 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         """
         with self._cache_lock:
             if metric.commit_hash and metric.commit_hash in self.commit_dict:
-                commit_time, commit_timestamp, commit_link = self.commit_dict[metric.commit_hash]
-                # Move to end for LRU eviction
+                cached = self.commit_dict[metric.commit_hash]
                 self.commit_dict.move_to_end(metric.commit_hash)
-                metric.commit_time = commit_time
-                metric.commit_timestamp = commit_timestamp
-                metric.commit_link = commit_link
-                logging.debug("Returning metric from cache for hash %s", metric.commit_hash)
-                return metric
-            needs_fetch = bool(metric.commit_hash)
+            else:
+                cached = None
+            needs_fetch = cached is None and bool(metric.commit_hash)
+
+        if cached is not None:
+            metric.commit_time, metric.commit_timestamp, metric.commit_link = cached
+            _cache_hits.inc()
+            logging.debug("Returning metric from cache for hash %s", metric.commit_hash)
+            return metric
 
         if not needs_fetch:
             return metric
 
+        _cache_misses.inc()
         logging.debug(
             "sha: %s, commit_timestamp not found in cache, executing API call.",
             metric.commit_hash,
@@ -467,6 +532,15 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
         except UnsupportedGITProvider as ex:
             errors.append(str(ex))
             return None
+        except Exception:
+            git_api_errors.inc()
+            logging.error(
+                "Failed to get commit time for build %s, hash %s",
+                metric.build_name, metric.commit_hash,
+                exc_info=True,
+            )
+            errors.append("Failed to get commit time from git provider")
+            return None
         if metric is None:
             errors.append("get_commit_time returned None")
             return None
@@ -474,7 +548,7 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
             errors.append("Couldn't get commit time")
         else:
             with self._cache_lock:
-                if len(self.commit_dict) >= self._COMMIT_CACHE_MAX:
+                if metric.commit_hash not in self.commit_dict and len(self.commit_dict) >= self._COMMIT_CACHE_MAX:
                     self.commit_dict.popitem(last=False)
                 self.commit_dict[metric.commit_hash] = (metric.commit_time, metric.commit_timestamp, metric.commit_link)
 
@@ -482,12 +556,15 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
 
     def get_repo_from_jenkins(self, jenkins_builds):
         if jenkins_builds:
-            # First, check for cases where the source url is in pipeline params
-            for env in jenkins_builds[0].spec.strategy.jenkinsPipelineStrategy.env or []:
+            pipeline_strategy = getattr(
+                jenkins_builds[0].spec.strategy, "jenkinsPipelineStrategy", None
+            )
+            for env in (getattr(pipeline_strategy, "env", None) or []) if pipeline_strategy else []:
                 logging.debug("Searching env var %s for git urls", env.name)
                 try:
                     result = _GIT_REPO_RE.match(env.value)
                 except TypeError:
+                    logging.debug("Env var %s has non-string value, skipping git URL match", env.name)
                     result = None
                 if result:
                     logging.debug("Found result %s", env.name)
@@ -502,12 +579,18 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                     "Will check for source URLs in params.",
                     jenkins_builds[0].metadata.name,
                 )
-        # If no repo is found, we will return None, which will be handled later on
 
     def _get_repo_from_build_config(self, build):
         """Get repo URL from the parent BuildConfig when the Build itself lacks a git URI."""
-        bc_ns = build.status.config.namespace
-        bc_name = build.status.config.name
+        try:
+            bc_ns = build.status.config.namespace
+            bc_name = build.status.config.name
+        except AttributeError:
+            logging.debug(
+                "Build %s has no status.config reference, cannot look up BuildConfig",
+                getattr(getattr(build, "metadata", None), "name", "?"),
+            )
+            return None
         cache_key = (bc_ns, bc_name)
 
         with self._cache_lock:
@@ -516,19 +599,33 @@ class AbstractCommitCollector(pelorus.AbstractPelorusExporter):
                 return self._build_config_cache[cache_key]
 
         result = None
-        v1_build_configs = self.kube_client.resources.get(
-            api_version="build.openshift.io/v1", kind="BuildConfig"
-        )
-        build_config = v1_build_configs.get(namespace=bc_ns, name=bc_name)
-        if build_config:
-            if build_config.spec.source.git:
-                git_uri = str(build_config.spec.source.git.uri)
-                if not git_uri.endswith(".git"):
-                    git_uri = git_uri + ".git"
-                result = git_uri
+        try:
+            v1_build_configs = self.kube_client.resources.get(
+                api_version="build.openshift.io/v1", kind="BuildConfig"
+            )
+            build_config = v1_build_configs.get(namespace=bc_ns, name=bc_name)
+            if build_config:
+                if build_config.spec.source.git:
+                    git_uri = str(build_config.spec.source.git.uri)
+                    if not git_uri.endswith(".git"):
+                        git_uri = git_uri + ".git"
+                    result = git_uri
+        except (AttributeError, KeyError, TypeError) as e:
+            logging.debug(
+                "BuildConfig %s/%s has no git source: %s",
+                bc_ns, bc_name, e,
+                exc_info=True,
+            )
+        except Exception:
+            logging.warning(
+                "Failed to look up BuildConfig %s/%s",
+                bc_ns, bc_name,
+                exc_info=True,
+            )
+            return None
 
         with self._cache_lock:
-            if len(self._build_config_cache) >= self._BUILD_CONFIG_CACHE_MAX:
+            if cache_key not in self._build_config_cache and len(self._build_config_cache) >= self._BUILD_CONFIG_CACHE_MAX:
                 self._build_config_cache.popitem(last=False)
             self._build_config_cache[cache_key] = result
         return result

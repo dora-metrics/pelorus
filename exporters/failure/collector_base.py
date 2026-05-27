@@ -9,8 +9,17 @@ from prometheus_client import Counter, Gauge
 from prometheus_client.core import GaugeMetricFamily
 
 import pelorus
+from failure import FailureMetric, TrackerIssue
 from provider_common import format_app_name
 
+
+__all__ = [
+    "AbstractFailureCollector",
+    "FailureProviderAuthenticationError",
+    "TrackerIssue",
+    "FailureMetric",
+    "issue_parse_failures",
+]
 
 _collection_duration = Gauge(
     "pelorus_failure_collection_duration_seconds",
@@ -24,9 +33,13 @@ _last_collection_count = Gauge(
     "pelorus_failure_last_collection_count",
     "Number of metrics returned by the last failure collection",
 )
-_issue_parse_failures = Counter(
-    "pelorus_failure_issue_parse_failures_total",
+issue_parse_failures = Counter(
+    "pelorus_failureissue_parse_failures_total",
     "Total number of individual issue/incident parse failures",
+)
+_last_collection_success = Gauge(
+    "pelorus_failure_last_collection_success",
+    "Whether the last failure collection succeeded (1) or failed (0)",
 )
 
 
@@ -40,6 +53,7 @@ class FailureProviderAuthenticationError(Exception):
 class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
     """Base class for failure collectors that fetch issue data from different trackers."""
 
+    _API_TIMEOUT = 30
     _FAILURE_METRIC_LABELS = ["app", "issue_number"]
 
     @staticmethod
@@ -65,6 +79,7 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
         logging.debug("collect: start")
         start = time.monotonic()
         collected_count = 0
+        success = True
         try:
             creation_metric = self._new_creation_metric()
             failure_metric = self._new_resolution_metric()
@@ -100,11 +115,13 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
             yield creation_metric
             yield failure_metric
         except Exception:
+            success = False
             _collection_errors.inc()
             logging.error("Failure metric collection failed", exc_info=True)
             yield self._new_creation_metric()
             yield self._new_resolution_metric()
         finally:
+            _last_collection_success.set(success)
             duration = time.monotonic() - start
             _collection_duration.set(duration)
             _last_collection_count.set(collected_count)
@@ -124,33 +141,4 @@ class AbstractFailureCollector(pelorus.AbstractPelorusExporter):
 
     @abstractmethod
     def search_issues(self) -> Collection[TrackerIssue]: ...
-
-
-class TrackerIssue:
-    __slots__ = ("issue_number", "creationdate", "resolutiondate", "app")
-
-    def __init__(
-        self,
-        issue_number: str,
-        creationdate: str | float | int,
-        resolutiondate: str | float | int | None,
-        app: str,
-    ):
-        self.creationdate = creationdate
-        self.resolutiondate = resolutiondate
-        self.issue_number = issue_number
-        self.app = app
-
-
-class FailureMetric:
-    __slots__ = ("time_stamp", "is_resolution", "labels")
-
-    def __init__(
-        self, time_stamp: str | float | int, is_resolution=False, labels=None
-    ):
-        if labels is None:
-            labels = []
-        self.time_stamp = time_stamp
-        self.is_resolution = is_resolution
-        self.labels = labels
 

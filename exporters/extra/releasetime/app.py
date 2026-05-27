@@ -14,7 +14,9 @@ if __name__ == "__main__":
     try:
         collector = collector_github.make_collector()
         REGISTRY.register(collector)
+        pelorus.mark_startup(True)
     except Exception as e:
+        pelorus.mark_startup(False)
         logging.error(
             "Failed to configure releasetime exporter: %s. "
             "Set PROJECTS and required provider settings (e.g. TOKEN, GIT_API). "
@@ -26,4 +28,4 @@ if __name__ == "__main__":
     start_http_server(pelorus.EXPORTER_PORT)
     logging.info("Releasetime exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
     while True:
-        time.sleep(1)
+        time.sleep(60)

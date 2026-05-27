@@ -18,6 +18,7 @@
 import http
 import importlib
 import logging
+import threading
 import time as _time
 from collections import OrderedDict
 from pathlib import Path
@@ -26,7 +27,7 @@ from typing import Iterable, Optional
 from attrs import field, frozen
 from fastapi import FastAPI, Header, HTTPException, Request
 from prometheus_client import Counter, Histogram, CONTENT_TYPE_LATEST, generate_latest
-from prometheus_client.core import REGISTRY
+from prometheus_client.core import GaugeMetricFamily, REGISTRY
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse as StarletteJSONResponse, Response
 
@@ -55,13 +56,12 @@ from webhook.store.in_memory_metric import (
 WEBHOOK_DIR = Path(__file__).resolve().parent
 
 plugins: dict[str, type[PelorusWebhookPlugin]] = {}
+collector: Optional["WebhookCollector"] = None
 
 
 def register_plugin(webhook_plugin: type[PelorusWebhookPlugin]):
     try:
-        is_pelorus_plugin = getattr(webhook_plugin, "is_pelorus_webhook_handler", None)
-        has_register = getattr(webhook_plugin, "register", None)
-        if callable(is_pelorus_plugin) and callable(has_register):
+        if webhook_plugin.is_pelorus_webhook_handler():
             plugin_user_agent = webhook_plugin.register()
             plugins[plugin_user_agent] = webhook_plugin
             logging.info(
@@ -71,16 +71,20 @@ def register_plugin(webhook_plugin: type[PelorusWebhookPlugin]):
         logging.warning("Could not register plugin: %s", webhook_plugin, exc_info=True)
 
 
-def load_plugins(plugins_dir_name: Optional[str] = "plugins"):
+def load_plugins(plugins_dir_name: str = "plugins"):
     plugin_dir_path = WEBHOOK_DIR / plugins_dir_name
     package_path = f"webhook.{plugins_dir_name}"
     logging.info("Loading plugins from directory %s", plugin_dir_path)
     if plugin_dir_path.is_dir():
         for filename in plugin_dir_path.iterdir():
             if filename.is_file() and filename.name.endswith("_handler.py"):
-                module = importlib.import_module(
-                    f".{filename.stem}", package=package_path
-                )
+                try:
+                    module = importlib.import_module(
+                        f".{filename.stem}", package=package_path
+                    )
+                except (ImportError, SyntaxError):
+                    logging.error("Failed to import plugin %s, skipping", filename.name, exc_info=True)
+                    continue
                 for name in dir(module):
                     obj = getattr(module, name)
                     if isinstance(obj, type) and issubclass(obj, PelorusWebhookPlugin) and obj is not PelorusWebhookPlugin:
@@ -92,6 +96,14 @@ def load_plugins(plugins_dir_name: Optional[str] = "plugins"):
 webhook_received = Counter("webhook_received_total", "Number of received webhooks")
 webhook_processed = Counter("webhook_processed_total", "Number of processed webhooks")
 webhook_errors = Counter("webhook_errors_total", "Number of webhook processing errors")
+webhook_handler_not_found = Counter(
+    "webhook_handler_not_found_total",
+    "Number of webhook requests with unrecognized User-Agent",
+)
+webhook_handshake_failures = Counter(
+    "webhook_handshake_failures_total",
+    "Number of webhook requests that failed handshake validation",
+)
 webhook_request_duration = Histogram(
     "webhook_request_duration_seconds",
     "Latency of webhook request processing",
@@ -117,14 +129,14 @@ class WebhookCollector(pelorus.AbstractPelorusExporter):
             in_memory_failure_resolution_metric,
         ]
 
-    def collect(self) -> Iterable[PelorusGaugeMetricFamily]:
-        yield in_memory_commit_metrics
-        yield in_memory_deploy_timestamp_metric
-        yield in_memory_failure_creation_metric
-        yield in_memory_failure_resolution_metric
+    def collect(self) -> Iterable[GaugeMetricFamily]:
+        yield in_memory_commit_metrics.snapshot()
+        yield in_memory_deploy_timestamp_metric.snapshot()
+        yield in_memory_failure_creation_metric.snapshot()
+        yield in_memory_failure_resolution_metric.snapshot()
 
 
-async def prometheus_metric(received_metric: PelorusMetric):
+def prometheus_metric(received_metric: PelorusMetric):
     try:
         received_metric_type = received_metric.metric_spec
         metric = received_metric.metric_data
@@ -175,33 +187,45 @@ async def prometheus_metric(received_metric: PelorusMetric):
             webhook_errors.inc()
             return
         webhook_processed.inc()
-        logging.info(
+        logging.debug(
             "Webhook processed: type=%s, app=%s",
             received_metric_type.value if hasattr(received_metric_type, 'value') else received_metric_type,
             getattr(metric, 'app', 'unknown'),
         )
     except Exception:
-        logging.error("Failed to process webhook metric", exc_info=True)
+        logging.error(
+            "Failed to process webhook metric: spec=%s, app=%s",
+            getattr(received_metric, 'metric_spec', 'unknown'),
+            getattr(getattr(received_metric, 'metric_data', None), 'app', 'unknown'),
+            exc_info=True,
+        )
         webhook_errors.inc()
         raise
 
 
 _handler_cache: OrderedDict[str, Optional[type[PelorusWebhookPlugin]]] = OrderedDict()
+_handler_cache_lock = threading.Lock()
 _HANDLER_CACHE_MAX = 1_000
 
 
-async def get_handler(user_agent: str) -> Optional[type[PelorusWebhookPlugin]]:
-    if user_agent in _handler_cache:
-        _handler_cache.move_to_end(user_agent)
-        return _handler_cache[user_agent]
+def get_handler(user_agent: str) -> Optional[type[PelorusWebhookPlugin]]:
+    """Look up the webhook plugin for a user-agent string, with LRU caching."""
+    with _handler_cache_lock:
+        if user_agent in _handler_cache:
+            _handler_cache.move_to_end(user_agent)
+            return _handler_cache[user_agent]
+
     result: Optional[type[PelorusWebhookPlugin]] = None
     for handler in plugins.values():
         if handler.can_handle(user_agent):
             result = handler
             break
-    if len(_handler_cache) >= _HANDLER_CACHE_MAX:
-        _handler_cache.popitem(last=False)
-    _handler_cache[user_agent] = result
+
+    with _handler_cache_lock:
+        if user_agent not in _handler_cache:
+            if len(_handler_cache) >= _HANDLER_CACHE_MAX:
+                _handler_cache.popitem(last=False)
+        _handler_cache[user_agent] = result
     return result
 
 
@@ -227,6 +251,10 @@ class LimitRequestBodyMiddleware(BaseHTTPMiddleware):
                         status_code=http.HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                     )
             except ValueError:
+                logging.warning(
+                    "Rejected request: invalid Content-Length header: %r",
+                    content_length,
+                )
                 return StarletteJSONResponse(
                     {"detail": "Invalid Content-Length header."},
                     status_code=http.HTTPStatus.BAD_REQUEST,
@@ -251,6 +279,8 @@ class SecurityHeadersMiddleware:
         (b"x-content-type-options", b"nosniff"),
         (b"x-frame-options", b"DENY"),
         (b"cache-control", b"no-store"),
+        (b"content-security-policy", b"default-src 'none'"),
+        (b"referrer-policy", b"no-referrer"),
     ]
 
     def __init__(self, app):
@@ -282,7 +312,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 
 def _get_hash_token() -> Optional[str]:
-    return collector.secret_token
+    return collector.secret_token if collector is not None else None
 
 
 @app.post(
@@ -304,8 +334,9 @@ async def pelorus_webhook(
 
     sanitized_ua = user_agent.replace("\n", " ").replace("\r", " ")
     logging.debug("User-agent: %s", sanitized_ua)
-    webhook_handler = await get_handler(user_agent)
+    webhook_handler = get_handler(sanitized_ua)
     if not webhook_handler:
+        webhook_handler_not_found.inc()
         logging.warning(
             "Could not find webhook handler for the user agent: %s", sanitized_ua
         )
@@ -317,6 +348,7 @@ async def pelorus_webhook(
     handler = webhook_handler(request.headers, request, secret=_get_hash_token())
     handshake = await handler.handshake()
     if not handshake:
+        webhook_handshake_failures.inc()
         raise HTTPException(
             status_code=http.HTTPStatus.BAD_REQUEST,
             detail="Handshake failed. Check required headers.",
@@ -332,15 +364,17 @@ async def pelorus_webhook(
         raise HTTPException(
             status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
             detail="Invalid webhook payload.",
-        )
+        ) from e
 
     try:
-        await prometheus_metric(received_pelorus_metric)
-    except Exception:
+        prometheus_metric(received_pelorus_metric)
+    except Exception as e:
+        webhook_errors.inc()
+        logging.error("Failed to store metric: %s", e, exc_info=True)
         raise HTTPException(
             status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to store metric.",
-        )
+        ) from e
     finally:
         webhook_request_duration.observe(_time.monotonic() - start_time)
 
@@ -372,11 +406,12 @@ async def health():
         details["store_warning"] = f"store utilization at {utilization_pct}%"
 
     details["store"] = store_counts
+    details["total_metrics"] = total_metrics
     details["store_capacity"] = _MAX_METRICS
     details["store_utilization_pct"] = utilization_pct
 
     body = {"status": status, **details}
-    status_code = 503 if status == "degraded" else 200
+    status_code = http.HTTPStatus.SERVICE_UNAVAILABLE if status == "degraded" else http.HTTPStatus.OK
     return StarletteJSONResponse(content=body, status_code=status_code)
 
 
@@ -404,4 +439,4 @@ if __name__ == "__main__":
 
     REGISTRY.register(collector)
 
-    uvicorn.run(app, host="0.0.0.0", port=pelorus.EXPORTER_PORT)
+    uvicorn.run(app, host="0.0.0.0", port=pelorus.EXPORTER_PORT, server_header=False)

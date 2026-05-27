@@ -6,9 +6,7 @@ from attrs import Attribute
 from pelorus.config.common import Metadata
 
 REDACT_WORDS = {"pass", "token", "key", "cred", "secret", "auth"}
-"""
-Variables containing these words are not logged by default, nor are attributes starting with an underscore.
-"""
+"""Words that trigger automatic redaction when found in a field name (case-insensitive)."""
 
 _SHOULD_LOG = "__pelorus_config_log"
 

@@ -15,6 +15,7 @@
 #
 
 import http
+import logging
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
 from typing import Any, Optional
@@ -28,10 +29,7 @@ from webhook.models.pelorus_webhook import PelorusMetric
 
 
 class HTTPException(FastapiHTTPException):
-    """
-    HTTPException class used to ensure plugins can import direct class from the
-    Pelorus and not fastapi, even if it's same structure.
-    """
+    """Decouples plugins from FastAPI so they import from pelorus, not the framework."""
 
 
 class Headers(StarletteHeaders):
@@ -46,24 +44,19 @@ class PelorusWebhookResponse(BaseModel):
     """
     Class that represents the response to the user-agent making request.
     """
-    model_config = {"arbitrary_types_allowed": True}
-
     http_response: str
     http_response_code: int = Field(ge=100, le=599)
 
     @classmethod
     def pong(cls, payload: Any):
         """
-        Special case of response which raises "pong" type of message for
-        the webhook that sent "ping" request.
+        Respond to a "ping" request by raising an HTTPException with a "pong" body.
 
-        Some webhook services uses this "ping-pong" communication to
-        register the webhook on the client side as valid one.
-
-        It raises exception to immediately send response msg.
+        Some webhook services use ping-pong to register the endpoint as valid.
+        Always raises — never returns.
 
         Raises:
-            HTTPException: "pong" with valid HTTP Status.
+            HTTPException: "pong" with HTTP 200.
         """
         raise HTTPException(detail="pong", status_code=http.HTTPStatus.OK)
 
@@ -139,7 +132,7 @@ class PelorusWebhookPlugin(ABC):
         """
         payload_data = await self._receive()
         webhook_data = await self._receive_pelorus_payload(payload_data)
-        if not issubclass(type(webhook_data), PelorusMetric):
+        if not isinstance(webhook_data, PelorusMetric):
             raise TypeError("Webhook must be a subclass of PelorusMetric")
         return webhook_data
 
@@ -155,22 +148,24 @@ class PelorusWebhookPlugin(ABC):
         """
         content_type = self.request.headers.get("content-type", "")
         if "application/json" not in content_type:
+            logging.warning("Rejected webhook: unsupported Content-Type %r", content_type)
             raise HTTPException(
                 status_code=http.HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
                 detail="Content-Type must be application/json.",
             )
         try:
             return await self.request.json()
-        except JSONDecodeError:
+        except JSONDecodeError as exc:
+            logging.warning("Rejected webhook: malformed JSON payload (line %d col %d: %s)", exc.lineno, exc.colno, str(exc))
             raise HTTPException(
                 status_code=http.HTTPStatus.BAD_REQUEST,
                 detail="Invalid payload format.",
-            )
+            ) from exc
 
     @classmethod
     def register(cls) -> str:
         """
-        Method used to register plugin with it's identifier.
+        Method used to register plugin with its identifier.
         The identifier is the user_agent_str from the plugin's implementation.
 
         This identifier is used to match with the webhooks' POST "User-Agent:"
@@ -192,15 +187,15 @@ class PelorusWebhookPlugin(ABC):
         Check if this plugin can handle the provided payload
         (recognized by user_agent).
 
-        Attributes:
-            user_agent: (str): Value from the Header's "User-Agent:"
+        Args:
+            user_agent: Value from the Header's "User-Agent:"
 
         Returns:
             bool: True if this plugin can handle given user_agent
         """
         if user_agent and cls.user_agent_str:
-            if user_agent.lower().startswith(str(cls.user_agent_str).lower()):
-                return True
+            ua_lower = cls.user_agent_str.lower()
+            return user_agent.lower().startswith(ua_lower)
         return False
 
     @classmethod
@@ -212,4 +207,4 @@ class PelorusWebhookPlugin(ABC):
         Returns:
             bool: True if it's recognized Pelorus Webhook Plugin, False otherwise
         """
-        return hasattr(cls, "user_agent_str") and cls.user_agent_str is not None
+        return cls.user_agent_str is not None

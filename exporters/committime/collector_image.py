@@ -24,7 +24,7 @@ from committime import CommitMetric
 from pelorus.timeutil import parse_commit_timestamp
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
-from .collector_base import AbstractCommitCollector
+from .collector_base import AbstractCommitCollector, _build_failures
 
 
 @define(kw_only=True)
@@ -33,8 +33,6 @@ class ImageCommitCollector(AbstractCommitCollector):
 
     date_annotation_name: str = CommitMetric._ANNOTATION_MAPPING["commit_time"]
 
-    # maps attributes to their location in a `image.openshift.io/v1`.
-    # Similar to Build Mapping from committime.__init__.py
     _IMAGE_MAPPING = dict(
         image_hash=("metadata.name", True),
         image_location=("dockerImageReference", True),
@@ -58,30 +56,24 @@ class ImageCommitCollector(AbstractCommitCollector):
         Both image_hash and commit_time are required; additional data such as
         commit_hash is also collected when available.
 
-        commit time which is converted to the commit timestamp is gathered from the
-        Image Label, which normally is populated from the Docker build process as
-        described in https://docs.openshift.com/online/pro/dev_guide/builds/build_output.html#output-image-labels
-
-        If such information is missing from the Image Label there is a way to collect
-        this data using annotations in similar way build annotations works.
+        Commit time is gathered from the Image Label, which is normally populated
+        by the Docker build process. If missing, annotations can provide this data,
+        similar to how build annotations work.
 
         """
         metric = CommitMetric(app)
         image_labels = None
 
-        # If exists get all Labels that were produced from Docker build process
         with collect_bad_attribute_path_error(errors, False):
             image_labels = get_nested(
                 image, "dockerImageMetadata.Config.Labels", name="image"
             )
 
-        # Get general data from image
         for attr_name, (path, required) in ImageCommitCollector._IMAGE_MAPPING.items():
             with collect_bad_attribute_path_error(errors, required):
                 value = get_nested(image, path, name="image")
                 setattr(metric, attr_name, value)
 
-        # First get metrics within Labels
         attribute_mapping = (
             ImageCommitCollector._DOCKER_LABEL_MAPPING.items() if image_labels else []
         )
@@ -104,7 +96,7 @@ class ImageCommitCollector(AbstractCommitCollector):
             # We ignore all the errors by passing [], because commit hash isn't required.
             metric = self._set_commit_hash_from_annotations(metric, [])
         if not metric.commit_hash:
-            # We ensure None is passed as string
+            # Sentinel value expected by downstream consumers when hash is unavailable
             metric.commit_hash = "None"
         metric = self._set_commit_timestamp(metric, errors)
 
@@ -120,13 +112,16 @@ class ImageCommitCollector(AbstractCommitCollector):
                     metric.commit_time, self.date_format
                 )
             except (ValueError, AttributeError):
-                errors.append(
+                msg = (
                     f"Cannot parse commit_time '{metric.commit_time}' "
                     f"with format '{self.date_format}'"
                 )
+                logging.debug(msg, exc_info=True)
+                errors.append(msg)
         return metric
 
     def get_commit_time(self, metric) -> Optional[CommitMetric]:
+        """Not used; exists to satisfy the abstract base class contract."""
         return None
 
     def _set_commit_time_from_annotations(
@@ -147,7 +142,6 @@ class ImageCommitCollector(AbstractCommitCollector):
                 )
         return metric
 
-    # overrides collector_base.generate_metrics()
     def generate_metrics(self) -> Iterable[CommitMetric]:
         app_label = self.app_label
 
@@ -172,6 +166,7 @@ class ImageCommitCollector(AbstractCommitCollector):
                 try:
                     metric = self.commit_metric_from_image(app, image, errors)
                 except Exception:
+                    _build_failures.inc()
                     logging.error(
                         "Cannot collect metrics from image: %s",
                         image.metadata.name,

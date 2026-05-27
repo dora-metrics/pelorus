@@ -13,7 +13,7 @@ Configuration options can be found in the [config guide](https://pelorus.readthe
 
 ## Supported Integrations
 
-This exporter currently pulls commit data from the `Build` or an `Image` objects:
+This exporter currently pulls commit data from `Build` or `Image` objects:
 
 * OpenShift - We look for `Build` resources where `.spec.source.git.uri` and `.spec.revision.git.commit` are set. This includes:
   * Source to Image builds
@@ -35,10 +35,10 @@ For the `Build` resources we get commit data from the following systems through 
 * GitHub Enterprise (including private endpoints)
 * Gitlab
 
-For the `Image` resources we get commit time from the:
+For the `Image` resources we get commit time from (in order of priority):
 
-* Value of an `io.openshift.build.commit.date` within the the `Docker Labels`
-* Value of an `io.openshift.build.commit.date` within specified `COMMIT_DATE_ANNOTATION` env. variable, that defaults to `io.openshift.build.commit.date`
+* Docker Labels: the `io.openshift.build.commit.date` label
+* Image annotations: using the annotation name configured by the `COMMIT_DATE_ANNOTATION` env variable (defaults to `io.openshift.build.commit.date`)
 
 ## Annotated Binary (local) source build support
 

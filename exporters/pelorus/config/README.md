@@ -53,21 +53,22 @@ class ConfigClass:
 3. Log the config class's name, the values obtained, and where the values came from:
   1. `username=GVR, default value; USERNAME was not set`
   2. `password=REDACTED, from env var PASSWORD`
-4. Call `MyConfiguration(...)`:
+4. Call `ConfigClass(...)`:
   If `USERNAME` is missing, it will default to `GVR`.
-  If `PASSWORD` is missing, a MissingConfigDataError will be thrown.
+  If `PASSWORD` is missing, a MissingConfigDataError will be raised.
 
-`kw_only=True` is requires so we can have a mandatory field after one with a default.
+`kw_only=True` is required so we can have a mandatory field after one with a default.
 We recommend its use even if that doesn't apply to you.
 
-**Please note if using this directly on a collector:** use `hash=False`. Prometheus hashes the collector itself, and you may have unhashable types in it. `attrs` will generate `__hash__` by default, overriding the default reasonable implementation.
-Inheriting from `AbstractPelorusExporter` will take care of this for you by manually defining a `__hash__`, so `attrs` will skip it.
+**Please note if using this directly on a collector:** Prometheus hashes the collector itself.
+`@define` sets `__hash__` to `None` (since it enables `eq` but not `frozen`), making instances unhashable.
+Inheriting from `AbstractPelorusExporter` handles this: its `__init_subclass__` overrides `__hash__` to `id(self)` after `attrs` sets it to `None`.
 
 # Tutorial: Advanced Usage
 
 What if you need to:
 - [Use a different environment variable name? Or check multiple env vars, for backwards compatibility?](#environment-variables)
-- [Skip or recact a field that wouldn't normally be? Or the opposite?](#logging)
+- [Skip or redact a field that wouldn't normally be? Or the opposite?](#logging)
 - [Use a datatype that isn't a string? Have a default for that when it's mutable?](#converters)
 - [Use a value that isn't easily loaded from the environment?](#the-other-dict)
 
@@ -75,7 +76,7 @@ What if you need to:
 
 `attrs` lets you attach metadata to any field with just a simple dictionary.
 
-We expose helpers for customizing log and environent variable lookup .
+We expose helpers for customizing log and environment variable lookup.
 
 ### Environment Variables
 

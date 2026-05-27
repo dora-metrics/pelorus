@@ -47,9 +47,7 @@ jobs:
             pyproject.toml
 
       - name: Install dependencies
-        run: |
-          make dev-env
+        run: make dev-env
 
       - name: Test with pytest
-        run: |
-          make unit-tests
+        run: make unit-tests

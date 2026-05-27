@@ -43,9 +43,7 @@ jobs:
             pyproject.toml
 
       - name: Install dependencies
-        run: |
-          make dev-env
+        run: make dev-env
 
       - name: Run conf-tests
-        run: |
-          make conf-tests
+        run: make conf-tests

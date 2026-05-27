@@ -9,28 +9,28 @@ import requests.exceptions
 from attrs import define, field
 
 import pelorus
-from committime import CommitMetric
-from committime.collector_base import AbstractCommitCollector, check_provider_support
+from committime import CommitMetric, sanitize_url
+from .collector_base import AbstractCommitCollector, git_api_errors, check_provider_support
 from pelorus.timeutil import parse_tz_aware
 from pelorus.utils import set_up_requests_session
 
 
 class APIVersion(ABC):
-    "Handle API-version dependent behavior."
+    """Handle API-version dependent behavior."""
 
     @abstractmethod
     def test_url(self, server: str) -> str:
-        "The URL used to test if the server implements this API version."
+        """The URL used to test if the server implements this API version."""
         ...
 
     @abstractmethod
     def commit_url(self, metric: CommitMetric) -> str:
-        "Get the API URL for the given commit"
+        """Get the API URL for the given commit."""
         ...
 
     @abstractmethod
     def update_metric_from_api(self, metric: CommitMetric, api_response: dict):
-        "Update the metric's timestamp info from the API response."
+        """Update the metric's timestamp info from the API response."""
         ...
 
     def __str__(self):
@@ -46,13 +46,12 @@ class Version1(APIVersion):
         return pelorus.url_joiner(server, self.root, self.test_path)
 
     def commit_url(self, metric: CommitMetric) -> str:
-        "Handle the URL for v1 specially."
-
         git_server = metric.git_server
         sha = metric.commit_hash
 
-        # Extract project/group by parsing the URL with '/scm' removed,
-        # without mutating metric.repo_url (which triggers expensive re-parsing).
+        # V1 URLs include '/scm' in the repo path which must be stripped
+        # before parsing. We avoid mutating metric.repo_url since the
+        # setter triggers expensive re-parsing of all URL components.
         url_without_scm = metric.repo_url.replace("/scm", "")
         parsed = giturlparse.parse(url_without_scm)
         project_name = parsed.name
@@ -137,8 +136,7 @@ _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 
 @define(kw_only=True)
 class BitbucketCommitCollector(AbstractCommitCollector):
-    # Default http headers needed for API calls
-    DEFAULT_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
+    _DEFAULT_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 
     cached_server_api_versions: dict[str, APIVersion] = field(factory=dict, init=False)
 
@@ -149,7 +147,7 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         set_up_requests_session(
             self.session, self.tls_verify, username=self.username, token=self.token
         )
-        self.session.headers.update(self.DEFAULT_HEADERS)
+        self.session.headers.update(self._DEFAULT_HEADERS)
 
     def get_commit_time(self, metric: CommitMetric):
         git_server = metric.git_server
@@ -205,13 +203,14 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         try:
             url = api_version.commit_url(metric)
 
-            response = self.session.get(url, timeout=30)
+            response = self.session.get(url, timeout=self._API_TIMEOUT)
             response.encoding = "utf-8"
             response.raise_for_status()
 
             json_body = response.json()
 
             if not isinstance(json_body, dict):
+                git_api_errors.inc()
                 logging.error(
                     "Bitbucket API returned non-object JSON for build %s",
                     metric.build_name,
@@ -219,48 +218,35 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                 return None
 
             logging.debug(
-                (
-                    "For project %(project)s, repo %(repo)s, build %(build)s, "
-                    "commit %(commit)s BitBucket returned status %(status)s"
-                ),
-                dict(
-                    project=metric.repo_name,
-                    repo=metric.repo_url,
-                    build=metric.build_name,
-                    commit=metric.commit_hash,
-                    status=response.status_code,
-                ),
+                "For project %s, repo %s, build %s, commit %s BitBucket returned status %s",
+                metric.repo_name,
+                sanitize_url(metric.repo_url),
+                metric.build_name,
+                metric.commit_hash,
+                response.status_code,
             )
 
             return json_body
         except requests.HTTPError as e:
+            git_api_errors.inc()
             logging.error(
-                (
-                    "HTTP Error while searching for project %(project)s, repo %(repo)s, build %(build)s, "
-                    "commit %(commit)s: %(http_err)s"
-                ),
-                dict(
-                    project=metric.repo_name,
-                    repo=metric.repo_url,
-                    build=metric.build_name,
-                    commit=metric.commit_hash,
-                    http_err=e,
-                ),
+                "HTTP Error while searching for project %s, repo %s, build %s, commit %s: %s",
+                metric.repo_name,
+                sanitize_url(metric.repo_url),
+                metric.build_name,
+                metric.commit_hash,
+                e,
                 exc_info=True,
             )
         except requests.exceptions.JSONDecodeError as e:
+            git_api_errors.inc()
             logging.error(
-                (
-                    "Response for project %(project)s, repo %(repo)s, build %(build)s, "
-                    "commit %(commit)s was not valid JSON: %(json_err)s"
-                ),
-                dict(
-                    project=metric.repo_name,
-                    repo=metric.repo_url,
-                    build=metric.build_name,
-                    commit=metric.commit_hash,
-                    json_err=e,
-                ),
+                "Response for project %s, repo %s, build %s, commit %s was not valid JSON: %s",
+                metric.repo_name,
+                sanitize_url(metric.repo_url),
+                metric.build_name,
+                metric.commit_hash,
+                e,
                 exc_info=True,
             )
         return None
@@ -271,7 +257,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         If absent, test API urls to see which version is correct,
         updating the cache.
         """
-        api_version = self.cached_server_api_versions.get(server)
+        with self._cache_lock:
+            api_version = self.cached_server_api_versions.get(server)
 
         if api_version is not None:
             return api_version
@@ -279,7 +266,8 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         for potential_api_version in _SUPPORTED_API_VERSIONS:
             if self.check_api_version(server, potential_api_version):
                 api_version = potential_api_version
-                self.cached_server_api_versions[server] = potential_api_version
+                with self._cache_lock:
+                    self.cached_server_api_versions[server] = potential_api_version
                 break
 
         if api_version is None:
@@ -295,7 +283,16 @@ class BitbucketCommitCollector(AbstractCommitCollector):
         """
         url = api_version.test_url(git_server)
 
-        response = self.session.get(url, timeout=30)
+        try:
+            response = self.session.get(url, timeout=self._API_TIMEOUT)
+        except requests.exceptions.RequestException:
+            logging.warning(
+                "Connection failed while testing API Version %s at url %s",
+                api_version,
+                url,
+                exc_info=True,
+            )
+            return False
         try:
             response.raise_for_status()
             return True
@@ -313,5 +310,6 @@ class BitbucketCommitCollector(AbstractCommitCollector):
                 api_version,
                 url,
                 status,
+                exc_info=True,
             )
             return False

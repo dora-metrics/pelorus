@@ -14,8 +14,7 @@ Configuration options can be found in the [config guide](https://pelorus.readthe
 
 This exporter currently pulls deployment data from the following systems:
 
-* OpenShift - We look for `ReplicaSet` or `ReplicationController` resources where `.spec.template.spec.containers[*].image` contains a valid image SHA256 value. From there we grab:
-  * `.spec.template.spec.containers[*].image`
-  * `.metadata.creationTimestamp`
-  * `.metadata.namespace`
-  * `.metadata.labels.<application label>`
+* OpenShift/Kubernetes - We find running `Pod` resources owned by a `ReplicaSet` or `ReplicationController` and matching the configured app label. For each unique owner we grab:
+  * Image SHA256 from `pod.status.containerStatuses[*].imageID`
+  * `creationTimestamp` from the owner `ReplicaSet`/`ReplicationController`
+  * `namespace` and app label from the `Pod`

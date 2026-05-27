@@ -10,6 +10,14 @@ from attrs import frozen
 from pelorus.timeutil import ISO_ZULU_FMT, parse_assuming_utc
 from pelorus.utils import BadAttributePathError, get_nested
 
+__all__ = [
+    "GitHubError",
+    "GitHubPageResponse",
+    "parse_datetime",
+    "paginate_github",
+    "paginate_github_with_page",
+]
+
 # The maximum number of requests you're permitted to make per hour.
 RATELIMIT_LIMIT_HEADER = "x-ratelimit-limit"
 # The number of requests remaining in the current rate limit window.
@@ -37,24 +45,25 @@ class GitHubError(Exception):
 
 def _log_and_validate_ratelimit(response: requests.Response):
     """
-    Log ratelimit header values as a debug message,
-    or an error if the request failed due to rate limits.
-
-    Will raise a GitHub error if there was a rate limit hit.
+    Log rate limit headers and raise GitHubError if a 403 indicates rate limiting.
     """
     rate_limit_message = None
+
+    if response.status_code == 403:
+        try:
+            json = response.json()
+            msg = json.get("message", "")
+            if "rate limit" in msg:
+                rate_limit_message = msg
+        except (ValueError, AttributeError):
+            logging.debug("Could not parse GitHub 403 response body", exc_info=True)
+
     try:
         rate_limit = int(response.headers[RATELIMIT_LIMIT_HEADER])
         remaining_requests = int(response.headers[RATELIMIT_REMAINING_HEADER])
 
         reset_time = response.headers[RATELIMIT_RESET_HEADER]
         reset_time = datetime.fromtimestamp(float(reset_time), timezone.utc)
-
-        if response.status_code == 403:
-            json = response.json()
-            msg = json.get("message", "")
-            if "rate limit" in msg:
-                rate_limit_message = msg
 
         log_level = logging.ERROR if rate_limit_message else logging.DEBUG
 
@@ -69,8 +78,8 @@ def _log_and_validate_ratelimit(response: requests.Response):
             reset_time,
         )
     except (KeyError, ValueError, TypeError, OSError, OverflowError) as e:
-        logging.error(
-            "Issue with github rate limit headers: %s",
+        logging.warning(
+            "Could not parse GitHub rate limit headers: %s",
             e,
             exc_info=True,
         )
@@ -81,24 +90,13 @@ def _log_and_validate_ratelimit(response: requests.Response):
 
 def _validate_github_response(response: requests.Response) -> list:
     """
-    Validates that the response from github:
-    - was a 2xx response
-    - was valid JSON
-    - was a list
+    Validate a GitHub API response: check rate limits, status, JSON format, and list type.
 
-    This is done separately to avoid duplication in pagination code.
-
-    Will log rate limit headers as a debug message,
-    or as an error if limits are exceeded.
-    In that case, an exception will be thrown afterwards.
-
-    Returns the list.
-
-    Exceptions:
-    HTTPError if there's a bad response
-    JSONDecodeError if there's a response with invalid JSON
-    ValueError if a response was valid json but wasn't a list
-    GitHubError if the rate limit was exceeded.
+    Raises:
+        GitHubError: rate limit exceeded
+        HTTPError: non-2xx response
+        JSONDecodeError: invalid JSON
+        ValueError: JSON was not a list
     """
     _log_and_validate_ratelimit(response)
     response.raise_for_status()
@@ -149,9 +147,15 @@ def paginate_github_with_page(
     HTTPError if there's a bad response
     JSONDecodeError if there's a response with invalid JSON
     ValueError if a response was valid json but wasn't a list
-    BadAttributePathError if a response was missing a `next` link or the first was missing a `last` link.
+    BadAttributePathError if a paginated response was missing a `next` link.
     """
-    response = session.get(start_url, timeout=30)
+    try:
+        response = session.get(start_url, timeout=30)
+    except requests.RequestException as e:
+        dummy = requests.Response()
+        dummy.status_code = 0
+        dummy.url = start_url
+        raise GitHubError(response=dummy, message=f"Connection failed: {e}") from e
     try:
         json = _validate_github_response(response)
 
@@ -181,22 +185,14 @@ def paginate_github_with_page(
         requests.JSONDecodeError,
         ValueError,
         BadAttributePathError,
+        requests.RequestException,
     ) as e:
         raise GitHubError(response) from e
 
 
 def paginate_github(session: requests.Session, start_url: str) -> Iterable:
     """
-    Paginate github requests the way their API dictates:
-    https://docs.github.com/en/rest/guides/traversing-with-pagination
-
-    Will yield each item in each response list, automatically requesting
-    subsequent pages as necessary.
-
-    Will raise a GitHubError with any of the following set to the __cause__ if they occur:
-    HTTPError if there's a bad response
-    JSONDecodeError if there's a response with invalid JSON
-    ValueError if a response was valid json but wasn't a list
-    BadAttributePathError if a response was missing a `next` link or the first was missing a `last` link.
+    Flattened version of `paginate_github_with_page`: yields each item
+    across all pages. Same exceptions apply.
     """
     return chain.from_iterable(paginate_github_with_page(session, start_url))

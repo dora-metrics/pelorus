@@ -38,6 +38,10 @@ _pod_failures = Counter(
     "pelorus_deploytime_pod_failures_total",
     "Total number of individual pod metric collection failures",
 )
+_last_collection_success = Gauge(
+    "pelorus_deploytime_last_collection_success",
+    "Whether the last deploytime collection succeeded (1) or failed (0)",
+)
 
 
 @frozen
@@ -54,12 +58,11 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
         if self.namespaces and (self.prod_label != pelorus.DEFAULT_PROD_LABEL):
             logging.warning("If NAMESPACES are given, PROD_LABEL is ignored.")
 
-    @staticmethod
-    def _new_deploy_metric():
+    def _new_deploy_metric(self):
         return GaugeMetricFamily(
-            DeployTimeCollector._DEPLOY_METRIC_NAME,
-            DeployTimeCollector._DEPLOY_METRIC_HELP,
-            labels=DeployTimeCollector._DEPLOY_METRIC_LABELS,
+            self._DEPLOY_METRIC_NAME,
+            self._DEPLOY_METRIC_HELP,
+            labels=self._DEPLOY_METRIC_LABELS,
         )
 
     def describe(self) -> list[GaugeMetricFamily]:
@@ -69,6 +72,7 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
         logging.debug("collect: start")
         start = time.monotonic()
         collected_count = 0
+        success = True
         try:
             metrics = self.generate_metrics()
 
@@ -110,10 +114,12 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
                 )
             yield deploy_timestamp_metric
         except Exception:
+            success = False
             _collection_errors.inc()
             logging.error("Deploy time metric collection failed", exc_info=True)
             yield self._new_deploy_metric()
         finally:
+            _last_collection_success.set(success)
             duration = time.monotonic() - start
             _collection_duration.set(duration)
             _last_collection_count.set(collected_count)
@@ -125,13 +131,12 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
         )
 
         if not namespaces:
-            return []
+            return
 
         logging.debug("generate_metrics: start")
 
         pods = get_running_pods(self.client, namespaces, self.app_label)
 
-        # Build dictionary with controllers and retrieved pods
         replica_pods_dict = filter_pods_by_replica_uid(pods)
 
         for uid, pod in replica_pods_dict.items():
@@ -146,12 +151,27 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
                     )
                     continue
 
+                if not getattr(replica.metadata, "creationTimestamp", None):
+                    logging.warning(
+                        "Owner %s for pod %s/%s has no creationTimestamp, skipping",
+                        uid, pod.metadata.namespace, pod.metadata.name,
+                    )
+                    continue
+
                 # Multiple containers (images) per pod: emit one metric per image
                 images = get_images_from_pod(pod)
 
+                app_name = pod.metadata.labels.get(self.app_label) if pod.metadata.labels else None
+                if not app_name:
+                    logging.debug(
+                        "Pod %s/%s missing label %s, skipping",
+                        pod.metadata.namespace, pod.metadata.name, self.app_label,
+                    )
+                    continue
+
                 for sha in images:
                     metric = DeployTimeMetric(
-                        name=pod.metadata.labels[self.app_label],
+                        name=app_name,
                         namespace=pod.metadata.namespace,
                         labels=pod.metadata.labels,
                         deploy_time=replica.metadata.creationTimestamp,
@@ -181,7 +201,9 @@ def set_up(prod: bool = True) -> DeployTimeCollector:
 if __name__ == "__main__":
     try:
         set_up()
+        pelorus.mark_startup(True)
     except Exception as e:
+        pelorus.mark_startup(False)
         logging.error(
             "Failed to configure deploytime exporter: %s. "
             "Check NAMESPACES and PROD_LABEL settings. "
@@ -193,4 +215,4 @@ if __name__ == "__main__":
     start_http_server(pelorus.EXPORTER_PORT)
     logging.info("Deploytime exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
     while True:
-        time.sleep(1)
+        time.sleep(60)

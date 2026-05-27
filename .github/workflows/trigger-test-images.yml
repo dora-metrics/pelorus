@@ -18,6 +18,10 @@ on:
       - '.github/workflows/trigger-test-images.yml'
     types: [opened, reopened, synchronize, closed]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   get-short-sha:
     runs-on: ubuntu-latest
@@ -26,7 +30,7 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
     steps:
       - id: sha
-        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        run: echo "sha=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
   generate-jobs:
     runs-on: ubuntu-latest
@@ -52,3 +56,4 @@ jobs:
         with:
           name: trigger-information
           path: ./trigger-information.json
+          retention-days: 1

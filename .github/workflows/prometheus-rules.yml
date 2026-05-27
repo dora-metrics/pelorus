@@ -43,9 +43,7 @@ jobs:
             pyproject.toml
 
       - name: Install dependencies
-        run: |
-          make dev-env
+        run: make dev-env
 
-      - name: Check for formatting
-        run: |
-          make test-prometheusrules
+      - name: Test prometheus rules
+        run: make test-prometheusrules

@@ -67,7 +67,9 @@ if __name__ == "__main__":
 
     try:
         set_up()
+        pelorus.mark_startup(True)
     except Exception as e:
+        pelorus.mark_startup(False)
         logging.error(
             "Failed to configure failure exporter: %s. "
             "Set PROVIDER (jira/github/servicenow/pagerduty/azure-devops) "
@@ -81,4 +83,4 @@ if __name__ == "__main__":
     logging.info("Failure exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
 
     while True:
-        time.sleep(1)
+        time.sleep(60)

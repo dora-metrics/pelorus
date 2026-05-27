@@ -211,10 +211,12 @@ if __name__ == "__main__":
 
     try:
         set_up()
+        pelorus.mark_startup(True)
     except Exception as e:
+        pelorus.mark_startup(False)
         logging.error(
             "Failed to configure committime exporter: %s. "
-            "Set GIT_PROVIDER (git/image/containerimage) "
+            "Set PROVIDER (git/image/containerimage) "
             "and required provider settings (e.g. TOKEN, GIT_API). "
             "Starting metrics server anyway - configure and restart to collect commit data.",
             e,
@@ -225,4 +227,4 @@ if __name__ == "__main__":
     logging.info("Committime exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
 
     while True:
-        time.sleep(1)
+        time.sleep(60)

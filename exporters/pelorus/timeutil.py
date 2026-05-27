@@ -5,6 +5,22 @@ Note: `parse_assuming_utc`, `parse_tz_aware`, and `parse_guessing_timezone_DYNAM
 will _always_ produce timezone-aware objects,
 which are necessary for correctness with `astimezone(tz)`, `timestamp()`, and other methods.
 """
+__all__ = [
+    "ISO_ZULU_FMT",
+    "METRIC_TIMESTAMP_THRESHOLD_MINUTES",
+    "is_zone_aware",
+    "parse_assuming_utc",
+    "parse_assuming_utc_with_fallback",
+    "parse_tz_aware",
+    "parse_guessing_timezone_DYNAMIC",
+    "to_epoch_from_string",
+    "second_precision",
+    "to_iso",
+    "parse_commit_timestamp",
+    "is_out_of_date",
+    "is_out_of_date_timestamp",
+]
+
 import os as _os
 import time as _time
 from datetime import datetime, timezone

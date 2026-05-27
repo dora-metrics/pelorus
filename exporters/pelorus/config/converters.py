@@ -59,12 +59,12 @@ def comma_or_whitespace_separated(
 
 
 def pass_through(
-    type: type[U], converter: Callable[[T], U]
+    target_type: type[U], converter: Callable[[T], U]
 ) -> Callable[[Union[T, U]], U]:
-    "Pass through the input if it is the given type, otherwise use the converter."
+    """Pass through the input if it is the given type, otherwise use the converter."""
 
     def _pass_through(value: Union[T, U]) -> U:
-        if isinstance(value, type):
+        if isinstance(value, target_type):
             return value
         else:
             return converter(value)  # type: ignore

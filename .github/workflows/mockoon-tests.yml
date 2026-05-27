@@ -12,6 +12,7 @@ on:
       - 'mocks/**'
       - '!mocks/README.md'
       - '.github/workflows/mockoon-tests.yml'
+      - 'pyproject.toml'
       - 'Makefile'
       - 'scripts/run-mockoon-tests.sh'
 
@@ -22,6 +23,7 @@ on:
       - 'mocks/**'
       - '!mocks/README.md'
       - '.github/workflows/mockoon-tests.yml'
+      - 'pyproject.toml'
       - 'Makefile'
       - 'scripts/run-mockoon-tests.sh'
 
@@ -51,9 +53,7 @@ jobs:
             pyproject.toml
 
       - name: Install dependencies
-        run: |
-          make dev-env
+        run: make dev-env
 
       - name: Run mockoon-test
-        run: |
-          make mockoon-tests
+        run: make mockoon-tests

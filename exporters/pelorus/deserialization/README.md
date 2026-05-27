@@ -47,7 +47,7 @@ We need another solution for this.
 ## Functional Programming
 
 In functional programming, there's this idea of `Result` and `Optional` types, which have some advantages:
-- you have to handle the potential error before getting the succesful data (e.g. enforced `if value is None` checks).
+- you have to handle the potential error before getting the successful data (e.g. enforced `if value is None` checks).
 - you can easily get a result object, but continue until you want to handle it (no exceptions making you end early.)
   - you can do this by wrapping each section in a `try` `except` but that's very verbose.
 
@@ -86,4 +86,4 @@ From Python 3.5 until 3.10, there were two ways to express a nullable type:
 `Union[SomeType, None]`, or `Optional[SomeType]` (an alias for the former).
 
 Since Python 3.10, `SomeType | None` is also supported, represented as `types.UnionType`.
-The codebase currently uses `Optional[T]`; support for the `|` syntax could be added.
+The codebase uses both `Optional[T]` and `X | Y` syntax; the deserialization module itself uses `Optional[T]`.

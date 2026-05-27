@@ -113,7 +113,7 @@ def test_abstract_classes():
 
 class SimplePelorusWebhookPlugin(PelorusWebhookPlugin):
     @override
-    async def _handshake(self) -> bool:
+    async def _handshake(self, headers: Headers) -> bool:
         return False
 
     @override
@@ -235,21 +235,16 @@ async def test_receive_invalid_payload():
     webhook's request normally received from the POST
     properly raises HTTPException.
     """
+    mock_receive = AsyncMock(side_effect=json.JSONDecodeError("Test Error", "{}", 0))
+    mock_request = Mock()
+    mock_request.json = mock_receive
+    mock_request.headers = {"content-type": "application/json"}
 
-    with patch(
-        "webhook.plugins.pelorus_handler_base.Request.json",
-        new_callable=AsyncMock,
-    ) as mock_receive:
-        mock_receive.side_effect = json.JSONDecodeError("Test Error", "{}", 0)
-        mock_request = Mock()
-        mock_request.json = mock_receive
-        mock_request.headers = {"content-type": "application/json"}
-
-        plugin = UserAgentWebhookPlugin(None, request=mock_request)
-        with pytest.raises(HTTPException) as http_error:
-            await plugin._receive()
-        assert http_error.value.status_code == http.HTTPStatus.BAD_REQUEST
-        assert http_error.value.detail == "Invalid payload format."
+    plugin = UserAgentWebhookPlugin(None, request=mock_request)
+    with pytest.raises(HTTPException) as http_error:
+        await plugin._receive()
+    assert http_error.value.status_code == http.HTTPStatus.BAD_REQUEST
+    assert http_error.value.detail == "Invalid payload format."
 
 
 @pytest.mark.asyncio
@@ -272,23 +267,19 @@ async def test_receive_valid_payload():
     Test if the _receive method properly returns
     the json payload data.
     """
+    json_payload = '{"app": "todolist", "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc"}'
+    mock_receive = AsyncMock(return_value=json.loads(json_payload))
+    mock_request = Mock()
+    mock_request.json = mock_receive
+    mock_request.headers = {"content-type": "application/json"}
 
-    with patch(
-        "webhook.plugins.pelorus_handler_base.Request.json",
-        new_callable=AsyncMock,
-    ) as mock_receive:
-        json_payload = '{"app": "todolist", "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc"}'
-        mock_receive.return_value = json.loads(json_payload)
-        mock_request = Mock()
-        mock_request.json = mock_receive
-        mock_request.headers = {"content-type": "application/json"}
-
-        # Test if the json was properly received from the request
-        plugin = UserAgentWebhookPlugin(
-            handshake_headers="headers", request=mock_request
-        )
-        result = await plugin._receive()
-        assert result == json.loads(json_payload)
+    plugin = UserAgentWebhookPlugin(
+        handshake_headers="headers", request=mock_request
+    )
+    result = await plugin._receive()
+    assert result == json.loads(json_payload)
+    assert result["app"] == "todolist"
+    assert result["commit_hash"] == "5379bad65a3f83853a75aabec9e0e43c75fd18fc"
 
 
 @pytest.mark.asyncio
@@ -299,7 +290,7 @@ async def test_handshake():
     """
     pelorus_plugin = UserAgentWebhookPlugin(None, None)
     result = await pelorus_plugin.handshake()
-    assert result
+    assert result is True
 
 
 @pytest.mark.asyncio
@@ -326,6 +317,9 @@ async def test_proper_receive_metric():
         plugin = UserAgentWebhookPlugin(None, request=None)
         metric_data = await plugin.receive()
         assert isinstance(metric_data, PelorusMetric)
+        assert metric_data.metric_spec == PelorusMetricSpec.COMMIT_TIME
+        assert metric_data.metric_data.app == "mongo-todolist"
+        assert metric_data.metric_data.namespace == "mongo-persistent"
 
 
 @pytest.mark.asyncio

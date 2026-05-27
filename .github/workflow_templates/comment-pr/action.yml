@@ -11,5 +11,20 @@ inputs:
     description: The message to be commented
     required: true
 runs:
-  using: docker
-  image: Dockerfile
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      shell: bash
+      run: pip install --no-cache-dir "pydantic==2.12.5" "pydantic-settings==2.9.1" "pygithub==2.6.0"
+
+    - name: Comment on PR
+      shell: bash
+      env:
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+        INPUT_MESSAGE: ${{ inputs.message }}
+      run: python ${{ github.action_path }}/main.py

@@ -34,6 +34,10 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: ⬆
+    groups:
+      docker-dependencies:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "docker"
@@ -44,6 +48,10 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: ⬆
+    groups:
+      docker-dependencies:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "docker"
@@ -54,26 +62,10 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: ⬆
-    labels:
-      - "dependencies"
-      - "docker"
-  # Docker - workflow template: comment-pr
-  - package-ecosystem: "docker"
-    directory: "/.github/workflow_templates/comment-pr"
-    schedule:
-      interval: "weekly"
-    commit-message:
-      prefix: ⬆
-    labels:
-      - "dependencies"
-      - "docker"
-  # Docker - workflow template: create-market-place-pr
-  - package-ecosystem: "docker"
-    directory: "/.github/workflow_templates/create-market-place-pr"
-    schedule:
-      interval: "weekly"
-    commit-message:
-      prefix: ⬆
+    groups:
+      docker-dependencies:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "docker"

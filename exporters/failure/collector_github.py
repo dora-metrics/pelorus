@@ -17,24 +17,30 @@
 
 import logging
 import re
-from typing import Any, Optional, Union
+from typing import Any
 from urllib.parse import urlparse
 
 import requests
 from attrs import converters, define, field
+from prometheus_client import Counter
 
 import pelorus
 from failure.collector_base import (
     AbstractFailureCollector,
     FailureProviderAuthenticationError,
     TrackerIssue,
-    _issue_parse_failures,
+    issue_parse_failures,
 )
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.config.log import REDACT, log
 from pelorus.utils import TokenAuth, set_up_requests_session
 from provider_common.github import parse_datetime
+
+_github_api_errors = Counter(
+    "pelorus_failure_github_api_errors_total",
+    "Total GitHub API errors during failure issue collection",
+)
 
 DEFAULT_GITHUB_ISSUE_LABEL = "bug"
 
@@ -43,11 +49,7 @@ _SAFE_PROJECT_NAME = re.compile(r"^[A-Za-z0-9_./-]+$")
 
 @define(kw_only=True)
 class GitHubFailureCollector(AbstractFailureCollector):
-    """
-    GitHub implementation of a FailureCollector
-    """
-
-    user: str = field(default="", init=False, repr=False)
+    """GitHub implementation of a FailureCollector."""
 
     token: str = field(
         default="",
@@ -71,6 +73,9 @@ class GitHubFailureCollector(AbstractFailureCollector):
         default=DEFAULT_GITHUB_ISSUE_LABEL, metadata=env_vars("GITHUB_ISSUE_LABEL")
     )
 
+    _PAGE_SIZE = 100
+    _ACCEPT_HEADERS = {"Accept": "application/vnd.github.v3+json"}
+
     def __attrs_post_init__(self):
         # Strip scheme if provided — tracker_api is used as a hostname in URL templates
         parsed = urlparse(self.tracker_api)
@@ -78,9 +83,11 @@ class GitHubFailureCollector(AbstractFailureCollector):
             self.tracker_api = parsed.hostname
             if parsed.port:
                 self.tracker_api += f":{parsed.port}"
+        if not self.tracker_api:
+            raise ValueError("SERVER must not be empty")
 
         for p in self.projects:
-            if not _SAFE_PROJECT_NAME.match(p):
+            if not _SAFE_PROJECT_NAME.match(p) or ".." in p:
                 raise ValueError(f"Invalid project name: {p!r}")
 
         if self.token:
@@ -89,9 +96,13 @@ class GitHubFailureCollector(AbstractFailureCollector):
             )
 
         try:
-            self.user = self._get_github_user()
+            self._get_github_user()
         except Exception:
-            logging.error("github username not found", exc_info=True)
+            logging.error(
+                "GitHub authentication failed (api=%s). Verify TOKEN is valid.",
+                self.tracker_api,
+                exc_info=True,
+            )
             raise
 
     def _get_github_user(self) -> str:
@@ -105,21 +116,30 @@ class GitHubFailureCollector(AbstractFailureCollector):
 
     def _make_request(
         self,
-        headers: Optional[dict[str, str]],
-        params: Optional[dict[str, str]],
+        headers: dict[str, str] | None,
+        params: dict[str, str] | None,
         url: str,
-    ) -> Union[list, dict[str, Any]]:
-        resp = self.session.get(url, headers=headers, params=params, timeout=30)
+    ) -> list | dict[str, Any]:
+        resp = self.session.get(url, headers=headers, params=params, timeout=self._API_TIMEOUT)
         try:
+            remaining = resp.headers.get("x-ratelimit-remaining")
+            if remaining is not None:
+                logging.debug("GitHub rate limit remaining: %s", remaining)
+                if remaining.isdigit() and int(remaining) < 100:
+                    logging.warning("GitHub rate limit low: %s remaining", remaining)
             resp.raise_for_status()
             logging.debug("GitHub returned %d bytes", len(resp.text))
             return resp.json()
         except requests.JSONDecodeError:
+            _github_api_errors.inc()
             logging.error("Invalid JSON response from GitHub: %s", url, exc_info=True)
             raise
         except requests.HTTPError as e:
+            _github_api_errors.inc()
             if resp.status_code == requests.codes.unauthorized:
+                logging.error("GitHub auth failed (url=%s)", url, exc_info=True)
                 raise FailureProviderAuthenticationError from e
+            logging.error("GitHub API error %d (url=%s)", resp.status_code, url, exc_info=True)
             raise
 
     def get_issues(self) -> list[dict]:
@@ -127,21 +147,20 @@ class GitHubFailureCollector(AbstractFailureCollector):
         for proj in self.projects:
             logging.debug("Collecting issues from: %s", proj)
             url = f"https://{self.tracker_api}/repos/{proj}/issues"
-            headers = {
-                "Accept": "application/vnd.github.v3+json",
-            }
-            params = {"state": "all", "per_page": "100", "labels": self.issue_label}
+            params = {"state": "all", "per_page": str(self._PAGE_SIZE), "labels": self.issue_label}
             page = 1
 
             while True:
                 params["page"] = str(page)
-                issues = self._make_request(headers, params, url)
+                logging.debug("Fetching page %d for project %s", page, proj)
+                issues = self._make_request(self._ACCEPT_HEADERS, params, url)
                 if not isinstance(issues, list) or not issues:
                     break
                 all_issues.extend(issues)
-                if len(issues) < 100:
+                if len(issues) < self._PAGE_SIZE:
                     break
                 page += 1
+            logging.debug("Collected %d total issues so far (after project %s)", len(all_issues), proj)
         return all_issues
 
     def search_issues(self) -> list[TrackerIssue]:
@@ -186,7 +205,7 @@ class GitHubFailureCollector(AbstractFailureCollector):
                 critical_issues.append(tracker_issue)
             except Exception:
                 skipped += 1
-                _issue_parse_failures.inc()
+                issue_parse_failures.inc()
                 logging.error(
                     "Failed to parse GitHub issue #%s, skipping",
                     issue.get("number", "unknown"),
@@ -200,10 +219,10 @@ class GitHubFailureCollector(AbstractFailureCollector):
         )
         return critical_issues
 
-    def get_app_name(self, issue, label: Optional[dict[str, Any]]):
+    def get_app_name(self, issue, label: dict[str, Any] | None):
         if label and "=" in label["name"]:
             return label["name"].split("=", 1)[1]
         repo_url = issue.get("repository_url", "")
         if repo_url:
-            return repo_url.split("/")[-1]
-        return "unknown"
+            return repo_url.rstrip("/").split("/")[-1] or pelorus.DEFAULT_TRACKER_APP_LABEL
+        return pelorus.DEFAULT_TRACKER_APP_LABEL

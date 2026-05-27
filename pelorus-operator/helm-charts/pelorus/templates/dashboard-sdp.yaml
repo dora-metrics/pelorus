@@ -26,9 +26,17 @@ spec:
         },
         "editable": true,
         "gnetId": null,
-        "graphTooltip": 0,
+        "graphTooltip": 1,
         "id": 2,
-        "links": [],
+        "links": [
+            {
+                "asDropdown": false,
+                "icon": "external link",
+                "tags": ["software-delivery-performance"],
+                "title": "Related Dashboards",
+                "type": "dashboards"
+            }
+        ],
         "panels": [
             {
                 "content": "\n# Software Delivery Performance\n\n\n",
@@ -102,7 +110,8 @@ spec:
                                 }
                             ]
                         },
-                        "mappings": []
+                        "mappings": [],
+                        "noValue": "No data"
                     },
                     "overrides": []
                 }
@@ -282,7 +291,8 @@ spec:
                                 }
                             ]
                         },
-                        "mappings": []
+                        "mappings": [],
+                        "noValue": "No data"
                     },
                     "overrides": []
                 }
@@ -336,7 +346,8 @@ spec:
                                 }
                             ]
                         },
-                        "mappings": []
+                        "mappings": [],
+                        "noValue": "No data"
                     },
                     "overrides": []
                 }
@@ -344,7 +355,7 @@ spec:
             {
                 "type": "stat",
                 "id": 47,
-                "title": "Time to Restore",
+                "title": "Mean Time to Restore",
                 "gridPos": {
                     "h": 4,
                     "w": 6,
@@ -390,7 +401,8 @@ spec:
                                 }
                             ]
                         },
-                        "mappings": []
+                        "mappings": [],
+                        "noValue": "No data"
                     },
                     "overrides": []
                 }
@@ -441,10 +453,19 @@ spec:
                                 {
                                     "color": "green",
                                     "value": null
+                                },
+                                {
+                                    "color": "orange",
+                                    "value": 0.15
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 0.30
                                 }
                             ]
                         },
-                        "mappings": []
+                        "mappings": [],
+                        "noValue": "No data"
                     },
                     "overrides": []
                 }
@@ -821,7 +842,8 @@ spec:
                                 }
                             ]
                         },
-                        "mappings": []
+                        "mappings": [],
+                        "noValue": "No data"
                     },
                     "overrides": []
                 }
@@ -873,7 +895,8 @@ spec:
                                 }
                             ]
                         },
-                        "mappings": []
+                        "mappings": [],
+                        "noValue": "No data"
                     },
                     "overrides": []
                 }
@@ -925,7 +948,8 @@ spec:
                                 }
                             ]
                         },
-                        "mappings": []
+                        "mappings": [],
+                        "noValue": "No data"
                     },
                     "overrides": []
                 }

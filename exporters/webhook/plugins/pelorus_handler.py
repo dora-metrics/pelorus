@@ -178,12 +178,12 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
         is raised to inform user agent about improper headers immediately.
 
         Returns:
-            bool: True when the handshake based on the headers were success
+            bool: True when the headers pass validation.
 
         Raises:
-            HTTPException: headers were improper - validated by pydantic
-                           handler were configured with signature, but no
-                           signature was found in the headers.
+            HTTPException: headers were invalid (validated by pydantic),
+                           or the handler requires a signature but none
+                           was found in the headers.
         """
         try:
             self.payload_headers = _HEADERS_ADAPTER.validate_python(dict(headers))
@@ -200,12 +200,14 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
                 if k.lower() not in sensitive
             }
             logging.error(
-                "Handshake failed: invalid headers: %s", safe_headers,
+                "Handshake failed: %d validation error(s), headers: %s",
+                ex.error_count(), safe_headers,
             )
+            logging.debug("Handshake validation details: %s", ex.errors())
             raise HTTPException(
                 status_code=http.HTTPStatus.BAD_REQUEST,
                 detail="Invalid headers.",
-            )
+            ) from ex
 
     @override
     async def _receive_pelorus_payload(
@@ -259,13 +261,15 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
                 metric_spec=self.payload_headers.event_type, metric_data=data
             )
         except ValidationError as ex:
+            first_error = ex.errors()[0]["msg"] if ex.errors() else "unknown"
             logging.error(
-                "Payload validation failed for event %s: %s",
+                "Payload validation failed for event %s: %d error(s), first: %s",
                 self.payload_headers.event_type,
                 ex.error_count(),
+                first_error,
             )
-            logging.debug("Validation errors: %s", ex.errors())
+            logging.warning("Validation errors: %s", ex.errors())
             raise HTTPException(
                 status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
                 detail="Invalid payload format.",
-            )
+            ) from ex

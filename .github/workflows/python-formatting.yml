@@ -5,6 +5,13 @@ permissions:
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/python-formatting.yml'
+      - 'pyproject.toml'
+      - 'Makefile'
+      - '**.py'
   pull_request:
     branches: [ main ]
     paths:

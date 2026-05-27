@@ -23,9 +23,7 @@ from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date_
 
 
 class PelorusMetricSpec(str, Enum):
-    """
-    The metric should correspond to the known exporter types.
-    """
+    """Webhook event types, one per exporter (committime, deploytime, failure)."""
 
     COMMIT_TIME = "committime"
     DEPLOY_TIME = "deploytime"
@@ -71,8 +69,16 @@ class PelorusDeliveryHeaders(BaseModel):
             except ValueError:
                 raise ValueError(
                     "Signature must contain only hexadecimal characters after 'sha256='"
-                )
+                ) from None
         return value
+
+
+def _validate_timestamp_threshold(v: int) -> int:
+    if is_out_of_date_timestamp(v):
+        raise ValueError(
+            f"Timestamp cannot be older than {METRIC_TIMESTAMP_THRESHOLD_MINUTES} minutes"
+        )
+    return v
 
 
 class PelorusPayload(BaseModel):
@@ -88,7 +94,6 @@ class PelorusPayload(BaseModel):
                          be between 1.1.2010 and 1.1.2060.
     """
 
-    # Even if we consider git project name as app, it still should be below 100
     app: str = Field(max_length=200, pattern=r"^[a-zA-Z0-9._/,\-]+$")
 
     timestamp: int = Field(ge=1262307661, le=2840144461)
@@ -117,17 +122,14 @@ class FailurePelorusPayload(PelorusPayload):
         CREATED = "created"
         RESOLVED = "resolved"
 
-    failure_id: str = Field(max_length=200, pattern=r"^[a-zA-Z0-9._/,\-]+$")  # It's an str, because issue may be mix of str and int, e.g. Issue-1
+    # str because issue IDs may mix letters and digits, e.g. "Issue-1"
+    failure_id: str = Field(max_length=200, pattern=r"^[a-zA-Z0-9._/,\-]+$")
     failure_event: FailureEvent
 
     @field_validator("timestamp")
     @classmethod
     def accepted_timestamp_threshold(cls, v):
-        if is_out_of_date_timestamp(v):
-            raise ValueError(
-                f"Timestamp cannot be older than {METRIC_TIMESTAMP_THRESHOLD_MINUTES} minutes"
-            )
-        return v
+        return _validate_timestamp_threshold(v)
 
 
 class DeployTimePelorusPayload(PelorusPayload):
@@ -151,11 +153,7 @@ class DeployTimePelorusPayload(PelorusPayload):
     @field_validator("timestamp")
     @classmethod
     def accepted_timestamp_threshold(cls, v):
-        if is_out_of_date_timestamp(v):
-            raise ValueError(
-                f"Timestamp cannot be older than {METRIC_TIMESTAMP_THRESHOLD_MINUTES} minutes"
-            )
-        return v
+        return _validate_timestamp_threshold(v)
 
 
 class CommitTimePelorusPayload(DeployTimePelorusPayload):
@@ -183,7 +181,7 @@ class CommitTimePelorusPayload(DeployTimePelorusPayload):
         except ValueError:
             raise ValueError(
                 "Git SHA-1 hash must contain only hexadecimal characters"
-            )
+            ) from None
         return v
 
     @field_validator("timestamp")
@@ -217,6 +215,6 @@ class PelorusMetric(BaseModel):
             v = data.get("metric_data")
         else:
             v = getattr(data, "metric_data", None)
-        if v is not None and not issubclass(type(v), PelorusPayload):
+        if v is not None and not isinstance(v, PelorusPayload):
             raise ValueError("metric_data must be a subclass of PelorusPayload")
         return data

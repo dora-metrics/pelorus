@@ -37,11 +37,11 @@ def test_extract_dict_types_from_non_dict(type_: type):
 
 
 @pytest.mark.parametrize(
-    "input,output",
+    "type_in,output",
     [(dict[str, int], (str, int)), (dict[str, list[int]], (str, list[int]))],
 )
-def test_extract_dict_types_from_dict(input: type, output: tuple[type, type]):
-    assert _extract_dict_types(input) == output
+def test_extract_dict_types_from_dict(type_in: type, output: tuple[type, type]):
+    assert _extract_dict_types(type_in) == output
 
 
 @pytest.mark.parametrize(
@@ -53,11 +53,11 @@ def test_extract_list_types_from_non_list(type_: type):
 
 
 @pytest.mark.parametrize(
-    "input,output",
+    "type_in,output",
     [(list[int], int), (list[str], str)],
 )
-def test_extract_list_types_from_list(input: type, output: type):
-    assert _extract_list_type(input) == output
+def test_extract_list_types_from_list(type_in: type, output: type):
+    assert _extract_list_type(type_in) == output
 
 
 @pytest.mark.parametrize(
@@ -76,11 +76,11 @@ def test_extract_optional_types_from_non_optional(type_: type):
 
 
 @pytest.mark.parametrize(
-    "input,output",
+    "type_in,output",
     [(Optional[int], int), (Union[float, None], float), (Union[None, str], str)],
 )
-def test_extract_optional_types_from_optional(input: type, output: type):
-    assert _extract_optional_type(input) == output
+def test_extract_optional_types_from_optional(type_in: type, output: type):
+    assert _extract_optional_type(type_in) == output
 
 
 def test_deserialize_positive():
@@ -88,8 +88,8 @@ def test_deserialize_positive():
         dict(str_="str", int_=2), AttrsTestClass, target_name="AttrsTestClass"
     )
 
-    assert "str" == actual.str_
-    assert 2 == actual.int_
+    assert actual.str_ == "str"
+    assert actual.int_ == 2
 
 
 def test_deserialize_type_error():
@@ -100,14 +100,19 @@ def test_deserialize_type_error():
             target_name="AttrsTestClass",
         )
 
-    assert e.value.subgroup(lambda e: isinstance(e, TypeError)) is not None
+    type_errors = e.value.subgroup(lambda e: isinstance(e, TypeError))
+    assert type_errors is not None
+    assert len(type_errors.exceptions) == 1
+    assert isinstance(type_errors.exceptions[0], FieldTypeCheckError)
 
 
 def test_deserialize_missing_error():
     with pytest.raises(DeserializationErrors) as e:
         deserialize(dict(str_="str"), AttrsTestClass, target_name="AttrsTestClass")
 
-    assert e.value.subgroup(lambda e: isinstance(e, MissingFieldError)) is not None
+    missing = e.value.subgroup(lambda e: isinstance(e, MissingFieldError))
+    assert missing is not None
+    assert len(missing.exceptions) == 1
 
 
 def test_deserialize_gives_multiple_errors_at_once():
@@ -153,7 +158,9 @@ def test_nested_field_type_err():
     with pytest.raises(DeserializationErrors) as e:
         deserialize(dict(foo=dict(bar="string!")), Nested, target_name="Nested")
 
-    assert e.value.subgroup(lambda e: isinstance(e, TypeError)) is not None
+    type_errors = e.value.subgroup(lambda e: isinstance(e, TypeError))
+    assert type_errors is not None
+    assert len(type_errors.exceptions) == 1
 
 
 def test_nested_missing():
@@ -164,7 +171,9 @@ def test_nested_missing():
     with pytest.raises(DeserializationErrors) as e:
         deserialize(dict(foo=dict()), Nested)
 
-    assert e.value.subgroup(lambda e: isinstance(e, MissingFieldError)) is not None
+    missing = e.value.subgroup(lambda e: isinstance(e, MissingFieldError))
+    assert missing is not None
+    assert len(missing.exceptions) == 1
 
 
 def test_multi_nested_missing():
@@ -175,7 +184,9 @@ def test_multi_nested_missing():
     with pytest.raises(DeserializationErrors) as e:
         deserialize(dict(foo=dict()), Nested)
 
-    assert e.value.subgroup(lambda e: isinstance(e, MissingFieldError)) is not None
+    missing = e.value.subgroup(lambda e: isinstance(e, MissingFieldError))
+    assert missing is not None
+    assert len(missing.exceptions) == 1
 
 
 def test_default():
@@ -224,7 +235,9 @@ def test_embedded_err():
     with pytest.raises(DeserializationErrors) as e:
         deserialize(dict(inner=dict(int_="str!")), Outer)
 
-    assert e.value.subgroup(lambda e: isinstance(e, InnerFieldDeserializationErrors)) is not None
+    inner_errors = e.value.subgroup(lambda e: isinstance(e, InnerFieldDeserializationErrors))
+    assert inner_errors is not None
+    assert len(inner_errors.exceptions) == 1
 
 
 def test_inherited():

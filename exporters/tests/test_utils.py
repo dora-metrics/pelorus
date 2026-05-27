@@ -25,7 +25,6 @@ def test_nested_lookup_exception():
         get_nested(ROOT, PATH)
 
     error = e.value
-    print(error.message)
     assert error.path[error.path_slice] == SLICED_PATH
     assert error.value == VALUE
 
@@ -44,9 +43,12 @@ def test_nested_lookup_collect():
 
 @pytest.fixture(autouse=True)
 def _clean_env_vars():
-    """Ensure env vars are cleaned up after each test."""
+    """Ensure env vars are cleaned up before and after each test."""
+    keys = ["PELORUS_DEFAULT_KEYWORD", "PELORUS_TEST_ENV_VAR_DEFAULT"]
+    for key in keys:
+        os.environ.pop(key, None)
     yield
-    for key in ["PELORUS_DEFAULT_KEYWORD", "PELORUS_TEST_ENV_VAR_DEFAULT"]:
+    for key in keys:
         os.environ.pop(key, None)
 
 

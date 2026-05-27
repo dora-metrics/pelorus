@@ -13,11 +13,12 @@ from typing import Any, Iterable, NamedTuple, Optional, cast
 from attrs import field, frozen
 from prometheus_client import Counter, Gauge
 from prometheus_client.core import GaugeMetricFamily
+import requests
 from requests import Session
 
 from pelorus import AbstractPelorusExporter
 from pelorus.certificates import set_up_requests_certs
-from pelorus.config import REDACT, env_vars, load_and_log, log
+from pelorus.config import REDACT, env_var_names, env_vars, load_and_log, log
 from pelorus.config.converters import comma_or_whitespace_separated
 from pelorus.utils import TokenAuth, join_url_path_components
 from provider_common.github import GitHubError, paginate_github, parse_datetime
@@ -33,6 +34,14 @@ _collection_errors = Counter(
 _last_collection_count = Gauge(
     "pelorus_releasetime_last_collection_count",
     "Number of metrics returned by the last releasetime collection",
+)
+_github_api_errors = Counter(
+    "pelorus_releasetime_github_api_errors_total",
+    "Total GitHub API errors during release collection",
+)
+_last_collection_success = Gauge(
+    "pelorus_releasetime_last_collection_success",
+    "Whether the last releasetime collection succeeded (1) or failed (0)",
 )
 
 
@@ -109,19 +118,26 @@ class ProjectSpec(NamedTuple):
 @frozen
 class GitHubReleaseCollector(AbstractPelorusExporter):
     projects: set[ProjectSpec] = field(converter=ProjectSpec.all_from_env_var)
-    host: str = field(default="api.github.com", metadata=env_vars("GIT_API"))
-    token: Optional[str] = field(default=None, metadata=log(REDACT), repr=False)
+    host: str = field(default="api.github.com", metadata=env_vars(*env_var_names.GIT_API))
+    token: Optional[str] = field(
+        default=None, metadata=env_vars(*env_var_names.TOKEN) | log(REDACT), repr=False
+    )
 
     _session: Session = field(factory=Session, init=False)
 
     def __attrs_post_init__(self):
         if not self.projects:
-            raise ValueError("No projects specified for GitHub deploytime collector")
+            raise ValueError("No projects specified for GitHub releasetime collector")
 
         self._session.verify = set_up_requests_certs()
 
         if self.token:
             self._session.auth = TokenAuth(self.token)
+        else:
+            logging.warning(
+                "No TOKEN configured. GitHub API rate limits are very low for "
+                "unauthenticated requests. Set TOKEN for reliable operation."
+            )
 
     _DEPLOY_METRIC_NAME = "deploy_timestamp"
     _DEPLOY_METRIC_HELP = "Deployment timestamp"
@@ -141,6 +157,7 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
         logging.debug("collect: start")
         start = time.monotonic()
         collected_count = 0
+        success = True
         metric = self._new_deploy_metric()
 
         try:
@@ -158,7 +175,7 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
                 for release in releases:
                     if commit := commits.get(release.tag_name):
                         logging.debug(
-                            "Collected (release) deploy_timestamp{namespace/org=%s, app/repo=%s, image/commit=%s} %s",
+                            "Collected (release) deploy_timestamp{namespace=%s, app=%s, commit_id=%s} %s",
                             namespace,
                             app,
                             commit,
@@ -178,15 +195,16 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
                             release.tag_name,
                         )
         except Exception:
+            success = False
             _collection_errors.inc()
             logging.error("Release time metric collection failed", exc_info=True)
         finally:
+            _last_collection_success.set(success)
             duration = time.monotonic() - start
             _collection_duration.set(duration)
             _last_collection_count.set(collected_count)
             logging.info("collect: %d metrics in %.2fs", collected_count, duration)
-
-        yield metric
+            yield metric
 
     def _get_releases_for_project(self, project: ProjectSpec) -> Iterable[Release]:
         """
@@ -210,8 +228,10 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
                 except (KeyError, ValueError, TypeError) as e:
                     logging.warning(
                         "Skipping malformed release in %s: %s", project, e,
+                        exc_info=True,
                     )
-        except GitHubError as e:
+        except (GitHubError, requests.RequestException) as e:
+            _github_api_errors.inc()
             logging.error(
                 "Error while getting GitHub response for project %s: %s",
                 project,
@@ -238,6 +258,9 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
 
         tags_to_commits = {}
 
+        if not tags:
+            return tags_to_commits
+
         try:
             url = f"https://{self.host}/" + join_url_path_components(
                 "repos", project.organization, project.repo, "tags"
@@ -247,11 +270,15 @@ class GitHubReleaseCollector(AbstractPelorusExporter):
                     tag_name = tag["name"]
                     if tag_name in tags:
                         tags_to_commits[tag_name] = tag["commit"]["sha"]
+                        if len(tags_to_commits) == len(tags):
+                            return tags_to_commits
                 except (KeyError, TypeError) as e:
                     logging.warning(
                         "Skipping malformed tag in %s: %s", project, e,
+                        exc_info=True,
                     )
-        except GitHubError as e:
+        except (GitHubError, requests.RequestException) as e:
+            _github_api_errors.inc()
             logging.error(
                 "Error talking to GitHub while getting tags for project %s: %s",
                 project,

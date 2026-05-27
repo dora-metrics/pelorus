@@ -22,11 +22,11 @@ import gitlab
 import requests
 from attrs import define, field
 
-from committime import CommitMetric
+from committime import CommitMetric, sanitize_url
 from pelorus.timeutil import parse_tz_aware
 from pelorus.utils import set_up_requests_session
 
-from .collector_base import AbstractCommitCollector, _sanitize_url, check_provider_support
+from .collector_base import AbstractCommitCollector, git_api_errors, check_provider_support
 
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
@@ -48,11 +48,12 @@ class GitLabCommitCollector(AbstractCommitCollector):
         )
 
     def _connect_to_gitlab(self, metric) -> gitlab.Gitlab:
-        """Method to connect to Gitlab instance."""
+        """Return a cached or new GitLab client for the metric's git server."""
         git_server = metric.git_server
 
-        if git_server in self._gitlab_clients:
-            return self._gitlab_clients[git_server]
+        with self._cache_lock:
+            if git_server in self._gitlab_clients:
+                return self._gitlab_clients[git_server]
 
         if self.token:
             logging.debug("Connecting to GitLab server (authenticated): %s", git_server)
@@ -61,18 +62,18 @@ class GitLabCommitCollector(AbstractCommitCollector):
                 private_token=self.token,
                 api_version=4,
                 session=self.session,
-                timeout=30,
+                timeout=self._API_TIMEOUT,
             )
         else:
             logging.debug(
                 "Connecting to GitLab server (unauthenticated): %s", git_server
             )
             gitlab_client = gitlab.Gitlab(
-                git_server, api_version=4, session=self.session, timeout=30
+                git_server, api_version=4, session=self.session, timeout=self._API_TIMEOUT
             )
 
-        self._gitlab_clients[git_server] = gitlab_client
-        return gitlab_client
+        with self._cache_lock:
+            return self._gitlab_clients.setdefault(git_server, gitlab_client)
 
     def get_commit_time(self, metric: CommitMetric):
         """Fetch commit timestamp from GitLab API for the given metric."""
@@ -90,26 +91,28 @@ class GitLabCommitCollector(AbstractCommitCollector):
         project_namespaced = f"{project_namespace}/{project_name}"
 
         cache_key = (git_server, project_namespaced)
-        project = self._project_cache.get(cache_key)
+        with self._cache_lock:
+            project = self._project_cache.get(cache_key)
+            if project is not None:
+                self._project_cache.move_to_end(cache_key)
 
-        if project is not None:
-            self._project_cache.move_to_end(cache_key)
-        else:
+        if project is None:
             try:
                 logging.debug("Getting project: %s", project_namespaced)
                 project = gl.projects.get(project_namespaced)
-                if len(self._project_cache) >= self._PROJECT_CACHE_MAX:
-                    self._project_cache.popitem(last=False)
-                self._project_cache[cache_key] = project
-            except Exception:
+                with self._cache_lock:
+                    if len(self._project_cache) >= self._PROJECT_CACHE_MAX:
+                        self._project_cache.popitem(last=False)
+                    self._project_cache[cache_key] = project
+            except (gitlab.exceptions.GitlabError, requests.exceptions.RequestException) as exc:
+                git_api_errors.inc()
                 logging.error(
                     "Failed to get project: %s, repo: %s for build %s",
-                    _sanitize_url(metric.repo_url), project_name, metric.build_name,
+                    sanitize_url(metric.repo_url), project_name, metric.build_name,
                     exc_info=True,
                 )
                 raise
         try:
-            # get the commit from the project using the hash
             commit = project.commits.get(metric.commit_hash)
 
             commit_time_str: str = commit.committed_date
@@ -118,7 +121,8 @@ class GitLabCommitCollector(AbstractCommitCollector):
                 commit_time_str, format=_DATETIME_FORMAT
             ).timestamp()
             metric.commit_link = commit.web_url
-        except Exception:
+        except (gitlab.exceptions.GitlabError, requests.exceptions.RequestException, KeyError, AttributeError, ValueError) as exc:
+            git_api_errors.inc()
             logging.error(
                 "Failed processing commit time for build %s",
                 metric.build_name,

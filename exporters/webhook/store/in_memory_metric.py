@@ -69,8 +69,8 @@ def _pelorus_metric_to_dict(
         pelorus_model: A PelorusPayload subclass or instance.
 
     Returns:
-        dict[str, str]: First item is the Prometheus expected label and second
-                        the name of the value from the PelorusPayload model.
+        dict[str, str]: Keys are Prometheus label names, values are
+                        corresponding PelorusPayload attribute names.
 
     Raises:
         TypeError: If the prometheus data model is not supported
@@ -96,7 +96,7 @@ def pelorus_metric_to_prometheus(pelorus_model: PelorusPayload) -> list[str]:
             data will be created.
 
     Returns:
-        list[str]: List to be used as prometheus data.
+        list[str]: Label values ordered to match the metric family's label definition.
 
     Raises:
         TypeError: If the expected data model did not match provided pelorus_model
@@ -117,16 +117,18 @@ def pelorus_metric_to_prometheus(pelorus_model: PelorusPayload) -> list[str]:
     return data_values
 
 
+_MAX_METRICS_UPPER = 1_000_000
+
 _max_metrics_raw = _os.environ.get("PELORUS_WEBHOOK_MAX_METRICS", "10000")
 try:
     _MAX_METRICS = int(_max_metrics_raw)
-except ValueError:
+except ValueError as _exc:
     raise ValueError(
         f"PELORUS_WEBHOOK_MAX_METRICS must be an integer, got: {_max_metrics_raw!r}"
-    )
-if _MAX_METRICS < 1:
+    ) from _exc
+if not (1 <= _MAX_METRICS <= _MAX_METRICS_UPPER):
     raise ValueError(
-        f"PELORUS_WEBHOOK_MAX_METRICS must be >= 1, got: {_MAX_METRICS}"
+        f"PELORUS_WEBHOOK_MAX_METRICS must be between 1 and {_MAX_METRICS_UPPER}, got: {_MAX_METRICS}"
     )
 
 _store_utilization = Gauge(
@@ -134,6 +136,11 @@ _store_utilization = Gauge(
     "Number of metrics currently held in the in-memory webhook store",
     ["metric_family"],
 )
+_store_capacity = Gauge(
+    "pelorus_webhook_store_capacity",
+    "Maximum number of metrics the in-memory webhook store can hold",
+)
+_store_capacity.set(_MAX_METRICS)
 
 
 class PelorusGaugeMetricFamily(GaugeMetricFamily):
@@ -186,9 +193,16 @@ class PelorusGaugeMetricFamily(GaugeMetricFamily):
         with self.lock:
             return len(self.added_metrics)
 
+    def snapshot(self) -> GaugeMetricFamily:
+        """Return a frozen copy safe for concurrent iteration by prometheus_client."""
+        with self.lock:
+            family = GaugeMetricFamily(self.name, self.documentation, unit=self.unit)
+            family.samples = list(self.samples)
+            return family
+
     def __iter__(self):
         with self.lock:
-            snapshot = list(super().__iter__())
+            snapshot = list(self.samples)
         return iter(snapshot)
 
 

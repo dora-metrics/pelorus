@@ -205,7 +205,7 @@ def test_basic_auth_connect_to_jira(jira_mock, certs_mock):
     jira_client_mock.session.assert_called_once()
 
     jira_mock.assert_called_once_with(
-        options={"server": "https://my.jira.server.com", "verify": "/path/to/certs.pem"},
+        options={"server": "https://my.jira.server.com", "verify": "/path/to/certs.pem", "timeout": 30},
         basic_auth=("user", "token"),
     )
     assert jira_client == jira_client_mock
@@ -225,7 +225,7 @@ def test_token_auth_connect_to_jira(jira_mock, certs_mock):
     jira_client_mock.session.assert_called_once()
 
     jira_mock.assert_called_once_with(
-        options={"server": "https://my.jira.server.com", "verify": "/path/to/certs.pem"},
+        options={"server": "https://my.jira.server.com", "verify": "/path/to/certs.pem", "timeout": 30},
         token_auth="token",
     )
     assert jira_client == jira_client_mock
@@ -313,9 +313,10 @@ def test_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(GitHubFailureCollector, "get_issues", mock_get_issues)
     collector = setup_github_collector(monkeypatch)
     critical_issues = collector.search_issues()
+    assert len(critical_issues) == 1
     assert critical_issues[0].app == "todolist"
     assert critical_issues[0].issue_number == "3"
-    assert critical_issues[0].creationdate == float(1652305808.0)
+    assert critical_issues[0].creationdate == 1652305808.0
     assert critical_issues[0].resolutiondate is None
 
 
@@ -352,10 +353,11 @@ def test_github_closed_issue_search_issues(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(GitHubFailureCollector, "get_issues", mock_get_issues)
     collector = setup_github_collector(monkeypatch)
     critical_issues = collector.search_issues()
+    assert len(critical_issues) == 1
     assert critical_issues[0].app == "todolist"
     assert critical_issues[0].issue_number == "3"
-    assert critical_issues[0].creationdate == float(1652305808.0)
-    assert critical_issues[0].resolutiondate == float(1653672080.0)
+    assert critical_issues[0].creationdate == 1652305808.0
+    assert critical_issues[0].resolutiondate == 1653672080.0
 
 
 def test_default_jql_search_query():
@@ -418,9 +420,12 @@ def test_no_resolved_timestamp():
 
 
 def test_custom_resolved_timestamp():
-    collector = setup_jira_collector()
-    collector.jira_resolved_statuses = "Done, Resolved, Other"
-    collector._resolved_statuses_list = ["done", "resolved", "other"]
+    collector = JiraFailureCollector(
+        tracker_api=JIRA_SERVER,
+        username="fake@user.com",
+        token="WIEds4uZHiCGnrtmgQPn9E7D",
+        jira_resolved_statuses="Done, Resolved, Other",
+    )
 
     issue_fields = {
         "key": "EXAMPLE-1",

@@ -1,16 +1,17 @@
 """
 A declarative way to load configuration from environment variables, and log that configuration properly.
 
-See the [README](./README.md) file for documentation.
-See [DEVELOPING](./DEVELOPING.md) for implementation details / dev docs.
+See README.md in this directory for usage documentation.
+See DEVELOPING.md for implementation details and dev docs.
 """
 
 import logging
 import os
-from typing import Any, Generic, Mapping, Optional, Type, TypeVar
+from typing import Any, Generic, Mapping, Optional, TypeVar
 
 import attrs
 
+from pelorus.config import env_var_names
 from pelorus.config.loading import (
     MissingConfigDataError,
     MissingDataError,
@@ -46,12 +47,8 @@ ConfigClass = TypeVar("ConfigClass")
 
 @attrs.frozen
 class _LoggingLoader(Generic[ConfigClass]):
-    """
-    Load values for the given class from the environment (overridden by `other`),
-    logging their values and reporting errors, before instantiating the class.
-    """
 
-    cls: Type[ConfigClass]
+    cls: type[ConfigClass]
     other: dict[str, Any]
     env: Mapping[str, str]
     default_keyword: str
@@ -97,12 +94,9 @@ class _LoggingLoader(Generic[ConfigClass]):
 
                 source = value.source()
 
-                if value.log is REDACT:
-                    value = "REDACTED"
-                else:
-                    value = repr(value.value)
+                display_value = "REDACTED" if value.log is REDACT else repr(value.value)
 
-                log_with_level("%s=%s, %s", field, value, source)
+                log_with_level("%s=%s, %s", field, display_value, source)
             elif isinstance(value, MissingDataError):
                 log_with_level("%s=ERROR: %s", field, value)
 
@@ -119,7 +113,7 @@ class _LoggingLoader(Generic[ConfigClass]):
 
 
 def load_and_log(
-    cls: Type[ConfigClass],
+    cls: type[ConfigClass],
     other: Optional[dict[str, Any]] = None,
     *,
     env: Mapping[str, str] = os.environ,
@@ -165,4 +159,5 @@ __all__ = [
     "REDACT",
     "env_vars",
     "no_env_vars",
+    "env_var_names",
 ]

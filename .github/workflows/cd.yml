@@ -10,6 +10,7 @@ on:
 
 concurrency:
   group: cd-main
+  cancel-in-progress: false
 
 env:
   # TODO create bot account
@@ -27,6 +28,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: dorny/paths-filter@v3
         id: changes
@@ -38,21 +41,26 @@ jobs:
               - 'pelorus-operator/**'
 
       - uses: actions/upload-artifact@v4
+        if: steps.changes.outputs.version_change == 'true'
         with:
           name: operator-code
           path: pelorus-operator/bundle
+          retention-days: 1
 
       - name: Store variables
         id: variables
+        env:
+          VERSION_CHANGE: ${{ steps.changes.outputs.version_change }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          echo "version_change=${{ steps.changes.outputs.version_change }}" >> "$GITHUB_OUTPUT"
-          if [[ "${{ steps.changes.outputs.version_change }}" == "true" ]];then
+          echo "version_change=$VERSION_CHANGE" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION_CHANGE" == "true" ]];then
             export CURRENT_CHART_VERSION="$(grep '^version: ' pelorus-operator/helm-charts/pelorus/Chart.yaml  | cut -c 10-)"
             if [[ $CURRENT_CHART_VERSION == *"rc"* ]];then
-              echo "tags=$(echo latest,${{ github.sha }},v$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
+              echo "tags=$(echo latest,$COMMIT_SHA,v$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
               echo "is_release=false" >> "$GITHUB_OUTPUT"
             else
-              echo "tags=$(echo stable,latest,${{ github.sha }},v$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
+              echo "tags=$(echo stable,latest,$COMMIT_SHA,v$CURRENT_CHART_VERSION)" >> "$GITHUB_OUTPUT"
               echo "is_release=true" >> "$GITHUB_OUTPUT"
               export CURRENT_OPERATOR_VERSION="$(grep "^VERSION ?= " pelorus-operator/Makefile  | cut -c 12-)"
               echo "version=$CURRENT_OPERATOR_VERSION" >> "$GITHUB_OUTPUT"
@@ -91,6 +99,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Build and push ${{ matrix.image }}
         uses: "./.github/workflow_templates/build_push_exporters"
@@ -146,7 +156,7 @@ jobs:
           git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
           git fetch upstream
           git rebase upstream/main
-          git push origin main
+          git push --force-with-lease origin main
 
       - name: Create branch
         run: |
@@ -163,7 +173,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add operators/pelorus-operator/${{ needs.setup.outputs.version }}
           git commit --signoff -m "operator pelorus-operator (${{ needs.setup.outputs.version }})"
           git push origin pelorus-operator-${{ needs.setup.outputs.version }}
 

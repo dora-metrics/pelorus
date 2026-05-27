@@ -177,7 +177,7 @@ def get_latest_assets(repo: str, exact: str = "") -> Iterable[ReleaseAsset]:
     "Get the release assets for the latest release, if no exact version."
     url = GITHUB_RELEASE_TEMPLATE.format(repo)
 
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
     response.raise_for_status()
 
     body = response.json()

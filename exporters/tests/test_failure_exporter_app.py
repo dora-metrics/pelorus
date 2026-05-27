@@ -13,10 +13,10 @@
 #    under the License.
 #
 
-import logging
 import os
 
 import pytest
+from prometheus_client.core import Metric
 
 from failure.app import set_up
 from pelorus.config.loading import MissingConfigDataError
@@ -28,12 +28,14 @@ AZURE_DEVOPS_TOKEN = os.environ.get("AZURE_DEVOPS_TOKEN")
 JIRA_USERNAME = os.environ.get("JIRA_USERNAME")
 JIRA_TOKEN = os.environ.get("JIRA_TOKEN")
 
-mocked_failure_exporter = MockExporter(set_up=set_up)
+@pytest.fixture
+def mocked_failure_exporter():
+    return MockExporter(set_up=set_up)
 
 
 @pytest.mark.parametrize("provider", ["wrong", "git_hub", "GITHUB", "GitHub"])
 @pytest.mark.integration
-def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
+def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     with pytest.raises(ValueError):
         mocked_failure_exporter.run_app({"PROVIDER": provider})
 
@@ -41,12 +43,12 @@ def test_app_invalid_provider(provider: str, caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_pagerduty_without_required_options(caplog: pytest.LogCaptureFixture):
+def test_app_pagerduty_without_required_options(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     collector = mocked_failure_exporter.run_app({"PROVIDER": "pagerduty"})
-    # collect() now catches errors gracefully instead of crashing
-    logging.getLogger().disabled = False
     metrics = list(collector.collect())
-    assert len(metrics) == 2  # empty creation + resolution metric families
+    assert len(metrics) == 2
+    for m in metrics:
+        assert isinstance(m, Metric)
     assert get_number_of_error_logs(caplog.record_tuples) >= 1
 
 
@@ -55,7 +57,7 @@ def test_app_pagerduty_without_required_options(caplog: pytest.LogCaptureFixture
     not PAGER_DUTY_TOKEN,
     reason="No PagerDuty token set, run export PAGER_DUTY_TOKEN=token",
 )
-def test_app_pagerduty_with_required_options(caplog: pytest.LogCaptureFixture):
+def test_app_pagerduty_with_required_options(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     mocked_failure_exporter.run_app(
         {"PROVIDER": "pagerduty", "TOKEN": PAGER_DUTY_TOKEN}
     )
@@ -67,7 +69,7 @@ def test_app_pagerduty_with_required_options(caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_azure_devops_without_required_options(caplog: pytest.LogCaptureFixture):
+def test_app_azure_devops_without_required_options(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     with pytest.raises(MissingConfigDataError):
         mocked_failure_exporter.run_app({"PROVIDER": "azure-devops"})
 
@@ -75,7 +77,7 @@ def test_app_azure_devops_without_required_options(caplog: pytest.LogCaptureFixt
 
 
 @pytest.mark.integration
-def test_app_azure_devops_with_wrong_token(caplog: pytest.LogCaptureFixture):
+def test_app_azure_devops_with_wrong_token(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     with pytest.raises(FailureProviderAuthenticationError):
         mocked_failure_exporter.run_app(
             {
@@ -93,7 +95,7 @@ def test_app_azure_devops_with_wrong_token(caplog: pytest.LogCaptureFixture):
     not AZURE_DEVOPS_TOKEN,
     reason="No Azure DevOps token set, run export AZURE_DEVOPS_TOKEN=token",
 )
-def test_app_azure_devops_with_required_options(caplog: pytest.LogCaptureFixture):
+def test_app_azure_devops_with_required_options(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     mocked_failure_exporter.run_app(
         {
             "PROVIDER": "azure-devops",
@@ -109,7 +111,7 @@ def test_app_azure_devops_with_required_options(caplog: pytest.LogCaptureFixture
 
 
 @pytest.mark.integration
-def test_app_jira_without_required_options(caplog: pytest.LogCaptureFixture):
+def test_app_jira_without_required_options(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     with pytest.raises(MissingConfigDataError):
         mocked_failure_exporter.run_app({"PROVIDER": "jira"})
 
@@ -117,7 +119,7 @@ def test_app_jira_without_required_options(caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_jira_with_wrong_token(caplog: pytest.LogCaptureFixture):
+def test_app_jira_with_wrong_token(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     collector = mocked_failure_exporter.run_app(
         {
             "PROVIDER": "jira",
@@ -126,10 +128,10 @@ def test_app_jira_with_wrong_token(caplog: pytest.LogCaptureFixture):
             "SERVER": "https://pelorustest.atlassian.net",
         }
     )
-    # collect() now catches errors gracefully instead of crashing
-    logging.getLogger().disabled = False
     metrics = list(collector.collect())
-    assert len(metrics) == 2  # empty creation + resolution metric families
+    assert len(metrics) == 2
+    for m in metrics:
+        assert isinstance(m, Metric)
     assert get_number_of_error_logs(caplog.record_tuples) >= 1
 
 
@@ -140,7 +142,7 @@ def test_app_jira_with_wrong_token(caplog: pytest.LogCaptureFixture):
 @pytest.mark.skipif(
     not JIRA_TOKEN, reason="No Jira token set, run export JIRA_TOKEN=token"
 )
-def test_app_jira_with_required_options(caplog: pytest.LogCaptureFixture):
+def test_app_jira_with_required_options(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     mocked_failure_exporter.run_app(
         {
             "PROVIDER": "jira",
@@ -157,7 +159,7 @@ def test_app_jira_with_required_options(caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_github_without_required_options(caplog: pytest.LogCaptureFixture):
+def test_app_github_without_required_options(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     with pytest.raises(FailureProviderAuthenticationError):
         mocked_failure_exporter.run_app({"PROVIDER": "github"})
 
@@ -165,7 +167,7 @@ def test_app_github_without_required_options(caplog: pytest.LogCaptureFixture):
 
 
 @pytest.mark.integration
-def test_app_servicenow_without_required_options(caplog: pytest.LogCaptureFixture):
+def test_app_servicenow_without_required_options(caplog: pytest.LogCaptureFixture, mocked_failure_exporter):
     with pytest.raises(MissingConfigDataError):
         mocked_failure_exporter.run_app({"PROVIDER": "servicenow"})
 

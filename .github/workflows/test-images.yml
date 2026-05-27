@@ -10,11 +10,16 @@ on:
     workflows: [Trigger test images]
     types: [completed]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 env:
   REPOSITORY: quay.io/pelorus
 
 jobs:
   setup:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -43,6 +48,7 @@ jobs:
   create-images:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ needs.setup.outputs.pr_type != 'closed' }}
     needs: setup
     steps:
       - name: Validate outputs from setup jobs
@@ -51,7 +57,16 @@ jobs:
           PR_TYPE: ${{ needs.setup.outputs.pr_type }}
           PR_NUMBER: ${{ needs.setup.outputs.pr_number }}
           COMMIT_HASH: ${{ needs.setup.outputs.commit_hash }}
-        run: echo "$BRANCH_REF, $PR_TYPE, $PR_NUMBER, $COMMIT_HASH"
+        run: |
+          fail=0
+          for var in BRANCH_REF PR_TYPE PR_NUMBER COMMIT_HASH; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Required output $var is empty"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || exit 1
+          echo "branch_ref=$BRANCH_REF, pr_type=$PR_TYPE, pr_number=$PR_NUMBER, commit_hash=$COMMIT_HASH"
       - name: Checkout code
         uses: actions/checkout@v4
         with:

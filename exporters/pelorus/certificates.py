@@ -31,13 +31,13 @@ def _combine_certificates(dir_to_check: Path = DEFAULT_CERT_DIR) -> str:
     """
     Combines the certificates with the certificates from `certifi`.
     All certificates ending in `.pem` under each directory under `dir_to_check`
-    is combined (e.g. `dir_to_check/*/*.pem`).
+    are combined (e.g. `dir_to_check/*/*.pem`).
     Returns the path of the combined file.
     """
     target_fd, target_path = tempfile.mkstemp(suffix=".pem", prefix="custom-certs")
 
     try:
-        with open(target_fd, "wb") as target:
+        with os.fdopen(target_fd, "wb") as target:
             with open(certifi.where(), "rb") as source:
                 shutil.copyfileobj(source, target)
 
@@ -54,7 +54,10 @@ def _combine_certificates(dir_to_check: Path = DEFAULT_CERT_DIR) -> str:
                 except OSError:
                     logging.error("Failed to read certificate file %s, skipping", source_path, exc_info=True)
     except Exception:
-        os.unlink(target_path)
+        try:
+            os.unlink(target_path)
+        except OSError:
+            logging.warning("Failed to clean up temp certificate file %s", target_path, exc_info=True)
         raise
 
     logging.debug("Combined certificate bundle created at %s", target_path)

@@ -127,10 +127,7 @@ def test_to_epoch_from_string(timestamps, expected):
 def test_to_epoch_from_string_bad_value(timestamps):
     with pytest.raises(ValueError) as timestamp_ex:
         to_epoch_from_string(timestamps)
-    assert (
-        f"Tried to get epoch from not allowed string length: {timestamps}"
-        == f"{timestamp_ex.value}"
-    )
+    assert str(timestamp_ex.value) == f"Tried to get epoch from not allowed string length: {timestamps}"
 
 
 @pytest.mark.parametrize("timestamps", [1652305808, None])

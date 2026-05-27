@@ -6,11 +6,18 @@ import requests
 from attrs import converters, define, field
 
 import pelorus
-from failure.collector_base import AbstractFailureCollector, TrackerIssue, _issue_parse_failures
+from failure.collector_base import AbstractFailureCollector, TrackerIssue, issue_parse_failures
 from pelorus.config import env_var_names, env_vars
 from pelorus.config.log import REDACT, log
 from pelorus.timeutil import parse_assuming_utc, second_precision
+from prometheus_client import Counter
+
 from pelorus.utils import set_up_requests_session
+
+_servicenow_api_errors = Counter(
+    "pelorus_failure_servicenow_api_errors_total",
+    "Total ServiceNow API errors during failure issue collection",
+)
 
 SN_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 SN_QUERY = (
@@ -29,9 +36,7 @@ _SAFE_FIELD_NAME = re.compile(r"^[a-zA-Z][a-zA-Z0-9_.]*$")
 
 @define(kw_only=True)
 class ServiceNowFailureCollector(AbstractFailureCollector):
-    """
-    Service Now implementation of a FailureCollector
-    """
+    """ServiceNow implementation of a FailureCollector."""
 
     username: str = field(default="", metadata=env_vars(*env_var_names.USERNAME))
 
@@ -58,6 +63,11 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
             raise ValueError("SERVER must include a hostname")
         if not _SAFE_FIELD_NAME.match(self.app_name_field):
             raise ValueError(f"Invalid APP_FIELD value: {self.app_name_field!r}")
+        if bool(self.username) != bool(self.token):
+            logging.warning(
+                "username and token should both be set or both be empty. "
+                "Authentication will not be configured."
+            )
         set_up_requests_session(
             self.session, self.tls_verify, username=self.username, token=self.token
         )
@@ -109,7 +119,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
                     critical_issues.append(tracker_issue)
                 except Exception:
                     skipped += 1
-                    _issue_parse_failures.inc()
+                    issue_parse_failures.inc()
                     logging.error(
                         "Failed to parse ServiceNow issue %s, skipping",
                         issue.get("number", "unknown"),
@@ -131,8 +141,9 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         )
         tracker_url = self.server + tracker_query
 
-        response = self.session.get(tracker_url, timeout=30)
+        response = self.session.get(tracker_url, timeout=self._API_TIMEOUT)
         if response.status_code != 200:
+            _servicenow_api_errors.inc()
             logging.error(
                 "ServiceNow request failed with status: %s, url: %s",
                 response.status_code,
@@ -142,6 +153,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
         try:
             data = response.json()
         except requests.JSONDecodeError as exc:
+            _servicenow_api_errors.inc()
             logging.error(
                 "Invalid JSON response from ServiceNow, url: %s",
                 tracker_url,
@@ -149,6 +161,7 @@ class ServiceNowFailureCollector(AbstractFailureCollector):
             )
             raise RuntimeError("ServiceNow returned non-JSON response") from exc
         if "result" not in data:
+            _servicenow_api_errors.inc()
             logging.error(
                 "ServiceNow response missing 'result' key, url: %s, keys: %s",
                 tracker_url,

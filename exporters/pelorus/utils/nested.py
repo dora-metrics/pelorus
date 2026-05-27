@@ -114,7 +114,7 @@ def get_nested(
     return item
 
 
-@functools.lru_cache(maxsize=128)
+@functools.lru_cache(maxsize=1024)
 def _cached_split(path: str) -> tuple[str, ...]:
     return tuple(part for part in path.split(".") if part)
 
@@ -157,11 +157,11 @@ class BadAttributePathError(Exception):
     """
     An error representing a nested lookup that went wrong.
 
-    root is the root item the attribute accesses started from.
     path is the whole path that was meant to be accessed.
     path_slice represents how far in the path we got before an issue was encountered.
-    value is the value that the last good attribute access returned.
-    root_name is the name of the root item, which makes the error message more helpful.
+    key is the specific key that failed.
+    value is the value that the last good access returned.
+    root_name is a human-readable name for the root item, used in error messages.
     """
 
     path: Sequence[str]
@@ -190,10 +190,7 @@ class BadAttributePathError(Exception):
 
 @contextlib.contextmanager
 def collect_bad_attribute_path_error(error_list: list, append: bool = True):
-    """
-    If a BadAttributePathError is raised, append it to the list of errors and continue.
-    If append is set to False then error will not be appended to the list of errors.
-    """
+    """Catch BadAttributePathError, optionally appending to error_list. Swallow either way."""
     try:
         yield
     except BadAttributePathError as e:

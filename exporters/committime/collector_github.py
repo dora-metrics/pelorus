@@ -9,7 +9,7 @@ from pelorus.config.converters import pass_through
 from pelorus.utils import Url, set_up_requests_session
 from provider_common.github import parse_datetime
 
-from .collector_base import AbstractCommitCollector, check_provider_support
+from .collector_base import AbstractCommitCollector, check_provider_support, fetch_commit_json, git_api_errors
 
 DEFAULT_GITHUB_API = Url.parse("api.github.com")
 
@@ -34,8 +34,7 @@ class GitHubCommitCollector(AbstractCommitCollector):
 
     def get_commit_time(self, metric: CommitMetric):
         """Fetch commit timestamp from GitHub API for the given metric."""
-        git_server = metric.git_fqdn
-        check_provider_support(git_server, "github")
+        check_provider_support(metric.git_fqdn, "github")
 
         path = self._path_template.format(
             group=metric.repo_group,
@@ -43,35 +42,16 @@ class GitHubCommitCollector(AbstractCommitCollector):
             hash=metric.commit_hash,
         )
         url = self.git_api._replace(path=path).url
-        response = self.session.get(url, timeout=30)
-        if response.status_code != 200:
-            log_level = logging.ERROR if response.status_code in (401, 403) else logging.WARNING
-            logging.log(
-                log_level,
-                "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s",
-                metric.build_name,
-                metric.commit_hash,
-                metric.git_fqdn,
-                response.status_code,
-            )
-            return metric
-        try:
-            commit = response.json()
-        except requests.JSONDecodeError:
-            logging.error(
-                "Invalid JSON response for build: %s, hash: %s, url: %s",
-                metric.build_name,
-                metric.commit_hash,
-                metric.git_fqdn,
-                exc_info=True,
-            )
+        commit = fetch_commit_json(self.session, url, metric, self._API_TIMEOUT, "GitHub")
+        if commit is None:
             return metric
         try:
             metric.commit_time = commit["commit"]["committer"]["date"]
             metric.commit_timestamp = parse_datetime(metric.commit_time).timestamp()
             metric.commit_link = commit["html_url"]
             logging.debug("Set all github commit metrics: %s", metric)
-        except (KeyError, TypeError, AttributeError):
+        except (KeyError, TypeError, AttributeError, ValueError):
+            git_api_errors.inc()
             logging.error(
                 "Failed processing commit time for build %s",
                 metric.build_name,

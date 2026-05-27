@@ -118,17 +118,17 @@ spec:
         runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusWebhookErrorRate/"
 
     - alert: PelorusWebhookStoreNearCapacity
-      expr: pelorus_webhook_store_utilization / 10000 > 0.8
+      expr: pelorus_webhook_store_utilization / on() group_left pelorus_webhook_store_capacity > 0.8
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: "Pelorus webhook in-memory store for {{ "{{" }} $labels.metric_family {{ "}}" }} is above 80% capacity"
-        description: "The in-memory metric store holds {{ "{{" }} $value | humanizePercentage {{ "}}" }} of its 10,000 entry limit. Oldest entries will be dropped when full."
+        description: "The in-memory metric store holds {{ "{{" }} $value | humanizePercentage {{ "}}" }} of its capacity. Oldest entries will be dropped when full."
         runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusWebhookStoreNearCapacity/"
 
     - alert: PelorusIssueParseFailures
-      expr: rate(pelorus_failure_issue_parse_failures_total[10m]) > 0
+      expr: rate(pelorus_failureissue_parse_failures_total[10m]) > 0
       for: 15m
       labels:
         severity: warning
@@ -156,3 +156,59 @@ spec:
         summary: "Pelorus skopeo background worker is experiencing errors"
         description: "The container image label lookup worker has had persistent errors for 15 minutes. Commit time metrics from container images may be incomplete."
         runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusSkopeoWorkerErrors/"
+
+    - alert: PelorusStartupFailed
+      expr: pelorus_exporter_startup_success == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Pelorus exporter {{ "{{" }} $labels.job {{ "}}" }} failed to start"
+        description: "The exporter {{ "{{" }} $labels.job {{ "}}" }} started but failed configuration. It is serving metrics but not collecting data. Check exporter logs and environment variables."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusStartupFailed/"
+
+    - alert: PelorusGitApiErrors
+      expr: rate(pelorus_committimegit_api_errors_total[10m]) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus commit time collector is experiencing git API errors"
+        description: "Git provider API calls have been failing for 15 minutes. Commit timestamps may be missing or stale. Check provider credentials and API availability."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusGitApiErrors/"
+
+    - alert: PelorusProviderApiErrors
+      expr: >
+        rate(pelorus_failure_jira_api_errors_total[10m]) > 0
+        or rate(pelorus_failure_github_api_errors_total[10m]) > 0
+        or rate(pelorus_failure_pagerduty_api_errors_total[10m]) > 0
+        or rate(pelorus_failure_servicenow_api_errors_total[10m]) > 0
+        or rate(pelorus_failure_azure_devops_api_errors_total[10m]) > 0
+        or rate(pelorus_releasetime_github_api_errors_total[10m]) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus failure/release collector is experiencing provider API errors"
+        description: "Issue tracker or release provider API calls have been failing for 15 minutes. Failure metrics may be missing. Check provider credentials and API availability."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusProviderApiErrors/"
+
+    - alert: PelorusK8sApiErrors
+      expr: rate(pelorus_k8s_api_errors_total[10m]) > 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus is experiencing Kubernetes API errors"
+        description: "Kubernetes API lookups have been failing for 10 minutes. Deploy time or commit time metrics may be incomplete. Check cluster connectivity and RBAC permissions."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusK8sApiErrors/"
+
+    - alert: PelorusSkopeoQueueDrops
+      expr: rate(pelorus_committime_skopeo_queue_drops_total[10m]) > 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus skopeo queue is dropping images"
+        description: "The container image inspection queue is full and dropping work items. Increase PELORUS_SKOPEO_WORKERS or investigate slow image registry responses."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusSkopeoQueueDrops/"
