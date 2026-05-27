@@ -24,16 +24,17 @@ Help()
    # Display Help
    echo "Execute a tekton pipeline with various build types."
    echo
-   echo "Syntax: scriptTemplate [-h|g|b|n]"
-   echo "options:"
-   echo "a     application name, default ${app_name}"
-   echo "n     namespace to be used, default ${app_namespace}"
-   echo "g     the git url"
-   echo "r     git branch reference, use this for Pull Requests. e.g. refs/pull/587/head, default current branch"
-   echo "h     Print this Help."
-   echo "b     build type [buildconfig, binary, s2i], default ${build_type}"
-   echo "t     Time in seconds to sleep between subsequent deployments, default ${sleep_between} (enables non-interaction mode)"
-   echo "c     Number of deployments, default ${num_deployments} (enables non-interaction mode)"
+   echo "Usage: $(basename "$0") [-h] [-a name] [-n namespace] [-g url] [-r ref] [-b type] [-t seconds] [-c count]"
+   echo
+   echo "Options:"
+   echo "  -h     Print this help"
+   echo "  -a     Application name (default: ${app_name})"
+   echo "  -n     Namespace to use (default: ${app_namespace})"
+   echo "  -g     Git URL (default: local repository)"
+   echo "  -r     Git branch reference, e.g. refs/pull/587/head (default: current branch)"
+   echo "  -b     Build type [buildconfig, binary, s2i] (default: ${build_type})"
+   echo "  -t     Seconds to sleep between deployments (default: ${sleep_between}, enables non-interactive mode)"
+   echo "  -c     Number of deployments (default: ${num_deployments}, enables non-interactive mode)"
    echo
 }
 
@@ -59,9 +60,9 @@ while getopts ":hg:b:r:n:t:c:a:" option; do
          app_name=$OPTARG;;
       n) # Application namespace
          app_namespace=$OPTARG;;
-\?) # Invalid option
-         echo "Error: Invalid option"
-         exit;;
+      \?) # Invalid option
+         echo "Error: Invalid option. Use -h for help." >&2
+         exit 1;;
    esac
 done
 
@@ -159,8 +160,7 @@ function cleanup_and_exit() {
           PELORUS_TMP_DIR=$(basename "${PELORUS_DEMO_TMP_DIR}")
           if [[ "${PELORUS_TMP_DIR}" =~ "${TMP_DIR_PREFIX}"* ]]; then
               echo "Cleaning up temporary files"
-              eval rm -rf "${PELORUS_DEMO_TMP_DIR}/*"
-              rmdir "${PELORUS_DEMO_TMP_DIR}"
+              rm -rf "${PELORUS_DEMO_TMP_DIR:?}"
           fi
       fi
     fi

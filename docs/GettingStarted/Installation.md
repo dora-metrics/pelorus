@@ -19,7 +19,7 @@ Deploying separate Pelorus exporters
 
 Before deploying Pelorus, the following tools are necessary
 
-* Access to an OpenShift 4.7 or higher cluster via [Web console](#openshift-web-console) or [CLI](#openshift-command-line-tool).
+* Access to an OpenShift 4.20 or higher cluster (or Kubernetes 1.33+) via [Web console](#openshift-web-console) or [CLI](#openshift-command-line-tool).
 
 * ***CLI*** access requires a machine from which to run the install with an [oc](https://docs.openshift.com/container-platform/4.8/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli) The OpenShift CLI**\***
 
@@ -108,7 +108,7 @@ Create Pelorus Operator Subscription object YAML file that uses pelorus namespac
     name: pelorus-operator
     namespace: pelorus
   spec:
-    channel: alpha
+    channel: stable
     name: pelorus-operator
     source: community-operators
     sourceNamespace: openshift-marketplace
@@ -122,7 +122,7 @@ Verify the pelorus-operator Subscription (sub) has been successfully created:
   ```
   $ oc get sub pelorus-operator -n pelorus
   NAME               PACKAGE            SOURCE                CHANNEL
-  pelorus-operator   pelorus-operator   community-operators   alpha
+  pelorus-operator   pelorus-operator   community-operators   stable
   ```
 Verify the ClusterServiceVersion (csv) for Pelorus Operator together with Grafana and Prometheus were successfully created:
   ```shell
@@ -241,10 +241,10 @@ Below is an example of such configuration file. It is important that all the `Co
 >**Note:** As in above example one of the exporters is using custom exporter image, that will be used by Pelorus to calculate DORA metrics. For more information on the custom exporters please check the [Dev Guide](../Development.md#exporter-development).
 
 ### Exporter(s) deployment
-To deploy Pelorus Exporter(s) in the `pelorus-sample` namespace using previously created configuration file `pelorus-sample-separate-exporters.yaml`, simply run from the Pelrous source code directory:
+To deploy Pelorus Exporter(s) in the `pelorus-sample` namespace using previously created configuration file `pelorus-sample-separate-exporters.yaml`, simply run from the Pelorus source code directory:
 
 ```shell
-$ helm install custom-exporters-deployment charts/pelorus/charts/exporters --namespace pelorus-sample --values pelorus-sample-separate-exporters.yaml
+$ helm install custom-exporters-deployment pelorus-operator/helm-charts/pelorus/charts/exporters --namespace pelorus-sample --values pelorus-sample-separate-exporters.yaml
 ```
 
 >**Note:** To create another set of Pelorus exporters, either modify the configuration file and update the deployment within the same namespace or create new deployment in a new or separate namespace.
@@ -263,7 +263,7 @@ custom-exporter       custom-exporter-pelorus-sample.apps.<DOMAIN>              
 It is possible to update the deployment of the Pelorus exporter(s) with updated configuration file, to do so, simply run `helm upgrade` with the same `custom-exporters-deployment` as used in the installation, as follows:
 
 ```shell
-$ helm upgrade custom-exporters-deployment charts/pelorus/charts/exporters --namespace pelorus-sample --values new-pelorus-sample-separate-exporters.yaml
+$ helm upgrade custom-exporters-deployment pelorus-operator/helm-charts/pelorus/charts/exporters --namespace pelorus-sample --values new-pelorus-sample-separate-exporters.yaml
 ```
 
 ### Uninstalling Exporter(s) deployment
@@ -315,22 +315,9 @@ oc create namespace pelorus
 ```
 You can choose any name you wish, but remember to change to the same name in the following commands.
 
-Pelorus gets installed via helm charts. First, deploy the operators on which Pelorus depends, by running
+Pelorus gets installed via helm charts. Deploy the Pelorus stack by running
 ```
-helm install operators charts/operators --namespace pelorus
-```
-
-Wait for the operators install to complete.
-```
-$ oc get pods --namespace pelorus
-NAME                                                   READY     STATUS    RESTARTS   AGE
-grafana-operator-controller-manager-................   2/2       Running   0          22s
-prometheus-operator-................                   1/1       Running   0          10s
-```
-
-Then, deploy the core Pelorus stack, by running
-```
-helm install pelorus charts/pelorus --namespace pelorus
+helm install pelorus pelorus-operator/helm-charts/pelorus --namespace pelorus
 ```
 
 Wait for the Pelorus install to complete.

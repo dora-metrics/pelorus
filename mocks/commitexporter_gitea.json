@@ -1,0 +1,52 @@
+{
+  "uuid": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "lastMigration": 32,
+  "name": "Gitea Commit Exporter",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3003,
+  "hostname": "0.0.0.0",
+  "routes": [
+    {
+      "uuid": "gitea-commit",
+      "documentation": "Gitea get commit by SHA",
+      "method": "get",
+      "endpoint": "api/v1/repos/pelorus-test/basic-nginx/git/commits/15dedb60b6208aafdfb2328a93543e3d94500978",
+      "responses": [
+        {
+          "uuid": "gitea-commit-resp",
+          "body": "{\"sha\": \"15dedb60b6208aafdfb2328a93543e3d94500978\", \"commit\": {\"message\": \"Update nginx.conf for OCP 4.6+\", \"author\": {\"name\": \"Test User\", \"email\": \"test@example.com\", \"date\": \"2021-04-25T20:16:28Z\"}, \"committer\": {\"name\": \"Test User\", \"email\": \"test@example.com\", \"date\": \"2021-04-25T20:16:28Z\"}}, \"html_url\": \"https://gitea.example.com/pelorus-test/basic-nginx/commit/15dedb60b6208aafdfb2328a93543e3d94500978\", \"author\": {\"login\": \"testuser\", \"id\": 1}, \"committer\": {\"login\": \"testuser\", \"id\": 1}}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Commit",
+          "headers": [{"key": "content-type", "value": "application/json"}],
+          "filePath": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true
+        }
+      ],
+      "enabled": true,
+      "responseMode": null
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [{"key": "content-type", "value": "application/json"}],
+  "proxyReqHeaders": [{"key": "", "value": ""}],
+  "proxyResHeaders": [{"key": "", "value": ""}]
+}

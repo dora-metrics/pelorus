@@ -1,6 +1,6 @@
 import pytest
 from kubernetes.client import ApiClient, Configuration
-from openshift.dynamic import DynamicClient
+from kubernetes.dynamic import DynamicClient
 
 
 @pytest.fixture

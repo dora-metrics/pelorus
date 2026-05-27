@@ -86,7 +86,7 @@ RUNNING_ID=$("${CONTAINER_ENGINE}" run --name="${TEST_CONTAINER_NAME}" -d -v "${
 if [ "${RUNNING_ID}" == "" ]; then
     echo "Mockoon is not working as expected."
     echo "Logs from failing container:"
-    ${CONTAINER_ENGINE} logs "${RUNNING_ID}"
+    ${CONTAINER_ENGINE} logs "${TEST_CONTAINER_NAME}"
     exit 1
 fi
 

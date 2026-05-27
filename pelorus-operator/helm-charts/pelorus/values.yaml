@@ -2,9 +2,23 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# to reset password: htpasswd -s -b -n internal changeme
-openshift_prometheus_htpasswd_auth: internal:{SHA}+pvrmeQCmtWmYVOZ57uuITVghrM=
-openshift_prometheus_basic_auth_pass: changeme
+# Prometheus basic auth credentials
+# REQUIRED when oauth_proxy_enabled is true (the default).
+# The chart will fail to render without these values.
+# To generate: htpasswd -s -b -n internal <your-password>
+# openshift_prometheus_htpasswd_auth: "internal:{SHA}<your-hash>"
+# openshift_prometheus_basic_auth_pass: "<your-password>"
+
+# Operator source: "redhat" uses built-in OpenShift monitoring + Cluster Observability Operator
+#                  "community" uses community Prometheus + Grafana operators
+# Set to "redhat" on OpenShift 4.20+ with monitoring enabled (crc config set enable-cluster-monitoring true)
+operator_source: community
+
+# OAuth proxy configuration
+# Set to false to disable OAuth proxy sidecars on Prometheus and Grafana
+oauth_proxy_enabled: true
+# Override the OAuth proxy image (defaults to the cluster's built-in image)
+# oauth_proxy_image: image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4
 
 # Automatically set OpenShift's in-built prometheus stack as a federation point so Pelorus can use OpenShift metrics in Dashboards
 federate_openshift_monitoring:
@@ -22,6 +36,7 @@ federate_openshift_monitoring:
 # bucket_access_point: s3.pelorus.svc:443
 # bucket_access_key:
 # bucket_secret_access_key:
+# thanos_insecure_skip_verify: false
 
 ## Persistent storage for Prometheus Operator
 # https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md
@@ -35,8 +50,8 @@ prometheus_storage_pvc_storageclass: "gp2"
 
 # Set Prometheus retention time. Older data values are deleted
 prometheus_retention: 1y
-# Set Prometheus retention size. If data grows over old values are deleted
-# This should be lower of what's defined in the prometheus_storage_pvc_capacity
+# Set Prometheus retention size. If data grows over this size, old values are deleted.
+# This should be lower than what's defined in prometheus_storage_pvc_capacity.
 prometheus_retention_size: 1GB
 
 exporters:
@@ -46,21 +61,9 @@ exporters:
 
     - app_name: failuretime-exporter
       exporter_type: failure
-      enabled: false
 
     - app_name: committime-exporter
       exporter_type: committime
 
     - app_name: webhook-exporter
       exporter_type: webhook
-
-# Experimental GitHub releasetime exporter
-#     - app_name: releasetime-exporter
-#       env_from_configmaps:
-#         - pelorus-config
-#         - releasetime-config
-#       env_from_secrets:
-#         - github-secret
-#       extraEnv:
-#         - name: APP_FILE
-#           value: extra/releasetime/app.py

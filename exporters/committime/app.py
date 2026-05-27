@@ -1,12 +1,11 @@
 #!/usr/bin/python3
-import logging
 import time
 from typing import Optional
 
 import attrs.converters
 import attrs.validators
 from attrs import define, field
-from openshift.dynamic import DynamicClient
+from kubernetes.dynamic import DynamicClient
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 
@@ -44,17 +43,9 @@ PROVIDER_CLASSES_BY_NAME = {
     "gitlab": GitLabCommitCollector,
 }
 
-PROVIDER_TYPES = {"git", "image", "containerimage"}
 DEFAULT_PROVIDER = "git"
 
 DEFAULT_COMMIT_DATE_FORMAT = "%a %b %d %H:%M:%S %Y %z"
-
-
-@define(kw_only=True)
-class CommittimeTypeConfig:
-    provider: str = field(
-        default=DEFAULT_PROVIDER, validator=attrs.validators.in_(PROVIDER_TYPES)
-    )
 
 
 @define(kw_only=True)
@@ -70,12 +61,12 @@ class ContainerImageCommittimeConfig:
     )
 
     label_commit_time: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_time"],
+        default=CommitMetric._ANNOTATION_MAPPING["commit_time"],
         metadata=env_vars(COMMIT_DATE_ANNOTATION_ENV),
     )
 
     label_commit_hash: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        default=CommitMetric._ANNOTATION_MAPPING["commit_hash"],
         metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
     )
 
@@ -99,38 +90,26 @@ class ImageCommittimeConfig:
 
     app_label: str = pelorus.DEFAULT_APP_LABEL
 
-    # Used to convert time and date found in the
-    # Docker Label io.openshift.build.commit.date
-    # or annotation for the Image
     date_format: str = field(
         default=DEFAULT_COMMIT_DATE_FORMAT, metadata=env_vars("COMMIT_DATE_FORMAT")
     )
 
     date_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_time"],
+        default=CommitMetric._ANNOTATION_MAPPING["commit_time"],
         metadata=env_vars(COMMIT_DATE_ANNOTATION_ENV),
     )
 
-    # TODO hash_annotation_name and repo_url_annotation_name seem to be
-    # unnecessary
     hash_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        default=CommitMetric._ANNOTATION_MAPPING["commit_hash"],
         metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
     )
 
     repo_url_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
+        default=CommitMetric._ANNOTATION_MAPPING["repo_url"],
         metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
     )
 
     def make_collector(self) -> AbstractCommitCollector:
-        # Image provider is a special case, where commit time
-        # metadata is stored within image.openshift.io/v1 object
-        #
-        # The Image [image.openshift.io/v1] is not namespaced
-        #
-        # In such case no Git API call is necessary
-        #
         return ImageCommitCollector(
             kube_client=self.kube_client,
             date_format=self.date_format,
@@ -171,125 +150,55 @@ class GitCommittimeConfig:
         default=pelorus.DEFAULT_TLS_VERIFY, converter=attrs.converters.to_bool
     )
 
-    # TODO hash_annotation_name and repo_url_annotation_name seem to be
-    # unnecessary
     hash_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["commit_hash"],
+        default=CommitMetric._ANNOTATION_MAPPING["commit_hash"],
         metadata=env_vars(COMMIT_HASH_ANNOTATION_ENV),
     )
 
     repo_url_annotation_name: str = field(
-        default=CommitMetric._ANNOTATION_MAPPIG["repo_url"],
+        default=CommitMetric._ANNOTATION_MAPPING["repo_url"],
         metadata=env_vars(COMMIT_REPO_URL_ANNOTATION_ENV),
     )
 
-    def __attrs_post_init__(self):
-        if not (self.username and self.token):
-            logging.warning(
-                "No API_USER and no TOKEN given. This is okay for public repositories only."
-            )
-        elif (self.username and not self.token) or (not self.username and self.token):
-            logging.warning(
-                "username and token must both be set, or neither should be set. Unsetting both."
-            )
-            self.username = ""
-            self.token = ""
-
     def make_collector(self) -> AbstractCommitCollector:
-        git_provider = self.git_provider
+        cls = PROVIDER_CLASSES_BY_NAME[self.git_provider]
+        kwargs = dict(
+            kube_client=self.kube_client,
+            username=self.username,
+            token=self.token,
+            namespaces=self.namespaces,
+            tls_verify=self.tls_verify,
+            app_label=self.app_label,
+            hash_annotation_name=self.hash_annotation_name,
+            repo_url_annotation_name=self.repo_url_annotation_name,
+        )
+        if self.git_api:
+            kwargs["git_api"] = self.git_api
+        return cls(**kwargs)
 
-        if git_provider == "gitlab":
-            return GitLabCommitCollector(
-                kube_client=self.kube_client,
-                username=self.username,
-                token=self.token,
-                namespaces=self.namespaces,
-                app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
-            )
-        if git_provider == "github":
-            if self.git_api:
-                api = dict(git_api=self.git_api)
-            else:
-                api = {}
-            return GitHubCommitCollector(
-                kube_client=self.kube_client,
-                username=self.username,
-                token=self.token,
-                namespaces=self.namespaces,
-                tls_verify=self.tls_verify,
-                app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
-                **api,
-            )
-        if git_provider == "bitbucket":
-            return BitbucketCommitCollector(
-                kube_client=self.kube_client,
-                username=self.username,
-                token=self.token,
-                namespaces=self.namespaces,
-                tls_verify=self.tls_verify,
-                app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
-            )
-        if git_provider == "gitea":
-            if self.git_api:
-                api = dict(git_api=self.git_api)
-            else:
-                api = {}
-            return GiteaCommitCollector(
-                kube_client=self.kube_client,
-                username=self.username,
-                token=self.token,
-                namespaces=self.namespaces,
-                app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
-                **api,
-            )
-        if git_provider == "azure-devops":
-            if self.git_api:
-                api = dict(git_api=self.git_api)
-            else:
-                api = {}
-            return AzureDevOpsCommitCollector(
-                kube_client=self.kube_client,
-                username=self.username,
-                token=self.token,
-                namespaces=self.namespaces,
-                app_label=self.app_label,
-                hash_annotation_name=self.hash_annotation_name,
-                repo_url_annotation_name=self.repo_url_annotation_name,
-                **api,
-            )
 
-        raise ValueError(
-            f"Unknown git_provider {git_provider}"
-        )  # should be unreachable
+PROVIDER_CONFIG_CLASSES = {
+    "git": GitCommittimeConfig,
+    "image": ImageCommittimeConfig,
+    "containerimage": ContainerImageCommittimeConfig,
+}
+
+
+@define(kw_only=True)
+class CommittimeTypeConfig:
+    provider: str = field(
+        default=DEFAULT_PROVIDER, validator=attrs.validators.in_(PROVIDER_CONFIG_CLASSES.keys())
+    )
 
 
 def set_up(prod: bool = True) -> AbstractCommitCollector:
-    # TODO refactor: all exporters have same structure
     pelorus.setup_logging(prod=prod)
     provider_config = load_and_log(CommittimeTypeConfig)
 
     dyn_client = pelorus.utils.get_k8s_client()
 
-    if provider_config.provider == "git":
-        config = load_and_log(GitCommittimeConfig, other=dict(kube_client=dyn_client))
-    elif provider_config.provider == "image":
-        config = load_and_log(ImageCommittimeConfig, other=dict(kube_client=dyn_client))
-    elif provider_config.provider == "containerimage":
-        config = load_and_log(
-            ContainerImageCommittimeConfig, other=dict(kube_client=dyn_client)
-        )
-    else:
-        raise ValueError(
-            f"Unknown provider {provider_config.provider}"
-        )  # should be unreachable
+    config_cls = PROVIDER_CONFIG_CLASSES[provider_config.provider]
+    config = load_and_log(config_cls, other=dict(kube_client=dyn_client))
 
     collector = config.make_collector()
 
@@ -298,9 +207,24 @@ def set_up(prod: bool = True) -> AbstractCommitCollector:
 
 
 if __name__ == "__main__":
-    set_up()
-    # TODO refactor: create function, all exporters have same structure
-    start_http_server(8080)
+    import logging
+
+    try:
+        set_up()
+        pelorus.mark_startup(True)
+    except Exception as e:
+        pelorus.mark_startup(False)
+        logging.error(
+            "Failed to configure committime exporter: %s. "
+            "Set PROVIDER (git/image/containerimage) "
+            "and required provider settings (e.g. TOKEN, GIT_API). "
+            "Starting metrics server anyway - configure and restart to collect commit data.",
+            e,
+            exc_info=True,
+        )
+
+    start_http_server(pelorus.EXPORTER_PORT)
+    logging.info("Committime exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
 
     while True:
-        time.sleep(1)
+        time.sleep(60)

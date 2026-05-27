@@ -25,7 +25,6 @@ def test_nested_lookup_exception():
         get_nested(ROOT, PATH)
 
     error = e.value
-    print(error.message)
     assert error.path[error.path_slice] == SLICED_PATH
     assert error.value == VALUE
 
@@ -42,31 +41,40 @@ def test_nested_lookup_collect():
     assert error.value == VALUE
 
 
-def test_env_var_default():
-    if "PELORUS_DEFAULT_KEYWORD" in os.environ:
-        del os.environ["PELORUS_DEFAULT_KEYWORD"]
+@pytest.fixture(autouse=True)
+def _clean_env_vars():
+    """Ensure env vars are cleaned up before and after each test."""
+    keys = ["PELORUS_DEFAULT_KEYWORD", "PELORUS_TEST_ENV_VAR_DEFAULT"]
+    for key in keys:
+        os.environ.pop(key, None)
+    yield
+    for key in keys:
+        os.environ.pop(key, None)
 
-    # Empty string should give us empty string
+
+def test_env_var_empty_string_returns_empty():
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = ""
     assert get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT") == ""
 
-    # No default value found
+
+def test_env_var_default_keyword_without_fallback_raises():
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = pelorus.utils.DEFAULT_VAR_KEYWORD
     with pytest.raises(ValueError):
         get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT")
 
-    # Use env variable instead of default value
+
+def test_env_var_default_keyword_with_fallback_returns_default():
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = pelorus.utils.DEFAULT_VAR_KEYWORD
     assert (
         get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT", "default_value") == "default_value"
     )
 
-    # If there is no env variable set, None should be returned
-    if "PELORUS_TEST_ENV_VAR_DEFAULT" in os.environ:
-        del os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"]
+
+def test_env_var_unset_returns_none():
     assert get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT") is None
 
-    # Use non standard default keyword to ensure default value is used
+
+def test_env_var_custom_keyword_triggers_default():
     os.environ["PELORUS_DEFAULT_KEYWORD"] = "usepelorusdefaultvalue"
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = "usepelorusdefaultvalue"
     assert (
@@ -74,7 +82,8 @@ def test_env_var_default():
         == "test_default_value"
     )
 
-    # Use env variable instead of default value
+
+def test_env_var_custom_keyword_real_value_returned():
     os.environ["PELORUS_DEFAULT_KEYWORD"] = "usepelorusdefaultvalue"
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = "some_value"
     assert (
@@ -82,13 +91,15 @@ def test_env_var_default():
         == "some_value"
     )
 
-    # No default value found with use of custom default keyword
+
+def test_env_var_custom_keyword_without_fallback_raises():
     os.environ["PELORUS_DEFAULT_KEYWORD"] = "usepelorusdefaultvalue"
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = "usepelorusdefaultvalue"
     with pytest.raises(ValueError):
         get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT")
 
-    # Case where the env variable may be exactly the same as the default value:
+
+def test_env_var_standard_keyword_not_custom_keyword():
     os.environ["PELORUS_DEFAULT_KEYWORD"] = "usepelorusdefaultvalue"
     os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"] = pelorus.utils.DEFAULT_VAR_KEYWORD
     assert (
@@ -96,11 +107,8 @@ def test_env_var_default():
         == pelorus.utils.DEFAULT_VAR_KEYWORD
     )
 
-    # If there is no env variable set, default should be returned
-    if "PELORUS_DEFAULT_KEYWORD" in os.environ:
-        del os.environ["PELORUS_DEFAULT_KEYWORD"]
-    if "PELORUS_TEST_ENV_VAR_DEFAULT" in os.environ:
-        del os.environ["PELORUS_TEST_ENV_VAR_DEFAULT"]
+
+def test_env_var_unset_with_fallback_returns_default():
     assert (
         get_env_var("PELORUS_TEST_ENV_VAR_DEFAULT", "default_value") == "default_value"
     )

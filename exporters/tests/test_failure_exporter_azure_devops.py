@@ -14,7 +14,6 @@
 #
 
 import os
-from contextlib import nullcontext
 from typing import Optional
 
 import pytest
@@ -66,10 +65,8 @@ def setup_azure_devops_collector(
 def test_azure_devops_search():
     collector = setup_azure_devops_collector(AZURE_DEVOPS_TOKEN)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 213
     assert len([issue for issue in issues if issue.resolutiondate is None]) == 210
     assert len([issue for issue in issues if issue.resolutiondate]) == 3
@@ -88,10 +85,8 @@ def test_azure_devops_search_with_multiple_filters():
         projects="todolist,test-pelorus,wrong",
     )
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 1
 
 
@@ -104,10 +99,8 @@ def test_azure_devops_search_with_multiple_filters():
 def test_azure_devops_search_with_type(_type: str):
     collector = setup_azure_devops_collector(AZURE_DEVOPS_TOKEN, work_item_type=_type)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == NUMBER_OF_WORK_ITEMS[_type]
 
 
@@ -120,11 +113,8 @@ def test_azure_devops_search_with_type(_type: str):
 def test_azure_devops_search_with_wrong_type(_type: str):
     collector = setup_azure_devops_collector(AZURE_DEVOPS_TOKEN, work_item_type=_type)
 
-    with nullcontext() as context:
-        # TODO should break or at least warn user?
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 0
 
 
@@ -139,10 +129,8 @@ def test_azure_devops_search_with_priority(priority: str):
         AZURE_DEVOPS_TOKEN, work_item_priority=priority
     )
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == NUMBER_OF_WORK_ITEMS[priority]
 
 
@@ -157,11 +145,8 @@ def test_azure_devops_search_with_wrong_priority(priority: str):
         AZURE_DEVOPS_TOKEN, work_item_priority=priority
     )
 
-    with nullcontext() as context:
-        # TODO should break or at least warn user?
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 0
 
 
@@ -174,10 +159,8 @@ def test_azure_devops_search_with_wrong_priority(priority: str):
 def test_azure_devops_search_with_project(project: str):
     collector = setup_azure_devops_collector(AZURE_DEVOPS_TOKEN, projects=project)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == NUMBER_OF_WORK_ITEMS[project]
 
 
@@ -190,11 +173,8 @@ def test_azure_devops_search_with_project(project: str):
 def test_azure_devops_search_with_wrong_project(project: str):
     collector = setup_azure_devops_collector(AZURE_DEVOPS_TOKEN, projects=project)
 
-    with nullcontext() as context:
-        # TODO should break or at least warn user?
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 0
 
 
@@ -207,10 +187,8 @@ def test_azure_devops_search_with_wrong_project(project: str):
 def test_azure_devops_search_with_app_label(app_label: str):
     collector = setup_azure_devops_collector(AZURE_DEVOPS_TOKEN, app_label=app_label)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert (
         len([issue for issue in issues if issue.app != "unknown"])
         == NUMBER_OF_WORK_ITEMS[app_label]
@@ -226,9 +204,6 @@ def test_azure_devops_search_with_app_label(app_label: str):
 def test_azure_devops_search_with_wrong_app_label(app_label: str):
     collector = setup_azure_devops_collector(AZURE_DEVOPS_TOKEN, app_label=app_label)
 
-    with nullcontext() as context:
-        # TODO should break or at least warn user?
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len([issue for issue in issues if issue.app != "unknown"]) == 0

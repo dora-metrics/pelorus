@@ -39,7 +39,7 @@ only to find that they missed the second required env var.
 Errors that can be reported in parallel absolutely should be reported in parallel.
 
 This idea (in the abstract) is even acknowledged by python itself
-in the upcoming "exception groups" feature.
+in the "exception groups" feature (built into Python 3.11+).
 
 # What is `NOTHING`?
 
@@ -54,24 +54,21 @@ usually made with something like `SENTINEL = object()`.
 As for why it's re-exported in its own file, that's so typing tools such as mypy and pyright
 can use it in a type signature, making sure the NOTHING case is handled.
 
-This will be unnecessary if [the PR changing the typing](https://github.com/python-attrs/attrs/pull/983) is merged.
+The upstream [PR changing the typing](https://github.com/python-attrs/attrs/pull/983) was merged in attrs 22.2.0,
+but mypy still cannot use aliased enum members in `Literal[]`. The `.pyi` stub remains necessary until mypy gains that support.
 
-# Why are there so many type annotations? What are `.pyi` files?
+# Why are there type annotations and a `.pyi` file?
 
 mypy and pyright tools will type check python code.
 They can catch _so many_ errors that would otherwise happen at runtime,
 and provide even more helpful code completion / inline documentation support.
-There's a reason why Guido Van Rossum is working so heavily on mypy!
 
 `.pyi` files are "type stubs": they are checked for type information by typing tools,
 but ignored at runtime.
 
-We only use them for two things.
-
-First, to use `NOTHING` as its own type (see above).
-
-Secondly, for `attrs.Factory`.
+We use one (`pelorus/utils/_attrs_compat.pyi`) to override the types
+of `NOTHING` and `attrs.Factory` for better type checking.
 Because a class's fields are marked as their runtime type (e.g. `str`, `bool`),
-but `field` returns an `attrs.Attribute`, their type stubs have to lie about the
+but `field` returns an `attrs.Attribute`, attrs' type stubs have to lie about the
 return value of both `field` and `attrs.Factory` to keep the type checker happy.
-We undo that.
+The `.pyi` file undoes that.

@@ -19,10 +19,14 @@ import hmac
 import http
 import json
 import logging
-from typing import Any, Awaitable, Dict
+from typing import Any, Optional
 
-from pydantic import ValidationError, parse_obj_as
-from typing_extensions import override
+from pydantic import TypeAdapter, ValidationError
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 
 from webhook.models.pelorus_webhook import (
     CommitTimePelorusPayload,
@@ -40,87 +44,61 @@ from .pelorus_handler_base import (
     PelorusWebhookResponse,
 )
 
+_HEADERS_ADAPTER = TypeAdapter(PelorusDeliveryHeaders)
+
+_SEPARATOR_FORMATS = [
+    (", ", ": "),
+    (",", ":"),
+    (", ", ":"),
+    (",", " :"),
+    (", ", " :"),
+]
+
 
 def _verify_payload_signature(
-    secret: bytes, signature_secret: str, json_payload_data: Dict[str, str]
+    secret: bytes, signature_secret: str, json_payload_data: dict[str, Any],
+    raw_body: Optional[bytes] = None,
 ) -> bool:
-    """
-    This function attempts to match the hash of a payload to its data,
-    with the understanding that the input JSON may be formatted slightly
-    differently, such as having different separators or newlines.
+    """Verify HMAC-SHA256 signature against the raw body first, then
+    fall back to re-serialized JSON variants (different separators/whitespace)
+    to tolerate formatting differences between sender and receiver."""
 
-    Any change to a single character in the sender's JSON input will
-    change its hash signature. Therefore, on the webhook side,
-    this function attempts to ignore separators and newline characters
-    in order to match the incoming hash using variations of those formats
-    that do not affect the payload data.
+    # Fast path: verify against raw request body (standard webhook pattern).
+    # This avoids re-serializing JSON in multiple formats when the sender
+    # signed the raw HTTP body, which is the common case.
+    if raw_body is not None:
+        sha256_signature = (
+            "sha256="
+            + hmac.new(secret, raw_body, hashlib.sha256).hexdigest()
+        )
+        if hmac.compare_digest(sha256_signature, signature_secret):
+            return True
 
-    To illustrate this point, consider the following variations of
-    the same JSON input, which are actually equivalent:
+    # Fallback: try re-serialized JSON variants for senders that sign
+    # a differently-formatted JSON string than what they transmit.
+    for separator in _SEPARATOR_FORMATS:
+        base_json = json.dumps(
+            json_payload_data, separators=separator, indent=None
+        ).rstrip("\n")
 
-    {"data": "value", "data2": "value2"}
-    {"data":"value","data2":"value2"}
-    {"data":"value", "data2":"value2"}
-    {"data" :"value","data2" :"value2"}
-    {"data" :"value", "data2" :"value2"}
-    {"data": "value", "data2": "value2"}\n
-    {"data":"value","data2":"value2"}\n
-    {"data":"value", "data2":"value2"}\n
-    {"data" :"value","data2" :"value2"}\n
-    {"data" :"value", "data2" :"value2"}\n
-    { "data": "value", "data2": "value2" }
-    { "data":"value","data2":"value2" }
-    { "data":"value", "data2":"value2" }
-    { "data" :"value","data2" :"value2" }
-    { "data" :"value", "data2" :"value2" }
-    { "data": "value", "data2": "value2" }\n
-    { "data":"value","data2":"value2" }\n
-    { "data":"value", "data2":"value2" }\n
-    { "data" :"value","data2" :"value2" }\n
-    { "data" :"value", "data2" :"value2" }\n
+        extra_spaces = "{ " + base_json[1:-1] + " }"
+        variants = (
+            base_json,                  # no_extra_spaces_no_newline
+            base_json + "\n",           # no_extra_spaces_newline
+            extra_spaces,               # extra_spaces_no_newline
+            extra_spaces + "\n",        # extra_spaces_newline
+        )
 
-    Returns:
-        bool: True when the matching hash was found, False otherwise
-    """
-
-    separator_formats = [
-        (", ", ": "),
-        (",", ":"),
-        (", ", ":"),
-        (",", " :"),
-        (", ", " :"),
-    ]
-    additional_transformation = [
-        "extra_spaces_no_newline",
-        "extra_spaces_newline",
-        "no_extra_spaces_no_newline",
-        "no_extra_spaces_newline",
-    ]
-
-    for separator in separator_formats:
-        for transformation in additional_transformation:
-            # no_extra_spaces_no_newline - default
-            payload_json_string = json.dumps(
-                json_payload_data, separators=separator, indent=None
-            )
-            payload_json_string = payload_json_string.rstrip("\n")
-
-            if transformation == "extra_spaces_no_newline":
-                payload_json_string = "{ " + payload_json_string[1:-1] + " }"
-            elif transformation == "extra_spaces_newline":
-                payload_json_string = "{ " + payload_json_string[1:-1] + " }"
-                payload_json_string = payload_json_string + "\n"
-            elif transformation == "no_extra_spaces_newline":
-                payload_json_string = payload_json_string + "\n"
-
-            encoded_payload = payload_json_string.encode("utf-8")
-
+        for payload_json_string in variants:
             sha256_signature = (
                 "sha256="
-                + hmac.new(secret, encoded_payload, hashlib.sha256).hexdigest()
+                + hmac.new(
+                    secret,
+                    payload_json_string.encode("utf-8"),
+                    hashlib.sha256,
+                ).hexdigest()
             )
 
-            # "X-Hub-Signature-256: sha256=<SHA256_VALUE>"
             if hmac.compare_digest(sha256_signature, signature_secret):
                 return True
     return False
@@ -166,20 +144,23 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
         super().__init__(*args, **kwargs)
         self.payload_headers = None
 
+    @staticmethod
     def _pelorus_committime(payload) -> CommitTimePelorusPayload:
         return CommitTimePelorusPayload(**payload)
 
+    @staticmethod
     def _pelorus_failure(payload) -> FailurePelorusPayload:
         return FailurePelorusPayload(**payload)
 
+    @staticmethod
     def _pelorus_deploytime(payload) -> DeployTimePelorusPayload:
         return DeployTimePelorusPayload(**payload)
 
     # Mapping between event_type given by the
     # X-Pelorus-Event that is stored in the PelorusDeliveryHeaders
-    # and functions for its' relevant pydantic payload models
+    # and functions for its relevant pydantic payload models.
     #
-    # For 'ping' X-Pelorus_event a pong classmethod that raises
+    # For 'ping' X-Pelorus-Event a pong classmethod that raises
     # HTTPException to send 'pong' response is used.
     handler_functions = {
         PelorusMetricSpec.PING: PelorusWebhookResponse.pong,
@@ -189,7 +170,7 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
     }
 
     @override
-    async def _handshake(self, headers: Headers) -> Awaitable[bool]:
+    async def _handshake(self, headers: Headers) -> bool:
         """
         Initial handshake implementation called by the plugin's base handler
         method. The headers must match the PelorusDeliveryHeaders model to
@@ -197,72 +178,98 @@ class PelorusWebhookHandler(PelorusWebhookPlugin):
         is raised to inform user agent about improper headers immediately.
 
         Returns:
-            bool: True when the handshake based on the headers were success
+            bool: True when the headers pass validation.
 
         Raises:
-            HTTPException: headers were improper - validated by pydantic
-                           handler were configured with signature, but no
-                           signature was found in the headers.
+            HTTPException: headers were invalid (validated by pydantic),
+                           or the handler requires a signature but none
+                           was found in the headers.
         """
         try:
-            self.payload_headers = parse_obj_as(PelorusDeliveryHeaders, headers)
+            self.payload_headers = _HEADERS_ADAPTER.validate_python(dict(headers))
             if self.secret and not self.payload_headers.x_hub_signature_256:
                 raise HTTPException(
-                    status_code=http.HTTPStatus.BAD_REQUEST,
-                    detail="Non existing signature.",
+                    status_code=http.HTTPStatus.UNAUTHORIZED,
+                    detail="Missing signature.",
                 )
-            return issubclass(type(self.payload_headers), PelorusDeliveryHeaders)
+            return isinstance(self.payload_headers, PelorusDeliveryHeaders)
         except ValidationError as ex:
-            logging.error(headers)
-            logging.error(ex)
+            sensitive = ("x-hub-signature-256", "authorization")
+            safe_headers = {
+                k: v for k, v in dict(headers).items()
+                if k.lower() not in sensitive
+            }
+            logging.error(
+                "Handshake failed: %d validation error(s), headers: %s",
+                ex.error_count(), safe_headers,
+            )
+            logging.debug("Handshake validation details: %s", ex.errors())
             raise HTTPException(
                 status_code=http.HTTPStatus.BAD_REQUEST,
-                detail="Improper headers.",
-            )
+                detail="Invalid headers.",
+            ) from ex
 
     @override
     async def _receive_pelorus_payload(
         self, json_payload_data: Any
-    ) -> Awaitable[PelorusMetric]:
+    ) -> PelorusMetric:
         """
         Receive payload from the json_payload_data and converts it to the
         proper PelorusMetric by using mapping from the handler_functions.
 
-
         Returns:
-            Awaitable[PelorusMetric]: with the proper Pelorus payload data.
+            PelorusMetric: with the proper Pelorus payload data.
 
         Raises:
             HTTPException: If the json_payload was not in a format required
                            by the handler function requested for that payload
-                           in the header's 'X-Pelorus_event' event_type.
+                           in the header's 'X-Pelorus-Event' event_type.
         """
-        if self.payload_headers and self.payload_headers.event_type:
-            try:
-                if self.secret:
-                    if not _verify_payload_signature(
-                        self.secret.encode("utf-8"),
-                        self.payload_headers.x_hub_signature_256,
-                        json_payload_data,
-                    ):
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.BAD_REQUEST,
-                            detail="Invalid signature.",
-                        )
+        if not self.payload_headers or not self.payload_headers.event_type:
+            raise HTTPException(
+                status_code=http.HTTPStatus.BAD_REQUEST,
+                detail="Missing or invalid event type header.",
+            )
 
-                data = self.handler_functions[self.payload_headers.event_type](
-                    json_payload_data
-                )
-                return PelorusMetric(
-                    metric_spec=self.payload_headers.event_type, metric_data=data
-                )
-            except ValidationError as ex:
-                logging.error(self.payload_headers)
-                logging.error(json_payload_data)
-                logging.error(ex)
-                error_fields = ",".join(ex.errors()[0].get("loc"))
-                error_str = ex.errors()[0].get("msg")
+        try:
+            if self.secret:
+                raw_body = await self.request.body()
+                if not _verify_payload_signature(
+                    self.secret.encode("utf-8"),
+                    self.payload_headers.x_hub_signature_256,
+                    json_payload_data,
+                    raw_body=raw_body,
+                ):
+                    logging.warning(
+                        "HMAC signature verification failed for event %s",
+                        self.payload_headers.event_type,
+                    )
+                    raise HTTPException(
+                        status_code=http.HTTPStatus.UNAUTHORIZED,
+                        detail="Invalid signature.",
+                    )
+
+            handler_fn = self.handler_functions.get(self.payload_headers.event_type)
+            if handler_fn is None:
                 raise HTTPException(
                     status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
-                    detail=f"Invalid payload: {error_str}: {error_fields}",
+                    detail=f"Unsupported event type: {self.payload_headers.event_type}",
                 )
+
+            data = handler_fn(json_payload_data)
+            return PelorusMetric(
+                metric_spec=self.payload_headers.event_type, metric_data=data
+            )
+        except ValidationError as ex:
+            first_error = ex.errors()[0]["msg"] if ex.errors() else "unknown"
+            logging.error(
+                "Payload validation failed for event %s: %d error(s), first: %s",
+                self.payload_headers.event_type,
+                ex.error_count(),
+                first_error,
+            )
+            logging.warning("Validation errors: %s", ex.errors())
+            raise HTTPException(
+                status_code=http.HTTPStatus.UNPROCESSABLE_ENTITY,
+                detail="Invalid payload format.",
+            ) from ex

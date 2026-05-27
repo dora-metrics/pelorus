@@ -1,3 +1,4 @@
+{{- if ne .Values.operator_source "redhat" }}
 ---
 apiVersion: v1
 kind: Service
@@ -5,23 +6,24 @@ metadata:
   labels:
     prometheus: prometheus-pelorus
   name: prometheus-pelorus
+{{- if .Values.oauth_proxy_enabled }}
   annotations:
     service.alpha.openshift.io/serving-cert-secret-name: prometheus-pelorus-tls
+{{- end }}
 spec:
   ports:
   - name: web
     port: 9090
     protocol: TCP
     targetPort: web
+{{- if .Values.oauth_proxy_enabled }}
   - name: web-tls
     port: 9091
     protocol: TCP
     targetPort: web-tls
+{{- end }}
   selector:
     app.kubernetes.io/name: prometheus
     prometheus: prometheus-pelorus
-  sessionAffinity: ClientIP
-  sessionAffinityConfig:
-    clientIP:
-      timeoutSeconds: 10800
   type: ClusterIP
+{{- end }}

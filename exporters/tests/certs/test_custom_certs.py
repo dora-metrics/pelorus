@@ -12,7 +12,8 @@ def test_custom_requests_certs(
     session = requests.Session()
     session.verify = str(combined_certificates)
 
-    session.get(f"https://127.0.0.1:{https_server.server_port}")
+    response = session.get(f"https://127.0.0.1:{https_server.server_port}", timeout=30)
+    assert response.status_code == 204
 
 
 @pytest.mark.integration
@@ -23,4 +24,5 @@ def test_custom_certs_still_work_with_public_certs(combined_certificates: str):
     session = requests.Session()
     session.verify = combined_certificates
 
-    session.get("https://example.net")
+    response = session.get("https://example.net", timeout=30)
+    assert response.status_code == 200

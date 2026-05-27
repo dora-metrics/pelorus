@@ -1,11 +1,10 @@
 from typing import Any, Collection, Literal, Mapping, Optional, Sequence, Union
 
 import attrs
-from attrs import Attribute, frozen
+from attrs import NOTHING, Attribute, Factory, frozen
 
 from pelorus.config.common import Metadata
 from pelorus.config.log import SKIP, Log, _get_log_meta, _should_log
-from pelorus.utils._attrs_compat import NOTHING, Factory
 
 _ENV_LOOKUPS_KEY = "__pelorus_config_env_vars"
 
@@ -25,13 +24,10 @@ def no_env_vars() -> Metadata:
     return {_ENV_LOOKUPS_KEY: tuple()}
 
 
-# region: errors
 class MissingDataError(Exception):
     """
     Parent error for any data missing during loading.
     """
-
-    pass
 
 
 @frozen
@@ -97,11 +93,6 @@ class MissingConfigDataError(Exception):
         )
 
 
-# endregion
-
-# region: successes
-
-
 @frozen
 class ValueWithSource:
     """
@@ -113,12 +104,11 @@ class ValueWithSource:
     log: Log = attrs.field(kw_only=True)
 
     def source(self) -> str:
-        ...
+        raise NotImplementedError
 
 
 @frozen
 class FoundEnvVar(ValueWithSource):
-    "Found it in an env var"
     env_name: str
 
     def source(self):
@@ -127,8 +117,7 @@ class FoundEnvVar(ValueWithSource):
 
 @frozen
 class UnsetEnvVar(ValueWithSource):
-    "No env var, came from attrs"
-    env_lookups: tuple[str]
+    env_lookups: tuple[str, ...]
 
     def source(self):
         if len(self.env_lookups) == 1:
@@ -139,7 +128,6 @@ class UnsetEnvVar(ValueWithSource):
 
 @frozen
 class DefaultSetEnvVar(ValueWithSource):
-    "Env var was set to default keyword"
     env_name: str
     default_keyword: str
 
@@ -149,29 +137,21 @@ class DefaultSetEnvVar(ValueWithSource):
 
 @frozen
 class OtherVar(ValueWithSource):
-    "Value came from `other` dict"
-
     def source(self):
         return "passed in from `other` dict"
 
 
-# endregion
-
-
 @frozen
 class _EnvFinder:
-    "Load from environment or get default"
+    """Resolve a field value from `other`, environment, or attrs default."""
     field: Attribute
     env: Mapping[str, str]
-    env_lookups: tuple[str]
+    env_lookups: tuple[str, ...]
     default_keyword: str
     other: Mapping[str, Any]
 
     @property
     def name(self):
-        """
-        Field name.
-        """
         return self.field.name
 
     def _first_env_match(self) -> Optional[str]:
@@ -188,7 +168,6 @@ class _EnvFinder:
         """
         Get the default value for this field, invoking the attrs.Factory if necessary.
         Returns `NOTHING` if there was no default defined.
-
         """
         default = self.field.default
         if isinstance(default, Factory):

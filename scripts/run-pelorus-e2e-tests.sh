@@ -27,8 +27,10 @@ PROW_S3_SECRETS_DIR="/var/run/konveyor/pelorus/pelorus-s3amazon/"
 # Binary build script
 BINARY_BUILD_SCRIPT="${SCRIPT_DIR}/e2e-tests-templates/build_binary_app.sh"
 
-# Needs to match the SECRET_TOKEN from the Pelorus configuration files
-WEBHOOK_SECRET_TOKEN="MySecretToken"
+# Needs to match the SECRET_TOKEN from the Pelorus configuration files.
+# Override via WEBHOOK_SECRET_TOKEN env var; the default is intentionally weak
+# and must only be used in ephemeral CI environments.
+WEBHOOK_SECRET_TOKEN="${WEBHOOK_SECRET_TOKEN:-MySecretToken}"
 WEBHOOK_EXPORTER_WITH_SECRET_NAME="webhook-secret-exporter"
 WEBHOOK_EXPORTER_NAME="webhook-exporter"
 
@@ -100,14 +102,14 @@ function retry() {
 }
 
 function print_help() {
-    printf "\nUsage: %s [OPTION]... -d [DIR]\n\n" "$0"
+    printf "\nUsage: %s [OPTION]...\n\n" "$0"
     printf "\tStartup:\n"
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
-    printf "\t  -o\tgithub organization of the mig-demo-apps. By default, konveyor\n"
-    printf "\t  -b\tbranch of the mig-demo-apps. By default, master\n"
-    printf "\t  -f\tvalues filename of the mig-demo-apps. By default, values.yaml\n"
-    printf "\t  -d\tpath to Python virtual environment DIR. By default, the project's one\n"
+    printf "\t  -o\tgithub organization of the mig-demo-apps (default: konveyor)\n"
+    printf "\t  -b\tbranch of the mig-demo-apps (default: master)\n"
+    printf "\t  -f\tvalues filename of the mig-demo-apps (default: values.yaml)\n"
+    printf "\t  -d\tpath to Python virtual environment DIR (default: project .venv)\n"
     printf "\t  -s\t(USED ONLY IN PROW CI) path to DIR with secrets files. For local runs, run 'export SECRET_NAME=VALUE'\n"
     printf "\t  -t\tenable Thanos (long term persistent storage) tests with s3 bucket\n"
     printf "\t  -c\tpath to DIR with secrets files for s3 bucket\n"
@@ -138,9 +140,9 @@ set -a
 PELORUS_NAMESPACE="${PELORUS_NAMESPACE}"
 function ogn() { printf "oc get --namespace %s $*\n" "${PELORUS_NAMESPACE}"; oc get --namespace "${PELORUS_NAMESPACE}" "$@"; }
 function ogns() { printf "oc get --namespace %s svc $*\n" "${PELORUS_NAMESPACE}"; oc get --namespace "${PELORUS_NAMESPACE}" svc "$@"; }
-function ornds() { printf "oc rollout status --namespace %s deployments $*\n" "${PELORUS_NAMESPACE}"; oc rollout status --namespace ${PELORUS_NAMESPACE} deployments "$@"; }
-function owpr() { printf "oc wait pod --for=condition=Ready -n %s -l pelorus.dora-metrics.io/exporter-type=$*\n" "${PELORUS_NAMESPACE}"; oc wait pod --for=condition=Ready -n ${PELORUS_NAMESPACE} -l pelorus.dora-metrics.io/exporter-type="$*"; }
-function owr() { printf "oc wait --for=condition=Ready -n %s $*\n" "${PELORUS_NAMESPACE}"; oc wait --for=condition=Ready -n ${PELORUS_NAMESPACE} "$*"; }
+function ornds() { printf "oc rollout status --namespace %s deployments $*\n" "${PELORUS_NAMESPACE}"; oc rollout status --namespace "${PELORUS_NAMESPACE}" deployments "$@"; }
+function owpr() { printf "oc wait pod --for=condition=Ready -n %s -l pelorus.dora-metrics.io/exporter-type=$*\n" "${PELORUS_NAMESPACE}"; oc wait pod --for=condition=Ready -n "${PELORUS_NAMESPACE}" -l pelorus.dora-metrics.io/exporter-type="$*"; }
+function owr() { printf "oc wait --for=condition=Ready -n %s $*\n" "${PELORUS_NAMESPACE}"; oc wait --for=condition=Ready -n "${PELORUS_NAMESPACE}" "$*"; }
 set +a
 
 ### Options
@@ -229,6 +231,12 @@ fi
 
 if [ -z "${demo_org}" ]; then
     demo_org="konveyor"
+fi
+
+# Validate demo_org to prevent injection in sed/URL substitutions
+if ! [[ "${demo_org}" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+    echo "ERROR: demo_org contains invalid characters: ${demo_org}" >&2
+    exit 1
 fi
 
 if [ -z "${ci_filename}" ]; then
@@ -389,7 +397,7 @@ function create_k8s_secret() {
     local env_user_name="${3:-NO_USERNAME_DEFINED_VAR}"
 
     SECRET_CONFIGURED=false
-    oc -n $PELORUS_NAMESPACE get secret "${secret_name}"
+    oc -n "${PELORUS_NAMESPACE}" get secret "${secret_name}"
     secret_present=$?
     if [[ $secret_present = 0 ]]; then
         echo "Secret $secret_name was found"
@@ -779,7 +787,8 @@ fi
 if [ "${ENABLE_THANOS}" == true ]; then
     THANOS_QUERY_HOST=$(oc get route thanos-pelorus -n pelorus --no-headers -o custom-columns="HOST:spec.host")
     echo "Thanos query host: $THANOS_QUERY_HOST"
-    DEPLOY_NO=$(curl -u internal:changeme -k --data-urlencode 'query=count(count_over_time(deploy_timestamp{app="todolist"}[20y]))' "https://${THANOS_QUERY_HOST}/api/v1/query" | jq -r '.data.result[] | [.value]' | grep \" | tr -dc '0-9')
+    THANOS_BASIC_AUTH="${THANOS_BASIC_AUTH:-internal:changeme}"
+    DEPLOY_NO=$(curl -u "${THANOS_BASIC_AUTH}" -k --data-urlencode 'query=count(count_over_time(deploy_timestamp{app="todolist"}[20y]))' "https://${THANOS_QUERY_HOST}/api/v1/query" | jq -r '.data.result[] | [.value]' | grep \" | tr -dc '0-9')
     echo "Deploy count: $DEPLOY_NO"
     if [ "$DEPLOY_NO" -lt "3" ]; then
         echo "Thanos and s3 data is not as expected"

@@ -4,7 +4,7 @@ from typing import Optional, cast
 
 import attr
 import pytest
-from openshift.dynamic import DynamicClient
+from kubernetes.dynamic import DynamicClient
 
 from committime import CommitMetric
 from committime.app import GitCommittimeConfig

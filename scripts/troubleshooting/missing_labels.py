@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import json
@@ -116,7 +116,7 @@ class Troubleshooter:
             query=dict(
                 label_selector=f"!{APP_LABEL}",
                 field_selector="status.phase=Running",
-                namespace=namespace,
+                namespace=self.namespace,
             ),
         ):
             yield PodId(ResourceIdentifier.from_instance(pod))
@@ -136,13 +136,13 @@ class Troubleshooter:
             query=dict(
                 label_selector=APP_LABEL,
                 field_selector="status.phase=Running",
-                namespace=namespace,
+                namespace=self.namespace,
             ),
         ):
             for owner in pod.metadata.ownerReferences:
                 rep_id = ReplicatorId(
                     ResourceIdentifier(
-                        owner.apiVersion, owner.kind, namespace, owner.name
+                        owner.apiVersion, owner.kind, self.namespace, owner.name
                     )
                 )
 
@@ -161,8 +161,8 @@ class Troubleshooter:
                     # unknown kind
                     continue
 
-                replicator_instance = client.get(
-                    replicator_resource, namespace=namespace, name=rep_id.name
+                replicator_instance = self.client.get(
+                    replicator_resource, namespace=self.namespace, name=rep_id.name
                 )
 
                 if getattr(replicator_instance.metadata.labels, APP_LABEL, None):
@@ -178,7 +178,7 @@ class Troubleshooter:
     def builds_with_missing_app_labels(self) -> Generator[BuildId, None, None]:
         # TODO: missing required metadata as well
         for build in paginate_resource(
-            self.builds, query=dict(label_selector=f"!{APP_LABEL}", namespace=namespace)
+            self.builds, query=dict(label_selector=f"!{APP_LABEL}", namespace=self.namespace)
         ):
             yield BuildId(ResourceIdentifier.from_instance(build))
 
@@ -198,6 +198,7 @@ class Report(Protocol):
 
 @frozen
 class DeploytimeTroubleshootingReport:
+    namespace: str
     app_label: str = field(default=APP_LABEL, init=False)
     duration: timedelta
 
@@ -236,7 +237,7 @@ class DeploytimeTroubleshootingReport:
             for rep, pods in self.replicators_missing_app_label.items()
         ]
         return dict(
-            namespace=namespace,
+            namespace=self.namespace,
             app_label=self.app_label,
             duration=self.duration.total_seconds(),
             pods_missing_app_label=pods_missing_label,
@@ -250,11 +251,12 @@ class DeploytimeTroubleshootingReport:
         replicators = troubleshooter.replicators_missing_app_label()
         duration = datetime.now() - start
 
-        return cls(duration, pods, replicators)
+        return cls(troubleshooter.namespace, duration, pods, replicators)
 
 
 @frozen
 class CommittimeTroubleshootingReport:
+    namespace: str
     app_label: str = field(default=APP_LABEL, init=False)
     duration: timedelta
 
@@ -267,11 +269,11 @@ class CommittimeTroubleshootingReport:
 
         print("The following builds were missing the app label", self.app_label)
         for build in self.builds_missing_app_label:
-            print(build.name)
+            print(" ", build.name)
 
     def to_json(self) -> dict:
         return dict(
-            namespace=namespace,
+            namespace=self.namespace,
             app_label=self.app_label,
             duration=self.duration.total_seconds(),
             builds_missing_app_label=[
@@ -285,7 +287,7 @@ class CommittimeTroubleshootingReport:
         builds = list(troubleshooter.builds_with_missing_app_labels())
         duration = datetime.now() - start
 
-        return cls(duration, builds)
+        return cls(troubleshooter.namespace, duration, builds)
 
 
 def asdict_serializer(_inst, _attr, value):
@@ -306,8 +308,11 @@ reports_by_name = dict(
 
 # region: main
 parser = argparse.ArgumentParser(
-    description=f"""Troubleshoot resources that are not appearing in pelorus.
-    To set the app label to search, set the environment variable APP_LABEL. Defaults to {pelorus.DEFAULT_APP_LABEL}"""
+    description=(
+        "Troubleshoot resources that are not appearing in pelorus. "
+        "To set the app label to search, set the environment variable APP_LABEL. "
+        f"Defaults to {pelorus.DEFAULT_APP_LABEL}."
+    )
 )
 parser.add_argument(
     "--namespace", "-n", required=True, help="Which namespace to look in."

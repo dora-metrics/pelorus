@@ -15,19 +15,19 @@
 
 import json
 import os
-from contextlib import nullcontext
+from pathlib import Path
 from typing import Optional
-from unittest import mock  # NOQA
+from unittest import mock
 
 import pytest
 from jira.exceptions import JIRAError
 from jira.resources import Issue
 
 from failure import collector_jira
-from failure.collector_github import GithubFailureCollector
+from failure.collector_github import GitHubFailureCollector
 from failure.collector_jira import DEFAULT_JQL_SEARCH_QUERY, JiraFailureCollector
 from pelorus.config import load_and_log
-from pelorus.errors import FailureProviderAuthenticationError
+from failure.collector_base import FailureProviderAuthenticationError
 from tests import run_prometheus_register
 
 JIRA_SERVER = "https://pelorustest.atlassian.net"
@@ -74,10 +74,8 @@ def test_jira_error_connection(token: str):
 def test_jira_search_with_projects(projects):
     collector = setup_jira_collector(JIRA_USERNAME, JIRA_TOKEN, projects)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 103
     assert len([issue for issue in issues if issue.app == "unknown"]) == 4
 
@@ -94,10 +92,8 @@ def test_jira_search_with_app_name():
         JIRA_USERNAME, JIRA_TOKEN, projects="Test", app_name="robotron"
     )
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 103
     assert len([issue for issue in issues if issue.app == "unknown"]) == 0
     assert len([issue for issue in issues if issue.app == "robotron"]) == 4
@@ -116,10 +112,8 @@ def test_jira_search_with_app_name():
 def test_jira_search_with_projects_without_results(projects):
     collector = setup_jira_collector(JIRA_USERNAME, JIRA_TOKEN, projects)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 0
 
 
@@ -145,10 +139,8 @@ def test_jira_search_with_jql(jql):
         jql_query_string=jql,
     )
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 103
     assert len([issue for issue in issues if issue.app == "unknown"]) == 4
 
@@ -175,10 +167,8 @@ def test_jira_search_with_jql_without_results(jql):
         jql_query_string=jql,
     )
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 0
 
 
@@ -196,17 +186,17 @@ def test_jira_search_with_wrong_jql():
         jql_query_string='type in ("Not a type")',
     )
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 0
 
 
+@mock.patch("failure.collector_jira.set_up_requests_certs")
 @mock.patch("failure.collector_jira.JIRA")
-def test_basic_auth_connect_to_jira(jira_mock):
+def test_basic_auth_connect_to_jira(jira_mock, certs_mock):
     jira_client_mock = mock.MagicMock()
     jira_mock.return_value = jira_client_mock
+    certs_mock.return_value = "/path/to/certs.pem"
 
     collector = JiraFailureCollector(
         tracker_api="https://my.jira.server.com", username="user", token="token"
@@ -215,15 +205,18 @@ def test_basic_auth_connect_to_jira(jira_mock):
     jira_client_mock.session.assert_called_once()
 
     jira_mock.assert_called_once_with(
-        options={"server": "https://my.jira.server.com"}, basic_auth=("user", "token")
+        options={"server": "https://my.jira.server.com", "verify": "/path/to/certs.pem", "timeout": 30},
+        basic_auth=("user", "token"),
     )
     assert jira_client == jira_client_mock
 
 
+@mock.patch("failure.collector_jira.set_up_requests_certs")
 @mock.patch("failure.collector_jira.JIRA")
-def test_token_auth_connect_to_jira(jira_mock):
+def test_token_auth_connect_to_jira(jira_mock, certs_mock):
     jira_client_mock = mock.MagicMock()
     jira_mock.return_value = jira_client_mock
+    certs_mock.return_value = "/path/to/certs.pem"
 
     collector = JiraFailureCollector(
         tracker_api="https://my.jira.server.com", token="token"
@@ -232,7 +225,8 @@ def test_token_auth_connect_to_jira(jira_mock):
     jira_client_mock.session.assert_called_once()
 
     jira_mock.assert_called_once_with(
-        options={"server": "https://my.jira.server.com"}, token_auth="token"
+        options={"server": "https://my.jira.server.com", "verify": "/path/to/certs.pem", "timeout": 30},
+        token_auth="token",
     )
     assert jira_client == jira_client_mock
 
@@ -244,10 +238,7 @@ def test_jira_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(JiraFailureCollector, "search_issues", mock_search_issues)
     collector = setup_jira_collector()
 
-    with nullcontext() as context:
-        run_prometheus_register(collector)
-
-    assert context is None
+    run_prometheus_register(collector)
 
 
 def test_jira_exception_is_not_raised(monkeypatch: pytest.MonkeyPatch):
@@ -260,10 +251,8 @@ def test_jira_exception_is_not_raised(monkeypatch: pytest.MonkeyPatch):
     )
     collector = setup_jira_collector()
 
-    with nullcontext() as context:
-        collector.search_issues()
-
-    assert context is None
+    issues = collector.search_issues()
+    assert issues == []
 
 
 @pytest.mark.parametrize("projects", [PROJECTS_COMMA, PROJECTS_SPACES])
@@ -278,20 +267,19 @@ def test_jira_removes_duplicated_projects(projects: str):
 
 def setup_github_collector(
     monkeypatch: Optional[pytest.MonkeyPatch] = None,
-) -> GithubFailureCollector:
+) -> GitHubFailureCollector:
     if monkeypatch:
 
         def _no_github_user(self):
             return None
 
-        monkeypatch.setattr(GithubFailureCollector, "_get_github_user", _no_github_user)
+        monkeypatch.setattr(GitHubFailureCollector, "_get_github_user", _no_github_user)
 
-    return GithubFailureCollector(token="WIEds4uZHiCGnrtmgQPn9E7D")
+    return GitHubFailureCollector(token="test-token-not-real")
 
 
-def get_test_data(file="/exporters/tests/data/github_issue.json"):
-    this_dir = os.path.dirname(os.path.abspath(__name__))
-    test_file = this_dir + file
+def get_test_data(filename="github_issue.json"):
+    test_file = Path(__file__).resolve().parent / "data" / filename
     with open(test_file) as json_file:
         data = json.load(json_file)
     return data
@@ -310,71 +298,66 @@ def test_github_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     def mock_search_issues(self):
         return []
 
-    monkeypatch.setattr(GithubFailureCollector, "search_issues", mock_search_issues)
+    monkeypatch.setattr(GitHubFailureCollector, "search_issues", mock_search_issues)
     collector = setup_github_collector(monkeypatch)
 
-    with nullcontext() as context:
-        run_prometheus_register(collector)
-
-    assert context is None
+    run_prometheus_register(collector)
 
 
-# has label bug and app_label
 def test_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
         issue = data["good_example"]
         return [issue]
 
-    monkeypatch.setattr(GithubFailureCollector, "get_issues", mock_get_issues)
+    monkeypatch.setattr(GitHubFailureCollector, "get_issues", mock_get_issues)
     collector = setup_github_collector(monkeypatch)
     critical_issues = collector.search_issues()
+    assert len(critical_issues) == 1
     assert critical_issues[0].app == "todolist"
     assert critical_issues[0].issue_number == "3"
-    assert critical_issues[0].creationdate == float(1652305808.0)
+    assert critical_issues[0].creationdate == 1652305808.0
     assert critical_issues[0].resolutiondate is None
 
 
-# has label fug ( not bug ) and app_label
 def test_negative_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
         issue = data["no_bug"]
         return [issue]
 
-    monkeypatch.setattr(GithubFailureCollector, "get_issues", mock_get_issues)
+    monkeypatch.setattr(GitHubFailureCollector, "get_issues", mock_get_issues)
     collector = setup_github_collector(monkeypatch)
     critical_issues = collector.search_issues()
     assert critical_issues == []
 
 
-# has label bug and NOT app_label
 def test_negative_label_github_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
         issue = data["no_label"]
         return [issue]
 
-    monkeypatch.setattr(GithubFailureCollector, "get_issues", mock_get_issues)
+    monkeypatch.setattr(GitHubFailureCollector, "get_issues", mock_get_issues)
     collector = setup_github_collector(monkeypatch)
     critical_issues = collector.search_issues()
     assert critical_issues == []
 
 
-# closed bug w/ proper labels
 def test_github_closed_issue_search_issues(monkeypatch: pytest.MonkeyPatch):
     def mock_get_issues(self):
         data = get_test_data()
         issue = data["closed_example"]
         return [issue]
 
-    monkeypatch.setattr(GithubFailureCollector, "get_issues", mock_get_issues)
+    monkeypatch.setattr(GitHubFailureCollector, "get_issues", mock_get_issues)
     collector = setup_github_collector(monkeypatch)
     critical_issues = collector.search_issues()
+    assert len(critical_issues) == 1
     assert critical_issues[0].app == "todolist"
     assert critical_issues[0].issue_number == "3"
-    assert critical_issues[0].creationdate == float(1652305808.0)
-    assert critical_issues[0].resolutiondate == float(1653672080.0)
+    assert critical_issues[0].creationdate == 1652305808.0
+    assert critical_issues[0].resolutiondate == 1653672080.0
 
 
 def test_default_jql_search_query():
@@ -437,7 +420,12 @@ def test_no_resolved_timestamp():
 
 
 def test_custom_resolved_timestamp():
-    collector = setup_jira_collector()
+    collector = JiraFailureCollector(
+        tracker_api=JIRA_SERVER,
+        username="fake@user.com",
+        token="WIEds4uZHiCGnrtmgQPn9E7D",
+        jira_resolved_statuses="Done, Resolved, Other",
+    )
 
     issue_fields = {
         "key": "EXAMPLE-1",
@@ -452,9 +440,7 @@ def test_custom_resolved_timestamp():
     }
     test_issue = Issue(None, None, issue_fields)  # type: ignore
 
-    resolution_timestamp = collector._get_resolved_timestamp(
-        test_issue, "Done, Resolved, Other"
-    )
+    resolution_timestamp = collector._get_resolved_timestamp(test_issue)
 
     assert int(resolution_timestamp) == 1652395843  # type: ignore
 

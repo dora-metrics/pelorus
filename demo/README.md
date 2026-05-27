@@ -1,71 +1,82 @@
 # Pelorus Demo
 
-The following will provide instructions to install and configure Pelorus specifically for the use of this demonstration. 
-This demonstration will make use of a Tekton pipeline to mimic the development of an application and the subsequent deployments.  This is done to populate Pelorus with data.  The Tekton pipeline pulls source code, builds an example python application in OpenShift and deploys the application.
+Scripts for deploying Pelorus and demonstrating DORA metrics capture.
 
-The details of each build type and the steps required to support Pelorus can be found in the [tekton manifest](./tekton-demo-setup/05-build-and-deploy.yaml)
+## Quick Start (OpenShift)
 
+```bash
+# 1. Install Pelorus (builds images, deploys operator)
+./demo/install.sh
 
-## Setup Instructions:
+# 2. Seed sample metrics for 4 teams
+oc port-forward -n pelorus svc/webhook-exporter 18080:8080 &
+./demo/seed-metrics.sh http://localhost:18080
 
-* Install the Pelorus operator, using the installation [documentation](../docs/GettingStarted/Installation.md)
-
-* Fork the [dora-metrics/pelorus](https://github.com/dora-metrics/pelorus) git repository to your github organization.
-
-* Add or configure your github-secret with your Github token:
-```
-oc create secret generic github-secret --from-literal=TOKEN=ghp_<snip> -n pelorus
-```  
-  * Instructions can be found in the [Authentication to Remote Services](../docs/GettingStarted/configuration/PelorusExporters.md#authentication-to-remote-services) section of the documentation.
-
-## Configure Pelorus:
-* Copy the sample Pelorus instance manifest in pelorus/demo/operator_tekton_demo_values.yaml.sample:
-
-```
-cp pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml.sample pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml
+# 3. Open Grafana (wait ~60s for Prometheus to scrape)
+#    Route: https://grafana-route-pelorus.apps-crc.testing
+#    Login: OpenShift SSO (default) or admin/$PELORUS_PASSWORD (OAUTH_ENABLED=false)
+#    Time range: Last 5 minutes
 ```
 
-* Edit pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml to match your github organization:
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `install.sh` | Full install: namespace, operators, image builds, operator deploy, Pelorus CR |
+| `seed-metrics.sh` | Seeds 4 apps with realistic DORA metrics via webhook exporter |
+| `live-demo.sh` | Builds a real app from source and shows metrics capture |
+| `run-demo.sh` | Interactive Helm-based demo |
+| `demo-tekton.sh` | Tekton pipeline demo (requires OpenShift Pipelines) |
+
+## Seed Metrics
+
+`seed-metrics.sh` creates two waves of data for 4 applications with different performance profiles:
+
+| Application | Lead Time | Failure Rate | Profile |
+|---|---|---|---|
+| frontend | ~35s | ~10% | Elite performer |
+| api-gateway | ~3-4 min | ~22% | Medium performer |
+| inventory-service | ~7-8 min | ~15% | Improving |
+| payment-service | ~13 min | ~40% | Struggling |
+
+The two-wave approach (data at ~20 min ago and ~5 min ago) ensures Grafana dashboard comparison panels show real change percentages.
+
+## Presales Demo
+
+See [PRESALES-DEMO.md](PRESALES-DEMO.md) for a guided walkthrough with talking points.
+
+## Tekton Pipeline Demo
+
+For an automated pipeline-driven demo on OpenShift with Tekton:
+
+### Prerequisites
+
+- OpenShift cluster with Tekton Pipelines installed
+- Fork of the pelorus repo on GitHub
+
+### Setup
+
+```bash
+# Create GitHub token secret
+oc create secret generic github-secret \
+  --from-literal=TOKEN=ghp_<your-token> -n pelorus
+
+# Run the demo
+./demo/demo-tekton.sh -g https://github.com/<your-org>/pelorus.git -b binary -r demo_test1
+
+# Automated loop (10 deployments, 5 min apart)
+./demo/demo-tekton.sh -g https://github.com/<your-org>/pelorus.git -b binary -r demo_test2 -c 10 -t 5
 ```
-sed -i 's/<your_git_org>/weshayutin/' pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml
-```
 
-* Apply the Pelorus instance:
-```
-oc apply -f pelorus/demo/tekton-demo-setup/operator_tekton_demo_values.yaml
-```
+See [tekton-demo-setup/README.md](tekton-demo-setup/README.md) for details.
 
-## Execute
-* Execute the demo-tekton.sh command:
+## Environment Variables
 
-```
-./demo-tekton.sh -g https://github.com/<your_org/pelorus.git -b binary -r demo_test1
-```
-
-* The script can be invoked to automatically commit changes to the source on a development branch and execute in a loop:
-```
-./demo-tekton.sh -g https://github.com/weshayutin/pelorus.git -b binary -r demo_test2 -c 10 -t 5
-```
-
-* To ensure the failure exporter is exercised enable Github issues in your fork.
-Open bugs ensuring they are labeled correctly using the [Github issue documentation](../docs/GettingStarted/QuickstartTutorial.md#github-issues).  
-
-  * Two labels are required:
-     * label: bug
-     * label: production_issue/name=basic-python-tekton
-  * Open and close bugs as needed.
-
-## Help and Support
-Help:
-```
-./demo-tekton.sh -h
-```
-
-
-|Build Type   |Status         |Notes                                                |
-|:------------|:--------------|:----------------------------------------------------|
-| binary      | supported     | requires exporter committime-exporter               |
-| buildConfig | supported     | requires exporter committime-exporter               |
-| s2i         | supported     | requires exporter committime-image-exporter with provider=image    |   
-
-
+| Variable | Default | Description |
+|---|---|---|
+| `NAMESPACE` | `pelorus` | Target namespace |
+| `OPERATOR_SOURCE` | `auto` | `redhat`, `community`, or `auto` (prefer redhat) |
+| `OAUTH_ENABLED` | `true` | Enable OAuth proxy (OpenShift SSO). Set `false` for basic auth |
+| `PELORUS_PASSWORD` | random | Grafana admin password (basic auth) / Prometheus htpasswd |
+| `TIMEOUT` | `900` | Wait timeout in seconds |
+| `WEBHOOK_URL` | auto-detect | Webhook exporter endpoint |

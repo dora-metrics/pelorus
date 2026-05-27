@@ -21,20 +21,18 @@ from typing import Iterable, Optional
 from attrs import define
 
 from committime import CommitMetric
-from pelorus.timeutil import parse_guessing_timezone_DYNAMIC, to_epoch_from_string
+from pelorus.timeutil import parse_commit_timestamp
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
-from .collector_base import AbstractCommitCollector
+from .collector_base import AbstractCommitCollector, _build_failures
 
 
 @define(kw_only=True)
 class ImageCommitCollector(AbstractCommitCollector):
     date_format: str
 
-    date_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["commit_time"]
+    date_annotation_name: str = CommitMetric._ANNOTATION_MAPPING["commit_time"]
 
-    # maps attributes to their location in a `image.openshift.io/v1`.
-    # Similar to Build Mapping from committime.__init__.py
     _IMAGE_MAPPING = dict(
         image_hash=("metadata.name", True),
         image_location=("dockerImageReference", True),
@@ -46,7 +44,6 @@ class ImageCommitCollector(AbstractCommitCollector):
         commit_time="io.openshift.build.commit.date",
         commit_hash="io.openshift.build.commit.id",
         repo_url="io.openshift.build.source-location",
-        committer="io.openshift.build.commit.author",
     )
 
     def commit_metric_from_image(self, app: str, image, errors: list) -> CommitMetric:
@@ -54,35 +51,29 @@ class ImageCommitCollector(AbstractCommitCollector):
         Create a CommitMetric from image.openshift.io/v1 information or Image annotation
 
         Some of the information such as image sha is gathered from the Image metadata,
-        which we expect to always exists.
+        which we expect to always exist.
 
-        For the commit time Image type exporter only commit time is required, however
-        additional data is also collected such as commit hash.
+        Both image_hash and commit_time are required; additional data such as
+        commit_hash is also collected when available.
 
-        commit time which is converted to the commit timestamp is gathered from the
-        Image Label, which normally is populated from the Docker build process as
-        described in https://docs.openshift.com/online/pro/dev_guide/builds/build_output.html#output-image-labels
-
-        If such information is missing from the Image Label there is a way to collect
-        this data using annotations in similar way build annotations works.
+        Commit time is gathered from the Image Label, which is normally populated
+        by the Docker build process. If missing, annotations can provide this data,
+        similar to how build annotations work.
 
         """
         metric = CommitMetric(app)
         image_labels = None
 
-        # If exists get all Labels that were produced from Docker build process
         with collect_bad_attribute_path_error(errors, False):
             image_labels = get_nested(
                 image, "dockerImageMetadata.Config.Labels", name="image"
             )
 
-        # Get general data from image
         for attr_name, (path, required) in ImageCommitCollector._IMAGE_MAPPING.items():
             with collect_bad_attribute_path_error(errors, required):
                 value = get_nested(image, path, name="image")
                 setattr(metric, attr_name, value)
 
-        # First get metrics within Labels
         attribute_mapping = (
             ImageCommitCollector._DOCKER_LABEL_MAPPING.items() if image_labels else []
         )
@@ -105,7 +96,7 @@ class ImageCommitCollector(AbstractCommitCollector):
             # We ignore all the errors by passing [], because commit hash isn't required.
             metric = self._set_commit_hash_from_annotations(metric, [])
         if not metric.commit_hash:
-            # We ensure None is passed as string
+            # Sentinel value expected by downstream consumers when hash is unavailable
             metric.commit_hash = "None"
         metric = self._set_commit_timestamp(metric, errors)
 
@@ -115,22 +106,23 @@ class ImageCommitCollector(AbstractCommitCollector):
         return metric
 
     def _set_commit_timestamp(self, metric: CommitMetric, errors) -> CommitMetric:
-        # Only convert when commit_time is in metric, previously should be
-        # found from the Label with fallback to annotation
         if metric.commit_time:
             try:
-                metric.commit_timestamp = to_epoch_from_string(
-                    metric.commit_time
-                ).timestamp()
+                metric.commit_timestamp = parse_commit_timestamp(
+                    metric.commit_time, self.date_format
+                )
             except (ValueError, AttributeError):
-                # Do nothing here as we tried with EPOCH timestamp
-                metric.commit_timestamp = parse_guessing_timezone_DYNAMIC(
-                    metric.commit_time, format=self.date_format
-                ).timestamp()
+                msg = (
+                    f"Cannot parse commit_time '{metric.commit_time}' "
+                    f"with format '{self.date_format}'"
+                )
+                logging.debug(msg, exc_info=True)
+                errors.append(msg)
         return metric
 
     def get_commit_time(self, metric) -> Optional[CommitMetric]:
-        return super().get_commit_time(metric)
+        """Not used; exists to satisfy the abstract base class contract."""
+        return None
 
     def _set_commit_time_from_annotations(
         self, metric: CommitMetric, errors: list
@@ -150,13 +142,10 @@ class ImageCommitCollector(AbstractCommitCollector):
                 )
         return metric
 
-    # overrides collector_base.generate_metric()
     def generate_metrics(self) -> Iterable[CommitMetric]:
-        # Initialize metrics list
-        metrics = []
         app_label = self.app_label
 
-        logging.debug("Searching for images with label: %s" % app_label)
+        logging.debug("Searching for images with label: %s", app_label)
 
         v1_images = self.kube_client.resources.get(
             api_version="image.openshift.io/v1", kind="Image"
@@ -167,25 +156,23 @@ class ImageCommitCollector(AbstractCommitCollector):
         images_by_app = self._get_openshift_obj_by_app(images)
 
         if images_by_app:
-            metrics += self._get_metrics_by_apps_from_images(images_by_app)
-
-        return metrics
+            yield from self._get_metrics_by_apps_from_images(images_by_app)
 
     def _get_metrics_by_apps_from_images(self, images_by_app):
-        metrics = []
-        for app in images_by_app:
-            images = images_by_app[app]
+        for app, images in images_by_app.items():
             for image in images:
-                metric = None
                 errors = []
 
                 try:
                     metric = self.commit_metric_from_image(app, image, errors)
                 except Exception:
+                    _build_failures.inc()
                     logging.error(
-                        "Cannot collect metrics from image: %s" % (image.metadata.name)
+                        "Cannot collect metrics from image: %s",
+                        image.metadata.name,
+                        exc_info=True,
                     )
-                    raise
+                    continue
 
                 if errors:
                     msg = (
@@ -196,7 +183,5 @@ class ImageCommitCollector(AbstractCommitCollector):
                     logging.warning(msg)
                     continue
 
-                logging.debug("Adding metric for app %s" % app)
-                metrics.append(metric)
-
-        return metrics
+                logging.debug("Adding metric for app %s", app)
+                yield metric

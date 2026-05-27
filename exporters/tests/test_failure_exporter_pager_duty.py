@@ -14,12 +14,11 @@
 #
 
 import os
-from contextlib import nullcontext
 from typing import Optional
 
 import pytest
 
-from failure.collector_pagerduty import PagerdutyFailureCollector
+from failure.collector_pagerduty import PagerDutyFailureCollector
 from tests import run_prometheus_register
 
 PAGER_DUTY_TOKEN = os.environ.get("PAGER_DUTY_TOKEN")
@@ -39,8 +38,8 @@ def setup_pager_duty_collector(
     token: str = "fake_token",
     incident_urgency: Optional[str] = None,
     incident_priority: Optional[str] = None,
-) -> PagerdutyFailureCollector:
-    return PagerdutyFailureCollector(
+) -> PagerDutyFailureCollector:
+    return PagerDutyFailureCollector(
         token=token,
         incident_urgency=incident_urgency,
         incident_priority=incident_priority,
@@ -55,10 +54,8 @@ def setup_pager_duty_collector(
 def test_pager_duty_search():
     collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 58
     assert len([issue for issue in issues if issue.resolutiondate is None]) == 53
     assert len([issue for issue in issues if issue.resolutiondate]) == 5
@@ -74,10 +71,8 @@ def test_pager_duty_search_with_multiple_filters():
         PAGER_DUTY_TOKEN, incident_urgency="low,high", incident_priority="P1,P3"
     )
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 16
 
 
@@ -90,10 +85,8 @@ def test_pager_duty_search_with_multiple_filters():
 def test_pager_duty_search_with_priority(priority: str):
     collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_priority=priority)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == NUMBER_OF_INCIDENTS[priority]
 
 
@@ -106,11 +99,8 @@ def test_pager_duty_search_with_priority(priority: str):
 def test_pager_duty_search_with_wrong_priority(priority: str):
     collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_priority=priority)
 
-    with nullcontext() as context:
-        # TODO should break or at least warn user?
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 0
 
 
@@ -123,10 +113,8 @@ def test_pager_duty_search_with_wrong_priority(priority: str):
 def test_pager_duty_search_with_urgency(urgency: str):
     collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_urgency=urgency)
 
-    with nullcontext() as context:
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == NUMBER_OF_INCIDENTS[urgency]
 
 
@@ -139,11 +127,8 @@ def test_pager_duty_search_with_urgency(urgency: str):
 def test_pager_duty_search_with_wrong_urgency(urgency: str):
     collector = setup_pager_duty_collector(PAGER_DUTY_TOKEN, incident_urgency=urgency)
 
-    with nullcontext() as context:
-        # TODO should break or at least warn user?
-        issues = collector.search_issues()
+    issues = collector.search_issues()
 
-    assert context is None
     assert len(issues) == 0
 
 
@@ -151,10 +136,7 @@ def test_pager_duty_prometheus_register(monkeypatch: pytest.MonkeyPatch):
     def mock_search_issues(self):
         return []
 
-    monkeypatch.setattr(PagerdutyFailureCollector, "search_issues", mock_search_issues)
+    monkeypatch.setattr(PagerDutyFailureCollector, "search_issues", mock_search_issues)
     collector = setup_pager_duty_collector()
 
-    with nullcontext() as context:
-        run_prometheus_register(collector)
-
-    assert context is None
+    run_prometheus_register(collector)

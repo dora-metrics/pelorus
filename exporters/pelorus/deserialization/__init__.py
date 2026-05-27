@@ -25,12 +25,14 @@ be converted to S.
 
 | structured            | unstructured        |
 |-----------------------|---------------------|
-| attrs class¹          | Mapping[str], Any]¹ |
+| attrs class¹          | Mapping[str, Any]¹  |
 | list[S]               | Iterable[U]         |
 | dict[str, S]          | Mapping[str, U]     |
 | Any                   | Any                 |
 | int, float, str, bool | themselves          |
 | Optional[S]           | Optional[U]         |
+
+Tuples are not supported.
 
 ¹ attrs field values may be any S type, the dict values any U type.
 
@@ -56,6 +58,7 @@ See `README.md` in this directory.
 from __future__ import annotations
 
 import typing
+import functools
 from typing import (
     Any,
     Iterable,
@@ -63,8 +66,10 @@ from typing import (
     Mapping,
     MutableSequence,
     NamedTuple,
+    NoReturn,
     Optional,
     Sequence,
+    TypeGuard,
     TypeVar,
     Union,
     get_type_hints,
@@ -73,7 +78,6 @@ from typing import (
 
 import attr
 import attrs
-from typing_extensions import TypeGuard
 
 from pelorus.deserialization.errors import (
     DeserializationErrors,
@@ -84,9 +88,8 @@ from pelorus.deserialization.errors import (
     TypeCheckError,
 )
 from pelorus.utils import BadAttributePathError, format_path, get_nested, split_path
-from pelorus.utils._attrs_compat import NOTHING
+from attrs import NOTHING
 
-# metadata
 _NESTED_PATH_KEY = "__pelorus_structure_nested_path"
 _RETAIN_SOURCE_KEY = "__pelorus_structure_retain_source"
 
@@ -110,35 +113,21 @@ def retain_source(retain: bool = True) -> dict[str, bool]:
     return {_RETAIN_SOURCE_KEY: retain}
 
 
-# python has some magic to make classes work with `issubclass` and instances work with `isinstance`,
-# even if they don't actually inherit from them. Some so-called "abstract base classes" just check
-# for the presence of certain methods. Cool!
-# However, some of them don't support that, for reasons outlined in their docs (see the first section):
-# https://docs.python.org/3.11/library/collections.abc.html
-
-# thus, we need to make our own checks. These have the same downsides as in the docs,
-# but they're "good enough". "Practicality beats purity".
-
-# we need this for mappings specifically, because a kubernetes.dynamic.resource.ResourceField has
-# __getitem__, which is actually all we care about.
+# kubernetes.dynamic.resource.ResourceField has __getitem__ but doesn't register
+# with collections.abc.Mapping, so we check for __getitem__ directly.
+# See: https://docs.python.org/3.11/library/collections.abc.html
 
 
 def _type_has_getitem(type_: type) -> bool:
-    "See if this type has a getitem method (supports item[key])"
     return hasattr(type_, "__getitem__")
 
 
-# region: attrs fixes
-
-# type annotations can be represented as the types themselves, or as strings.
-# attrs seems to use strings for fields in inherited classes, which can break
-# things for us. This may be a bug that has to be fixed for them.
-# Until then, here's a small alternative.
+# attrs.has() returns bool, not TypeGuard. This wrapper adds the narrowing.
 
 
 def _is_attrs_class(cls: type) -> TypeGuard[type["attr.AttrsInstance"]]:
     """
-    Return the class if it is an attrs class, else None.
+    Return True if it is an attrs class, else False.
 
     This exists because `attrs.has` is not a proper TypeGuard.
     """
@@ -156,29 +145,23 @@ class Field(NamedTuple):
     metadata: dict[Any, Any]
 
 
-def _fields(cls: type["attr.AttrsInstance"]) -> Iterable[Field]:
+@functools.lru_cache(maxsize=None)
+def _fields(cls: type["attr.AttrsInstance"]) -> tuple[Field, ...]:
     "Get all field information for this attrs class."
     hints = get_type_hints(cls)
     attrs_fields = attrs.fields(cls)
-    for field in attrs_fields:
-        yield Field(
+    return tuple(
+        Field(
             field.name,
             hints[field.name],
             default=field.default,
             metadata=field.metadata,
         )
+        for field in attrs_fields
+    )
 
 
-# endregion
-
-# region: generic types
-
-# generic types such as dict[str, int] have two parts:
-# the "origin" and the "args".
-# The origin in this case is `dict`, and the args are `(str, int)`.
-# This lets us inspect these types properly.
-
-
+@functools.lru_cache(maxsize=256)
 def _extract_dict_types(type_: type) -> Optional[tuple[type, type]]:
     """
     If this type annotation is a dictionary-like, extract its key and value types.
@@ -201,9 +184,10 @@ def _extract_dict_types(type_: type) -> Optional[tuple[type, type]]:
     return args[0], args[1]
 
 
+@functools.lru_cache(maxsize=256)
 def _extract_list_type(type_: type) -> Optional[type]:
     """
-    If this type annotation is a list-like, extract its value type.
+    If this type annotation is a MutableSequence subclass, extract its element type.
     Otherwise return None.
 
     >>> assert _extract_list_type(list[int]) == int
@@ -219,6 +203,7 @@ def _extract_list_type(type_: type) -> Optional[type]:
     return args[0]
 
 
+@functools.lru_cache(maxsize=256)
 def _extract_optional_type(type_: type) -> Optional[type]:
     """
     If this type annotation is Optional[T], then returns the type T.
@@ -227,12 +212,6 @@ def _extract_optional_type(type_: type) -> Optional[type]:
     >>> assert _extract_optional_type(Optional[int]) == int
     >>> assert _extract_optional_type(int) is None
     """
-    # this is weird because Optional is just an alias for Union,
-    # where the other entry is NoneType.
-    # and in 3.10, unions with `Type1 | Type2` are a different type!
-    # we'll have to handle that when adding 3.10 support.
-
-    # it's unclear if order is guaranteed so we have to check both.
     if typing.get_origin(type_) is not typing.Union:
         return None
 
@@ -243,15 +222,12 @@ def _extract_optional_type(type_: type) -> Optional[type]:
 
     t1, t2 = args
 
-    if issubclass(t1, type(None)):  # type: ignore
+    if t1 is type(None):
         return t2
-    elif issubclass(t2, type(None)):  # type: ignore
+    elif t2 is type(None):
         return t1
     else:
         return None
-
-
-# endregion
 
 
 @attrs.define
@@ -262,15 +238,6 @@ class _Deserializer:
     See module docs for more details.
     """
 
-    # The deserializer uses a simple "dispatch" pattern.
-    # The target type is checked to see if it is any of the supported primitive types.
-    # If it is an attrs class, it will deserialize each field by their type,
-    # supporting the "nested" pattern from `get_nested`.
-
-    # Because of nested fields, dicts, and lists, deserialization is recursive.
-    # The "path" is kept track of for error messages.
-    # See `README.md` for more details.
-
     unstructured_data_path: list[Union[str, Sequence[str]]] = attrs.field(
         factory=list, init=False
     )
@@ -280,7 +247,7 @@ class _Deserializer:
     so the path must be separated to differentiate the dots.
     """
     structured_field_name_path: list[str] = attrs.field(factory=list, init=False)
-    "Where we are within the structured data."
+    "Stack of field names tracking position in structured data, used for error messages."
 
     def deserialize(
         self, src: Any, target_type: type[T], src_name: str = "", target_name: str = ""
@@ -315,10 +282,6 @@ class _Deserializer:
         Dispatch to a deserialization method based on target_type,
         with some pre-checks for the src.
         """
-        # lying a bit here with the type signature, because things
-        # like Optional[str] are not "types", technically.
-        # I don't know the right way to type that though.
-
         if target_type is Any:
             return src
 
@@ -326,19 +289,10 @@ class _Deserializer:
         if (optional_alt := _extract_optional_type(target_type)) is not None:
             return self._deserialize_optional(src, optional_alt)
 
-        if issubclass(target_type, PRIMITIVE_TYPES):
-            return self._deserialize_primitive(src, target_type)
-
-        if attrs.has(target_type):
-            if _type_has_getitem(type(src)):
-                # assuming it has str key types.
-                return self._deserialize_attrs_class(src, target_type)
-            else:
-                raise TypeCheckError("Mapping", src)
-
+        # Check for generic aliases (e.g. dict[str, str], list[int]) before
+        # issubclass, since GenericAlias is not a class in Python 3.12+.
         if (dict_types := _extract_dict_types(target_type)) is not None:
             if _type_has_getitem(type(src)):
-                # assuming it has str key types.
                 return self._deserialize_dict(src, dict_types[1])
             else:
                 raise TypeCheckError("Mapping", src)
@@ -349,7 +303,16 @@ class _Deserializer:
             else:
                 raise TypeCheckError(Iterable, src)
 
-        raise TypeError(f"Unsupported type for deserialization: {target_type.__name__}")
+        if isinstance(target_type, type) and issubclass(target_type, PRIMITIVE_TYPES):
+            return self._deserialize_primitive(src, target_type)
+
+        if isinstance(target_type, type) and attrs.has(target_type):
+            if _type_has_getitem(type(src)):
+                return self._deserialize_attrs_class(src, target_type)
+            else:
+                raise TypeCheckError("Mapping", src)
+
+        raise TypeError(f"Unsupported type for deserialization: {target_type}")
 
     def _deserialize_optional(self, src: Any, optional_alt: type[T]) -> Optional[T]:
         """
@@ -385,8 +348,20 @@ class _Deserializer:
             self.unstructured_data_path.pop()
             self.structured_field_name_path.pop()
 
+    def _raise_field_errors(self, errors: list) -> NoReturn:
+        unstructured_src = self.unstructured_data_path[-1]
+        src_name = (
+            unstructured_src
+            if isinstance(unstructured_src, str)
+            else format_path(unstructured_src)
+        )
+        raise DeserializationErrors(
+            errors,
+            target_name=self.structured_field_name_path[-1],
+            src_name=src_name,
+        )
+
     def _deserialize_attrs_class(self, src: Mapping[str, Any], to: type[T]) -> T:
-        "Initialize an attrs class field-by-field."
         assert _is_attrs_class(to), f"class was not an attrs class: {to.__name__}"
 
         field_errors = []
@@ -394,7 +369,6 @@ class _Deserializer:
 
         for field in _fields(to):
             try:
-                # child will handle names because it has nested info
                 value = self._deserialize_field(src, field)
 
                 if value is not NOTHING:
@@ -414,17 +388,7 @@ class _Deserializer:
         if not field_errors:
             return to(**class_kwargs)  # type: ignore
         else:
-            unstructured_src = self.unstructured_data_path[-1]
-            src_name = (
-                unstructured_src
-                if isinstance(unstructured_src, str)
-                else format_path(unstructured_src)
-            )
-            raise DeserializationErrors(
-                field_errors,
-                target_name=self.structured_field_name_path[-1],
-                src_name=src_name,
-            )
+            self._raise_field_errors(field_errors)
 
     def _deserialize_dict(
         self, src: Mapping[str, Any], target_value_type: type[T]
@@ -435,7 +399,6 @@ class _Deserializer:
         dict_ = {}
         errors = []
         for key, value in src.items():
-            # it's a little bit weird, because a dict is both structured and unstructured.
             self.unstructured_data_path.append(key)
             self.structured_field_name_path.append(key)
 
@@ -456,17 +419,7 @@ class _Deserializer:
         if not errors:
             return dict_
         else:
-            unstructured_src = self.unstructured_data_path[-1]
-            src_name = (
-                unstructured_src
-                if isinstance(unstructured_src, str)
-                else format_path(unstructured_src)
-            )
-            raise DeserializationErrors(
-                errors,
-                src_name=src_name,
-                target_name=self.structured_field_name_path[-1],
-            )
+            self._raise_field_errors(errors)
 
     def _deserialize_list(
         self, src: Iterable[Any], target_value_type: type[T]
@@ -477,10 +430,9 @@ class _Deserializer:
         list_ = []
         errors = []
 
-        for i, item in enumerate(iter(src)):
-            i = str(i)
+        for idx, item in enumerate(src):
+            i = str(idx)
             try:
-                # it's a little bit weird, because a list is both structured and unstructured.
                 self.unstructured_data_path.append(i)
                 self.structured_field_name_path.append(i)
 
@@ -500,20 +452,9 @@ class _Deserializer:
         if not errors:
             return list_
         else:
-            unstructured_src = self.unstructured_data_path[-1]
-            src_name = (
-                unstructured_src
-                if isinstance(unstructured_src, str)
-                else format_path(unstructured_src)
-            )
-            raise DeserializationErrors(
-                errors,
-                src_name=src_name,
-                target_name=self.structured_field_name_path[-1],
-            )
+            self._raise_field_errors(errors)
 
     def _deserialize_primitive(self, value: Any, target_type: type[T]) -> T:
-        "Deserialize a primitive by checking it is the target type."
         if isinstance(value, target_type):
             return value
         else:
@@ -528,6 +469,6 @@ def deserialize(
     src_name and target_name are used for helpful error messages,
     and will default to the names of the argument types.
 
-    Tuples are not yet supported!
+    Tuples are not supported.
     """
     return _Deserializer().deserialize(src, target_type, src_name, target_name)

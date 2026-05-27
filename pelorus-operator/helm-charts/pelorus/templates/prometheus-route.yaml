@@ -1,19 +1,24 @@
+{{- if ne .Values.operator_source "redhat" }}
 ---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  annotations:
-    openshift.io/host.generated: "true"
   name: prometheus-pelorus
 spec:
+{{- if .Values.oauth_proxy_enabled }}
   port:
     targetPort: web-tls
-  host: ""
   tls:
     insecureEdgeTerminationPolicy: Redirect
     termination: reencrypt
+{{- else }}
+  port:
+    targetPort: web
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+{{- end }}
   to:
     kind: Service
     name: prometheus-pelorus
-    weight: 100
-  wildcardPolicy: None
+{{- end }}

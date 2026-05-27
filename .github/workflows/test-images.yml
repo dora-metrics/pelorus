@@ -1,16 +1,27 @@
 name: Test images manager
 
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
 on:
   workflow_run:
     workflows: [Trigger test images]
     types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
 
 env:
   REPOSITORY: quay.io/pelorus
 
 jobs:
   setup:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       branch_ref: ${{ steps.variables.outputs.branch_ref }}
       pr_type: ${{ steps.variables.outputs.pr_type }}
@@ -29,35 +40,33 @@ jobs:
       - name: Store variables
         id: variables
         run: |
-          echo branch_ref=$(cat trigger-information.json | jq -r '.branch_ref') >> "$GITHUB_OUTPUT"
-          echo pr_type=$(cat trigger-information.json | jq -r '.pr_type') >> "$GITHUB_OUTPUT"
-          echo pr_number=$(cat trigger-information.json | jq -r '.pr_number') >> "$GITHUB_OUTPUT"
-          echo commit_hash=$(cat trigger-information.json | jq -r '.commit_hash') >> "$GITHUB_OUTPUT"
-
-  # TODO
-  # delete-images:
-  #   runs-on: ubuntu-latest
-  #   if: ${{ needs.setup.outputs.pr_type == 'closed' }}
-  #   needs: setup
-  #   steps:
-  #     - name: Delete test images
-  #       run: |
-  #         podman search --list-tags $REPOSITORY/rc-pelorus-exporter
-  #         podman search --list-tags $REPOSITORY/rc-pelorus-operator
-  #         podman search --list-tags $REPOSITORY/rc-pelorus-operator-bundle
-  #         delete all that have pr${{ needs.setup.outputs.pr_number }} in name...
+          echo "branch_ref=$(jq -r '.branch_ref' trigger-information.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_type=$(jq -r '.pr_type' trigger-information.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$(jq -r '.pr_number' trigger-information.json)" >> "$GITHUB_OUTPUT"
+          echo "commit_hash=$(jq -r '.commit_hash' trigger-information.json)" >> "$GITHUB_OUTPUT"
 
   create-images:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ needs.setup.outputs.pr_type != 'closed' }}
     needs: setup
     steps:
       - name: Validate outputs from setup jobs
         env:
-          BRANCH_REF: ${{ steps.variables.outputs.branch_ref }}
-          PR_TYPE: ${{ steps.variables.outputs.pr_type }}
-          PR_NUMBER: ${{ steps.variables.outputs.pr_number }}
-          COMMIT_HASH: ${{ steps.variables.outputs.commit_hash }}
-        run: echo "$BRANCH_REF, $PR_TYPE, $PR_NUMBER, $COMMIT_HASH"
+          BRANCH_REF: ${{ needs.setup.outputs.branch_ref }}
+          PR_TYPE: ${{ needs.setup.outputs.pr_type }}
+          PR_NUMBER: ${{ needs.setup.outputs.pr_number }}
+          COMMIT_HASH: ${{ needs.setup.outputs.commit_hash }}
+        run: |
+          fail=0
+          for var in BRANCH_REF PR_TYPE PR_NUMBER COMMIT_HASH; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Required output $var is empty"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || exit 1
+          echo "branch_ref=$BRANCH_REF, pr_type=$PR_TYPE, pr_number=$PR_NUMBER, commit_hash=$COMMIT_HASH"
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -96,8 +105,8 @@ jobs:
           sed -i "s,$DEFAULT_EXPORTER_IMAGE,$TEST_EXPORTER_IMAGE,g" helm-charts/pelorus/charts/exporters/templates/_deployment.yaml
           sed -i "s,$CURRENT_OPERATOR_VERSION,$TEST_VERSION,g" Makefile
           sed -i "s,pelorus-operator,rc-pelorus-operator,g" Makefile
-          find . -type f | xargs sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
-          find . -type f | xargs sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
+          find . -not -path './.git/*' -type f -print0 | xargs -0 sed -i "s,$CURRENT_OPERATOR_VERSION,$CURRENT_OPERATOR_VERSION-$TEST_VERSION,g"
+          find . -not -path './.git/*' -type f -print0 | xargs -0 sed -i "s,$CURRENT_CHART_VERSION,$CURRENT_CHART_VERSION-$TEST_VERSION,g"
 
           grep "$TEST_OPERATOR_IMAGE" bundle/manifests/pelorus-operator.clusterserviceversion.yaml
           grep "$TEST_EXPORTER_IMAGE" helm-charts/pelorus/charts/exporters/templates/_imagestream_from_image.yaml
@@ -106,7 +115,7 @@ jobs:
           grep rc-pelorus-operator Makefile
 
           helm dep update helm-charts/pelorus
-          rm -r helm-charts/pelorus/charts/*.tgz
+          rm -f helm-charts/pelorus/charts/*.tgz
 
       - name: Build and push operator test image
         working-directory: ./pelorus-operator

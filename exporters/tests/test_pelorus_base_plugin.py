@@ -17,12 +17,16 @@
 import http
 import json
 import time
-from typing import Any, Awaitable
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from pydantic import ValidationError, parse_obj_as
-from typing_extensions import override
+from pydantic import TypeAdapter, ValidationError
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 
 from webhook.models.pelorus_webhook import (
     CommitTimePelorusPayload,
@@ -87,55 +91,42 @@ def test_pelorus_webhook_pong_response():
     with pytest.raises(HTTPException) as http_exception:
         PelorusWebhookResponse.pong(None)
 
-    assert type(http_exception).__name__ == "ExceptionInfo"
-    assert http_exception.typename == "HTTPException"
-
     assert http_exception.value.detail == "pong"
     assert http_exception.value.status_code == http.HTTPStatus.OK
 
 
 def test_abstract_classes():
-    """
-    Test for the plugin that did not implement required abstract methods.
-    """
+    """Instantiating a plugin without implementing abstract methods raises TypeError."""
 
     class MyPelorusWebhookPlugin(PelorusWebhookPlugin):
         def __init__(self, handshake_headers: Headers, request: Request) -> None:
             super().__init__(handshake_headers, request)
 
-    # We should get an error:
-    # TypeError: Can't instantiate abstract class MyPelorusWebhookPlugin with abstract
-    #            methods _receive_pelorus_payload, handshake
     with pytest.raises(TypeError) as type_error:
         MyPelorusWebhookPlugin(None, None)
 
-    assert (
-        str(type_error.value)
-        == "Can't instantiate abstract class MyPelorusWebhookPlugin "
-        + "with abstract methods _handshake, _receive_pelorus_payload"
-    )
+    msg = str(type_error.value)
+    assert "MyPelorusWebhookPlugin" in msg
+    assert "_handshake" in msg
+    assert "_receive_pelorus_payload" in msg
 
 
 class SimplePelorusWebhookPlugin(PelorusWebhookPlugin):
     @override
-    async def _handshake(self) -> Awaitable[bool]:
-        pass
+    async def _handshake(self, headers: Headers) -> bool:
+        return False
 
     @override
-    async def _receive_pelorus_payload(self, Any) -> Awaitable[PelorusMetric]:
-        pass
+    async def _receive_pelorus_payload(self, payload):
+        return payload
 
 
-@pytest.mark.parametrize(
-    "handshake_headers,request_data",
-    [
-        ("Header.", "request data"),
-    ],
-)
-def test_pelorus_webhook_plugin_abc(handshake_headers, request_data):
+def test_pelorus_webhook_plugin_abc():
     """
     Test for the plugin that did implement required abstract methods.
     """
+    handshake_headers = "Header."
+    request_data = "request data"
 
     plugin_instance = SimplePelorusWebhookPlugin(
         handshake_headers=handshake_headers, request=request_data
@@ -178,6 +169,11 @@ def test_check_can_handle_methods():
     assert not WithoutUserAgentWebhookPlugin.can_handle(None)
     assert not WithoutUserAgentWebhookPlugin.can_handle("")
 
+    # user_agent_str set to ""
+    assert not EmptyUserAgentWebhookPlugin.can_handle(None)
+    assert not EmptyUserAgentWebhookPlugin.can_handle("")
+    assert not EmptyUserAgentWebhookPlugin.can_handle("Pelorus-Webhook/")
+
 
 def test_plugin_register_methods():
     """
@@ -218,16 +214,14 @@ def test_check_is_pelorus_not_webhook_handler():
 
 class UserAgentWebhookPlugin(PelorusWebhookPlugin):
     @override
-    async def _handshake(self, headers: Headers) -> Awaitable[bool]:
-        time.sleep(0.1)
+    async def _handshake(self, headers: Headers) -> bool:
         return True
 
     @override
     async def _receive_pelorus_payload(
         self, json_payload_data: Any
-    ) -> Awaitable[PelorusMetric]:
-        time.sleep(0.1)
-        pelorus_data = parse_obj_as(CommitTimePelorusPayload, json_payload_data)
+    ) -> PelorusMetric:
+        pelorus_data = TypeAdapter(CommitTimePelorusPayload).validate_python(json_payload_data)
         metric = PelorusMetric(
             metric_spec=PelorusMetricSpec.COMMIT_TIME, metric_data=pelorus_data
         )
@@ -241,20 +235,30 @@ async def test_receive_invalid_payload():
     webhook's request normally received from the POST
     properly raises HTTPException.
     """
+    mock_receive = AsyncMock(side_effect=json.JSONDecodeError("Test Error", "{}", 0))
+    mock_request = Mock()
+    mock_request.json = mock_receive
+    mock_request.headers = {"content-type": "application/json"}
 
-    with patch(
-        "webhook.plugins.pelorus_handler_base.Request.json",
-        new_callable=AsyncMock,
-    ) as mock_receive:
-        mock_receive.side_effect = json.JSONDecodeError("Test Error", "{}", 0)
-        mock_request = Mock()
-        mock_request.json = mock_receive
+    plugin = UserAgentWebhookPlugin(None, request=mock_request)
+    with pytest.raises(HTTPException) as http_error:
+        await plugin._receive()
+    assert http_error.value.status_code == http.HTTPStatus.BAD_REQUEST
+    assert http_error.value.detail == "Invalid payload format."
 
-        plugin = UserAgentWebhookPlugin(None, request=mock_request)
-        with pytest.raises(HTTPException) as http_error:
-            await plugin._receive()
-        assert http_error.value.status_code == http.HTTPStatus.BAD_REQUEST
-        assert http_error.value.detail == "Invalid payload format."
+
+@pytest.mark.asyncio
+async def test_receive_wrong_content_type():
+    """Requests without application/json Content-Type are rejected."""
+
+    mock_request = Mock()
+    mock_request.headers = {"content-type": "text/plain"}
+
+    plugin = UserAgentWebhookPlugin(None, request=mock_request)
+    with pytest.raises(HTTPException) as http_error:
+        await plugin._receive()
+    assert http_error.value.status_code == http.HTTPStatus.UNSUPPORTED_MEDIA_TYPE
+    assert http_error.value.detail == "Content-Type must be application/json."
 
 
 @pytest.mark.asyncio
@@ -263,22 +267,19 @@ async def test_receive_valid_payload():
     Test if the _receive method properly returns
     the json payload data.
     """
+    json_payload = '{"app": "todolist", "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc"}'
+    mock_receive = AsyncMock(return_value=json.loads(json_payload))
+    mock_request = Mock()
+    mock_request.json = mock_receive
+    mock_request.headers = {"content-type": "application/json"}
 
-    with patch(
-        "webhook.plugins.pelorus_handler_base.Request.json",
-        new_callable=AsyncMock,
-    ) as mock_receive:
-        json_payload = '{"app": "todolist", "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc"}'
-        mock_receive.return_value = json.loads(json_payload)
-        mock_request = Mock()
-        mock_request.json = mock_receive
-
-        # Test if the json was properly received from the request
-        plugin = UserAgentWebhookPlugin(
-            handshake_headers="headers", request=mock_request
-        )
-        result = await plugin._receive()
-        assert result == json.loads(json_payload)
+    plugin = UserAgentWebhookPlugin(
+        handshake_headers="headers", request=mock_request
+    )
+    result = await plugin._receive()
+    assert result == json.loads(json_payload)
+    assert result["app"] == "todolist"
+    assert result["commit_hash"] == "5379bad65a3f83853a75aabec9e0e43c75fd18fc"
 
 
 @pytest.mark.asyncio
@@ -289,27 +290,22 @@ async def test_handshake():
     """
     pelorus_plugin = UserAgentWebhookPlugin(None, None)
     result = await pelorus_plugin.handshake()
-    assert result
+    assert result is True
 
 
-@pytest.mark.parametrize(
-    "json_payload",
-    [
-        """{
-            "app": "mongo-todolist",
-            "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc",
-            "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
-            "namespace": "mongo-persistent"
-        }""",
-    ],
-)
 @pytest.mark.asyncio
-async def test_proper_receive_metric(json_payload):
+async def test_proper_receive_metric():
     """
     Test if the receive() wrapper method that calls
     plugin's _receive() method returns proper
     PelorusMetric data.
     """
+    json_payload = """{
+        "app": "mongo-todolist",
+        "commit_hash": "5379bad65a3f83853a75aabec9e0e43c75fd18fc",
+        "image_sha": "sha256:af4092ccbfa99a3ec1ea93058fe39b8ddfd8db1c7a18081db397c50a0b8ec77d",
+        "namespace": "mongo-persistent"
+    }"""
 
     with patch(
         "webhook.plugins.pelorus_handler_base.PelorusWebhookPlugin._receive",
@@ -320,17 +316,15 @@ async def test_proper_receive_metric(json_payload):
         mock_receive.return_value = payload_data
         plugin = UserAgentWebhookPlugin(None, request=None)
         metric_data = await plugin.receive()
-        assert issubclass(type(metric_data), PelorusMetric)
+        assert isinstance(metric_data, PelorusMetric)
+        assert metric_data.metric_spec == PelorusMetricSpec.COMMIT_TIME
+        assert metric_data.metric_data.app == "mongo-todolist"
+        assert metric_data.metric_data.namespace == "mongo-persistent"
 
 
 @pytest.mark.asyncio
 async def test_improper_receive_metric():
-    """
-    Test case for the receive() wrapper method that calls
-    plugin's _receive() method in which data from the plugin
-    is not a proper PelorusMetric type.
-    In such case it raises TypeError.
-    """
+    """receive() raises TypeError when plugin returns non-PelorusMetric data."""
 
     with patch(
         "webhook.plugins.pelorus_handler_base.PelorusWebhookPlugin._receive",

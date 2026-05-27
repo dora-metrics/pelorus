@@ -19,6 +19,8 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "10902"
     spec:
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: pelorus-thanos
       volumes:
       - name: secret-prometheus-pelorus-tls
@@ -35,7 +37,11 @@ spec:
   {{- end }}
       containers:
       - name: thanos-query
-        image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.28.0" }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.37.2" }}
         args:
         - "query"
         - "--log.level=info"
@@ -46,11 +52,30 @@ spec:
         ports:
         - name: query-http
           containerPort: 10902
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: query-http
+          initialDelaySeconds: 5
+          periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /-/healthy
             port: query-http
-      - args:
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      - securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        args:
         - -provider=openshift
         - -https-address=:9092
         - -http-address=
@@ -63,14 +88,14 @@ spec:
         - -tls-cert=/etc/tls/private/tls.crt
         - -tls-key=/etc/tls/private/tls.key
         - -client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
-        - -cookie-secret=bacon
+        - -cookie-secret={{ .Values.oauth_cookie_secret | default (randAlphaNum 32) }}
         - -openshift-ca=/etc/pki/tls/cert.pem
         - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
   {{- if .Values.custom_ca }}
         - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
   {{- end}}
         - -skip-auth-regex=^/metrics
-        image: image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4
+        image: {{ .Values.oauth_proxy_image | default "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4" }}
         name: thanos-proxy
         ports:
         - containerPort: 9092

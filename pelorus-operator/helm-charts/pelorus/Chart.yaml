@@ -2,8 +2,8 @@ apiVersion: v2
 dependencies:
 - name: exporters
   repository: file://./charts/exporters
-  version: 2.0.13-rc.6
-description: A Helm chart for Kubernetes
+  version: 2.1.0
+description: A Helm chart for deploying the Pelorus DORA metrics stack (Prometheus, Grafana, Thanos, exporters)
 name: pelorus
 type: application
-version: 2.0.13-rc.6
+version: 2.1.0

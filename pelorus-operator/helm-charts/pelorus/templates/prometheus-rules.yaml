@@ -36,3 +36,179 @@ spec:
     - record: sdp:change_failure_rate:global
       expr: >
         avg(sdp:change_failure_rate:by_app)
+
+  - name: pelorus-exporter-health
+    rules:
+    - alert: PelorusExporterDown
+      expr: up{job=~".*pelorus.*"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Pelorus exporter {{ "{{" }} $labels.job {{ "}}" }} is down"
+        description: "The exporter {{ "{{" }} $labels.job {{ "}}" }} in namespace {{ "{{" }} $labels.namespace {{ "}}" }} has been unreachable for 5 minutes."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusExporterDown/"
+
+    - alert: PelorusCollectionErrors
+      expr: >
+        rate(pelorus_deploytime_collection_errors_total[10m]) > 0
+        or rate(pelorus_committime_collection_errors_total[10m]) > 0
+        or rate(pelorus_failure_collection_errors_total[10m]) > 0
+        or rate(pelorus_releasetime_collection_errors_total[10m]) > 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus exporter {{ "{{" }} $labels.job {{ "}}" }} is failing to collect metrics"
+        description: "The exporter {{ "{{" }} $labels.job {{ "}}" }} has had collection errors for 10 minutes. Check exporter logs."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusCollectionErrors/"
+
+    - alert: PelorusCollectionSlow
+      expr: >
+        pelorus_deploytime_collection_duration_seconds > 120
+        or pelorus_committime_collection_duration_seconds > 120
+        or pelorus_failure_collection_duration_seconds > 120
+        or pelorus_releasetime_collection_duration_seconds > 120
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus exporter {{ "{{" }} $labels.job {{ "}}" }} collection is slow"
+        description: "Metric collection is taking {{ "{{" }} $value {{ "}}" }}s (threshold: 120s). External API or cluster connectivity may be degraded."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusCollectionSlow/"
+
+    - alert: PelorusNoDeployData
+      expr: absent(deploy_timestamp) == 1
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "No deploy_timestamp metrics are being collected"
+        description: "The deploytime exporter has not produced any deploy_timestamp metrics for 30 minutes."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusNoDeployData/"
+
+    - alert: PelorusNoCommitData
+      expr: absent(commit_timestamp) == 1
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "No commit_timestamp metrics are being collected"
+        description: "The committime exporter has not produced any commit_timestamp metrics for 30 minutes. Lead time calculations will be unavailable."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusNoCommitData/"
+
+    - alert: PelorusNoFailureData
+      expr: absent(failure_creation_timestamp) == 1
+      for: 60m
+      labels:
+        severity: warning
+      annotations:
+        summary: "No failure_creation_timestamp metrics are being collected"
+        description: "The failure exporter has not produced any failure metrics for 60 minutes. MTTR and change failure rate calculations will be unavailable."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusNoFailureData/"
+
+    - alert: PelorusWebhookErrorRate
+      expr: rate(webhook_errors_total[5m]) / (rate(webhook_received_total[5m]) > 0) > 0.1
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus webhook error rate is above 10%"
+        description: "{{ "{{" }} $value | humanizePercentage {{ "}}" }} of webhooks are failing. Check webhook logs and sender configuration."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusWebhookErrorRate/"
+
+    - alert: PelorusWebhookStoreNearCapacity
+      expr: pelorus_webhook_store_utilization / on() group_left pelorus_webhook_store_capacity > 0.8
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus webhook in-memory store for {{ "{{" }} $labels.metric_family {{ "}}" }} is above 80% capacity"
+        description: "The in-memory metric store holds {{ "{{" }} $value | humanizePercentage {{ "}}" }} of its capacity. Oldest entries will be dropped when full."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusWebhookStoreNearCapacity/"
+
+    - alert: PelorusIssueParseFailures
+      expr: rate(pelorus_failureissue_parse_failures_total[10m]) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus failure collector is experiencing issue parse failures"
+        description: "Individual issue/incident parsing has been failing for 15 minutes. Some failure metrics may be missing."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusIssueParseFailures/"
+
+    - alert: PelorusBuildFailures
+      expr: rate(pelorus_committime_build_failures_total[10m]) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus commit time collector is experiencing build failures"
+        description: "Individual build metric collection has been failing for 15 minutes. Some commit timestamps may be missing."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusBuildFailures/"
+
+    - alert: PelorusSkopeoWorkerErrors
+      expr: rate(pelorus_committime_skopeo_errors_total[10m]) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus skopeo background worker is experiencing errors"
+        description: "The container image label lookup worker has had persistent errors for 15 minutes. Commit time metrics from container images may be incomplete."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusSkopeoWorkerErrors/"
+
+    - alert: PelorusStartupFailed
+      expr: pelorus_exporter_startup_success == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Pelorus exporter {{ "{{" }} $labels.job {{ "}}" }} failed to start"
+        description: "The exporter {{ "{{" }} $labels.job {{ "}}" }} started but failed configuration. It is serving metrics but not collecting data. Check exporter logs and environment variables."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusStartupFailed/"
+
+    - alert: PelorusGitApiErrors
+      expr: rate(pelorus_committimegit_api_errors_total[10m]) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus commit time collector is experiencing git API errors"
+        description: "Git provider API calls have been failing for 15 minutes. Commit timestamps may be missing or stale. Check provider credentials and API availability."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusGitApiErrors/"
+
+    - alert: PelorusProviderApiErrors
+      expr: >
+        rate(pelorus_failure_jira_api_errors_total[10m]) > 0
+        or rate(pelorus_failure_github_api_errors_total[10m]) > 0
+        or rate(pelorus_failure_pagerduty_api_errors_total[10m]) > 0
+        or rate(pelorus_failure_servicenow_api_errors_total[10m]) > 0
+        or rate(pelorus_failure_azure_devops_api_errors_total[10m]) > 0
+        or rate(pelorus_releasetime_github_api_errors_total[10m]) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus failure/release collector is experiencing provider API errors"
+        description: "Issue tracker or release provider API calls have been failing for 15 minutes. Failure metrics may be missing. Check provider credentials and API availability."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusProviderApiErrors/"
+
+    - alert: PelorusK8sApiErrors
+      expr: rate(pelorus_k8s_api_errors_total[10m]) > 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus is experiencing Kubernetes API errors"
+        description: "Kubernetes API lookups have been failing for 10 minutes. Deploy time or commit time metrics may be incomplete. Check cluster connectivity and RBAC permissions."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusK8sApiErrors/"
+
+    - alert: PelorusSkopeoQueueDrops
+      expr: rate(pelorus_committime_skopeo_queue_drops_total[10m]) > 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pelorus skopeo queue is dropping images"
+        description: "The container image inspection queue is full and dropping work items. Increase PELORUS_SKOPEO_WORKERS or investigate slow image registry responses."
+        runbook_url: "https://pelorus.readthedocs.io/en/latest/runbooks/PelorusSkopeoQueueDrops/"

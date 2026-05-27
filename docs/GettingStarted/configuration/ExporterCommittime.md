@@ -170,7 +170,7 @@ There are additional options available when the [PROVIDER](#provider) type is se
 >
 - [Using Commit Time with Git APIs](#using-commit-time-with-git-apis) for the `git` PROVIDER
 - [Using Commit Time with OpenShift Image Objects](#using-commit-time-with-openshift-image-objects) for the `image` PROVIDER
-- [Using Commit Time with Containers' Image Labels](#using-commit-time-with-image-labels) for the `containerimage` PROVIDER
+- [Using Commit Time with Containers' Image Labels](#using-commit-time-with-containers-image-labels) for the `containerimage` PROVIDER
 
 #### ➔ [PROVIDER](#provider) `git` options
 
@@ -180,9 +180,9 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
 |----------|----------|---------------|
 | [NAMESPACES](#namespaces) | no | - |
 | [GIT_PROVIDER](#git_provider) | no | github |
-| [API_USER](#api_user) | yes | - |
-| [TOKEN](#token) | yes | - |
-| [GIT_API](#git_api) | yes | [see more...](#git_api) |
+| [API_USER](#api_user) | no | - |
+| [TOKEN](#token) | no | - |
+| [GIT_API](#git_api) | no | [see more...](#git_api) |
 
 ###### NAMESPACES
 
@@ -204,23 +204,23 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
 
 ###### API_USER
 
-- **Required:** yes
+- **Required:** no (needed for private repositories)
     - Only applicable for [GIT_PROVIDER](#git_provider) value: `github`, `bitbucket`, `gitea` or `gitlab`
 - **Type:** string
 
-: GIT API username.
+: GIT API username. Must be set together with [TOKEN](#token).
 
 ###### TOKEN
 
-- **Required:** yes
+- **Required:** no (needed for private repositories)
     - Only applicable for [PROVIDER](#provider) value: `git` or unset
 - **Type:** string
 
-: User's Git API Token
+: User's Git API Token. Must be set together with [API_USER](#api_user).
 
 ###### GIT_API
 
-- **Required:** yes
+- **Required:** no
     - Only applicable for [GIT_PROVIDER](#git_provider) value: `github` (or unset), `gitea` or `azure-devops`
     - **Default Value:**
         - `api.github.com` for `github` [GIT_PROVIDER](#git_provider)
@@ -228,7 +228,7 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
         - `try.gitea.io` for `gitea` [GIT_PROVIDER](#git_provider)
 - **Type:** string
 
-: GitHub, Gitea or Azure DevOps API FQDN. This allows the override for Enterprise users.
+: GitHub, Gitea or Azure DevOps API FQDN. Allows overriding for Enterprise/self-hosted instances. Not used by `gitlab` or `bitbucket` providers (they derive API URLs from the repository URL).
 
 #### ➔ [PROVIDER](#provider) `image` and `containerimage` options
 
@@ -263,8 +263,8 @@ Those options are only applicable to the Commit Time Exporter when the [PROVIDER
     - **Default Value:** %a %b %d %H:%M:%S %Y %z
 - **Type:** string
 
-: Used when the format is different then 10 digit EPOCH timestamp.
-: Format in `1989 C standard` to convert time and date found in the OpenShift Image Object Label, it's Annotation or Container Image Label `io.openshift.build.commit.date`.
+: Used when the format is different than a 10-digit epoch timestamp.
+: Format in [C strftime format](https://man7.org/linux/man-pages/man3/strftime.3.html) to convert time and date found in the OpenShift Image Object Label, its Annotation or Container Image Label `io.openshift.build.commit.date`.
 
 ## Annotations and local build support
 
@@ -313,7 +313,7 @@ oc -n "${NS}" new-app "${NAME}" -l "app.kubernetes.io/name=${NAME}"
 
 ### Additional Examples
 
-There are many ways to build and deploy applications in OpenShift. Additional examples of how to annotate builds such that Pelorus will properly discover the commit metadata can be found in the  [Pelorus tekton demo](https://github.com/dora-metrics/pelorus/tree/master/demo)
+There are many ways to build and deploy applications in OpenShift. Additional examples of how to annotate builds such that Pelorus will properly discover the commit metadata can be found in the  [Pelorus tekton demo](https://github.com/dora-metrics/pelorus/tree/main/demo)
 
 ## OpenShift Image Object - Annotations and Labels support
 
@@ -395,7 +395,7 @@ Container Image is another method from which the Commit Time Exporter may gather
 
 The only requirement is to have appropriate LABELs within the Container Image that was build and it's used for the application deployment.
 
-> **Note:** The requirement to add label to the running application as described in the [Deploy Time Exporter](./ExporterDeploytime.md#) still exists.
+> **Note:** The requirement to add label to the running application as described in the [Deploy Time Exporter](./ExporterDeploytime.md) still exists.
 
 Below is sample Container image definition that can be in used by the 3rd party CI to adds such labels to the `quay.io/centos7/httpd-24-centos7` from the current project's `git` folder. We will use pelorus project and LABEL our sample `quay.io/pelorus/httpd-sample-app:latest` Container Image with the latest commit hash and commit date:
 
@@ -420,10 +420,10 @@ export LAST_COMMIT_DATE_TIME=$(git log -1 --format='%ad' --date='format:%a %b %d
 export LAST_COMMIT_SHA=$(git rev-parse HEAD)
 
 podman build \
-	    --build-arg LAST_COMMIT_DATE_TIME="$(LAST_COMMIT_DATE_TIME)" \
-	    --build-arg LAST_COMMIT_SHA="$(LAST_COMMIT_SHA)" \
+	    --build-arg LAST_COMMIT_DATE_TIME="${LAST_COMMIT_DATE_TIME}" \
+	    --build-arg LAST_COMMIT_SHA="${LAST_COMMIT_SHA}" \
 	    -t quay.io/pelorus/httpd-sample-app:latest \
-      -f "$(CONTAINERFILE_LOCATION)" .
+      -f "${CONTAINERFILE_LOCATION}" .
 ```
 
 We can see that the Labels are existing within the built container. You can now push this container image to the registry and create OpenShift application that has the appropriate `"app.kubernetes.io/name=${NAME}"` LABEL. That will be sufficient for the `containerimage` Commit Time [PROVIDER](#provider) to work properly.

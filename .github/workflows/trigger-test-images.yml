@@ -1,5 +1,9 @@
 name: Trigger test images
 
+permissions:
+  contents: read
+  actions: write
+
 on:
   push:
     branches:
@@ -9,32 +13,47 @@ on:
     branches: [ main ]
     paths:
       - 'exporters/**'
-      - 'charts/**'
+      - 'pelorus-operator/helm-charts/**'
       - 'pelorus-operator/**'
       - '.github/workflows/trigger-test-images.yml'
     types: [opened, reopened, synchronize, closed]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   get-short-sha:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
     steps:
       - id: sha
-        run: echo "sha=$(echo ${{ github.sha }} | cut -c 1-7)" >> "$GITHUB_OUTPUT"
+        run: echo "sha=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
   generate-jobs:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: get-short-sha
     steps:
       - name: Create json file
+        env:
+          BRANCH_REF: ${{ github.ref }}
+          PR_TYPE: ${{ github.event.action }}
+          PR_NUMBER: ${{ github.event.number }}
+          COMMIT_HASH: ${{ needs.get-short-sha.outputs.sha }}
         run: |
-          echo '{"branch_ref":"${{ github.ref }}",' \
-              '"pr_type":"${{ github.event.action }}",' \
-              '"pr_number":"${{ github.event.number }}",' \
-              '"commit_hash":"${{ needs.get-short-sha.outputs.sha }}"}' > trigger-information.json
+          jq -n \
+            --arg branch_ref "$BRANCH_REF" \
+            --arg pr_type "$PR_TYPE" \
+            --arg pr_number "$PR_NUMBER" \
+            --arg commit_hash "$COMMIT_HASH" \
+            '{branch_ref: $branch_ref, pr_type: $pr_type, pr_number: $pr_number, commit_hash: $commit_hash}' \
+            > trigger-information.json
 
       - uses: actions/upload-artifact@v4
         with:
           name: trigger-information
           path: ./trigger-information.json
+          retention-days: 1

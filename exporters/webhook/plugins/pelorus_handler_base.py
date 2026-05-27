@@ -15,12 +15,13 @@
 #
 
 import http
+import logging
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
-from typing import Any, Awaitable, Optional
+from typing import Any, Optional
 
 from fastapi import HTTPException as FastapiHTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.datastructures import Headers as StarletteHeaders
 from starlette.requests import Request as StarletteRequest
 
@@ -28,48 +29,34 @@ from webhook.models.pelorus_webhook import PelorusMetric
 
 
 class HTTPException(FastapiHTTPException):
-    """
-    HTTPException class used to ensure plugins can import direct class from the
-    Pelorus and not fastapi, even if it's same structure.
-    """
+    """Decouples plugins from FastAPI so they import from pelorus, not the framework."""
 
 
 class Headers(StarletteHeaders):
-    """
-    Headers class used to ensure plugins can import direct class from the
-    Pelorus and not starlette, even if it's same structure.
-    """
+    pass
 
 
 class Request(StarletteRequest):
-    """
-    Request class used to ensure plugins can import direct class from the
-    Pelorus and not starlette, even if it's same structure.
-    """
+    pass
 
 
-# TODO this shouldn't be a model?
 class PelorusWebhookResponse(BaseModel):
     """
     Class that represents the response to the user-agent making request.
     """
-
     http_response: str
-    http_response_code: http.HTTPStatus
+    http_response_code: int = Field(ge=100, le=599)
 
     @classmethod
-    def pong(cls, payload_headers: Any):
+    def pong(cls, payload: Any):
         """
-        Special case of response which raises "pong" type of message for
-        the webhook that sent "ping" request.
+        Respond to a "ping" request by raising an HTTPException with a "pong" body.
 
-        Some webhook services uses this "ping-pong" communication to
-        register the webhook on the client side as valid one.
-
-        It raises exception to immediately sent response msg.
+        Some webhook services use ping-pong to register the endpoint as valid.
+        Always raises — never returns.
 
         Raises:
-            HTTPException: "pong" with valid HTTP Status.
+            HTTPException: "pong" with HTTP 200.
         """
         raise HTTPException(detail="pong", status_code=http.HTTPStatus.OK)
 
@@ -94,7 +81,7 @@ class PelorusWebhookPlugin(ABC):
     classes from the incoming payload, which is in json format.
 
     Attributes:
-        handshake_headers: (Headers): Headers that are received by the webhook.
+        headers: (Headers): Headers that are received by the webhook.
         request: (Request): The request object associated with the webhook.
         secret: Optional[str]: Webhook secret, if provided header must contain
                                X-Hub-Signature-256 signature.
@@ -112,67 +99,73 @@ class PelorusWebhookPlugin(ABC):
         self.secret = secret
 
     @abstractmethod
-    async def _handshake(self, headers: Headers) -> Awaitable[bool]:
-        raise NotImplementedError  # pragma no cover
+    async def _handshake(self, headers: Headers) -> bool:
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     async def _receive_pelorus_payload(
         self, json_payload_data: Any
-    ) -> Awaitable[PelorusMetric]:
-        raise NotImplementedError  # pragma no cover
+    ) -> PelorusMetric:
+        raise NotImplementedError  # pragma: no cover
 
-    async def handshake(self) -> Awaitable[Optional[bool]]:
+    async def handshake(self) -> Optional[bool]:
         """
-        Wrapper method to call plugin's _handshake().
+        Validates the request via the plugin's _handshake().
 
         Returns:
-            bool: True if handhsake was success
+            Optional[bool]: True if handshake was successful
 
         Raises:
             HTTPException: If handshake did not succeed
         """
         return await self._handshake(self.headers)
 
-    async def receive(self) -> Awaitable[PelorusMetric]:
+    async def receive(self) -> PelorusMetric:
         """
-        Wrapper method that calls the _receive() method
-        which gets the payload data in the json_format
-        and passes it to the plugin's _receive_pelorus_payload().
+        Receives and validates the JSON payload as a PelorusMetric.
 
         Returns:
-            Awaitable[PelorusMetric]: Pelorus Metric from the plugin
+            PelorusMetric: Validated metric from the plugin
 
         Raises:
-            TypeError: if data was not proper PelorusMetric
+            TypeError: if data was not a PelorusMetric subclass
         """
         payload_data = await self._receive()
         webhook_data = await self._receive_pelorus_payload(payload_data)
-        if not issubclass(type(webhook_data), PelorusMetric):
+        if not isinstance(webhook_data, PelorusMetric):
             raise TypeError("Webhook must be a subclass of PelorusMetric")
         return webhook_data
 
-    async def _receive(self) -> Awaitable[Any]:
+    async def _receive(self) -> Any:
         """
         Method to receive json data from the request.
 
         Returns:
-            Awaitable[Any]: json data from the request.
+            Any: json data from the request.
 
         Raises:
             HTTPException: If data was not proper json format
         """
+        content_type = self.request.headers.get("content-type", "")
+        if "application/json" not in content_type:
+            logging.warning("Rejected webhook: unsupported Content-Type %r", content_type)
+            raise HTTPException(
+                status_code=http.HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                detail="Content-Type must be application/json.",
+            )
         try:
             return await self.request.json()
-        except JSONDecodeError:
+        except JSONDecodeError as exc:
+            logging.warning("Rejected webhook: malformed JSON payload (line %d col %d: %s)", exc.lineno, exc.colno, str(exc))
             raise HTTPException(
                 status_code=http.HTTPStatus.BAD_REQUEST,
                 detail="Invalid payload format.",
-            )
+            ) from exc
 
     @classmethod
     def register(cls) -> str:
         """
-        Method used to register plugin with it's identifier.
+        Method used to register plugin with its identifier.
         The identifier is the user_agent_str from the plugin's implementation.
 
         This identifier is used to match with the webhooks' POST "User-Agent:"
@@ -194,15 +187,15 @@ class PelorusWebhookPlugin(ABC):
         Check if this plugin can handle the provided payload
         (recognized by user_agent).
 
-        Attributes:
-            user_agent: (str): Value from the Header's "User-Agent:"
+        Args:
+            user_agent: Value from the Header's "User-Agent:"
 
         Returns:
             bool: True if this plugin can handle given user_agent
         """
         if user_agent and cls.user_agent_str:
-            if user_agent.lower().startswith(str(cls.user_agent_str).lower()):
-                return True
+            ua_lower = cls.user_agent_str.lower()
+            return user_agent.lower().startswith(ua_lower)
         return False
 
     @classmethod
@@ -214,4 +207,4 @@ class PelorusWebhookPlugin(ABC):
         Returns:
             bool: True if it's recognized Pelorus Webhook Plugin, False otherwise
         """
-        return hasattr(cls, "user_agent_str") and cls.user_agent_str is not None
+        return cls.user_agent_str is not None

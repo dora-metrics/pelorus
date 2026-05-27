@@ -1,4 +1,4 @@
-# override's attrs.NOTHING's type in a way that's nicer for type checking.
+# overrides attrs.NOTHING's type in a way that's nicer for type checking.
 import enum
 from typing import Callable, Generic, TypeVar, Union
 

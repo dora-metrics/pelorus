@@ -14,7 +14,7 @@ parameters:
     value: https://github.com/dora-metrics/pelorus
   - name: PROJECT_REF
     description: "Project ref with the python-demo"
-    value: master
+    value: main
 objects:
   # Build
   - kind: BuildConfig
@@ -35,7 +35,7 @@ objects:
         sourceStrategy:
           from:
             kind: "ImageStreamTag"
-            name: "python-39:latest"
+            name: "python-312:latest"
       output:
         to:
           kind: ImageStreamTag
@@ -69,33 +69,35 @@ objects:
           storage: 500Mi
 
   - kind: Task
-    apiVersion: tekton.dev/v1beta1
+    apiVersion: tekton.dev/v1
     metadata:
       name: debug
       namespace: ${NAMESPACE}
-      description: collect git repo debug information 
+      description: collect git repo debug information
     spec:
       # notes: each task specifies the workspace name
       # the same pvc is used, only the mounted directory changes based on the name
       # in this case "debug"
       workspaces:
         - name: debug
-      results: 
+      results:
         - name: list-files
+          type: string
           description: lists the repos files
         - name: commit-time
+          type: string
           description: get the time of the last commit
       steps:
         - name: list-workspace-files
-          image: ubi9/toolbox
+          image: registry.access.redhat.com/ubi9/toolbox:latest
           script: |
             set -ex
             find /workspace
-            cd /workspace/debug 
-            git remote -vv 
+            cd /workspace/debug
+            git remote -vv
             git log -n 1
         - name: time-last-commit
-          image: ubi9/toolbox
+          image: registry.access.redhat.com/ubi9/toolbox:latest
           script: |
             set -ex
             find /workspace
@@ -107,12 +109,12 @@ objects:
             printf "human readable time: " + $human
             echo $epoch > "$(results.commit-time.path)"
         - name: debug-time-last-commit
-          image: ubi9/toolbox
+          image: registry.access.redhat.com/ubi9/toolbox:latest
           script: |
             cat "$(results.commit-time.path)"
 
   - kind: Pipeline
-    apiVersion: tekton.dev/v1beta1
+    apiVersion: tekton.dev/v1
     metadata:
       name: ${APPLICATION_NAME}-pipeline
       namespace: ${NAMESPACE}
@@ -143,10 +145,9 @@ objects:
           params:
             - name: SCRIPT
               value: |
-                oc import-image python-39 --from=registry.access.redhat.com/ubi9/python-39:latest --confirm -n ${NAMESPACE}
+                oc import-image python-312 --from=registry.access.redhat.com/ubi9/python-312:latest --confirm -n ${NAMESPACE}
                 oc import-image toolbox --from=registry.access.redhat.com/ubi9/toolbox:latest --confirm -n ${NAMESPACE}
           taskRef:
-            kind: ClusterTask
             name: openshift-client
         - name: checkout
           timeout: "0h1m0s"
@@ -154,7 +155,6 @@ objects:
             - import-build-image
           taskRef:
             name: git-clone
-            kind: ClusterTask
           params:
             - name: url
               value: $(params.git-url)
@@ -180,7 +180,6 @@ objects:
               values: ["s2i"]
           taskRef:
             name: s2i-python
-            kind: ClusterTask
           params:
             - name: PATH_CONTEXT
               value: demo/python-example
@@ -206,7 +205,6 @@ objects:
                 oc annotate image "$(tasks.builds2i.results.IMAGE_DIGEST)" io.openshift.build.commit.date="$(tasks.listfiles.results.commit-time)" 
           runAfter: [builds2i]
           taskRef:
-            kind: ClusterTask
             name: openshift-client
         # buildConfig build
         - name: buildconfig
@@ -223,7 +221,6 @@ objects:
               value: latest
           runAfter: [listfiles]
           taskRef:
-            kind: ClusterTask
             name: openshift-client
         # binary build
         - name: buildbinary
@@ -232,7 +229,6 @@ objects:
               operator: in
               values: ["binary"]
           taskRef:
-            kind: ClusterTask
             name: openshift-client
           params:
             - name: SCRIPT
@@ -294,7 +290,6 @@ objects:
           timeout: 2m
           retries: 3
           taskRef:
-            kind: ClusterTask
             name: openshift-client
 
   # Deploy
@@ -315,7 +310,7 @@ objects:
         - port: 8080
           targetPort: 8080
       selector:
-        deploymentConfig: ${APPLICATION_NAME}
+        app.kubernetes.io/name: ${APPLICATION_NAME}
 
   - kind: Route
     apiVersion: route.openshift.io/v1
@@ -333,8 +328,8 @@ objects:
       to:
         name: ${APPLICATION_NAME}
 
-  - kind: DeploymentConfig
-    apiVersion: apps.openshift.io/v1
+  - kind: Deployment
+    apiVersion: apps/v1
     metadata:
       name: ${APPLICATION_NAME}
       namespace: ${NAMESPACE}
@@ -346,9 +341,10 @@ objects:
     spec:
       replicas: 1
       selector:
-        deploymentConfig: ${APPLICATION_NAME}
+        matchLabels:
+          app.kubernetes.io/name: ${APPLICATION_NAME}
       strategy:
-        type: Rolling
+        type: RollingUpdate
       template:
         metadata:
           labels:
@@ -356,12 +352,11 @@ objects:
             app.kubernetes.io/instance: ${APPLICATION_NAME}-deployment
             app.kubernetes.io/component: api
             app.kubernetes.io/part-of: ${APPLICATION_NAME}
-            deploymentConfig: ${APPLICATION_NAME}
           name: ${APPLICATION_NAME}
         spec:
           containers:
             - name: ${APPLICATION_NAME}
-              image: ${APPLICATION_NAME}
+              image: image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/${APPLICATION_NAME}:latest
               env:
                 - name: APP_FILE
                   value: example.py
@@ -374,13 +369,3 @@ objects:
                 exec:
                   command: [/bin/bash, -c, curl -s 'http://localhost:8080']
           terminationGracePeriodSeconds: 60
-      triggers:
-        - imageChangeParams:
-            automatic: true
-            containerNames:
-              - ${APPLICATION_NAME}
-            from:
-              kind: ImageStreamTag
-              name: ${APPLICATION_NAME}:latest
-          type: ImageChange
-        - type: ConfigChange

@@ -47,7 +47,7 @@ We need another solution for this.
 ## Functional Programming
 
 In functional programming, there's this idea of `Result` and `Optional` types, which have some advantages:
-- you have to handle the potential error before getting the succesful data (e.g. enforced `if value is None` checks).
+- you have to handle the potential error before getting the successful data (e.g. enforced `if value is None` checks).
 - you can easily get a result object, but continue until you want to handle it (no exceptions making you end early.)
   - you can do this by wrapping each section in a `try` `except` but that's very verbose.
 
@@ -80,11 +80,10 @@ the "origin" (`Union` and `dict`), and the arguments (`(str, None)` and `(str, i
 It's important to understand that `dict[str, int]` _is not a type_.
 It will not work in `isinstance(x, dict[str, int])`.  However, `dict` _is_ a type.
 
-# For the Future
+# Notes on Union types
 
-From python 3.5 until python 3.10, there were two ways to express a value that can be a certain type or `None`.
-`Untion[SomeType, None]`, or `Optional[SomeType]` (which is actually just an alias for the former!).
+From Python 3.5 until 3.10, there were two ways to express a nullable type:
+`Union[SomeType, None]`, or `Optional[SomeType]` (an alias for the former).
 
-In python 3.10, you can express this as `SomeType | None`.
-It's semantically the same, but is represented as a `types.UnionType`.
-That will have to be added to our codebase for 3.10 support.
+Since Python 3.10, `SomeType | None` is also supported, represented as `types.UnionType`.
+The codebase uses both `Optional[T]` and `X | Y` syntax; the deserialization module itself uses `Optional[T]`.

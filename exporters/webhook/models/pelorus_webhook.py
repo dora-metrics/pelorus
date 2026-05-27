@@ -17,15 +17,13 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date
+from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date_timestamp
 
 
 class PelorusMetricSpec(str, Enum):
-    """
-    The metric should correspond to the known exporter types.
-    """
+    """Webhook event types, one per exporter (committime, deploytime, failure)."""
 
     COMMIT_TIME = "committime"
     DEPLOY_TIME = "deploytime"
@@ -34,18 +32,31 @@ class PelorusMetricSpec(str, Enum):
 
 
 class PelorusDeliveryHeaders(BaseModel):
-    # https://docs.pydantic.dev/usage/models/
-    event_type: PelorusMetricSpec = Field(example="committime", alias="x-pelorus-event")
+    """
+    Headers expected in Pelorus webhook POST requests.
+
+    Uses ``x-pelorus-event`` to identify the metric type and optionally
+    ``x-hub-signature-256`` for HMAC-SHA256 payload verification.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    event_type: PelorusMetricSpec = Field(examples=["committime"], alias="x-pelorus-event")
 
     # This is HMAC-SHA256 represented by 'sha256=' prefix followed by hexadecimal
     # 64 characters (32 bytes x 2 hex digits per byte).
     # Note the "HTTP Message Signatures" specification, however it's draft:
     # https://datatracker.ietf.org/doc/draft-ietf-httpbis-message-signatures/
-    x_hub_signature_256: Optional[str] = Field(alias="x-hub-signature-256")
+    x_hub_signature_256: Optional[str] = Field(default=None, alias="x-hub-signature-256")
 
-    @validator("x_hub_signature_256", pre=True, always=True)
+    @field_validator("x_hub_signature_256", mode="before")
+    @classmethod
     def validate_x_hub_signature_256(cls, value):
         if value is not None:
+            if "=" not in value:
+                raise ValueError(
+                    "Signature should be in format 'sha256=' followed by 64 characters"
+                )
             algorithm, signature = value.split("=", 1)
             if algorithm != "sha256":
                 raise ValueError("Signature should use sha256 algorithm")
@@ -53,8 +64,21 @@ class PelorusDeliveryHeaders(BaseModel):
                 raise ValueError(
                     "Signature should be in format 'sha256=' followed by 64 characters"
                 )
-            int(signature, 16)
+            try:
+                int(signature, 16)
+            except ValueError:
+                raise ValueError(
+                    "Signature must contain only hexadecimal characters after 'sha256='"
+                ) from None
         return value
+
+
+def _validate_timestamp_threshold(v: int) -> int:
+    if is_out_of_date_timestamp(v):
+        raise ValueError(
+            f"Timestamp cannot be older than {METRIC_TIMESTAMP_THRESHOLD_MINUTES} minutes"
+        )
+    return v
 
 
 class PelorusPayload(BaseModel):
@@ -70,8 +94,7 @@ class PelorusPayload(BaseModel):
                          be between 1.1.2010 and 1.1.2060.
     """
 
-    # Even if we consider git project name as app, it still should be below 100
-    app: str = Field(max_length=200)
+    app: str = Field(max_length=200, pattern=r"^[a-zA-Z0-9._/,\-]+$")
 
     timestamp: int = Field(ge=1262307661, le=2840144461)
 
@@ -99,16 +122,14 @@ class FailurePelorusPayload(PelorusPayload):
         CREATED = "created"
         RESOLVED = "resolved"
 
-    failure_id: str  # It's an str, because issue may be mix of str and int, e.g. Issue-1
+    # str because issue IDs may mix letters and digits, e.g. "Issue-1"
+    failure_id: str = Field(max_length=200, pattern=r"^[a-zA-Z0-9._/,\-]+$")
     failure_event: FailureEvent
 
-    @validator("timestamp")
-    def accepted_timestamp_therashold(cls, v):
-        if is_out_of_date(str(v)):
-            raise ValueError(
-                f"Timestamp cannot be older than {METRIC_TIMESTAMP_THRESHOLD_MINUTES} minutes"
-            )
-        return v
+    @field_validator("timestamp")
+    @classmethod
+    def accepted_timestamp_threshold(cls, v):
+        return _validate_timestamp_threshold(v)
 
 
 class DeployTimePelorusPayload(PelorusPayload):
@@ -116,7 +137,7 @@ class DeployTimePelorusPayload(PelorusPayload):
     Deploy time Pelorus payload model, represents the deployment of
     an application.
 
-    Timestamp of the deployment time can not be older then the one defined in the
+    Timestamp of the deployment time can not be older than the one defined in the
     METRIC_TIMESTAMP_THRESHOLD_MINUTES.
 
     Attributes:
@@ -125,17 +146,14 @@ class DeployTimePelorusPayload(PelorusPayload):
         namespace (str): The k8s namespace used for the deployment.
     """
 
-    image_sha: str = Field(regex=r"^sha256:[a-f0-9]{64}$")
+    image_sha: str = Field(pattern=r"^sha256:[a-f0-9]{64}$")
     # rfc1035/rfc1123: An alphanumeric string, with a maximum length of 63 characters
-    namespace: str = Field(max_length=63)
+    namespace: str = Field(max_length=63, pattern=r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 
-    @validator("timestamp")
-    def accepted_timestamp_therashold(cls, v):
-        if is_out_of_date(str(v)):
-            raise ValueError(
-                f"Timestamp cannot be older than {METRIC_TIMESTAMP_THRESHOLD_MINUTES} minutes"
-            )
-        return v
+    @field_validator("timestamp")
+    @classmethod
+    def accepted_timestamp_threshold(cls, v):
+        return _validate_timestamp_threshold(v)
 
 
 class CommitTimePelorusPayload(DeployTimePelorusPayload):
@@ -149,18 +167,26 @@ class CommitTimePelorusPayload(DeployTimePelorusPayload):
         commit_hash (str): Commit SHA-1 hash associated with the commit
     """
 
-    commit_hash: str = Field(min_length=7, max_length=40)
+    commit_hash: str = Field()
 
-    @validator("commit_hash", check_fields=False)
+    @field_validator("commit_hash")
+    @classmethod
     def check_git_hash_length(cls, v):
-        if len(v) in (7, 40):
-            return v
-        raise ValueError(
-            "Git SHA-1 hash must be either 7 (short) or 40 (long) characters long"
-        )
+        if len(v) not in (7, 40):
+            raise ValueError(
+                "Git SHA-1 hash must be either 7 (short) or 40 (long) characters long"
+            )
+        try:
+            int(v, 16)
+        except ValueError:
+            raise ValueError(
+                "Git SHA-1 hash must contain only hexadecimal characters"
+            ) from None
+        return v
 
-    @validator("timestamp")
-    def accepted_timestamp_therashold(cls, v):
+    @field_validator("timestamp")
+    @classmethod
+    def accepted_timestamp_threshold(cls, v):
         return v
 
 
@@ -176,14 +202,19 @@ class PelorusMetric(BaseModel):
     metric_spec: PelorusMetricSpec
     metric_data: PelorusPayload
 
-    @validator("metric_data", pre=True)
-    def check_pelorus_payload_type(cls, v):
+    @model_validator(mode="before")
+    @classmethod
+    def check_pelorus_payload_type(cls, data):
         """
         Validate if the metric_data is in fact a subclass of the PelorusPayload.
         Note that TypeVar from typing that bounds to the PelorusPayload class
         is not working as expected and do not raise any ValidationError if improper
         object is passed.
         """
-        if issubclass(type(v), PelorusPayload):
-            return v
-        raise TypeError("metric_data must be a subclass of PelorusPayload")
+        if isinstance(data, dict):
+            v = data.get("metric_data")
+        else:
+            v = getattr(data, "metric_data", None)
+        if v is not None and not isinstance(v, PelorusPayload):
+            raise ValueError("metric_data must be a subclass of PelorusPayload")
+        return data

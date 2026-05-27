@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 GIT_REPO=dora-metrics/pelorus.git
 REMOTE=origin
@@ -6,7 +7,7 @@ HELP_MESSAGE="INFO: Run scripts/update_projects_version.py to fix it"
 ORIGIN=$(git remote show origin)
 ORIGIN_RET=$?
 
-if [ $ORIGIN_RET == 0 ]; then
+if [ "$ORIGIN_RET" -eq 0 ]; then
     if ! echo "$ORIGIN" | grep "$GIT_REPO" &> /dev/null; then
         REMOTE=upstream
     fi

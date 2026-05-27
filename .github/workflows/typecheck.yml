@@ -1,5 +1,10 @@
-name: Type Check (ignore failures for now)
+name: Type Check
+
+permissions:
+  contents: read
+
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
     paths:
@@ -16,19 +21,24 @@ on:
       - '.github/workflows/typecheck.yml'
       - 'Makefile'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   typecheck:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.11', '3.12', '3.13']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -39,9 +49,5 @@ jobs:
       - name: Install dependencies
         run: make dev-env
 
-      - name: Install node
-        run: sudo apt-get install nodejs
-
       - name: Type Check
-        continue-on-error: true
         run: make typecheck

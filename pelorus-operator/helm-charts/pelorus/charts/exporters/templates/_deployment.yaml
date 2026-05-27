@@ -20,6 +20,8 @@ spec:
         app: {{ .app_name }}
         pelorus.dora-metrics.io/exporter-type: {{ .exporter_type | default "generic-exporter" }}
     spec:
+      securityContext:
+        runAsNonRoot: true
       serviceAccount: pelorus-exporter
       volumes:
         {{- range $config := .custom_certs }}
@@ -29,8 +31,16 @@ spec:
         {{- end }}
       containers:
         - name: {{ .app_name }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           imagePullPolicy: Always
-          image: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.6" }}
+          {{- if .image_name }}
+          image: {{ .image_name }}
+          {{- else }}
+          image: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.1.0" }}
+          {{- end }}
           volumeMounts:
             {{- range $config := .custom_certs }}
             - name: custom-cert-volume-{{$config.map_name}}
@@ -62,23 +72,32 @@ spec:
               value: {{ .image_name }}:{{ .image_tag | default "latest" }}
                 {{- end }}
               {{- else }}
-              value: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.0.13-rc.6" }}
+              value: quay.io/pelorus/pelorus-{{ .exporter_type }}-exporter:{{ .image_tag | default "v2.1.0" }}
               {{- end }}
             {{- end }}
 
             {{- if .extraEnv }}
             {{- toYaml .extraEnv | nindent 12}}
             {{- end }}
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           ports:
           - containerPort: 8080
             protocol: TCP
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /metrics
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /metrics
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 20

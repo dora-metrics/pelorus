@@ -112,6 +112,14 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
 # End of https://www.gitignore.io/api/python
 
 # Ignore vscode meta
@@ -148,3 +156,4 @@ policy/
 # BATS
 _test/test_helper/
 _test/prometheus/rules.yaml
+demo/PRESALES-DEMO.md

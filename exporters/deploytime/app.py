@@ -3,15 +3,15 @@ import time
 from typing import Iterable
 
 from attrs import field, frozen
-from openshift.dynamic import DynamicClient
-from prometheus_client import start_http_server
+from kubernetes.dynamic import DynamicClient
+from prometheus_client import Counter, Gauge, start_http_server
 from prometheus_client.core import REGISTRY, GaugeMetricFamily
 
 import pelorus
 from deploytime import DeployTimeMetric
 from pelorus.config import load_and_log, no_env_vars
 from pelorus.config.converters import comma_separated
-from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date
+from pelorus.timeutil import METRIC_TIMESTAMP_THRESHOLD_MINUTES, is_out_of_date_timestamp
 from provider_common import format_app_name
 from provider_common.openshift import (
     filter_pods_by_replica_uid,
@@ -22,60 +22,108 @@ from provider_common.openshift import (
 )
 
 
+_collection_duration = Gauge(
+    "pelorus_deploytime_collection_duration_seconds",
+    "Duration of the last deploytime metric collection in seconds",
+)
+_collection_errors = Counter(
+    "pelorus_deploytime_collection_errors_total",
+    "Total number of deploytime metric collection errors",
+)
+_last_collection_count = Gauge(
+    "pelorus_deploytime_last_collection_count",
+    "Number of metrics returned by the last deploytime collection",
+)
+_pod_failures = Counter(
+    "pelorus_deploytime_pod_failures_total",
+    "Total number of individual pod metric collection failures",
+)
+_last_collection_success = Gauge(
+    "pelorus_deploytime_last_collection_success",
+    "Whether the last deploytime collection succeeded (1) or failed (0)",
+)
+
+
 @frozen
 class DeployTimeCollector(pelorus.AbstractPelorusExporter):
     client: DynamicClient = field(metadata=no_env_vars())
     namespaces: set[str] = field(factory=set, converter=comma_separated(set))
     prod_label: str = field(default=pelorus.DEFAULT_PROD_LABEL)
 
+    _DEPLOY_METRIC_NAME = "deploy_timestamp"
+    _DEPLOY_METRIC_HELP = "Deployment timestamp"
+    _DEPLOY_METRIC_LABELS = ["namespace", "app", "image_sha"]
+
     def __attrs_post_init__(self):
         if self.namespaces and (self.prod_label != pelorus.DEFAULT_PROD_LABEL):
             logging.warning("If NAMESPACES are given, PROD_LABEL is ignored.")
 
-    def collect(self) -> Iterable[GaugeMetricFamily]:
-        logging.debug("collect: start")
-        metrics = self.generate_metrics()
-
-        deploy_timestamp_metric = GaugeMetricFamily(
-            "deploy_timestamp",
-            "Deployment timestamp",
-            labels=["namespace", "app", "image_sha"],
+    def _new_deploy_metric(self):
+        return GaugeMetricFamily(
+            self._DEPLOY_METRIC_NAME,
+            self._DEPLOY_METRIC_HELP,
+            labels=self._DEPLOY_METRIC_LABELS,
         )
 
-        number_of_dropped = 0
+    def describe(self) -> list[GaugeMetricFamily]:
+        return [self._new_deploy_metric()]
 
-        for m in metrics:
-            if not is_out_of_date(str(m.deploy_time_timestamp)):
-                logging.debug(
-                    "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
-                    m.namespace,
-                    m.name,
-                    m.image_sha,
-                    m.deploy_time_timestamp,
-                    m.deploy_time,
+    def collect(self) -> Iterable[GaugeMetricFamily]:
+        logging.debug("collect: start")
+        start = time.monotonic()
+        collected_count = 0
+        success = True
+        try:
+            metrics = self.generate_metrics()
+
+            deploy_timestamp_metric = self._new_deploy_metric()
+
+            number_of_dropped = 0
+
+            for m in metrics:
+                if not is_out_of_date_timestamp(m.deploy_time_timestamp):
+                    logging.debug(
+                        "Collected deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
+                        m.namespace,
+                        m.name,
+                        m.image_sha,
+                        m.deploy_time_timestamp,
+                        m.deploy_time,
+                    )
+                    deploy_timestamp_metric.add_metric(
+                        [m.namespace, format_app_name(m.name), m.image_sha],
+                        m.deploy_time_timestamp,
+                        timestamp=m.deploy_time_timestamp,
+                    )
+                    collected_count += 1
+                else:
+                    number_of_dropped += 1
+                    logging.debug(
+                        "Deployment too old to be collected: deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
+                        m.namespace,
+                        m.name,
+                        m.image_sha,
+                        m.deploy_time_timestamp,
+                        m.deploy_time,
+                    )
+            if number_of_dropped:
+                logging.info(
+                    "Dropped %d deployments older than %dmin",
+                    number_of_dropped,
+                    METRIC_TIMESTAMP_THRESHOLD_MINUTES,
                 )
-                deploy_timestamp_metric.add_metric(
-                    [m.namespace, format_app_name(m.name), m.image_sha],
-                    m.deploy_time_timestamp,
-                    timestamp=m.deploy_time_timestamp,
-                )
-            else:
-                number_of_dropped += 1
-                logging.debug(
-                    "Deployment too old to be collected: deploy_timestamp{namespace=%s, app=%s, image=%s} %s (%s)",
-                    m.namespace,
-                    m.name,
-                    m.image_sha,
-                    m.deploy_time_timestamp,
-                    m.deploy_time_timestamp,
-                )
-        if number_of_dropped:
-            logging.debug(
-                "Number of deployments that are older then %smin and won't be collected: %s",
-                METRIC_TIMESTAMP_THRESHOLD_MINUTES,
-                number_of_dropped,
-            )
-        yield deploy_timestamp_metric
+            yield deploy_timestamp_metric
+        except Exception:
+            success = False
+            _collection_errors.inc()
+            logging.error("Deploy time metric collection failed", exc_info=True)
+            yield self._new_deploy_metric()
+        finally:
+            _last_collection_success.set(success)
+            duration = time.monotonic() - start
+            _collection_duration.set(duration)
+            _last_collection_count.set(collected_count)
+            logging.info("collect: %d metrics in %.2fs", collected_count, duration)
 
     def generate_metrics(self) -> Iterable[DeployTimeMetric]:
         namespaces = get_and_log_namespaces(
@@ -83,41 +131,88 @@ class DeployTimeCollector(pelorus.AbstractPelorusExporter):
         )
 
         if not namespaces:
-            return []
+            return
 
         logging.debug("generate_metrics: start")
 
         pods = get_running_pods(self.client, namespaces, self.app_label)
 
-        # Build dictionary with controllers and retrieved pods
         replica_pods_dict = filter_pods_by_replica_uid(pods)
 
         for uid, pod in replica_pods_dict.items():
-            replicas = get_owner_object_from_child(self.client, uid, pod)
+            try:
+                replicas = get_owner_object_from_child(self.client, uid, pod)
 
-            # Since a commit will be built into a particular image and there could be multiple
-            # containers (images) per pod, we will push one metric per image/container in the
-            # pod template
-            images = get_images_from_pod(pod)
+                replica = replicas.get(uid)
+                if replica is None:
+                    logging.debug(
+                        "Parent object not found for pod %s (uid=%s), skipping",
+                        pod.metadata.name, uid,
+                    )
+                    continue
 
-            for sha in images.keys():
-                metric = DeployTimeMetric(
-                    name=pod.metadata.labels[self.app_label],
-                    namespace=pod.metadata.namespace,
-                    labels=pod.metadata.labels,
-                    deploy_time=replicas.get(uid).metadata.creationTimestamp,
-                    image_sha=sha,
+                if not getattr(replica.metadata, "creationTimestamp", None):
+                    logging.warning(
+                        "Owner %s for pod %s/%s has no creationTimestamp, skipping",
+                        uid, pod.metadata.namespace, pod.metadata.name,
+                    )
+                    continue
+
+                # Multiple containers (images) per pod: emit one metric per image
+                images = get_images_from_pod(pod)
+
+                app_name = pod.metadata.labels.get(self.app_label) if pod.metadata.labels else None
+                if not app_name:
+                    logging.debug(
+                        "Pod %s/%s missing label %s, skipping",
+                        pod.metadata.namespace, pod.metadata.name, self.app_label,
+                    )
+                    continue
+
+                for sha in images:
+                    metric = DeployTimeMetric(
+                        name=app_name,
+                        namespace=pod.metadata.namespace,
+                        labels=pod.metadata.labels,
+                        deploy_time=replica.metadata.creationTimestamp,
+                        image_sha=sha,
+                    )
+                    yield metric
+            except Exception:
+                _pod_failures.inc()
+                logging.error(
+                    "Failed to process pod %s/%s, skipping",
+                    getattr(getattr(pod, "metadata", None), "namespace", "?"),
+                    getattr(getattr(pod, "metadata", None), "name", "?"),
+                    exc_info=True,
                 )
-                yield metric
 
 
-if __name__ == "__main__":
-    pelorus.setup_logging()
+def set_up(prod: bool = True) -> DeployTimeCollector:
+    pelorus.setup_logging(prod=prod)
     dyn_client = pelorus.utils.get_k8s_client()
 
     collector = load_and_log(DeployTimeCollector, other=dict(client=dyn_client))
 
     REGISTRY.register(collector)
-    start_http_server(8080)
+    return collector
+
+
+if __name__ == "__main__":
+    try:
+        set_up()
+        pelorus.mark_startup(True)
+    except Exception as e:
+        pelorus.mark_startup(False)
+        logging.error(
+            "Failed to configure deploytime exporter: %s. "
+            "Check NAMESPACES and PROD_LABEL settings. "
+            "Starting metrics server anyway - configure and restart to collect deploy data.",
+            e,
+            exc_info=True,
+        )
+
+    start_http_server(pelorus.EXPORTER_PORT)
+    logging.info("Deploytime exporter ready, serving metrics on :%d", pelorus.EXPORTER_PORT)
     while True:
-        time.sleep(1)
+        time.sleep(60)

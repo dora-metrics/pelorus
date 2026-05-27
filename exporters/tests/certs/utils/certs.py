@@ -9,7 +9,10 @@ from pathlib import Path
 from ssl import SSLContext
 from typing import NamedTuple
 
-CERT_X509_SAN_EXT_CONFIG = "subjectAltName=IP:127.0.0.1"
+CERT_X509_SAN_EXT_CONFIG = (
+    "authorityKeyIdentifier=keyid,issuer\n"
+    "subjectAltName=IP:127.0.0.1"
+)
 
 
 class CustomCerts(NamedTuple):
@@ -64,6 +67,12 @@ def create_certs(working_dir: Path) -> CustomCerts:
             "1",
             "-subj",
             "/CN=Pelorus Test CA",
+            "-addext",
+            "subjectKeyIdentifier=hash",
+            "-addext",
+            "basicConstraints=critical,CA:TRUE",
+            "-addext",
+            "keyUsage=critical,keyCertSign,cRLSign",
             "-out",
             ca_cert_path,
         ]

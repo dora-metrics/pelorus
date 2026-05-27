@@ -1,8 +1,12 @@
-# Metrics Exporters (in development)
+# Metrics Exporters
 
-Before deploying, you must export your GITHUB_REPOS, GITHUB_USER and GITHUB_TOKEN to your shell. Then run:
+Pelorus exporters collect DORA metrics from various sources and expose them to Prometheus.
 
-    oc process -f templates/github-secret.yaml -p GITHUB_USER=${GITHUB_USER} -p GITHUB_TOKEN=${GITHUB_TOKEN} -p GITHUB_REPOS=${GITHUB_REPOS} | oc apply -f-
-    oc process -f templates/exporter.yaml -p APP_NAME=commit-exporter | oc apply -f-
+Available exporters:
 
-Configuration can be found in the [config guide](https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusExporters/).
+- **committime** — Lead Time for Change (commit to deploy)
+- **deploytime** — Deployment Frequency
+- **failure** — Mean Time to Restore / Change Failure Rate
+- **webhook** — Receives metrics via HTTP webhooks
+
+For deployment and configuration, see the [configuration guide](https://pelorus.readthedocs.io/en/latest/GettingStarted/configuration/PelorusExporters/).

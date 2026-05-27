@@ -19,7 +19,13 @@ rules:
   resources:
   - secrets
   verbs:
-  - "*"
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 # We need to create events on CRs about things happening during reconciliation
 - apiGroups:
   - ""
@@ -53,34 +59,67 @@ rules:
   - update
   - watch
 - verbs:
-  - "*"
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - bind
+  - escalate
   apiGroups:
   - "rbac.authorization.k8s.io"
   resources:
   - "clusterrolebindings"
   - "clusterroles"
 - verbs:
-  - "*"
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
   apiGroups:
   - "image.openshift.io"
   resources:
   - "imagestreams"
 - verbs:
-  - "*"
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
   apiGroups:
   - "monitoring.coreos.com"
   resources:
   - "prometheuses"
+  - "prometheuses/api"
   - "prometheusrules"
   - "servicemonitors"
 - verbs:
-  - "*"
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
   apiGroups:
   - "route.openshift.io"
   resources:
   - "routes"
 - verbs:
-  - "*"
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
   apiGroups:
   - ""
   resources:
@@ -89,17 +128,90 @@ rules:
   - "serviceaccounts"
   - "services"
 - verbs:
-  - "*"
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
   apiGroups:
   - "rbac.authorization.k8s.io"
   resources:
   - "rolebindings"
   - "roles"
 - verbs:
-  - "*"
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
   apiGroups:
   - "apps"
   resources:
   - "deployments"
 
+##
+## Permissions the operator must hold to grant to exporter/prometheus SAs
+## (RBAC escalation prevention requires the granter to hold the permissions)
+##
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - pods
+  - endpoints
+  - replicationcontrollers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - "apps"
+  - "extensions"
+  resources:
+  - replicasets
+  verbs:
+  - list
+- apiGroups:
+  - "build.openshift.io"
+  resources:
+  - builds
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - "image.openshift.io"
+  resources:
+  - images
+  verbs:
+  - list
+- apiGroups:
+  - "grafana.integreatly.org"
+  resources:
+  - grafanas
+  - grafanadashboards
+  - grafanadatasources
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - "authorization.k8s.io"
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
 #+kubebuilder:scaffold:rules

@@ -65,6 +65,7 @@ git-blame:
 		git config blame.ignoreRevsFile .git-blame-ignore-revs; \
 	fi
 
+.PHONY: pre-commit-setup
 pre-commit-setup: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	pre-commit install
@@ -81,12 +82,15 @@ $(PELORUS_VENV)/bin/%: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 		./scripts/install_dev_tools.sh -v $(PELORUS_VENV) -c $(notdir $@)
 
+.PHONY: system-doc-deps
 # system-level doc requirements
 ifeq (Darwin, $(shell uname -s))
-/opt/homebrew/Cellar/%:
+HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null || echo /opt/homebrew)
+
+$(HOMEBREW_PREFIX)/Cellar/%:
 	brew install $(notdir $@)
 
-system-doc-deps: /opt/homebrew/Cellar/libffi /opt/homebrew/Cellar/cairo
+system-doc-deps: $(HOMEBREW_PREFIX)/Cellar/libffi $(HOMEBREW_PREFIX)/Cellar/cairo
 else
 system-doc-deps:
 endif
@@ -114,7 +118,7 @@ mockoon-tests: $(PELORUS_VENV)
 ## e2e-tests: installs pelorus, mongo-todolist and tests commit and deploy exporters
 ## e2e-tests-scenario-1: run e2e-tests with latest quay images
 ## e2e-tests-scenario-2: run e2e-tests for deploytime exporter using different exporter install methods
-.PHONY: e2e-tests e2e-tests-scenario-1 e2e-tests-scenario-1
+.PHONY: e2e-tests e2e-tests-scenario-1 e2e-tests-scenario-2
 e2e-tests: e2e-tests-dev-env
 	. ${PELORUS_VENV}/bin/activate && \
 	./scripts/run-pelorus-e2e-tests.sh -o konveyor -a -t
@@ -138,14 +142,13 @@ integration-tests: $(PELORUS_VENV)
 ## unit-tests: pytest everything minus integration and mockoon
 .PHONY: unit-tests
 unit-tests: $(PELORUS_VENV)
-  # -r: show extra test summaRy: (a)ll except passed, (p)assed
-  # because using (A)ll includes stdout
+  # -r: show extra test summary: (a)ll except passed, (p)assed
   # -m filters out integration tests
 	. ${PELORUS_VENV}/bin/activate && \
 	pytest -rap -m "not integration and not mockoon"
 
-# Prometheus ruels
-## test-prometheusrules: test prometheus with data in _test/test_promethusrules
+# Prometheus rules
+## test-prometheusrules: test prometheus with data in _test/test_prometheusrules
 .PHONY: test-prometheusrules
 test-prometheusrules: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
@@ -235,12 +238,11 @@ pre-commit-all: $(PELORUS_VENV)
 	. ${PELORUS_VENV}/bin/activate && \
 	pre-commit run --all-files
 
-## update-requirements: Updates project's Python dependencies files. Requires Poetry executable
-update-requirements: $(PELORUS_VENV)
-	. ${PELORUS_VENV}/bin/activate && \
-	poetry export --format requirements.txt --output docs/requirements.txt --only doc && \
-	poetry export --format requirements.txt --output exporters/requirements-dev.txt --only dev && \
-	poetry export --format requirements.txt --output exporters/requirements.txt
+## update-requirements: Updates project's Python dependencies files. Requires uv executable
+update-requirements:
+	uv export --no-dev --no-emit-project -o exporters/requirements.txt && \
+	uv export --only-group dev --no-emit-project -o exporters/requirements-dev.txt && \
+	uv export --only-group doc --no-emit-project -o docs/requirements.txt
 
 ## openshift-check-versions: Checks if OpenShift versions used by the project are the 4 latest minor stable releases
 openshift-check-versions: $(PELORUS_VENV)

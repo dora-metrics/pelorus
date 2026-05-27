@@ -4,24 +4,51 @@ kind: GrafanaDatasource
 metadata:
   name: prometheus-grafana-datasource
 spec:
-  name: prometheus.yaml
   instanceSelector:
     matchLabels:
-      grafana: grafana-oauth
+      grafana: grafana
+{{- if eq .Values.operator_source "redhat" }}
+  valuesFrom:
+    - targetPath: "secureJsonData.httpHeaderValue1"
+      valueFrom:
+        secretKeyRef:
+          name: grafana-monitoring-token
+          key: token
   datasource:
-    access: "proxy"
-    basicAuth: true
-    basicAuthPassword: {{ .Values.openshift_prometheus_basic_auth_pass }}
-    basicAuthUser: "internal"
-    editable: false
+    name: Prometheus
+    type: prometheus
+    access: proxy
+    editable: true
+    isDefault: true
     jsonData:
       tlsSkipVerify: true
-    name: "prometheus"
-    orgId: 1
-    type: "prometheus"
-    {{- if .Values.bucket_access_point }}
+      httpHeaderName1: Authorization
+    secureJsonData:
+      httpHeaderValue1: "Bearer ${token}"
+    url: "https://thanos-querier.openshift-monitoring.svc:9091"
+{{- else }}
+  datasource:
+    name: Prometheus
+    type: prometheus
+    access: proxy
+    editable: true
+    isDefault: true
+    jsonData:
+      tlsSkipVerify: true
+  {{- if .Values.bucket_access_point }}
     url: "https://thanos-pelorus.{{ .Release.Namespace }}.svc:9092"
-    {{- else }}
+    basicAuth: true
+    basicAuthUser: "internal"
+    secureJsonData:
+      basicAuthPassword: {{ required "openshift_prometheus_basic_auth_pass must be set when using basic auth" .Values.openshift_prometheus_basic_auth_pass }}
+  {{- else if .Values.oauth_proxy_enabled }}
     url: "https://prometheus-pelorus.{{ .Release.Namespace }}.svc:9091"
-    {{- end }}
-    version: 1
+    basicAuth: true
+    basicAuthUser: "internal"
+    secureJsonData:
+      basicAuthPassword: {{ required "openshift_prometheus_basic_auth_pass must be set when using basic auth" .Values.openshift_prometheus_basic_auth_pass }}
+  {{- else }}
+    url: "http://prometheus-operated.{{ .Release.Namespace }}.svc:9090"
+    basicAuth: false
+  {{- end }}
+{{- end }}

@@ -55,12 +55,9 @@ class StandardTool:
         else:
             sys.exit(f"Unsupported architecture {ARCH}")
     elif OS == "Linux" and ARCH in X86_64_ARCH_NAMES:
-        if ARCH in X86_64_ARCH_NAMES:
-            ARCH_PATTERN = re.compile("|".join(X86_64_ARCH_NAMES))
-        else:
-            sys.exit(f"Unsupported architecture {ARCH}")
+        ARCH_PATTERN = re.compile("|".join(X86_64_ARCH_NAMES))
     else:
-        sys.exit(f"Unsupported OS {OS}")
+        sys.exit(f"Unsupported OS/architecture combination: {OS} {ARCH}")
 
     PATTERNS = TAR_GZ_PATTERN, KERNEL_PATTERN, ARCH_PATTERN
 
@@ -69,8 +66,8 @@ class StandardTool:
         return all(pat.search(url) for pat in cls.PATTERNS)
 
 
-class Nooba:
-    "Nooba's URL pattern."
+class Noobaa:
+    "NooBaa's URL pattern."
 
     repo = "noobaa/noobaa-operator"
     arch = OS.lower()
@@ -111,7 +108,7 @@ class Shellcheck:
     elif ARCH == "arm64":
         arch = "aarch64"
     else:
-        sys.exit(f"Unsupported OS {OS}")
+        sys.exit(f"Unsupported OS/architecture combination: {OS} {ARCH}")
 
     pattern = f"{os}.{arch}.tar.xz"
 
@@ -134,7 +131,7 @@ class Tool(enum.Enum):
 
     shellcheck = Shellcheck.repo, Shellcheck.url_matches
 
-    noobaa = Nooba.repo, Nooba.url_matches
+    noobaa = Noobaa.repo, Noobaa.url_matches
 
     operator_sdk = OperatorSdk.repo, OperatorSdk.url_matches
 
@@ -180,7 +177,7 @@ def get_latest_assets(repo: str, exact: str = "") -> Iterable[ReleaseAsset]:
     "Get the release assets for the latest release, if no exact version."
     url = GITHUB_RELEASE_TEMPLATE.format(repo)
 
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
     response.raise_for_status()
 
     body = response.json()

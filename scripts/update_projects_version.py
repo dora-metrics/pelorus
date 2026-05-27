@@ -24,6 +24,7 @@ import argparse
 import json
 import logging
 import re
+import shlex
 import shutil
 import subprocess
 from http.client import HTTPResponse
@@ -98,8 +99,7 @@ def run_command(
 ) -> "subprocess.CompletedProcess[str]":
     try:
         return subprocess.run(
-            command,
-            shell=True,
+            shlex.split(command),
             check=True,
             capture_output=True,
             encoding="utf-8",
@@ -308,7 +308,6 @@ def update_operator_folder(next_operator_version: str, destination: Path) -> Non
     run_command("make bundle", directory=destination)
 
     pelorus_operator_image_tags = request.Request(OPERATOR_RELEASED_TAGS_URL)
-    pelorus_operator_image_tags.add_header("Authorization", "Bearer XYZ")
     with request.urlopen(pelorus_operator_image_tags) as response:
         tags: List[Dict[str, str]] = list(json.load(response)["tags"])
     tag_names = [
@@ -372,15 +371,14 @@ def get_arguments() -> argparse.Namespace:
         description="Update all versions of the project.",
         allow_abbrev=False,
     )
-    folder = parser.add_mutually_exclusive_group()
-    folder.add_argument(
+    parser.add_argument(
         "-d",
         "--destination",
         type=folder_path_type,
         help=f"Path to operator destination folder. Default to {PELORUS_OPERATOR_FOLDER}",
         default=PELORUS_OPERATOR_FOLDER,
     )
-    folder.add_argument(
+    parser.add_argument(
         "-f",
         "--force",
         action="store_true",

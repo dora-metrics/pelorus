@@ -7,10 +7,65 @@ updates:
       interval: "daily"
     commit-message:
       prefix: ⬆
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
   # Python
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     commit-message:
       prefix: ⬆
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "python"
+  # Docker - exporters
+  - package-ecosystem: "docker"
+    directory: "/exporters"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆
+    groups:
+      docker-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "docker"
+  # Docker - operator
+  - package-ecosystem: "docker"
+    directory: "/pelorus-operator"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆
+    groups:
+      docker-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "docker"
+  # Docker - demo
+  - package-ecosystem: "docker"
+    directory: "/demo/python-example"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆
+    groups:
+      docker-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "docker"

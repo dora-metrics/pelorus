@@ -17,121 +17,132 @@
 
 import json
 import logging
+import os
 import queue
+import shlex
 import subprocess
 import threading
 import time
-from typing import Dict, Iterable, Optional, Tuple
+from collections import OrderedDict
+from typing import Iterable, Optional
 
-from attr import define
-from openshift.dynamic.resource import ResourceField
+from attrs import define
+from kubernetes.dynamic.resource import ResourceField
+from prometheus_client import Counter, Gauge
 
 from committime import CommitMetric
-from committime.collector_base import AbstractCommitCollector
-from pelorus.timeutil import parse_guessing_timezone_DYNAMIC, to_epoch_from_string
+from .collector_base import AbstractCommitCollector, _build_failures
+from pelorus.timeutil import parse_commit_timestamp
 from provider_common.openshift import (
+    CACHE_THRESHOLD_1_DAY,
     filter_pods_by_replica_uid,
     get_and_log_namespaces,
     get_images_from_pod,
     get_running_pods,
 )
 
-skopeo_lock = threading.Lock()
+_skopeo_worker_errors = Counter(
+    "pelorus_committime_skopeo_errors_total",
+    "Total number of errors in the skopeo background worker",
+)
+_skopeo_queue_depth = Gauge(
+    "pelorus_committime_skopeo_queue_depth",
+    "Current number of images waiting in the skopeo inspection queue",
+)
+_skopeo_queue_drops = Counter(
+    "pelorus_committime_skopeo_queue_drops_total",
+    "Total number of images dropped because the skopeo queue was full",
+)
+_image_cache_size = Gauge(
+    "pelorus_committime_image_cache_size",
+    "Current number of entries in the container image label cache",
+)
 
-# A queue to store image URI values to be processed
-image_shas_uris_queue = queue.Queue()
-# Use to track if the image is already in the queue
-sha_in_queue = set()
+# Bounded to prevent unbounded memory growth when the skopeo worker
+# can't keep pace with new image discoveries.
+image_shas_uris_queue = queue.Queue(maxsize=1000)
 
-# Cache threshold in seconds, used by our in memory cache or storing image labels.
-# The cache may expire only when the image is not in use by running Pod anymore,
-# so we don't waste the skopeo calls to the external registries, but we still allow
-# pods to be not running for a while before we expire it's metric.
-CACHE_THRESHOLD_1_DAYS = 60 * 60 * 24
-
-# We store skopeo failures and we re-try maximum SKOPEO_MAX_RETRY times per
-# one image URI. This is to prevent too many calls to the external container
-# registries. We have a timeout here, so after some time the failed image URI
-# will be retried anyway. If the pod is not Running anymore the cache expires
-# right away.
-skopeo_failures_lock = threading.Lock()
-# The dictionary where the key is an uuid and the value a Tuple
-# where we store number of retries and the time of last check
-skopeo_failures: Dict[str, Tuple[int, float]] = {}
+# Retry-limited failure tracking to avoid hammering external registries.
+# After SKOPEO_MAX_RETRY failures, an image is skipped until
+# CACHE_SKOPEO_FAILURE_THRESHOLD_2_DAYS expires.
+skopeo_failures_lock = threading.RLock()
+skopeo_failures: OrderedDict[str, tuple[int, float]] = OrderedDict()
 SKOPEO_MAX_RETRY = 3
 CACHE_SKOPEO_FAILURE_THRESHOLD_2_DAYS = 60 * 60 * 24 * 2
+_SKOPEO_FAILURES_MAX = 5_000
 
 image_label_cache_lock = threading.Lock()
-image_label_cache: Dict[str, Tuple[Dict, float]] = {}
+image_label_cache: OrderedDict[str, tuple[dict, float]] = OrderedDict()
+_IMAGE_LABEL_CACHE_MAX = 10_000
 
-# Store pods that are running, needed for cleanup
-running_pods_shas_lock = threading.Lock()
-running_pods_shas = set()
 
 # The directory where ca.crt is mounted
 CA_CRT_DIR = "/var/run/secrets/kubernetes.io/serviceaccount/"
 
 
 class SkopeoDataException(Exception):
-    "An error that occurred Skopeo call"
-    pass
+    "An error that occurred during a Skopeo call"
 
 
-def _add_to_cleanup_set(sha_256: str) -> None:
-    with running_pods_shas_lock:
-        running_pods_shas.add(sha_256)
-
-
-def _clear_cleanup_set() -> None:
-    with running_pods_shas_lock:
-        running_pods_shas.clear()
-
-
-def _cache_container_images_labels(sha_256: str, labels: Dict) -> None:
+def _cache_container_images_labels(sha_256: str, labels: dict) -> None:
+    now = time.time()
     with image_label_cache_lock:
         if sha_256 not in image_label_cache:
-            logging.debug(f"Adding SHA256 to the cache: {sha_256} ")
-            image_label_cache[sha_256] = (labels, time.time())
+            if len(image_label_cache) >= _IMAGE_LABEL_CACHE_MAX:
+                image_label_cache.popitem(last=False)
+            logging.debug("Adding SHA256 to the cache: %s", sha_256)
+            image_label_cache[sha_256] = (labels, now)
 
 
-def _cleanup_cache() -> None:
-    with running_pods_shas_lock, image_label_cache_lock:
+_last_cleanup_time: float = 0.0
+_CLEANUP_INTERVAL = 60.0
+
+
+def _cleanup_cache(active_shas: set) -> None:
+    global _last_cleanup_time
+
+    if time.time() - _last_cleanup_time < _CLEANUP_INTERVAL:
+        return
+
+    with image_label_cache_lock:
         current_time = time.time()
 
-        expired_shas = [
-            sha
-            for sha, (_, insertion_time) in image_label_cache.items()
-            if current_time - insertion_time > CACHE_THRESHOLD_1_DAYS
-            and sha not in running_pods_shas
-        ]
+        if current_time - _last_cleanup_time < _CLEANUP_INTERVAL:
+            return
+
+        _last_cleanup_time = current_time
+
+        expired_shas = []
+        for sha, (_, insertion_time) in image_label_cache.items():
+            if current_time - insertion_time <= CACHE_THRESHOLD_1_DAY:
+                break
+            if sha not in active_shas:
+                expired_shas.append(sha)
         for sha_256 in expired_shas:
-            image_label_cache.pop(sha_256, None)
+            del image_label_cache[sha_256]
 
 
 def _add_skopeo_failure(sha_256: str) -> None:
+    now = time.time()
     with skopeo_failures_lock:
-        logging.debug(f"Adding SHA256 to the failures: {sha_256} ")
+        logging.debug("Adding SHA256 to the failures: %s", sha_256)
         if sha_256 not in skopeo_failures:
-            skopeo_failures[sha_256] = (1, time.time())
+            if len(skopeo_failures) >= _SKOPEO_FAILURES_MAX:
+                skopeo_failures.popitem(last=False)
+            skopeo_failures[sha_256] = (1, now)
         else:
-            skopeo_failures[sha_256] = (skopeo_failures[sha_256][0] + 1, time.time())
+            skopeo_failures[sha_256] = (skopeo_failures[sha_256][0] + 1, now)
+            skopeo_failures.move_to_end(sha_256)
 
 
 def _remove_from_skopeo_failure(sha_256: str) -> None:
     with skopeo_failures_lock:
-        if sha_256 in skopeo_failures:
-            logging.debug(f"Removing SHA256 from the failures: {sha_256} ")
-            skopeo_failures.pop(sha_256, None)
+        if skopeo_failures.pop(sha_256, None) is not None:
+            logging.debug("Removing SHA256 from the failures: %s", sha_256)
 
 
 def _sha256_valid_to_be_checked(sha_256: str) -> bool:
-    """
-    Checks if the sha256 of an image was previously in
-    failures. If it was then it checks if the number of retries
-    was above threashold.
-
-    If it was then we check if the time treshold was met.
-    """
+    """Return True if this image should be inspected (not over retry limit, or cooldown expired)."""
     with skopeo_failures_lock:
         if sha_256 not in skopeo_failures:
             return True
@@ -140,35 +151,47 @@ def _sha256_valid_to_be_checked(sha_256: str) -> bool:
         if no_failures < SKOPEO_MAX_RETRY:
             return True
 
-    # Must be outside of the failures lock, otherwise we will
-    # deadlock with the _remove_from_skopeo_failure() call
-    if time.time() - timestamp > CACHE_SKOPEO_FAILURE_THRESHOLD_2_DAYS:
-        _remove_from_skopeo_failure(sha_256)
-        return True
+        if time.time() - timestamp > CACHE_SKOPEO_FAILURE_THRESHOLD_2_DAYS:
+            skopeo_failures.pop(sha_256, None)
+            return True
 
     return False
 
 
-def get_labels_from_image(sha_256: str, image_uri: str) -> Dict[str, str]:
-    # Check if the sha_256 is in the failures
-    # and if we should continue based on the SKOPEO_MAX_RETRY
-    # or CACHE_SKOPEO_FAILURE_THRESHOLD_2_DAYS
+def get_labels_from_image(sha_256: str, image_uri: str) -> dict[str, str]:
     if not _sha256_valid_to_be_checked(sha_256):
-        logging.debug(f"Skipping skopeo for: {sha_256}")
+        logging.debug("Skipping skopeo for: %s", sha_256)
         raise SkopeoDataException("Sha not to be checked")
 
-    logging.debug(f"Running skopeo for: {sha_256}")
-    command = f"skopeo inspect --cert-dir {CA_CRT_DIR} {image_uri}"
-    logging.debug(f"Running shell command: {command}")
+    logging.debug("Running skopeo for: %s", sha_256)
+    command = ["skopeo", "inspect", "--cert-dir", CA_CRT_DIR, "--", image_uri]
+    logging.debug("Running command: %s", shlex.join(command))
     process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
-    output, stderr = process.communicate()
-    output = output.decode("utf-8").strip()
+    try:
+        output, stderr = process.communicate(timeout=120)
+    except subprocess.TimeoutExpired as exc:
+        process.kill()
+        try:
+            process.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            logging.warning("skopeo process did not terminate after kill for %s", sha_256)
+        _add_skopeo_failure(sha_256)
+        logging.warning("skopeo timed out after 120s for image %s (sha=%s)", image_uri, sha_256)
+        raise SkopeoDataException("skopeo timed out after 120s") from exc
+    except Exception:
+        process.kill()
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            logging.warning("skopeo process did not terminate after kill for %s", sha_256)
+        raise
+    output = output.decode("utf-8", errors="replace").strip()
     if process.returncode != 0:
         _add_skopeo_failure(sha_256)
-        stderr = stderr.decode().strip()
-        logging.debug(f"Error from skopeo for {command}: {stderr}")
+        stderr = stderr.decode("utf-8", errors="replace").strip()
+        logging.warning("Error from skopeo for %s: %s", command, stderr)
         raise SkopeoDataException(stderr)
 
     try:
@@ -176,55 +199,65 @@ def get_labels_from_image(sha_256: str, image_uri: str) -> Dict[str, str]:
         labels = image_data.get("Labels", {})
     except json.JSONDecodeError as e:
         _add_skopeo_failure(sha_256)
-        logging.debug(f"Error from decoding JSON for {sha_256}: {e.msg}")
-        raise SkopeoDataException("Error: Invalid JSON output")
+        logging.warning("Error from decoding JSON for %s: %s", sha_256, e, exc_info=True)
+        raise SkopeoDataException("Error: Invalid JSON output") from e
 
-    # We got the labels, so remove them from the potential
-    # existence in the failures.
     _remove_from_skopeo_failure(sha_256)
-    logging.debug(f"Found the following labels for image {image_uri}: {labels}")
+    logging.debug("Found the following labels for image %s: %s", image_uri, labels)
     return labels
 
 
 def _skopeo_worker() -> None:
-    loop_count = 1
     while True:
-        logging.debug(f"Worker loop: {loop_count}")
-        loop_count += 1
-        sha_pop = image_shas_uris_queue.get()
+        sha_256, sha_uri = image_shas_uris_queue.get()
         try:
-            for sha_256, sha_uri in sha_pop.items():
-                labels = get_labels_from_image(sha_256, sha_uri)
-                _cache_container_images_labels(sha_256, labels)
+            labels = get_labels_from_image(sha_256, sha_uri)
+            _cache_container_images_labels(sha_256, labels)
+        except SkopeoDataException:
+            _skopeo_worker_errors.inc()
+            logging.debug("Skopeo worker: expected failure for image %s", sha_256, exc_info=True)
         except Exception:
-            # We do not care about the error, but we want to continue
-            # our daemon worker.
-            pass
+            _skopeo_worker_errors.inc()
+            logging.error(
+                "Skopeo worker failed to process image labels for %s",
+                sha_256,
+                exc_info=True,
+            )
 
         image_shas_uris_queue.task_done()
 
 
-# Start the daemon thread which checks for the queue and gathers
-# labels for the queued items.
-skopeo_cache_thread = threading.Thread(target=_skopeo_worker, daemon=True)
-skopeo_cache_thread.start()
+_SKOPEO_WORKERS_MAX = 32
+
+_skopeo_workers_raw = os.environ.get("PELORUS_SKOPEO_WORKERS", "4")
+try:
+    _SKOPEO_WORKERS = int(_skopeo_workers_raw)
+except ValueError as exc:
+    raise ValueError(
+        f"PELORUS_SKOPEO_WORKERS must be an integer, got: {_skopeo_workers_raw!r}"
+    ) from exc
+if not (1 <= _SKOPEO_WORKERS <= _SKOPEO_WORKERS_MAX):
+    raise ValueError(
+        f"PELORUS_SKOPEO_WORKERS must be between 1 and {_SKOPEO_WORKERS_MAX}, got: {_SKOPEO_WORKERS}"
+    )
+
+for _i in range(_SKOPEO_WORKERS):
+    threading.Thread(target=_skopeo_worker, daemon=True).start()
 
 
 def _add_image_to_get_label_queue(sha_256: str, image_uri: str) -> None:
-    """
-    Function that puts the sha and corresponding image uri to the queue
-    to be processed by our skopeo worker Thread.
-    """
-
+    """Enqueue an image for skopeo inspection, skipping if already cached or over retry limit."""
     with image_label_cache_lock:
         if sha_256 in image_label_cache:
             return
-    #    TODO_1: Do not add to queue if already there
-    #    with skopeo_lock:
-    #        if sha_256 in sha_in_queue:
-    #            return
-    logging.debug(f"Adding SHA256 to the SKOPEO queue: {sha_256}")
-    image_shas_uris_queue.put({sha_256: image_uri})
+    if not _sha256_valid_to_be_checked(sha_256):
+        return
+    logging.debug("Adding SHA256 to the SKOPEO queue: %s", sha_256)
+    try:
+        image_shas_uris_queue.put_nowait((sha_256, image_uri))
+    except queue.Full:
+        _skopeo_queue_drops.inc()
+        logging.warning("Skopeo queue full, dropping image %s", sha_256)
 
 
 def _set_commit_metadata(
@@ -233,91 +266,107 @@ def _set_commit_metadata(
     hash_label: str,
     repo_url_label: str,
     sha_256: str,
-    date_format: str = None,
+    date_format: Optional[str] = None,
 ) -> None:
     with image_label_cache_lock:
-        labels = image_label_cache.get(sha_256, None)
-        logging.debug(f"Got image labels for: {sha_256}")
-        if labels and isinstance(labels, Tuple) and isinstance(labels[0], dict):
-            pod.metadata.commit_hash = labels[0].get(hash_label)
-            commit_time = labels[0].get(date_label)
-            if commit_time:
-                try:
-                    pod.metadata.commit_timestamp = to_epoch_from_string(
-                        commit_time
-                    ).timestamp()
-                except (ValueError, AttributeError):
-                    try:
-                        # Do nothing here as we tried with EPOCH timestamp
-                        pod.metadata.commit_timestamp = parse_guessing_timezone_DYNAMIC(
-                            commit_time, format=date_format
-                        ).timestamp()
-                    except ValueError:
-                        logging.debug(f"Can't get commit timestamp for sha: {sha_256}")
-            repo_url = labels[0].get(repo_url_label)
-            if not repo_url:
-                repo_url = "unknown"
-            pod.metadata.repo_url = repo_url
+        entry = image_label_cache.get(sha_256, None)
+
+    if not entry:
+        logging.debug("Image labels not yet cached for %s, skipping metadata assignment", sha_256)
+        return
+    logging.debug("Got image labels for: %s", sha_256)
+    labels = entry[0]
+    pod.metadata.commit_hash = labels.get(hash_label)
+    commit_time = labels.get(date_label)
+    if commit_time:
+        try:
+            pod.metadata.commit_timestamp = parse_commit_timestamp(
+                commit_time, date_format
+            )
+        except (ValueError, AttributeError):
+            logging.warning(
+                "Can't parse commit timestamp for sha %s, raw value: %s",
+                sha_256, commit_time,
+                exc_info=True,
+            )
+    pod.metadata.repo_url = labels.get(repo_url_label) or "unknown"
 
 
 @define(kw_only=True)
 class ContainerImageCommitCollector(AbstractCommitCollector):
     date_format: str
 
-    date_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["commit_time"]
-    hash_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["commit_hash"]
-    repo_url_annotation_name: str = CommitMetric._ANNOTATION_MAPPIG["repo_url"]
+    date_annotation_name: str = CommitMetric._ANNOTATION_MAPPING["commit_time"]
+    hash_annotation_name: str = CommitMetric._ANNOTATION_MAPPING["commit_hash"]
+    repo_url_annotation_name: str = CommitMetric._ANNOTATION_MAPPING["repo_url"]
 
     def get_commit_time(self, metric) -> Optional[CommitMetric]:
-        return super().get_commit_time(metric)
+        """Not used; exists to satisfy the abstract base class contract."""
+        return None
 
-    # overrides collector_base.generate_metric()
     def generate_metrics(self) -> Iterable[CommitMetric]:
-        metrics = []
-
         namespaces = get_and_log_namespaces(
             self.kube_client, self.namespaces, self.prod_label
         )
 
         if not namespaces:
-            return metrics
+            return
 
         logging.debug("generate_metrics: start")
 
-        _clear_cleanup_set()
+        active_shas = set()
 
         pods = get_running_pods(self.kube_client, namespaces, self.app_label)
 
-        # Build dictionary with controllers and retrieved pods
         replica_pods_dict = filter_pods_by_replica_uid(pods)
 
         for pod in replica_pods_dict.values():
-            # Since a commit will be built into a particular image and there could be multiple
-            # containers (images) per pod, we will push one metric per image/container in the
-            # pod template
-            images = get_images_from_pod(pod)
+            try:
+                images = get_images_from_pod(pod)
 
-            for sha, image_uri in images.items():
-                _add_to_cleanup_set(sha)
-                _add_image_to_get_label_queue(sha, image_uri)
-                _set_commit_metadata(
-                    pod,
-                    self.date_annotation_name,
-                    self.hash_annotation_name,
-                    self.repo_url_annotation_name,
-                    sha,
-                    self.date_format,
-                )
-                if pod.metadata.commit_timestamp and pod.metadata.commit_hash:
-                    metric = CommitMetric(
-                        name=pod.metadata.labels[self.app_label],
-                        namespace=pod.metadata.namespace,
-                        labels=pod.metadata.labels,
-                        commit_hash=pod.metadata.commit_hash,
-                        commit_timestamp=pod.metadata.commit_timestamp,
-                        image_hash=sha,
+                for sha, image_uri in images.items():
+                    active_shas.add(sha)
+                    _add_image_to_get_label_queue(sha, image_uri)
+                    pod.metadata.commit_hash = None
+                    pod.metadata.commit_timestamp = None
+                    pod.metadata.repo_url = None
+                    _set_commit_metadata(
+                        pod,
+                        self.date_annotation_name,
+                        self.hash_annotation_name,
+                        self.repo_url_annotation_name,
+                        sha,
+                        self.date_format,
                     )
-                    metric.commit_link = pod.metadata.repo_url
-                    yield metric
+                    if pod.metadata.commit_timestamp and pod.metadata.commit_hash:
+                        labels = getattr(pod.metadata, "labels", None)
+                        app_name = labels.get(self.app_label) if labels else None
+                        if not app_name:
+                            logging.warning(
+                                "Pod %s/%s missing app label %s, skipping",
+                                pod.metadata.namespace, pod.metadata.name, self.app_label,
+                            )
+                            continue
+                        metric = CommitMetric(
+                            name=app_name,
+                            namespace=pod.metadata.namespace,
+                            labels=pod.metadata.labels,
+                            commit_hash=pod.metadata.commit_hash,
+                            commit_timestamp=pod.metadata.commit_timestamp,
+                            image_hash=sha,
+                        )
+                        metric.commit_link = pod.metadata.repo_url
+                        yield metric
+            except Exception:
+                _build_failures.inc()
+                logging.error(
+                    "Failed to process pod %s/%s, skipping",
+                    getattr(getattr(pod, "metadata", None), "namespace", "?"),
+                    getattr(getattr(pod, "metadata", None), "name", "?"),
+                    exc_info=True,
+                )
 
-        _cleanup_cache()
+        _cleanup_cache(active_shas)
+        _skopeo_queue_depth.set(image_shas_uris_queue.qsize())
+        with image_label_cache_lock:
+            _image_cache_size.set(len(image_label_cache))

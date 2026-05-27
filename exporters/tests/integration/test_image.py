@@ -1,7 +1,7 @@
 from typing import cast
 
 import pytest
-from openshift.dynamic import DynamicClient
+from kubernetes.dynamic import DynamicClient
 
 from committime.app import ImageCommittimeConfig
 from committime.collector_image import ImageCommitCollector

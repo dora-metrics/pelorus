@@ -1,5 +1,5 @@
 import pytest
-from openshift.dynamic import DynamicClient
+from kubernetes.dynamic import DynamicClient
 
 from committime import CommitMetric
 from committime.collector_bitbucket import BitbucketCommitCollector

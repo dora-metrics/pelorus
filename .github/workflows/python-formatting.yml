@@ -1,5 +1,17 @@
 name: Check Python Formatting
+
+permissions:
+  contents: read
+
 on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/python-formatting.yml'
+      - 'pyproject.toml'
+      - 'Makefile'
+      - '**.py'
   pull_request:
     branches: [ main ]
     paths:
@@ -8,21 +20,22 @@ on:
       - 'Makefile'
       - '**.py'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   format-check:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9', '3.10', '3.11']
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.11'
           cache: 'pip'
           cache-dependency-path: |
             **/requirements*.txt

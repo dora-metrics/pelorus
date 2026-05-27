@@ -1,12 +1,23 @@
 name: Integration Tests
+
+permissions:
+  contents: read
+  actions: read
+
 on:
   workflow_run:
     workflows: [Trigger test images]
     types: [completed]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 jobs:
   setup:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       branch_ref: ${{ steps.variables.outputs.branch_ref }}
       pr_type: ${{ steps.variables.outputs.pr_type }}
@@ -23,17 +34,18 @@ jobs:
       - name: Store variables
         id: variables
         run: |
-          echo branch_ref=$(cat trigger-information.json | jq -r '.branch_ref') >> "$GITHUB_OUTPUT"
-          echo pr_type=$(cat trigger-information.json | jq -r '.pr_type') >> "$GITHUB_OUTPUT"
+          echo "branch_ref=$(jq -r '.branch_ref' trigger-information.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_type=$(jq -r '.pr_type' trigger-information.json)" >> "$GITHUB_OUTPUT"
 
   integration-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: ${{ needs.setup.outputs.pr_type != 'closed' }}
     needs: setup
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.11', '3.12', '3.13']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,7 +53,7 @@ jobs:
           ref: ${{ needs.setup.outputs.branch_ref }}
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'

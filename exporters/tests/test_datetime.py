@@ -127,10 +127,7 @@ def test_to_epoch_from_string(timestamps, expected):
 def test_to_epoch_from_string_bad_value(timestamps):
     with pytest.raises(ValueError) as timestamp_ex:
         to_epoch_from_string(timestamps)
-    assert (
-        f"Tried to get epoch from not allowed string length: {timestamps}"
-        == f"{timestamp_ex.value}"
-    )
+    assert str(timestamp_ex.value) == f"Tried to get epoch from not allowed string length: {timestamps}"
 
 
 @pytest.mark.parametrize("timestamps", [1652305808, None])
@@ -151,7 +148,7 @@ def test_to_epoch_from_string_bad_arg(timestamps):
 )
 @mock.patch("pelorus.timeutil.datetime")
 def test_sample_too_old(mock_datetime, metric_timestamp, expected):
-    mocked_current_datetime = datetime.fromtimestamp(1681828643)
+    mocked_current_datetime = datetime.fromtimestamp(1681828643, tz=timezone.utc)
 
     mock_datetime.now.return_value = mocked_current_datetime
     mock_datetime.fromtimestamp = datetime.fromtimestamp

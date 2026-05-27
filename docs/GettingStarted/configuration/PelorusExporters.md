@@ -88,7 +88,7 @@ This is the list of options that can be applied to `exporters.instances` section
 - **Required:** yes
 - **Type:** string
 
-: Set the exporter type. One of `deploytime`, `committime`, `failure`.
+: Set the exporter type. One of `deploytime`, `committime`, `failure`, `webhook`.
 
 ###### env_from_secrets
 
@@ -235,7 +235,7 @@ Then, add
         - example-secret
 [...]
 ```
-to the exporter configuration. If no `metadata.namespace` is added to Secret file, you must run the command with the namespace you want to apply it. For example, `oc apply -f secret.yaml -n pelorus`. More [examples Secret files](https://github.com/dora-metrics/pelorus/tree/master/charts/secrets).
+to the exporter configuration. If no `metadata.namespace` is added to Secret file, you must run the command with the namespace you want to apply it. For example, `oc apply -f secret.yaml -n pelorus`. More examples can be found in the [Pelorus documentation](https://pelorus.readthedocs.io/).
 
 1. To create a secret named **other-secret** in **pelorus** namespace, with the
 
@@ -286,7 +286,7 @@ Then, add
         - example-config
 [...]
 ```
-to the exporter configuration. If no `metadata.namespace` is added to ConfigMap file, you must run the command with the namespace you want to apply it. For example, `oc apply -f config.yaml -n pelorus`. More [examples ConfigMap files](https://github.com/dora-metrics/pelorus/tree/master/charts/configmaps).
+to the exporter configuration. If no `metadata.namespace` is added to ConfigMap file, you must run the command with the namespace you want to apply it. For example, `oc apply -f config.yaml -n pelorus`. More examples can be found in the [Pelorus documentation](https://pelorus.readthedocs.io/).
 
 1. To create a ConfigMap named **example-for-all** in **pelorus** namespace, that will be used by multiple exporters, with the option **LOG_LEVEL** with value **DEBUG**, using the file **config.yaml**
 ```yaml

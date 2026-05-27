@@ -1,14 +1,12 @@
 import pytest
 
-from committime.collector_base import CommitMetric
+from committime import CommitMetric
 
 
-# Unit tests for the CommitMetric
-@pytest.mark.parametrize("appname", [("pytest")])
-def test_commitmetric_initial(appname):
-    metric = CommitMetric(appname)
+def test_commitmetric_initial():
+    metric = CommitMetric("pytest")
     assert metric.repo_url is None
-    assert metric.name == appname
+    assert metric.name == "pytest"
     assert metric.repo_protocol is None
     assert metric.git_fqdn is None
     assert metric.repo_group is None
@@ -16,43 +14,31 @@ def test_commitmetric_initial(appname):
 
 
 @pytest.mark.parametrize(
-    "url,repo_protocol,fqdn,project_name",
+    "url,repo_protocol,fqdn,project_name,repo_group",
     [
-        ("https://dogs.git.foo/dogs/repo.git", "https", "dogs.git.foo", "repo"),
-        ("http://dogs.git.foo/dogs/repo.git", "http", "dogs.git.foo", "repo"),
-        ("http://noabank.git.foo/chase/git.git", "http", "noabank.git.foo", "git"),
-        ("ssh://git.moos.foo/maverick/tootsie.git", "ssh", "git.moos.foo", "tootsie"),
-        ("git@github.com:dora-metrics/pelorus.git", "ssh", "github.com", "pelorus"),
-        ("https://dev.azure.com/azuretest", "https", "dev.azure.com", "azuretest"),
+        ("https://dogs.git.foo/dogs/repo.git", "https", "dogs.git.foo", "repo", "dogs"),
+        ("http://dogs.git.foo/dogs/repo.git", "http", "dogs.git.foo", "repo", "dogs"),
+        ("http://noabank.git.foo/chase/git.git", "http", "noabank.git.foo", "git", "chase"),
+        ("ssh://git.moos.foo/maverick/tootsie.git", "ssh", "git.moos.foo", "tootsie", "maverick"),
+        ("git@github.com:dora-metrics/pelorus.git", "ssh", "github.com", "pelorus", "dora-metrics"),
+        ("https://dev.azure.com/azuretest", "https", "dev.azure.com", "azuretest", None),
         (
             "https://gitlab.com/firstgroup/secondgroup/myrepo.git",
             "https",
             "gitlab.com",
             "myrepo",
+            "/gitlab.com/firstgroup/secondgroup",
         ),
     ],
 )
-def test_commitmetric_repos(url, repo_protocol, fqdn, project_name):
-    test_name = "pytest"
-    metric = CommitMetric(test_name)
-    assert metric.repo_url is None
-    assert metric.repo_protocol is None
-    assert metric.git_fqdn is None
-    assert metric.repo_group is None
-    assert metric.repo_project is None
+def test_commitmetric_repos(url, repo_protocol, fqdn, project_name, repo_group):
+    metric = CommitMetric("pytest")
     metric.repo_url = url
-    assert metric.repo_url is not None
     assert metric.repo_url == url
     assert metric.repo_protocol == repo_protocol
-    assert metric.git_fqdn is not None
-    if metric.repo_url != "https://dev.azure.com/azuretest":
-        assert metric.repo_group is not None
-    else:
-        assert metric.repo_group is None
-    assert metric.repo_project is not None
     assert metric.git_fqdn == fqdn
-    #    assert metric.git_server == str(protocol + '://' + fqdn)
     assert metric.repo_project == project_name
+    assert metric.repo_group == repo_group
     assert metric.azure_project is None
 
 
@@ -128,14 +114,7 @@ def test_commitmetric_repos(url, repo_protocol, fqdn, project_name):
 def test_commitmetric_azure_repos(
     url, repo_protocol, fqdn, project_name, azure_organization, azure_project
 ):
-    test_name = "pytest"
-    metric = CommitMetric(test_name)
-    assert metric.repo_url is None
-    assert metric.repo_protocol is None
-    assert metric.git_fqdn is None
-    assert metric.repo_group is None
-    assert metric.repo_project is None
-    assert metric.azure_project is None
+    metric = CommitMetric("pytest")
     metric.repo_url = url
     assert metric.repo_url == url.strip("/")
     assert metric.repo_protocol == repo_protocol
@@ -147,7 +126,7 @@ def test_commitmetric_azure_repos(
 
 
 @pytest.mark.parametrize(
-    "url,repo_protocol,fqdn,project_name,azure_organization,azure_project,user",
+    "url,repo_protocol,fqdn,project_name,azure_organization,azure_project",
     [
         (
             "https://User2@dev.azure.com/Organization1Name/Project-Name/_git/the-repository-name/",
@@ -156,7 +135,6 @@ def test_commitmetric_azure_repos(
             "the-repository-name",
             "Organization1Name",
             "Project-Name",
-            "User2",
         ),
         (
             "https://Bruce@enterprise.custom/Organization1Name/Project-Name/_git/the-repository-name/",
@@ -165,7 +143,6 @@ def test_commitmetric_azure_repos(
             "the-repository-name",
             "Organization1Name",
             "Project-Name",
-            "Bruce",
         ),
         (
             "https://User@dev.azure.com/Organization/Project/_git/repository/",
@@ -174,7 +151,6 @@ def test_commitmetric_azure_repos(
             "repository",
             "Organization",
             "Project",
-            "User",
         ),
         (
             "https://user@dev.azure.com/organization/project/_git/repository/",
@@ -183,7 +159,6 @@ def test_commitmetric_azure_repos(
             "repository",
             "organization",
             "project",
-            "user",
         ),
         (
             "https://user@dev.azure.com:8080/organization/project/_git/repository/",
@@ -192,7 +167,6 @@ def test_commitmetric_azure_repos(
             "repository",
             "organization",
             "project",
-            "user",
         ),
         (
             "http://user@dev.azure.com:8080/organization/project/_git/repository/",
@@ -201,21 +175,13 @@ def test_commitmetric_azure_repos(
             "repository",
             "organization",
             "project",
-            "user",
         ),
     ],
 )
 def test_commitmetric_azure_repos_with_user(
-    url, repo_protocol, fqdn, project_name, azure_organization, azure_project, user
+    url, repo_protocol, fqdn, project_name, azure_organization, azure_project
 ):
-    test_name = "pytest"
-    metric = CommitMetric(test_name)
-    assert metric.repo_url is None
-    assert metric.repo_protocol is None
-    assert metric.git_fqdn is None
-    assert metric.repo_group is None
-    assert metric.repo_project is None
-    assert metric.azure_project is None
+    metric = CommitMetric("pytest")
     metric.repo_url = url
     assert metric.repo_url == url.strip("/")
     assert metric.repo_protocol == repo_protocol
@@ -231,8 +197,6 @@ def test_commitmetric_azure_repos_with_user(
     ["kmoos://myprotocol/buffy/noext/noext", "notvalid://breakme/snoopy/gtist.git"],
 )
 def test_malformed_git_url(malformed_url):
-    test_name = "pytest"
-    metric = CommitMetric(test_name)
-    metric.name = test_name
+    metric = CommitMetric("pytest")
     with pytest.raises(ValueError):
         metric.repo_url = malformed_url

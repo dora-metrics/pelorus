@@ -15,7 +15,7 @@ This track is focused around the development of custom [Prometheus exporters](ht
 
 Architectural Decision Records (ADRs) let us keep a record of the development choices we made, the context of the problem, and why we picked the solution we did.
 
-Our ADRs are kept in the [ADRs directory](https://github.com/dora-metrics/pelorus/tree/master/docs/adr/) following the [agreed upon format](./adr/0001-record-architecture-decisions.md).
+Our ADRs are kept in the [ADRs directory](https://github.com/dora-metrics/pelorus/tree/main/docs/adr/) following the [agreed upon format](./adr/0001-record-architecture-decisions.md).
 
 ### Readings on ADRs
 - [Michael Nygard's "Documenting architecture decisions"](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
@@ -79,28 +79,28 @@ Within the Pelorus GitHub fork directory:
 
 ## Python dependencies
 
-The project uses [Poetry](https://python-poetry.org/) to manage the Python dependencies
+The project uses [uv](https://docs.astral.sh/uv/) to manage the Python dependencies via `pyproject.toml` and `uv.lock`.
 
 ### Add a Python dependency
 
 To add a Python dependency, run
 ```
-poetry add package_name
+uv add package_name
 make update-requirements
 ```
-This will add it to the required dependencies group. To add it to another group, use `-G` flag.
+This will add it to the default dependencies. To add it to a dependency group, use `--group` flag (e.g. `uv add --group dev package_name`).
 
-For more information, run `poetry add --help` or check [documentation](https://python-poetry.org/docs/cli/#add).
+For more information, run `uv add --help` or check [documentation](https://docs.astral.sh/uv/reference/cli/#uv-add).
 
 ### Update a Python dependency
 
 To update a Python dependency, run
 ```
-poetry update package_name
+uv lock --upgrade-package package_name
 make update-requirements
 ```
 
-For more information, run `poetry update --help` or check [documentation](https://python-poetry.org/docs/cli/#update).
+For more information, run `uv lock --help` or check [documentation](https://docs.astral.sh/uv/reference/cli/#uv-lock).
 
 >**Note:** This should be CI responsibility.
 
@@ -108,11 +108,11 @@ For more information, run `poetry update --help` or check [documentation](https:
 
 To remove a Python dependency, run
 ```
-poetry remove package_name
+uv remove package_name
 make update-requirements
 ```
 
-For more information, run `poetry remove --help` or check [documentation](https://python-poetry.org/docs/cli/#remove).
+For more information, run `uv remove --help` or check [documentation](https://docs.astral.sh/uv/reference/cli/#uv-remove).
 
 ## Contributing to Deployment Automation
 
@@ -122,15 +122,12 @@ See the [Install guide](GettingStarted/Installation.md) for more details on that
 
 Currently we have two charts:
 
-1. The [operators](https://github.com/dora-metrics/pelorus/blob/master/charts/operators/) chart installs the community operators on which Pelorus depends.
-    * [Prometheus Operator](https://operatorhub.io/operator/prometheus)
-    * [Grafana Operator](https://operatorhub.io/operator/grafana-operator)
-2. The [pelorus](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/) chart manages the Pelorus stack, which includes:
+1. The [pelorus](https://github.com/dora-metrics/pelorus/blob/main/pelorus-operator/helm-charts/pelorus/) chart manages the Pelorus stack, which includes:
     * Prometheus
     * Thanos
     * Grafana
     * A set of Grafana Dashboards and Datasources
-    * The Pelorus exporters, managed in an [exporter](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/charts/exporters) subchart.
+    * The Pelorus exporters, managed in an [exporter](https://github.com/dora-metrics/pelorus/blob/main/pelorus-operator/helm-charts/pelorus/charts/exporters) subchart.
 
 We use Helm's [chart-testing](https://github.com/helm/chart-testing) tool to ensure quality and consistency in the chart. When making updates to one of the charts, ensure that the chart still passes lint testing using `make chart-lint`. The most common linting failure is forgetting to bump the `version` field in the `Chart.yaml`. See below for instructions on updating the version.
 
@@ -180,11 +177,11 @@ The following outlines a workflow for working on a dashboard:
 
         > Be sure to match the indentation of the previous dashboard JSON. Your git diffs should still show only the lines changed like the example below.
 
-             $ git diff charts/deploy/templates/metrics-dashboard.yaml
-             diff --git a/charts/deploy/templates/metrics-dashboard.yaml b/charts/deploy/templates/metrics-dashboard.yaml
+             $ git diff pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml
+             diff --git a/pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml b/pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml
              index 73151ad..c470afc 100644
-             --- a/charts/deploy/templates/metrics-dashboard.yaml
-             +++ b/charts/deploy/templates/metrics-dashboard.yaml
+             --- a/pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml
+             +++ b/pelorus-operator/helm-charts/pelorus/templates/dashboard-sdp.yaml
              @@ -25,7 +25,7 @@ spec:
                          "editable": true,
                          "gnetId": null,
@@ -217,11 +214,12 @@ The following is a recommended directory structure for a Pelorus exporter `<NAME
 
 ```
 .
-├── charts
-│   └── pelorus
-│       ├── configmaps
-│       │   └── <NAME>.yaml
-│       └── values.yaml
+├── pelorus-operator
+│   └── helm-charts
+│       └── pelorus
+│           ├── configmaps
+│           │   └── <NAME>.yaml
+│           └── values.yaml
 └── exporters
     ├── <NAME>
     │   ├── app.py
@@ -239,7 +237,6 @@ If not defined specifically, exporters are using pre-built container images with
   * Quay repository for the [committime-exporter](https://quay.io/repository/pelorus/pelorus-committime-exporter)
   * Quay repository for the [failure-exporter](https://quay.io/repository/pelorus/pelorus-failure-exporter)
   * Quay repository for the [deploytime-exporter](https://quay.io/repository/pelorus/pelorus-deploytime-exporter)
-  * Quay repository for the [releasetime-exporter](https://quay.io/repository/pelorus/pelorus-releasetime-exporter)
   * Quay repository for the [webhook-exporter](https://quay.io/repository/pelorus/pelorus-webhook-exporter)
 
 #### Pre-built Quay images
@@ -267,10 +264,10 @@ exporters:
   instances:
   - app_name: webhook-exporter
     exporter_type: webhook
-    image_type: latest
+    image_tag: latest
 
   - app_name: committime-github
-    exporter_type: comittime
+    exporter_type: committime
     image_tag: latest # Newest image from the last merged source code
     env_from_secrets:
     - github-credentials
@@ -279,16 +276,16 @@ exporters:
     - committime-config
 
   - app_name: committime-gh-enterprise
-    exporter_type: comittime
+    exporter_type: committime
     image_tag: stable # By default it's `stable`, so we do not need to include image_tag here
     env_from_secrets:
     - github-enterprise-credentials
     env_from_configmaps:
     - pelorus-config
-    - comittime-enterprise-config
+    - committime-enterprise-config
 
   - app_name: failure-github
-    exporter_type: deploytime
+    exporter_type: failure
     image_tag: d6f6e6fa1c9d48ca1deeaf1c72585b94964cbf31 # Specific merge build
     env_from_secrets:
     - github-credentials
@@ -321,7 +318,7 @@ exporters:
     exporter_type: webhook
 
   - app_name: committime-github
-    exporter_type: comittime
+    exporter_type: committime
     image_name: my.container.registry.io/pelorus/my-committime-exporter:latest # :stable would be used if no :latest was specified
     env_from_secrets:
     - github-credentials
@@ -330,19 +327,19 @@ exporters:
     - committime-config
 
   - app_name: committime-gh-enterprise
-    exporter_type: comittime
+    exporter_type: committime
     image_name: my.container.registry.io/pelorus/my-committime-exporter # image tag specified in the image_tag line below
     image_tag: mytag
     env_from_secrets:
     - github-enterprise-credentials
     env_from_configmaps:
     - pelorus-config
-    - comittime-enterprise-config
+    - committime-enterprise-config
 ```
 
 #### Image from source
 
-By specifying `source_url` (and optionally `source_ref`), Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to master branch.
+By specifying `source_url` (and optionally `source_ref`), Pelorus exporters will use installation method that performs incremental builds of the exporter images using source from the GIT repository. Images are being stored in an OpenShift Container Platform registry and used during Pelorus deployment or update. Each instance that uses this method results in a new build. This method is recommended for development or unmerged bug-fixes as it may point to any GIT and any branch or GIT reference. By default `source_ref` points to the main branch.
 
 Example of such exporter instances are below:
 
@@ -350,7 +347,7 @@ Example of such exporter instances are below:
 exporters:
   instances:
   - app_name: committime-github
-    exporter_type: comittime
+    exporter_type: committime
     source_url: https://github.com/dora-metrics/pelorus.git
     source_ref: refs/pull/567/head # References not merged GitHub pull request number 567
     env_from_secrets:
@@ -360,21 +357,21 @@ exporters:
     - committime-config
 
   - app_name: committime-gh-enterprise
-    exporter_type: comittime
+    exporter_type: committime
     source_url: https://github.com/mypelorusfork/pelorus.git
     source_ref: testbranch # Use testbranch from mypelorusfork org
     env_from_secrets:
     - github-enterprise-credentials
     env_from_configmaps:
     - pelorus-config
-    - comittime-enterprise-config
+    - committime-enterprise-config
 ```
 
 ### Dev Environment Setup
 
 #### Python & Repo Setup
 
-After cloning the repo, you'll need a python version that's >= 3.9 but <= 3.11.
+After cloning the repo, you'll need Python >= 3.11 (3.11 is used in the container image).
 
 Running `make dev-env` should be enough to get you started.
 
@@ -404,7 +401,7 @@ pre-commit run --all-files
 
 To bypass pre-commit checks, pass the `--no-verify` (`-n`) flag to `git commit` command.
 
-pre-commit configuration in [`.pre-commit-config.yaml`](https://github.com/dora-metrics/pelorus/blob/master/.pre-commit-config.yaml) file.
+pre-commit configuration in [`.pre-commit-config.yaml`](https://github.com/dora-metrics/pelorus/blob/main/.pre-commit-config.yaml) file.
 
 #### IDE Setup (VSCode)
 
@@ -451,9 +448,10 @@ Code also comes with a nice debugger feature. Here is a starter configuration to
             "env": {
                 "LOG_LEVEL": "INFO",
                 "APP_LABEL": "app.kubernetes.io/name"
-            }        },
+            }
+        },
         {
-            "name": "Deploy Time Exporter",
+            "name": "Failure Exporter",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/exporters/failure/app.py",
@@ -543,7 +541,7 @@ To deploy it to OpenShift marketplace, a pull request must be created in [Opensh
 
 ### API specification
 
-Operator uses OpenAPI Specification under the rugs. This is useful when we want to add field validations, for example.
+Operator uses OpenAPI Specification under the hood. This is useful when we want to add field validations, for example.
 
 Helpful links for understanding Operator API specification:
 
@@ -556,7 +554,7 @@ OpenShift allows custom UI rendering for Operator form view.
 
 Helpful links for understanding OpenShift UI rendering:
 
-- [https://github.com/openshift/console/blob/master/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md](https://github.com/openshift/console/blob/master/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md)
+- [https://github.com/openshift/console/blob/main/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md](https://github.com/openshift/console/blob/main/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md)
 - [https://cloud.redhat.com/blog/openshift-4-2-declarative-dynamic-ui-for-your-operator](https://cloud.redhat.com/blog/openshift-4-2-declarative-dynamic-ui-for-your-operator)
 
 ### Testing
@@ -730,13 +728,12 @@ Pelorus has the following versions
 - [repository](https://github.com/dora-metrics/pelorus/releases)
 - [exporters](https://quay.io/organization/pelorus)
 - helm-charts
-    - [pelorus (and exporters subchart)](https://github.com/dora-metrics/pelorus/blob/master/charts/pelorus/Chart.yaml)
-    - [operators](https://github.com/dora-metrics/pelorus/blob/master/charts/operators/Chart.yaml)
-- [operator](https://github.com/dora-metrics/pelorus/blob/master/pelorus-operator/bundle/manifests/pelorus-operator.clusterserviceversion.yaml#L511)
+    - [pelorus (and exporters subchart)](https://github.com/dora-metrics/pelorus/blob/main/pelorus-operator/helm-charts/pelorus/Chart.yaml)
+- [operator](https://github.com/dora-metrics/pelorus/blob/main/pelorus-operator/bundle/manifests/pelorus-operator.clusterserviceversion.yaml#L511)
 
 To simplify it, the repository, all exporters and all helm-charts versions are the same (which follow semantic versioning conventions) and each time one of them is bumped, the others are also bumped.
 
-Pelorus versions should be bumped anytime a change to exporters code (`exporters` folder), or to helm-charts (`charts` folder) or even to operator code (`pelorus-operator` folder), is made. This is enforced by the project CI.
+Pelorus versions should be bumped anytime a change to exporters code (`exporters` folder), or to helm-charts (`pelorus-operator/helm-charts` folder) or even to operator code (`pelorus-operator` folder), is made. This is enforced by the project CI.
 
 ### Update during development version
 
@@ -768,7 +765,7 @@ Then run the `update_projects_version` script using the `-l` (`--labels`) flag. 
 
 > A release pull request should only contain the changes from the script run
 
-Create the pull request, using the [release template](https://github.com/dora-metrics/pelorus/blob/master/.github/PULL_REQUEST_TEMPLATE/release_template.md).
+Create the pull request, using the [release template](https://github.com/dora-metrics/pelorus/blob/main/.github/PULL_REQUEST_TEMPLATE/release_template.md).
 
 > If it is a minor or major chart release, ensure that the pull request is labeled with "minor" or "major" label.
 
@@ -792,7 +789,7 @@ rm -rf .cache && mkdocs serve
 ```
 to fix it.
 
-The mkdocs config is controlled by the `mkdocs.yml` file in the root of this project. All of the documents that will be served are in the [/docs](https://github.com/dora-metrics/pelorus/tree/master/docs) folder.
+The mkdocs config is controlled by the `mkdocs.yml` file in the root of this project. All of the documents that will be served are in the [/docs](https://github.com/dora-metrics/pelorus/tree/main/docs) folder.
 
 To generate diagrams images, run
 ```

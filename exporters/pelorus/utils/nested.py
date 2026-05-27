@@ -32,6 +32,7 @@ dots itself, such as when accessing openshift labels or annotations.
 """
 import contextlib
 import enum
+import functools
 from typing import Any, Literal, Mapping, Optional, Sequence, TypeVar, Union, overload
 
 import attrs
@@ -76,7 +77,7 @@ def get_nested(
     """
     `get_nested` helps you safely traverse a deeply nested object that is indexable.
     If `TypeError`, `KeyError`, or `IndexError` are thrown, then `default` will be returned.
-    If `default` is not given, a `MissingAttributeError` will be thrown,
+    If `default` is not given, a `BadAttributePathError` will be raised,
     which includes information about where in the path things went wrong, and a human-readable name (if included).
 
     You may specify the path as either a list of keys, or a single string.
@@ -86,7 +87,7 @@ def get_nested(
     A `name` for the item, if specified, makes the error message in the exception more useful.
 
     Kubernetes API items often are deeply nested, with any number of fields that could be absent.
-    When using an `openshift.dynamic.ResourceField`, it will turn attribute accesses into
+    When using a `kubernetes.dynamic.resource.ResourceField`, it will turn attribute accesses into
     dictionary accesses. Normally, a deeply nested access like item.status.ref.foo.bar has four different spots
     you could get an `AttributeError`. With a `ResourceField`, there are actually only three, since `item.status`
     will return `None` if `status` is absent, but `None` will not have a `ref` field, leading to an
@@ -113,6 +114,11 @@ def get_nested(
     return item
 
 
+@functools.lru_cache(maxsize=1024)
+def _cached_split(path: str) -> tuple[str, ...]:
+    return tuple(part for part in path.split(".") if part)
+
+
 def split_path(path: Union[str, Sequence[str]]) -> Sequence[str]:
     """
     Idempotently split a path for use in nested access.
@@ -121,8 +127,7 @@ def split_path(path: Union[str, Sequence[str]]) -> Sequence[str]:
     >>> assert split_path(["foo", "has.dots", "bar"]) == ["foo", "has.dots", "bar"]
     """
     if isinstance(path, str):
-        # `if part` filters out leading dot (or accidental double dots, technically)
-        return tuple(part for part in path.split(".") if part)
+        return _cached_split(path)
     else:
         return path
 
@@ -133,13 +138,17 @@ def format_path(path: Sequence[str]) -> str:
 
     >>> assert format_path("foo.bar".split(".")) == "foo.bar"
     >>> assert format_path(["foo", "has.dots", "bar"]) == "foo[has.dots].bar"
+    >>> assert format_path([]) == ""
     """
-    formatted = ""
+    if not path:
+        return ""
+    parts = []
     for part in path:
         if "." in part:
-            formatted += f"[{part}]"
+            parts.append(f"[{part}]")
         else:
-            formatted += f".{part}"
+            parts.append(f".{part}")
+    formatted = "".join(parts)
     return formatted if formatted[0] != "." else formatted[1:]
 
 
@@ -148,11 +157,11 @@ class BadAttributePathError(Exception):
     """
     An error representing a nested lookup that went wrong.
 
-    root is the root item the attribute accesses started from.
     path is the whole path that was meant to be accessed.
     path_slice represents how far in the path we got before an issue was encountered.
-    value is the value that the last good attribute access returned.
-    root_name is the name of the root item, which makes the error message more helpful.
+    key is the specific key that failed.
+    value is the value that the last good access returned.
+    root_name is a human-readable name for the root item, used in error messages.
     """
 
     path: Sequence[str]
@@ -181,10 +190,7 @@ class BadAttributePathError(Exception):
 
 @contextlib.contextmanager
 def collect_bad_attribute_path_error(error_list: list, append: bool = True):
-    """
-    If a BadAttributePathError is raised, append it to the list of errors and continue.
-    If append is set to False then error will not be appended to the list of errors.
-    """
+    """Catch BadAttributePathError, optionally appending to error_list. Swallow either way."""
     try:
         yield
     except BadAttributePathError as e:
@@ -192,4 +198,4 @@ def collect_bad_attribute_path_error(error_list: list, append: bool = True):
             error_list.append(e)
 
 
-__all__ = ["get_nested", "BadAttributePathError", "collect_bad_attribute_path_error"]
+__all__ = ["get_nested", "BadAttributePathError", "collect_bad_attribute_path_error", "format_path", "split_path"]

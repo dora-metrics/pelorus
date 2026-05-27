@@ -31,7 +31,7 @@ spec:
 
 ## Webhook endpoint URI
 
-When you deploy the webhook exporter, an OpenShift route with the HTTP endpoint is created. This endpoint allows services to send HTTP POST requests. To access the webhook endpoint, simply add the `/webhook/pelorus` suffix to the HTTP endpoint created during deployment.
+When you deploy the webhook exporter, an OpenShift route with the HTTP endpoint is created. This endpoint allows services to send HTTP POST requests. To access the webhook endpoint, simply add the `/pelorus/webhook` suffix to the HTTP endpoint created during deployment.
 
 To find the URI of this route after deploying the webhook exporter, use the following `oc` command:
 
@@ -41,7 +41,7 @@ NAME               HOST/PORT             PATH   SERVICES           PORT   TERMIN
 webhook-exporter   webhook.endpoint.uri         webhook-exporter   http                 None
 ```
 
-The POST webhook endpoint for the above example: `webhook.endpoint.uri/webhook/pelorus`
+The POST webhook endpoint for the above example: `webhook.endpoint.uri/pelorus/webhook`
 
 ## Configuration options
 
@@ -57,7 +57,7 @@ This is the list of options that can be applied to `env_from_secrets`, `env_from
 - **Required:** no
 - **Type:** string
 
-: Set the secret token to ensure that the webhook receives only the intended payload. This secret token is used by the sender of the payload to calclate hash signature, which then is included with the headers of each request as `X-Hub-Signature-256`. Please refer to the [Securing Webhook](#securing-webhook) section for examples.
+: Set the secret token to ensure that the webhook receives only the intended payload. This secret token is used by the sender of the payload to calculate hash signature, which then is included with the headers of each request as `X-Hub-Signature-256`. Please refer to the [Securing Webhook](#securing-webhook) section for examples.
 
 ###### LOG_LEVEL
 

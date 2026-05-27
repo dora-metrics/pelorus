@@ -1,43 +1,49 @@
 name: Prometheus Rules Tests
+
+permissions:
+  contents: read
+
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
     paths:
       - '_test/**'
-      - 'charts/pelorus/**'
+      - 'pelorus-operator/helm-charts/pelorus/**'
       - '.github/workflows/prometheus-rules.yml'
+      - 'Makefile'
 
   pull_request:
     branches: [ main ]
     paths:
       - '_test/**'
-      - 'charts/pelorus/**'
+      - 'pelorus-operator/helm-charts/pelorus/**'
       - '.github/workflows/prometheus-rules.yml'
+      - 'Makefile'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9']
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.11'
           cache: 'pip'
           cache-dependency-path: |
             **/requirements*.txt
             pyproject.toml
 
       - name: Install dependencies
-        run: |
-          make dev-env
+        run: make dev-env
 
-      - name: Check for formatting
-        run: |
-          make test-prometheusrules
+      - name: Test prometheus rules
+        run: make test-prometheusrules

@@ -1,140 +1,142 @@
-# Mockserver
+# Mock Servers
 
-The mock server allows you to test any of the exporters against mockup endpoints of different sources (github, gitlab, jira, etc)
+Mock servers allow you to test exporters against mockup endpoints of different providers (GitHub, GitLab, Gitea, Jira, Bitbucket) without needing real credentials or API access.
+
+## Available Mocks
+
+| Mock | Port | Provider | Exporter |
+|---|---|---|---|
+| `commitexporter_github.json` | 3000 | GitHub | Commit Time |
+| `bitbucket_cloud.json` | 3001 | Bitbucket Cloud | Commit Time |
+| `commitexporter_gitlab.json` | 3002 | GitLab | Commit Time |
+| `commitexporter_gitea.json` | 3003 | Gitea | Commit Time |
+| `failure_jira.json` | 3004 | Jira | Failure |
+| `failure_github.json` | 3005 | GitHub Issues | Failure |
 
 ## Start up the mock server
 
-The mock server can be started using the [Mockoon GUI](https://mockoon.com/docs/latest/gui-cheat-sheet/) or the [Mockoon CLI](https://github.com/mockoon/cli#installation) or using a container with the [Mockoon CLI](https://hub.docker.com/r/mockoon/cli).
+The mock server can be started using the [Mockoon GUI](https://mockoon.com/docs/latest/gui-cheat-sheet/), the [Mockoon CLI](https://github.com/mockoon/cli#installation), or a container with the [Mockoon CLI](https://hub.docker.com/r/mockoon/cli).
 
-Let's start the mock server using the container approach.
+### Using Docker/Podman
 
-First, you will need to install a container engine like [Podman](https://podman.io/)
+```bash
+# GitHub commit exporter mock (port 3000)
+docker run --rm -d --name mockoon-github \
+  -v $(pwd)/mocks/commitexporter_github.json:/data:z \
+  -p 3000:3000 mockoon/cli:latest -d data -i 0
 
-Then clone this repository and execute the following command to startup the mock server.
+# GitLab commit exporter mock (port 3002)
+docker run --rm -d --name mockoon-gitlab \
+  -v $(pwd)/mocks/commitexporter_gitlab.json:/data:z \
+  -p 3002:3002 mockoon/cli:latest -d data -i 0
 
-```sh
-$ git clone https://github.com/dora-metrics/pelorus.git
+# Gitea commit exporter mock (port 3003)
+docker run --rm -d --name mockoon-gitea \
+  -v $(pwd)/mocks/commitexporter_gitea.json:/data:z \
+  -p 3003:3003 mockoon/cli:latest -d data -i 0
+
+# Jira failure exporter mock (port 3004)
+docker run --rm -d --name mockoon-jira \
+  -v $(pwd)/mocks/failure_jira.json:/data:z \
+  -p 3004:3004 mockoon/cli:latest -d data -i 0
+
+# GitHub Issues failure exporter mock (port 3005)
+docker run --rm -d --name mockoon-gh-issues \
+  -v $(pwd)/mocks/failure_github.json:/data:z \
+  -p 3005:3005 mockoon/cli:latest -d data -i 0
+
+# Bitbucket Cloud commit exporter mock (port 3001)
+docker run --rm -d --name mockoon-bitbucket \
+  -v $(pwd)/mocks/bitbucket_cloud.json:/data:z \
+  -p 3001:3001 mockoon/cli:latest -d data -i 0
 ```
 
-```sh
-$ podman run --name mockoon --rm -v <path-to-repo>/pelorus/mocks/commitexporter_github.json:/data:z -p 3000:3000 mockoon/cli:latest -d data -i 0
+### Run all mocks at once
 
-Mock started at https://localhost:3000 (pid: 0, name: mockoon-openshift)
+```bash
+for mock in mocks/*.json; do
+  name=$(basename "$mock" .json)
+  port=$(python3 -c "import json; print(json.load(open('$mock'))['port'])")
+  docker run --rm -d --name "mockoon-${name}" \
+    -v "$(pwd)/${mock}:/data:z" \
+    -p "${port}:${port}" mockoon/cli:latest -d data -i 0
+  echo "Started ${name} on port ${port}"
+done
 ```
 
-### Test against the mock server
+## Testing against mock servers
 
-Set up your envs in order to use the mock server.
+### GitHub commit exporter
 
-```sh
+```bash
 export API_USER=gituser
 export TOKEN=gittoken
 export GIT_API=localhost:3000
+export GIT_PROVIDER=github
 export LOG_LEVEL=DEBUG
-export NAMESPACES=basic-nginx-build,basic-nginx-dev,basic-nginx-stage,basic-nginx-prod
 export TLS_VERIFY=False
-```
----
-**NOTE**
-
-The env TLS_VERIFY is needed because the mocks server use a self-signed certificate.
-
----
-
-Because the commit exporters search on Openshift the information from the build, first you need to execute "oc login" against the mock server
-
-```sh
-$ oc login --token=sha256~r07jPULrwSJLQGjinp9tSNi4Lq4cqKOSCjl7QeDPxOc --server=https://localhost:3000
-
-Logged into "https://localhost:3000" as "admin" using the token provided.
-
-You have access to 64 projects, the list has been suppressed. You can list all projects with 'oc projects'
-
-Using project "default".
-```
-Finally, execute the exporter
-
-```sh
-$ python exporters/committime/app.py
-
-Initializing Logger wit LogLevel: INFO
-...
-05-13-2021 11:02:47 INFO     =====Using GitHub Collector=====
-05-13-2021 11:02:47 INFO     Using non-default API: localhost:3000
-05-13-2021 11:02:47 INFO     Watching namespaces: ['basic-nginx-build', 'basic-nginx-dev', 'basic-nginx-stage', 'basic-nginx-prod']
-...
-05-13-2021 11:02:48 INFO     Collected commit_timestamp{ namespace=basic-nginx-build, app=basic-nginx, commit=15dedb60b6208aafdfb2328a93543e3d94500978, image_sha=sha256:c1282f65b5c327db4dcc6cdfb27e91338bd625d119d9ae769318f089d82e35e2 } 1619381788.0
-05-13-2021 11:02:48 INFO     Collected commit_timestamp{ namespace=basic-nginx-build, app=basic-nginx, commit=15dedb60b6208aafdfb2328a93543e3d94500978, image_sha=sha256:4a20c8cfa48af3a938462e9cd7bfa0b16abfbc6ba16f0999f3931c79b1130e4b } 1619381788.0
-05-13-2021 11:02:48 INFO     Collected commit_timestamp{ namespace=basic-nginx-build, app=basic-nginx, commit=620ce8b570c644338ba34224fc09b2d8a30bca02, image_sha=sha256:71309995e6da43b76079a649b00e0aa8378443e72f1fccc76af0d73d67a7f644 } 1620401174.0
+python exporters/committime/app.py
 ```
 
-Verify the result by going into the following URL http://localhost:8080/ 
+### GitLab commit exporter
 
-You should get this result:
+```bash
+export TOKEN=glpat-mock-token
+export GIT_API=http://localhost:3002
+export GIT_PROVIDER=gitlab
+export LOG_LEVEL=DEBUG
+export TLS_VERIFY=False
+python exporters/committime/app.py
+```
 
-```sh
-# HELP python_gc_objects_collected_total Objects collected during gc
-# TYPE python_gc_objects_collected_total counter
-python_gc_objects_collected_total{generation="0"} 1858.0
-python_gc_objects_collected_total{generation="1"} 610.0
-python_gc_objects_collected_total{generation="2"} 470.0
-# HELP python_gc_objects_uncollectable_total Uncollectable object found during GC
-# TYPE python_gc_objects_uncollectable_total counter
-python_gc_objects_uncollectable_total{generation="0"} 0.0
-python_gc_objects_uncollectable_total{generation="1"} 0.0
-python_gc_objects_uncollectable_total{generation="2"} 0.0
-# HELP python_gc_collections_total Number of times this generation was collected
-# TYPE python_gc_collections_total counter
-python_gc_collections_total{generation="0"} 243.0
-python_gc_collections_total{generation="1"} 22.0
-python_gc_collections_total{generation="2"} 2.0
-# HELP python_info Python platform information
-# TYPE python_info gauge
-python_info{implementation="CPython",major="3",minor="9",patchlevel="4",version="3.9.4"} 1.0
-# HELP process_virtual_memory_bytes Virtual memory size in bytes.
-# TYPE process_virtual_memory_bytes gauge
-process_virtual_memory_bytes 1.681764352e+09
-# HELP process_resident_memory_bytes Resident memory size in bytes.
-# TYPE process_resident_memory_bytes gauge
-process_resident_memory_bytes 8.423424e+07
-# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
-# TYPE process_start_time_seconds gauge
-process_start_time_seconds 1.62091816459e+09
-# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
-# TYPE process_cpu_seconds_total counter
-process_cpu_seconds_total 2.23
-# HELP process_open_fds Number of open file descriptors.
-# TYPE process_open_fds gauge
-process_open_fds 28.0
-# HELP process_max_fds Maximum number of open file descriptors.
-# TYPE process_max_fds gauge
-process_max_fds 8192.0
-# HELP commit_timestamp Commit timestamp
-# TYPE commit_timestamp gauge
-commit_timestamp{app="basic-nginx",commit="15dedb60b6208aafdfb2328a93543e3d94500978",image_sha="sha256:c1282f65b5c327db4dcc6cdfb27e91338bd625d119d9ae769318f089d82e35e2",namespace="basic-nginx-build"} 1.619381788e+09
-# HELP commit_timestamp Commit timestamp
-# TYPE commit_timestamp gauge
-commit_timestamp{app="basic-nginx",commit="15dedb60b6208aafdfb2328a93543e3d94500978",image_sha="sha256:c1282f65b5c327db4dcc6cdfb27e91338bd625d119d9ae769318f089d82e35e2",namespace="basic-nginx-build"} 1.619381788e+09
-commit_timestamp{app="basic-nginx",commit="15dedb60b6208aafdfb2328a93543e3d94500978",image_sha="sha256:4a20c8cfa48af3a938462e9cd7bfa0b16abfbc6ba16f0999f3931c79b1130e4b",namespace="basic-nginx-build"} 1.619381788e+09
-# HELP commit_timestamp Commit timestamp
-# TYPE commit_timestamp gauge
-commit_timestamp{app="basic-nginx",commit="15dedb60b6208aafdfb2328a93543e3d94500978",image_sha="sha256:c1282f65b5c327db4dcc6cdfb27e91338bd625d119d9ae769318f089d82e35e2",namespace="basic-nginx-build"} 1.619381788e+09
-commit_timestamp{app="basic-nginx",commit="15dedb60b6208aafdfb2328a93543e3d94500978",image_sha="sha256:4a20c8cfa48af3a938462e9cd7bfa0b16abfbc6ba16f0999f3931c79b1130e4b",namespace="basic-nginx-build"} 1.619381788e+09
-commit_timestamp{app="basic-nginx",commit="620ce8b570c644338ba34224fc09b2d8a30bca02",image_sha="sha256:71309995e6da43b76079a649b00e0aa8378443e72f1fccc76af0d73d67a7f644",namespace="basic-nginx-build"} 1.620401174e+09
+### Gitea commit exporter
+
+```bash
+export TOKEN=gitea-mock-token
+export GIT_API=http://localhost:3003
+export GIT_PROVIDER=gitea
+export LOG_LEVEL=DEBUG
+export TLS_VERIFY=False
+python exporters/committime/app.py
+```
+
+### Jira failure exporter
+
+```bash
+export SERVER=http://localhost:3004
+export API_USER=admin
+export TOKEN=jira-mock-token
+export PROVIDER=jira
+export PROJECTS=PROJ
+export LOG_LEVEL=DEBUG
+python exporters/failure/app.py
+```
+
+### GitHub Issues failure exporter
+
+```bash
+export TOKEN=ghp-mock-token
+export SERVER=http://localhost:3005
+export PROVIDER=github
+export PROJECTS=pelorus-test/basic-nginx
+export LOG_LEVEL=DEBUG
+python exporters/failure/app.py
+```
+
+## Run automated mock tests
+
+```bash
+./scripts/run-mockoon-tests.sh
+```
+
+This starts the GitHub mock on port 3000, runs `pytest -m mockoon`, and cleans up.
+
+To run against a specific mock, set `MOCK_JSON`:
+
+```bash
+MOCK_JSON=mocks/commitexporter_gitlab.json ./scripts/run-mockoon-tests.sh
 ```
 
 ## Create or edit mock scenarios
 
-In order to create or edit mock scenarios, it's recommended to use the [Mockoon GUI](https://mockoon.com/docs/latest/gui-cheat-sheet/)
-
-### Create new scenarios
-
-To start creating new scenarios you can start by checking the following documentation https://mockoon.com/docs/latest/about/
-
-New scenarios should be added into the [mocks folder](/mocks)
-
-### Import mocks into the UI
-
-To import the samples that are on the [mocks folder](/mocks/) use the following instructions https://mockoon.com/docs/latest/import-export-data/
-
-
+Use the [Mockoon GUI](https://mockoon.com/docs/latest/gui-cheat-sheet/) to create or edit scenarios. Import existing mocks via [Import/Export](https://mockoon.com/docs/latest/import-export-data/). New scenarios should be added to the `mocks/` folder.

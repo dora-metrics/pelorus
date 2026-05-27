@@ -1,0 +1,23 @@
+{{- if eq .Values.operator_source "redhat" }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pelorus-grafana-cluster-monitoring-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: grafana-sa
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-monitoring-token
+  annotations:
+    kubernetes.io/service-account.name: grafana-sa
+type: kubernetes.io/service-account-token
+{{- end }}

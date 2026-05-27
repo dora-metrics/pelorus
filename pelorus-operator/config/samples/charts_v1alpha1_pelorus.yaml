@@ -10,7 +10,6 @@ spec:
     - app_name: deploytime-exporter
       exporter_type: deploytime
     - app_name: failuretime-exporter
-      enabled: false
       exporter_type: failure
     - app_name: committime-exporter
       exporter_type: committime

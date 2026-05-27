@@ -16,16 +16,17 @@
 #
 
 import logging
+from collections import OrderedDict
 
 import gitlab
 import requests
 from attrs import define, field
 
-from committime import CommitMetric
+from committime import CommitMetric, sanitize_url
 from pelorus.timeutil import parse_tz_aware
 from pelorus.utils import set_up_requests_session
 
-from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
+from .collector_base import AbstractCommitCollector, git_api_errors, check_provider_support
 
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
@@ -34,6 +35,12 @@ _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 class GitLabCommitCollector(AbstractCommitCollector):
     session: requests.Session = field(factory=requests.Session, init=False)
 
+    _gitlab_clients: dict[str, gitlab.Gitlab] = field(factory=dict, init=False)
+
+    _project_cache: OrderedDict[tuple[str, str], object] = field(factory=OrderedDict, init=False)
+
+    _PROJECT_CACHE_MAX = 1_000
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         set_up_requests_session(
@@ -41,85 +48,84 @@ class GitLabCommitCollector(AbstractCommitCollector):
         )
 
     def _connect_to_gitlab(self, metric) -> gitlab.Gitlab:
-        """Method to connect to Gitlab instance."""
+        """Return a cached or new GitLab client for the metric's git server."""
         git_server = metric.git_server
 
-        gitlab_client = None
+        with self._cache_lock:
+            if git_server in self._gitlab_clients:
+                return self._gitlab_clients[git_server]
 
         if self.token:
-            # Private or personal token
-            logging.debug("Connecting to GitLab server using token: %s" % (git_server))
+            logging.debug("Connecting to GitLab server (authenticated): %s", git_server)
             gitlab_client = gitlab.Gitlab(
                 git_server,
                 private_token=self.token,
                 api_version=4,
                 session=self.session,
+                timeout=self._API_TIMEOUT,
             )
         else:
-            # Public repo without token
             logging.debug(
-                "Connecting to GitLab server without token: %s" % (git_server)
+                "Connecting to GitLab server (unauthenticated): %s", git_server
             )
             gitlab_client = gitlab.Gitlab(
-                git_server, api_version=4, session=self.session
+                git_server, api_version=4, session=self.session, timeout=self._API_TIMEOUT
             )
 
-        return gitlab_client
+        with self._cache_lock:
+            return self._gitlab_clients.setdefault(git_server, gitlab_client)
 
-    # base class impl
     def get_commit_time(self, metric: CommitMetric):
-        """Method called to collect data and send to Prometheus"""
+        """Fetch commit timestamp from GitLab API for the given metric."""
 
         git_server = metric.git_server
 
-        if (
-            "github" in git_server
-            or "gitea" in git_server
-            or "bitbucket" in git_server
-            or "azure" in git_server
-        ):
-            raise UnsupportedGITProvider(
-                "Skipping non GitLab server, found %s" % (git_server)
-            )
+        check_provider_support(git_server, "gitlab")
 
         gl = self._connect_to_gitlab(metric)
-        if not gl:
-            return None
 
         project_namespace = metric.repo_group
         project_name = metric.repo_project
 
-        # namespaced project allows to get it by it's name
-        project_namespaced = "%s/%s" % (project_namespace, project_name)
+        # namespaced project allows fetching by name
+        project_namespaced = f"{project_namespace}/{project_name}"
 
-        project = None
+        cache_key = (git_server, project_namespaced)
+        with self._cache_lock:
+            project = self._project_cache.get(cache_key)
+            if project is not None:
+                self._project_cache.move_to_end(cache_key)
 
+        if project is None:
+            try:
+                logging.debug("Getting project: %s", project_namespaced)
+                project = gl.projects.get(project_namespaced)
+                with self._cache_lock:
+                    if len(self._project_cache) >= self._PROJECT_CACHE_MAX:
+                        self._project_cache.popitem(last=False)
+                    self._project_cache[cache_key] = project
+            except (gitlab.exceptions.GitlabError, requests.exceptions.RequestException) as exc:
+                git_api_errors.inc()
+                logging.error(
+                    "Failed to get project: %s, repo: %s for build %s",
+                    sanitize_url(metric.repo_url), project_name, metric.build_name,
+                    exc_info=True,
+                )
+                raise
         try:
-            logging.debug("Getting project: %s" % (project_namespaced))
-            project = gl.projects.get(project_namespaced)
-        except Exception:
-            logging.error(
-                "Failed to get project: %s, repo: %s for build %s"
-                % (metric.repo_url, project_name, metric.build_name),
-                exc_info=True,
-            )
-            raise
-        try:
-            # get the commit from the project using the hash
-            short_hash = metric.commit_hash[:8]
-            commit = project.commits.get(short_hash)
+            commit = project.commits.get(metric.commit_hash)
 
-            commit_time_str: str = (
-                commit.committed_date
-            )  # assumed based on `__getattr__` in RESTObject
+            commit_time_str: str = commit.committed_date
             metric.commit_time = commit_time_str
             metric.commit_timestamp = parse_tz_aware(
                 commit_time_str, format=_DATETIME_FORMAT
             ).timestamp()
             metric.commit_link = commit.web_url
-        except Exception:
+        except (gitlab.exceptions.GitlabError, requests.exceptions.RequestException, KeyError, AttributeError, ValueError) as exc:
+            git_api_errors.inc()
             logging.error(
-                "Failed processing commit time for build %s" % metric.build_name,
+                "Failed processing commit time for build %s",
+                metric.build_name,
                 exc_info=True,
             )
             raise

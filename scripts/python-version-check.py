@@ -15,8 +15,8 @@
 
 from sys import executable, exit, version_info
 
-PYTHON_VER_MIN = (3, 9)
-PYTHON_VER_MAX = (3, 11)
+PYTHON_VER_MIN = (3, 11)
+PYTHON_VER_MAX = (3, 12)
 
 SYS_PYTHON_VER = (version_info.major, version_info.minor)
 

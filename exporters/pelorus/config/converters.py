@@ -7,6 +7,8 @@ from typing import Callable, Collection, Iterator, TypeVar, Union
 
 CollectionType = TypeVar("CollectionType", bound=Collection[str])
 
+_WHITESPACE_RE = re.compile(r"\s+")
+
 T = TypeVar("T")
 U = TypeVar("U")
 
@@ -24,7 +26,9 @@ def comma_separated(
 
     def _converter(value: Union[str, CollectionType]):
         if isinstance(value, str):
-            return collection(part.strip() for part in value.split(","))
+            return collection(
+                part for part in (p.strip() for p in value.split(",")) if part
+            )
         else:
             return value
 
@@ -44,8 +48,10 @@ def comma_or_whitespace_separated(
 
     def _converter(value: Union[str, CollectionType]):
         if isinstance(value, str):
-            replaced = re.sub(r"\s+", ",", value)
-            return collection(part.strip() for part in replaced.split(","))
+            replaced = _WHITESPACE_RE.sub(",", value)
+            return collection(
+                part for part in (p.strip() for p in replaced.split(",")) if part
+            )
         else:
             return value
 
@@ -53,12 +59,12 @@ def comma_or_whitespace_separated(
 
 
 def pass_through(
-    type: type[U], converter: Callable[[T], U]
+    target_type: type[U], converter: Callable[[T], U]
 ) -> Callable[[Union[T, U]], U]:
-    "Pass through the input if it is the given type, otherwise use the converter."
+    """Pass through the input if it is the given type, otherwise use the converter."""
 
     def _pass_through(value: Union[T, U]) -> U:
-        if isinstance(value, type):
+        if isinstance(value, target_type):
             return value
         else:
             return converter(value)  # type: ignore

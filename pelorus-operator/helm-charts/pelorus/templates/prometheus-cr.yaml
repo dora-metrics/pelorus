@@ -1,3 +1,4 @@
+{{- if ne .Values.operator_source "redhat" }}
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
@@ -19,14 +20,16 @@ spec:
   {{- end }}
   {{- if .Values.bucket_access_point }}
   thanos:
-    image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.28.0" }}
-    version: {{ .Values.thanos_version | default "v0.28.0" }}
+    image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.37.2" }}
+    version: {{ .Values.thanos_version | default "v0.37.2" }}
     objectStorageConfig:
       key: thanos.yaml
       name: thanos-objstore-config
   {{- end }}
-  replicas: 2
+  replicas: {{ .Values.oauth_proxy_enabled | ternary 2 1 }}
+  {{- if .Values.oauth_proxy_enabled }}
   replicaExternalLabelName: ""
+  {{- end }}
   retention: {{ .Values.prometheus_retention | default "1y" }}
   {{- if .Values.prometheus_retention_size }}
   retentionSize: {{ .Values.prometheus_retention_size }}
@@ -35,6 +38,15 @@ spec:
   ruleSelector: {}
   serviceAccountName: pelorus-prometheus
   serviceMonitorSelector: {}
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  securityContext:
+    runAsNonRoot: true
 {{- if or .Values.federated_prometheus_hosts .Values.external_prometheus_hosts .Values.federate_openshift_monitoring.enabled }}
   additionalScrapeConfigs:
     name: pelorus-prometheus-additional-scrape-configs
@@ -44,6 +56,7 @@ spec:
   configMaps:
     - cluster-ca-bundle
 {{- end }}
+{{- if .Values.oauth_proxy_enabled }}
   secrets:
     - prometheus-pelorus-tls
     - prometheus-pelorus-htpasswd
@@ -61,14 +74,14 @@ spec:
     - -tls-cert=/etc/tls/private/tls.crt
     - -tls-key=/etc/tls/private/tls.key
     - -client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
-    - -cookie-secret=bacon
+    - -cookie-secret={{ .Values.oauth_cookie_secret | default (randAlphaNum 32) }}
     - -openshift-ca=/etc/pki/tls/cert.pem
     - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 {{- if .Values.custom_ca }}
     - -openshift-ca=/etc/prometheus/configmaps/cluster-ca-bundle/ca-bundle.crt
 {{- end}}
     - -skip-auth-regex=^/metrics
-    image: image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4
+    image: {{ .Values.oauth_proxy_image | default "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/oauth-proxy:v4.4" }}
     name: prometheus-proxy
     ports:
     - containerPort: 9091
@@ -90,4 +103,5 @@ spec:
       readOnly: true
       mountPath: /etc/prometheus/configmaps/cluster-ca-bundle
 {{- end }}
-
+{{- end }}
+{{- end }}

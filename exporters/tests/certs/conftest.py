@@ -62,3 +62,4 @@ def https_server(
     yield server
 
     server.shutdown()
+    thread.join(timeout=5)

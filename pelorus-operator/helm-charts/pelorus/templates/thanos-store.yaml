@@ -19,6 +19,9 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "10902"
     spec:
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: pelorus-thanos
       volumes:
       - name: thanos-store
         emptyDir: {}
@@ -30,7 +33,11 @@ spec:
           name: trusted-certs
       containers:
       - name: thanos-store
-        image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.28.0" }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        image: quay.io/thanos/thanos:{{ .Values.thanos_version | default "v0.37.2" }}
         args:
         - "store"
         - "--log.level=info"
@@ -45,6 +52,25 @@ spec:
           containerPort: 10901
         - name: cluster
           containerPort: 10900
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: query-http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: query-http
+          initialDelaySeconds: 15
+          periodSeconds: 20
         volumeMounts:
         - mountPath: /thanos-store
           name: thanos-store

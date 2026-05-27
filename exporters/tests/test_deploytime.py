@@ -1,14 +1,14 @@
+import random
 import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
-from random import randrange
 from typing import Optional
 from unittest.mock import NonCallableMock, patch
 
 import attrs
 import pytest
-from openshift.dynamic import DynamicClient  # type: ignore
-from openshift.dynamic.discovery import Discoverer  # type: ignore
+from kubernetes.dynamic import DynamicClient  # type: ignore
+from kubernetes.dynamic.discovery import Discoverer  # type: ignore
 
 import pelorus
 from deploytime import DeployTimeMetric
@@ -134,12 +134,24 @@ def rc(
     )
 
 
+_BASE_TIME = datetime(2024, 1, 15, 12, 0, 0)
+
+
+@pytest.fixture(autouse=True)
+def _reset_rng():
+    """Reset RNG before each test so results don't depend on test ordering."""
+    _rng.seed(42)
+
+
+_rng = random.Random(42)
+
+
 def random_time() -> datetime:
-    return datetime.now() - timedelta(hours=12) + timedelta(hours=randrange(0, 12))
+    return _BASE_TIME - timedelta(hours=12) + timedelta(hours=_rng.randrange(0, 12))
 
 
 def random_uid() -> str:
-    return str(uuid.uuid4())
+    return str(uuid.UUID(int=_rng.getrandbits(128), version=4))
 
 
 def pod(
@@ -213,26 +225,26 @@ def test_generate_normal_case() -> None:
             app_label=QUUX_APP,
             status_image_shas=STATUS_CONTAINER_SHAS,
         ),
-        # case: pod with unsupported rep kind
+        # case: pod with unsupported rep kind (no valid image SHAs to process)
         pod(
-            FOO_NS,
-            [OwnerRef(BAZ_REP_KIND, BAZ_REP, random_uid(), API_VERSION)],
-            FOO_APP,
-            FOO_POD_SHAS,
+            namespace=FOO_NS,
+            owner_refs=[OwnerRef(BAZ_REP_KIND, BAZ_REP, random_uid(), API_VERSION)],
+            container_image_shas=["no-sha-format"],
+            app_label=FOO_APP,
         ),
         # case: pod references rep we don't have an entry for
         pod(
-            FOO_NS,
-            [OwnerRef(FOO_REP_KIND, "Unknown Rep", random_uid(), API_VERSION)],
-            FOO_APP,
-            FOO_POD_SHAS,
+            namespace=FOO_NS,
+            owner_refs=[OwnerRef(FOO_REP_KIND, "Unknown Rep", random_uid(), API_VERSION)],
+            container_image_shas=["no-sha-format"],
+            app_label=FOO_APP,
         ),
         # case: pod in NS we don't care about
         pod(
-            BAZ_NS,
-            [OwnerRef(BAZ_REP_KIND, BAZ_REP, random_uid(), API_VERSION)],
-            BAZ_REP,
-            BAZ_POD_SHAS,
+            namespace=BAZ_NS,
+            owner_refs=[OwnerRef(BAZ_REP_KIND, BAZ_REP, random_uid(), API_VERSION)],
+            container_image_shas=["no-sha-format"],
+            app_label=BAZ_REP,
         ),
     ]
 
@@ -269,25 +281,36 @@ def test_generate_normal_case() -> None:
         assert actual == expected
 
 
-@pytest.mark.xfail(reason="Bug with different rep kinds with same name and namespace")
+@pytest.mark.xfail(reason="Bug with different rep kinds with same name and namespace", strict=True)
 # when fixed, we should just roll this case into the others(?)
 def test_generate_reps_with_same_name() -> None:
+    foo_rep_uid = random_uid()
+    bar_rep_uid = random_uid()
+    quux_rep_uid = random_uid()
+
     foo_rep = rc(
         FOO_REP_KIND,
+        API_VERSION,
         FOO_REP,
+        foo_rep_uid,
         FOO_NS,
         FOO_APP,
         random_time(),
         {FOO_LABEL: FOO_LABEL_VALUE},
     )
-    bar_rep = rc(BAR_REP_KIND, BAR_REP, BAR_NS, BAR_APP, random_time())
+    bar_rep = rc(
+        BAR_REP_KIND, API_VERSION, BAR_REP, bar_rep_uid, BAR_NS, BAR_APP, random_time()
+    )
     assert FOO_REP_KIND != QUUX_REP_KIND
-    quux_rep = rc(QUUX_REP_KIND, FOO_REP, FOO_NS, "N/A", random_time())
+    # Same name (FOO_REP) and namespace (FOO_NS) as foo_rep, but different kind
+    quux_rep = rc(
+        QUUX_REP_KIND, API_VERSION, FOO_REP, quux_rep_uid, FOO_NS, "N/A", random_time()
+    )
 
     pods = [
-        pod(FOO_NS, [foo_rep.ref()], FOO_POD_SHAS),
-        pod(BAR_NS, [bar_rep.ref()], BAR_POD_SHAS),
-        pod(BAZ_NS, [], BAZ_POD_SHAS),
+        pod(FOO_NS, [foo_rep.ref()], FOO_POD_SHAS, FOO_APP),
+        pod(BAR_NS, [bar_rep.ref()], BAR_POD_SHAS, BAR_APP),
+        pod(BAZ_NS, [], BAZ_POD_SHAS, BAZ_REP),
     ]
 
     data = DynClientMockData(pods=pods, replicators=[foo_rep, bar_rep, quux_rep])
@@ -298,7 +321,7 @@ def test_generate_reps_with_same_name() -> None:
             namespace=FOO_NS,
             labels={FOO_LABEL: FOO_LABEL_VALUE, APP_LABEL: FOO_APP},
             deploy_time=foo_rep.metadata.creationTimestamp,
-            image_sha=FOO_POD_SHAS[0],
+            image_sha=FOO_POD_SHAS[0].split("@")[1],
         ),
         DeployTimeMetric(
             name=BAR_APP,
@@ -313,6 +336,12 @@ def test_generate_reps_with_same_name() -> None:
         namespaces={FOO_NS, BAR_NS}, client=data.mock_client
     )
 
-    actual = list(collector.generate_metrics())
+    with patch("deploytime.app.get_owner_object_from_child") as owner_refs:
+        owner_refs.return_value = {
+            foo_rep_uid: foo_rep,
+            bar_rep_uid: bar_rep,
+            quux_rep_uid: quux_rep,
+        }
+        actual = list(collector.generate_metrics())
 
-    assert actual == expected
+        assert actual == expected

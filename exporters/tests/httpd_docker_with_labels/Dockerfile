@@ -1,4 +1,4 @@
-FROM quay.io/centos7/httpd-24-centos7
+FROM registry.access.redhat.com/ubi9/httpd-24:1
 
 ARG LAST_COMMIT_DATE_TIME
 ARG LAST_COMMIT_SHA

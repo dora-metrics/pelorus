@@ -1,0 +1,55 @@
+{
+  "uuid": "d4e5f6a7-b8c9-0123-defa-234567890123",
+  "lastMigration": 32,
+  "name": "GitHub Issues Failure Exporter",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3005,
+  "hostname": "0.0.0.0",
+  "routes": [
+    {
+      "uuid": "gh-issues-open",
+      "documentation": "GitHub list open issues with bug label",
+      "method": "get",
+      "endpoint": "repos/pelorus-test/basic-nginx/issues",
+      "responses": [
+        {
+          "uuid": "gh-issues-resp",
+          "body": "[{\"number\": 42, \"title\": \"Production crash on startup\", \"state\": \"closed\", \"labels\": [{\"name\": \"bug\"}, {\"name\": \"my-app\"}], \"created_at\": \"2021-04-20T10:00:00Z\", \"closed_at\": \"2021-04-20T14:30:00Z\", \"html_url\": \"https://github.com/pelorus-test/basic-nginx/issues/42\", \"user\": {\"login\": \"testuser\"}}, {\"number\": 43, \"title\": \"Memory leak in worker process\", \"state\": \"open\", \"labels\": [{\"name\": \"bug\"}, {\"name\": \"api-gateway\"}], \"created_at\": \"2021-05-01T08:00:00Z\", \"closed_at\": null, \"html_url\": \"https://github.com/pelorus-test/basic-nginx/issues/43\", \"user\": {\"login\": \"testuser\"}}]",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Issues list",
+          "headers": [
+            {"key": "content-type", "value": "application/json"},
+            {"key": "link", "value": ""}
+          ],
+          "filePath": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true
+        }
+      ],
+      "enabled": true,
+      "responseMode": null
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [{"key": "content-type", "value": "application/json"}],
+  "proxyReqHeaders": [{"key": "", "value": ""}],
+  "proxyResHeaders": [{"key": "", "value": ""}]
+}

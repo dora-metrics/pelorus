@@ -17,72 +17,128 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 import re
 from typing import Optional
 
-import attr
 import giturlparse
+from attrs import define, field
 
 from pelorus.utils import collect_bad_attribute_path_error, get_nested
 
-DEFAULT_PROVIDER = "git"
-PROVIDER_TYPES = {"git", "image"}
-GIT_PROVIDER_TYPES = {"github", "bitbucket", "gitea", "azure-devops", "gitlab"}
+__all__ = ["CommitMetric", "commit_metric_from_build", "sanitize_url", "SUPPORTED_PROTOCOLS"]
 
 SUPPORTED_PROTOCOLS = {"http", "https", "ssh", "git"}
 
+_URL_USERINFO_RE = re.compile(r"(https?://)([^@]+)@")
 
-# TODO: the majority of these fields are unused.
-# Let's figure out why they're there.
-@attr.define
+
+def sanitize_url(url: str) -> str:
+    """Strip embedded credentials (user:pass@) from a URL for safe logging."""
+    if not url:
+        return url
+    return _URL_USERINFO_RE.sub(r"\1", url)
+
+
+# Pre-compiled regexes for Azure DevOps repo URL parsing
+_AZURE_HTTP_RE = re.compile(
+    r"^(?P<protocol>https?)\://"
+    r"((?P<user>[a-zA-Z0-9_-]+)@)?"
+    r"(?P<resource>[a-z0-9_.-]*)"
+    r"[:/]*"
+    r"(?P<port>[\d]+){0,1}"
+    r"(?P<pathname>\/"
+    r"(?P<owner>[\w\-\.]+)\/"
+    r"(?P<azure_project>[\w\-\.]+)\/\_git\/"
+    r"(?P<name>[\w\-\.]+)\/?)$"
+)
+_AZURE_SSH_RE = re.compile(
+    r"^git@(?P<resource>"
+    r"(?P<protocol>\w+)\.[a-z0-9_.-]*\:v3)"
+    r"[:/]*"
+    r"(?P<port>[\d]+){0,1}"
+    r"(?P<pathname>\/"
+    r"(?P<owner>[\w\-\.]+)\/"
+    r"(?P<azure_project>[\w\-\.]+)\/"
+    r"(?P<name>[\w\-\.]+)\/?)$"
+)
+
+@functools.lru_cache(maxsize=256)
+def _parse_repo_url_cached(url: str) -> tuple:
+    """Parse a git repo URL into (protocol, fqdn, group, name, name, port, azure_project).
+
+    Note: name and project are both set to parsed.name (repo name).
+    """
+    azure_project = None
+    match = _AZURE_HTTP_RE.search(url)
+    match_ssh = _AZURE_SSH_RE.search(url)
+    if match_ssh:
+        match = match_ssh
+    if match:
+        regex_group = match.groupdict()
+        azure_project = regex_group.pop("azure_project")
+        pre_parsed = {
+            "protocols": [regex_group.get("protocol", "ssh")],
+            "href": url,
+            "user": None,
+            "owner": None,
+        }
+        pre_parsed.update(regex_group)
+        parsed = giturlparse.parser.Parsed(**pre_parsed)
+    else:
+        parsed = giturlparse.parse(url)
+    if parsed.protocols and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
+        raise ValueError(f"Unsupported protocol: {parsed.protocols[0]}")
+    protocol = parsed.protocol
+    fqdn = parsed.resource
+    if parsed.pathname.startswith("//"):
+        parts = parsed.pathname.split("/")
+        fqdn = parts[2] if len(parts) > 2 and parts[2] else fqdn
+        if parsed.protocols:
+            protocol = parsed.protocols[0]
+    return (protocol, fqdn, parsed.owner, parsed.name, parsed.name, parsed.port, azure_project)
+
+
+@define
 class CommitMetric:
-    name: str = attr.field()
-    annotations: dict = attr.field(default=None, kw_only=True)
-    labels: dict = attr.field(default=None, kw_only=True)
-    namespace: Optional[str] = attr.field(default=None, kw_only=True)
+    name: str = field()
+    annotations: dict = field(factory=dict, kw_only=True)
+    labels: dict = field(factory=dict, kw_only=True)
+    namespace: Optional[str] = field(default=None, kw_only=True)
 
-    __repo_url: str = attr.field(default=None, init=False)
-    __repo_protocol = attr.field(default=None, init=False)
-    __repo_fqdn: str = attr.field(default=None, init=False)
-    __repo_group = attr.field(default=None, init=False)
-    __repo_name = attr.field(default=None, init=False)
-    __repo_project = attr.field(default=None, init=False)
-    __repo_port = attr.field(default=None, init=False)
-    __azure_project = attr.field(default=None, init=False)
+    __repo_url: Optional[str] = field(default=None, init=False)
+    __repo_protocol: Optional[str] = field(default=None, init=False)
+    __repo_fqdn: Optional[str] = field(default=None, init=False)
+    __repo_group: Optional[str] = field(default=None, init=False)
+    __repo_name: Optional[str] = field(default=None, init=False)
+    __repo_project: Optional[str] = field(default=None, init=False)
+    __repo_port: Optional[str] = field(default=None, init=False)
+    __azure_project: Optional[str] = field(default=None, init=False)
 
-    committer: Optional[str] = attr.field(default=None, kw_only=True)
-    commit_hash: Optional[str] = attr.field(default=None, kw_only=True)
-    commit_time: Optional[str] = attr.field(default=None, kw_only=True)
-    """
-    A human-readable timestamp.
-    In the future, this and commit_timestamp should be combined.
-    """
-    commit_timestamp: Optional[float] = attr.field(default=None, kw_only=True)
-    """
-    The unix timestamp.
-    In the future, this and commit_time should be combined.
-    """
-    commit_link: Optional[str] = attr.field(default=None, kw_only=True)
+    committer: Optional[str] = field(default=None, kw_only=True, repr=False)
+    commit_hash: Optional[str] = field(default=None, kw_only=True)
+    commit_time: Optional[str] = field(default=None, kw_only=True)
+    """A human-readable timestamp."""
+    commit_timestamp: Optional[float] = field(default=None, kw_only=True)
+    """The unix timestamp."""
+    commit_link: Optional[str] = field(default=None, kw_only=True)
 
-    build_name: Optional[str] = attr.field(default=None, kw_only=True)
-    build_config_name: Optional[str] = attr.field(default=None, kw_only=True)
+    build_name: Optional[str] = field(default=None, kw_only=True)
+    build_config_name: Optional[str] = field(default=None, kw_only=True)
 
-    image_location: Optional[str] = attr.field(default=None, kw_only=True)
-    image_name: Optional[str] = attr.field(default=None, kw_only=True)
-    image_tag: Optional[str] = attr.field(default=None, kw_only=True)
-    image_hash: Optional[str] = attr.field(default=None, kw_only=True)
+    image_location: Optional[str] = field(default=None, kw_only=True)
+    image_name: Optional[str] = field(default=None, kw_only=True)
+    image_tag: Optional[str] = field(default=None, kw_only=True)
+    image_hash: Optional[str] = field(default=None, kw_only=True)
 
     @property
     def repo_url(self):
         """
         The full URL for the repo, obtained from build metadata, Image annotations, etc.
 
-        Setting this will parse it and enable using the following fields:
-
-        repo_{protocol,group,name,project}
-
-        git_{server,fqdn}
+        Setting this parses the URL and populates: repo_protocol, git_fqdn,
+        repo_group, repo_name, repo_project, and azure_project.
         """
         return self.__repo_url
 
@@ -95,12 +151,10 @@ class CommitMetric:
 
     @property
     def repo_protocol(self):
-        """Returns the Git server protocol"""
         return self.__repo_protocol
 
     @property
     def git_fqdn(self):
-        """Returns the Git server FQDN"""
         return self.__repo_fqdn
 
     @property
@@ -109,17 +163,14 @@ class CommitMetric:
 
     @property
     def repo_name(self):
-        """Returns the Git repo name, example: myrepo.git"""
         return self.__repo_name
 
     @property
     def repo_project(self):
-        """Returns the Git project name, this is normally the repo_name with '.git' parsed off the end."""
         return self.__repo_project
 
     @property
     def git_server(self):
-        """Returns the Git server FQDN with the protocol"""
         url = f"{self.__repo_protocol}://{self.__repo_fqdn}"
 
         if self.__repo_port:
@@ -132,76 +183,15 @@ class CommitMetric:
         return self.__azure_project
 
     def __parse_repourl(self):
-        """Parse the repo_url into individual pieces"""
-        logging.debug("repo url = %s", self.__repo_url)
+        logging.debug("repo url = %s", sanitize_url(self.__repo_url or ""))
         if self.__repo_url is None:
             return
-        # http://user@dev.azure.com:8080/organization/project/_git/repository/
-        regex = re.compile(
-            r"^(?P<protocol>https?)\://"
-            r"((?P<user>[a-zA-Z0-9_-]+)@)?"
-            r"(?P<resource>[a-z0-9_.-]*)"
-            r"[:/]*"
-            r"(?P<port>[\d]+){0,1}"
-            r"(?P<pathname>\/"
-            r"(?P<owner>[\w\-\.]+)\/"
-            r"(?P<azure_project>[\w\-\.]+)\/\_git\/"
-            r"(?P<name>[\w\-\.]+)\/?)$"
-        )
-        match = regex.search(self.__repo_url)
-        # git@ssh.dev.azure.com:v3/organization/project/repository/
-        regex_ssh = re.compile(
-            r"^git@(?P<resource>"
-            r"(?P<protocol>\w+)\.[a-z0-9_.-]*\:v3)"
-            r"[:/]*"
-            r"(?P<port>[\d]+){0,1}"
-            r"(?P<pathname>\/"
-            r"(?P<owner>[\w\-\.]+)\/"
-            r"(?P<azure_project>[\w\-\.]+)\/"
-            r"(?P<name>[\w\-\.]+)\/?)$"
-        )
-        match_ssh = regex_ssh.search(self.__repo_url)
-        if match_ssh:
-            match = match_ssh
-        if match:
-            regex_group = match.groupdict()
-            self.__azure_project = regex_group.pop("azure_project")
-            pre_parsed = {
-                "protocols": giturlparse.parse(self.__repo_url).protocols or ["ssh"],
-                "href": self.__repo_url,
-                "user": None,
-                "owner": None,
-            }
-            pre_parsed.update(regex_group)
-            parsed = giturlparse.parser.Parsed(**pre_parsed)
-        else:
-            parsed = giturlparse.parse(self.__repo_url)
-        logging.debug("Parsed: %s", parsed)
-        if len(parsed.protocols) > 0 and parsed.protocols[0] not in SUPPORTED_PROTOCOLS:
-            raise ValueError("Unsupported protocol %s", parsed.protocols[0])
-        self.__repo_protocol = parsed.protocol
-        # In the case of multiple subgroups the host will be in the pathname
-        # Otherwise, it will be in the resource
-        if parsed.pathname.startswith("//"):
-            self.__repo_fqdn = parsed.pathname.split("/")[2]
-            self.__repo_protocol = parsed.protocols[0]
-        else:
-            self.__repo_fqdn = parsed.resource
-        self.__repo_group = parsed.owner
-        self.__repo_name = parsed.name
-        self.__repo_project = parsed.name
-        self.__repo_port = parsed.port
+        result = _parse_repo_url_cached(self.__repo_url)
+        (self.__repo_protocol, self.__repo_fqdn, self.__repo_group,
+         self.__repo_name, self.__repo_project, self.__repo_port,
+         self.__azure_project) = result
 
-    # maps attributes to their location in a `Build`.
-    #
-    # missing attributes or with False argument are handled specially:
-    #
-    # name: set when the object is constructed
-    # labels: must be converted from an `openshift.dynamic.ResourceField`
-    # repo_url: if it's not present in the Build, fallback logic needs to be handled elsewhere
-    # commit_hash: if it's missing in the Build, fallback logic needs to be handled elsewhere
-    # commit_timestamp: very special handling, the main purpose of each committime collector
-    # comitter: not required to calculate committime
+    # Maps attribute names to (Build path, required). False = fallback handled elsewhere.
     _BUILD_MAPPING = dict(
         build_name=("metadata.name", True),
         build_config_name=("metadata.labels.buildconfig", True),
@@ -210,10 +200,9 @@ class CommitMetric:
         image_hash=("status.output.to.imageDigest", True),
         commit_hash=("spec.revision.git.commit", False),
         repo_url=("spec.source.git.uri", False),
-        committer=("spec.revision.git.author.name", False),
     )
 
-    _ANNOTATION_MAPPIG = dict(
+    _ANNOTATION_MAPPING = dict(
         repo_url="io.openshift.build.source-location",
         commit_hash="io.openshift.build.commit.id",
         commit_time="io.openshift.build.commit.date",
@@ -225,9 +214,6 @@ def commit_metric_from_build(app: str, build, errors: list) -> CommitMetric:
     Create a CommitMetric from build information.
     Will collect errors for missing data instead of failing early.
     """
-    # set attributes based on a mapping from attribute name to
-    # lookup path.
-    # Collect all errors to be reported at once instead of failing fast.
     metric = CommitMetric(app)
     for attr_name, (path, required) in CommitMetric._BUILD_MAPPING.items():
         with collect_bad_attribute_path_error(errors, required):

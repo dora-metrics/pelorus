@@ -217,6 +217,17 @@ spec:
               thanos_bucket_name:
                 description: S3 bucket name.
                 type: string
+              oauth_proxy_enabled:
+                description: Enable OAuth proxy sidecars on Prometheus and Grafana. Set to false for simpler deployments without OpenShift OAuth.
+                type: boolean
+                default: true
+              oauth_proxy_image:
+                description: Override the OAuth proxy image (defaults to the cluster's built-in image).
+                type: string
+              operator_source:
+                description: Operator source mode. "redhat" uses OpenShift built-in monitoring + COO, "community" uses community operators.
+                type: string
+                enum: [redhat, community]
               custom_ca:
                 description: Whether or not the cluster serves custom signed certificates for ingress (e.g. router certs).
                 type: boolean

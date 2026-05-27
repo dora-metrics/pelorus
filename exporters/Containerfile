@@ -1,22 +1,32 @@
-FROM registry.access.redhat.com/ubi8/python-39:latest
+FROM registry.access.redhat.com/ubi9/python-311:1
 
 ARG WORK_DIR=/app/pelorus
 
 ENV APP_FILE=deploytime/app.py
+ENV PYTHONPATH=$WORK_DIR
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 USER root
 
-COPY ./ $WORK_DIR
-
-RUN dnf -y install skopeo && \
+RUN dnf -y --setopt=install_weak_deps=False install skopeo && \
     dnf clean all && \
+    mkdir -p $WORK_DIR && \
     chown -R 1001:0 $WORK_DIR
 
 USER 1001
 
 WORKDIR $WORK_DIR
 
-RUN pip install -r requirements.txt && \
-    pip install -e .
+COPY --chown=1001:0 requirements.txt $WORK_DIR/requirements.txt
 
-CMD python ${APP_FILE}
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=1001:0 ./ $WORK_DIR
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/metrics')" || exit 1
+
+CMD exec python "${APP_FILE}"

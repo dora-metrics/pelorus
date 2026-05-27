@@ -52,12 +52,12 @@ function extract_file_to_dir() {
     local file_names=$3 # Extract only specific files
 
     if [ ! -f "${file_path}" ]; then
-        echo "extract_file_to_dir(): File does not exists: ${file_path}" >&2
+        echo "extract_file_to_dir(): File does not exist: ${file_path}" >&2
         return 2
     fi
 
     if [ ! -d "${dest_dir}" ]; then
-        echo "extract_file_to_dir(): Dest dir does not exists: ${dest_dir}" >&2
+        echo "extract_file_to_dir(): Dest dir does not exist: ${dest_dir}" >&2
         return 2
     fi
 
@@ -70,23 +70,23 @@ function install_helm() {
     local helm_install_script=$1
     local dest_dir=$2
     if [ ! -f "${helm_install_script}" ]; then
-        echo "install_helm(): File does not exists: ${helm_install_script}" >&2
+        echo "install_helm(): File does not exist: ${helm_install_script}" >&2
         return 2
     fi
 
     if [ ! -d "${dest_dir}" ]; then
-        echo "install_helm(): Dest dir does not exists: ${dest_dir}" >&2
+        echo "install_helm(): Dest dir does not exist: ${dest_dir}" >&2
         return 2
     fi
 
     chmod +x "${helm_install_script}" 
-    HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false VERIFY_CHECKSUM=false "${helm_install_script}"
+    HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false "${helm_install_script}"
     helm_install=$?
     type helm
     helm_installed=$?
     if [ $helm_install -ne 0 ] || [ $helm_installed -ne 0 ]; then
         echo "Installing fallback HELM version"
-        HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false VERIFY_CHECKSUM=false "${helm_install_script}" --version "${HELM_FALLBACK_VERSION}"
+        HELM_INSTALL_DIR="${dest_dir}" USE_SUDO=false "${helm_install_script}" --version "${HELM_FALLBACK_VERSION}"
     fi
 }
 
@@ -105,7 +105,7 @@ function should_cli_be_installed(){
             return 0
         fi
     done
-    return 2
+    return 1
 }
 
 # Function to safely remove temporary files and temporary download dir
@@ -129,12 +129,12 @@ function cleanup_and_exit() {
 }
 
 function print_help() {
-    printf "\nUsage: %s [OPTION]... -v [DIR]\n\n" % "$0"
+    printf "\nUsage: %s [-c TOOLS] [-v DIR] [-h]\n\n" "$0"
     printf "\tStartup:\n"
     printf "\t  -h\tprint this help\n"
     printf "\n\tOptions:\n"
     printf "\t  -c\tcomma separated list of CLI tools e.g. ct,oc\n"
-    printf "\t  -v\tpath to virtualenv DIR\n"
+    printf "\t  -v\tpath to virtualenv DIR (default: %s)\n" "${DEFAULT_VENV}"
 
     exit 0
 }
@@ -292,11 +292,6 @@ if should_cli_be_installed "shellcheck" "${cli_tools_arr[@]}" && \
       shellcheck_executable=$(tar -tJf "${SHELLCHECK_PATH}" | grep "/shellcheck")
       tar -xJvf "${SHELLCHECK_PATH}" -C "${DWN_DIR}" "$shellcheck_executable"
       cp "${DWN_DIR}/$shellcheck_executable" "${VENV}/bin/"
-fi
-
-if should_cli_be_installed "poetry" "${cli_tools_arr[@]}" && \
-    ! [ -x "$(command -v "${DEFAULT_VENV}/bin/poetry")" ]; then
-        curl -sSL https://install.python-poetry.org | POETRY_HOME="$DEFAULT_VENV" python3 -
 fi
 
 cleanup_and_exit 0

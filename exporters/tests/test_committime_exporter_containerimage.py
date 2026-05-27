@@ -33,6 +33,16 @@ from committime.collector_containerimage import (
 TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
 
 
+@pytest.fixture(autouse=True)
+def _clean_shared_state():
+    """Clean module-level mutable state between tests to prevent order-dependent failures."""
+    image_label_cache.clear()
+    skopeo_failures.clear()
+    yield
+    image_label_cache.clear()
+    skopeo_failures.clear()
+
+
 @pytest.fixture
 def mock_popen():
     with patch("subprocess.Popen") as mock_popen:
@@ -73,32 +83,24 @@ def test_get_labels_from_image(mock_popen, returncode, json_file, expected_label
 
     result = get_labels_from_image("sha256_value", "image_uri")
 
-    for key, value in expected_labels.items():
-        assert key in result and result[key] == value
+    assert expected_labels.items() <= result.items()
 
-    command = "skopeo inspect --cert-dir /var/run/secrets/kubernetes.io/serviceaccount/ image_uri"
-    subprocess.Popen.assert_called_once_with(
+    command = ["skopeo", "inspect", "--cert-dir", "/var/run/secrets/kubernetes.io/serviceaccount/", "--", "image_uri"]
+    mock_popen.assert_called_once_with(
         command,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        shell=True,
     )
     mocked_process.communicate.assert_called_once()
 
     assert "sha256_value" not in skopeo_failures
 
 
-@pytest.mark.parametrize(
-    "returncode, json_file, missing_labels",
-    [
-        (
-            0,
-            "skopeo_missing_container_labels.json",
-            ["io.openshift.build.commit.date", "io.openshift.build.commit.id"],
-        )
-    ],
-)
-def test_missing_labels_from_image(mock_popen, returncode, json_file, missing_labels):
+def test_missing_labels_from_image(mock_popen):
+    returncode = 0
+    json_file = "skopeo_missing_container_labels.json"
+    missing_labels = ["io.openshift.build.commit.date", "io.openshift.build.commit.id"]
     mocked_process = Mock()
     mocked_process.returncode = returncode
     mocked_process.communicate.return_value = (read_skopeo_fake_data(json_file), b"")
@@ -109,28 +111,49 @@ def test_missing_labels_from_image(mock_popen, returncode, json_file, missing_la
     for missing_label in missing_labels:
         assert missing_label not in result
 
-    command = "skopeo inspect --cert-dir /var/run/secrets/kubernetes.io/serviceaccount/ image_uri"
-    subprocess.Popen.assert_called_once_with(
+    command = ["skopeo", "inspect", "--cert-dir", "/var/run/secrets/kubernetes.io/serviceaccount/", "--", "image_uri"]
+    mock_popen.assert_called_once_with(
         command,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        shell=True,
     )
     mocked_process.communicate.assert_called_once()
 
     assert "sha256_value" not in skopeo_failures
 
 
-@pytest.mark.parametrize(
-    "returncode, json_file",
-    [
-        (
-            0,
-            "skopeo_malformed_json_file.json",
-        )
-    ],
-)
-def test_malformed_json_response(mock_popen, returncode, json_file):
+def test_skopeo_nonzero_returncode(mock_popen):
+    mocked_process = Mock()
+    mocked_process.returncode = 1
+    mocked_process.communicate.return_value = (b"", b"manifest unknown")
+    mock_popen.return_value = mocked_process
+
+    with pytest.raises(SkopeoDataException) as exc:
+        get_labels_from_image("sha256_fail", "image_uri")
+    assert "manifest unknown" in str(exc.value)
+    assert "sha256_fail" in skopeo_failures
+
+
+def test_skopeo_timeout(mock_popen):
+    mocked_process = Mock()
+    mocked_process.communicate.side_effect = [
+        subprocess.TimeoutExpired(cmd="skopeo", timeout=120),
+        (b"", b""),
+    ]
+    mocked_process.kill.return_value = None
+    mock_popen.return_value = mocked_process
+
+    with pytest.raises(SkopeoDataException) as exc:
+        get_labels_from_image("sha256_timeout", "image_uri")
+    assert "timed out" in str(exc.value)
+    assert "sha256_timeout" in skopeo_failures
+    mocked_process.kill.assert_called_once()
+
+
+def test_malformed_json_response(mock_popen):
+    returncode = 0
+    json_file = "skopeo_malformed_json_file.json"
     mocked_process = Mock()
     mocked_process.returncode = returncode
     mocked_process.communicate.return_value = (read_skopeo_fake_data(json_file), b"")
@@ -140,12 +163,12 @@ def test_malformed_json_response(mock_popen, returncode, json_file):
         get_labels_from_image("sha256_value", "image_uri")
     assert "Error: Invalid JSON output" in str(skopeo_exception.value)
 
-    command = "skopeo inspect --cert-dir /var/run/secrets/kubernetes.io/serviceaccount/ image_uri"
-    subprocess.Popen.assert_called_once_with(
+    command = ["skopeo", "inspect", "--cert-dir", "/var/run/secrets/kubernetes.io/serviceaccount/", "--", "image_uri"]
+    mock_popen.assert_called_once_with(
         command,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        shell=True,
     )
     mocked_process.communicate.assert_called_once()
 

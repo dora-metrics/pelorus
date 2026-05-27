@@ -17,7 +17,7 @@ Some formal development choices we made are available as
 A declarative way to load configuration from environment variables,
 and log that configuration properly.
 
-For more information, see the [library docs](https://github.com/dora-metrics/pelorus/blob/master/exporters/pelorus/config/README.md).
+For more information, see the [library docs](https://github.com/dora-metrics/pelorus/blob/main/exporters/pelorus/config/README.md).
 
 ### Why It Was Made
 
@@ -43,7 +43,7 @@ For exporter configuration and startup, we've experienced the following issues:
 A declarative deserialization and type checking framework that makes
 handling heavily-nested data easy.
 
-More detail can be found in the [library docs](https://github.com/dora-metrics/pelorus/blob/master/exporters/pelorus/deserialization/README.md).
+More detail can be found in the [library docs](https://github.com/dora-metrics/pelorus/blob/main/exporters/pelorus/deserialization/README.md).
 
 ### Why It Was Made and What We Tried
 
@@ -148,11 +148,10 @@ and let us have easily correct dunder implementations (e.g. `__eq__`).
 
 We use it instead of `dataclasses` because its converters and validators are useful to us.
 
-### exceptiongroup
+### ExceptionGroup
 
-The [exceptiongroup package](https://pypi.org/project/exceptiongroup/)
-backports [`ExceptionGroup`s](https://peps.python.org/pep-0654/) to our version of python.
-They are the official way to collect parallel errors and present them,
+[`ExceptionGroup`s](https://peps.python.org/pep-0654/) (built into Python 3.11+)
+are the official way to collect parallel errors and present them,
 which is one of the core features of our deserialization package.
 
 ### typing_extensions

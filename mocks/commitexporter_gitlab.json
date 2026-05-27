@@ -1,0 +1,102 @@
+{
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "lastMigration": 32,
+  "name": "GitLab Commit Exporter",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3002,
+  "hostname": "0.0.0.0",
+  "routes": [
+    {
+      "uuid": "gl-api-version",
+      "documentation": "GitLab API v4 version endpoint",
+      "method": "get",
+      "endpoint": "api/v4/version",
+      "responses": [
+        {
+          "uuid": "gl-api-version-resp",
+          "body": "{\"version\": \"17.0.0\", \"revision\": \"abc123\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Version",
+          "headers": [{"key": "content-type", "value": "application/json"}],
+          "filePath": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true
+        }
+      ],
+      "enabled": true,
+      "responseMode": null
+    },
+    {
+      "uuid": "gl-project",
+      "documentation": "GitLab get project by namespace/project",
+      "method": "get",
+      "endpoint": "api/v4/projects/pelorus-test%2Fbasic-nginx",
+      "responses": [
+        {
+          "uuid": "gl-project-resp",
+          "body": "{\"id\": 42, \"name\": \"basic-nginx\", \"path_with_namespace\": \"pelorus-test/basic-nginx\", \"default_branch\": \"main\", \"web_url\": \"https://gitlab.com/pelorus-test/basic-nginx\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Project",
+          "headers": [{"key": "content-type", "value": "application/json"}],
+          "filePath": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true
+        }
+      ],
+      "enabled": true,
+      "responseMode": null
+    },
+    {
+      "uuid": "gl-commit",
+      "documentation": "GitLab get commit by SHA",
+      "method": "get",
+      "endpoint": "api/v4/projects/42/repository/commits/15dedb60b6208aafdfb2328a93543e3d94500978",
+      "responses": [
+        {
+          "uuid": "gl-commit-resp",
+          "body": "{\"id\": \"15dedb60b6208aafdfb2328a93543e3d94500978\", \"short_id\": \"15dedb60\", \"title\": \"Update nginx.conf for OCP 4.6+\", \"author_name\": \"Test User\", \"author_email\": \"test@example.com\", \"authored_date\": \"2021-04-25T20:16:28.000+00:00\", \"committer_name\": \"Test User\", \"committer_email\": \"test@example.com\", \"committed_date\": \"2021-04-25T20:16:28.000+00:00\", \"created_at\": \"2021-04-25T20:16:28.000+00:00\", \"message\": \"Update nginx.conf for OCP 4.6+\", \"parent_ids\": [\"5b98095dfa96e284f425cae356b7a8d2de1c616e\"], \"web_url\": \"https://gitlab.com/pelorus-test/basic-nginx/-/commit/15dedb60b6208aafdfb2328a93543e3d94500978\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Commit",
+          "headers": [{"key": "content-type", "value": "application/json"}],
+          "filePath": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true
+        }
+      ],
+      "enabled": true,
+      "responseMode": null
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [{"key": "content-type", "value": "application/json"}],
+  "proxyReqHeaders": [{"key": "", "value": ""}],
+  "proxyResHeaders": [{"key": "", "value": ""}]
+}

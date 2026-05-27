@@ -6,12 +6,10 @@ from attrs import define, field
 
 from committime import CommitMetric
 from pelorus.config.converters import pass_through
-from pelorus.timeutil import parse_assuming_utc, second_precision
+from pelorus.timeutil import ISO_ZULU_FMT, parse_assuming_utc, second_precision
 from pelorus.utils import Url, set_up_requests_session
 
-from .collector_base import AbstractCommitCollector, UnsupportedGITProvider
-
-_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+from .collector_base import AbstractCommitCollector, check_provider_support, fetch_commit_json, git_api_errors
 
 DEFAULT_GITEA_API = Url.parse("https://try.gitea.io")
 
@@ -30,25 +28,20 @@ class GiteaCommitCollector(AbstractCommitCollector):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        if self.git_api == DEFAULT_GITEA_API:
+            logging.warning(
+                "GIT_API not set — using default %s (a public demo instance). "
+                "Set GIT_API to your Gitea server URL.",
+                DEFAULT_GITEA_API,
+            )
         set_up_requests_session(
             self.session, self.tls_verify, username=self.username, token=self.token
         )
 
-    # base class impl
     def get_commit_time(self, metric: CommitMetric):
-        """Method called to collect data and send to Prometheus"""
+        """Fetch commit timestamp from Gitea API for the given metric."""
 
-        git_server = metric.git_server
-
-        if (
-            "github" in git_server
-            or "bitbucket" in git_server
-            or "gitlab" in git_server
-            or "azure" in git_server
-        ):
-            raise UnsupportedGITProvider(
-                "Skipping non Gitea server, found %s" % (git_server)
-            )
+        check_provider_support(metric.git_server, "gitea")
 
         path = self._path_template.format(
             group=metric.repo_group,
@@ -56,39 +49,32 @@ class GiteaCommitCollector(AbstractCommitCollector):
             hash=metric.commit_hash,
         )
         url = self.git_api._replace(path=path).url
-        logging.debug("URL %s" % (url))
-        response = self.session.get(url, auth=(self.username, self.token))
-        logging.debug("response %s", response)
-        if response.status_code != 200:
-            # This will occur when trying to make an API call to non-Github
-            logging.warning(
-                "Unable to retrieve commit time for build: %s, hash: %s, url: %s. Got http code: %s"
-                % (
-                    metric.build_name,
-                    metric.commit_hash,
-                    metric.repo_url,
-                    str(response.status_code),
-                )
+        commit = fetch_commit_json(self.session, url, metric, self._API_TIMEOUT, "Gitea")
+        if commit is None:
+            return metric
+        try:
+            commit_time_str: str = commit["commit"]["committer"]["date"]
+            metric.commit_time = commit_time_str
+
+            commit_time = parse_assuming_utc(
+                commit_time_str, format=ISO_ZULU_FMT
             )
-        else:
-            commit = response.json()
-            try:
-                commit_time_str: str = commit["commit"]["committer"]["date"]
-                metric.commit_time = commit_time_str
+            commit_time = second_precision(commit_time)
 
-                commit_time = parse_assuming_utc(
-                    commit_time_str, format=_DATETIME_FORMAT
-                )
-                commit_time = second_precision(commit_time)
-
-                logging.debug("metric.commit_time %s", commit_time)
-                metric.commit_timestamp = commit_time.timestamp()
-                metric.commit_link = commit["html_url"]
-            except Exception:
-                logging.error(
-                    "Failed processing commit time for build %s" % metric.build_name,
-                    exc_info=True,
-                )
-                logging.debug(commit)
-                raise
+            logging.debug("metric.commit_time %s", commit_time)
+            metric.commit_timestamp = commit_time.timestamp()
+            metric.commit_link = commit["html_url"]
+        except (KeyError, TypeError, AttributeError, ValueError):
+            git_api_errors.inc()
+            logging.error(
+                "Failed processing commit time for build %s",
+                metric.build_name,
+                exc_info=True,
+            )
+            commit_info = (
+                list(commit.keys()) if isinstance(commit, dict)
+                else type(commit).__name__
+            )
+            logging.debug("Raw commit response keys: %s", commit_info)
+            raise
         return metric

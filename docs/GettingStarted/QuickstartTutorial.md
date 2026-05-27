@@ -26,7 +26,7 @@ To successfully go through this demo you will need:
 
 * [GitHub](https://github.com) account with a [Personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) generated.
 
-* Access to an OpenShift 4.7 or higher cluster via OpenShift web console and shell.
+* Access to an OpenShift 4.20 or higher cluster via OpenShift web console and shell.
 
 * Shell with the following CLI:
     * [oc](https://docs.openshift.com/container-platform/4.8/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli)
@@ -193,7 +193,7 @@ $ oc get buildconfig.build.openshift.io/todolist --namespace mongo-persistent -o
 
 After a couple of minutes you should see at least one measurement for **Lead Time for Change** and **Deployment Frequency** in the Grafana dashboard, like in the following image:
 
-> **Note:** If the time elapsed from your `mongo-persistent` deployment is higher then **5 minutes**, you may want to adjust different relative time range <span style="color:red">⓵</span> e.g. **Last 3 hours**s.
+> **Note:** If the time elapsed from your `mongo-persistent` deployment is higher then **5 minutes**, you may want to adjust different relative time range <span style="color:red">⓵</span> e.g. **Last 3 hours**.
 
 ![gnome-shell-screenshot-3zh4l2](../img/initial_measurement.png)
 
@@ -260,12 +260,12 @@ The text **"Enter an activity"** does not seem clear, let's change that to **"Ad
 $ sed -i 's/Enter an activity/Add a todo item/g' index.html
 ```
 
-If you are happy with the change, commit it and push to the default `master` branch:
+If you are happy with the change, commit it and push to the default `main` branch:
 
 ```shell
 $ git add index.html
 $ git commit -m "Updated index.html activity text."
-$ git push origin master
+$ git push origin main
 ```
 
 Once the commit is pushed to the repository, it will automatically rebuild because we have setup the [GitHub webhook](#github-webhook).

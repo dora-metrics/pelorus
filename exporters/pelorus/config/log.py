@@ -6,9 +6,7 @@ from attrs import Attribute
 from pelorus.config.common import Metadata
 
 REDACT_WORDS = {"pass", "token", "key", "cred", "secret", "auth"}
-"""
-Variables containing these words are not logged by default, nor are attributes starting with an underscore.
-"""
+"""Words that trigger automatic redaction when found in a field name (case-insensitive)."""
 
 _SHOULD_LOG = "__pelorus_config_log"
 
@@ -46,8 +44,12 @@ def _get_log_meta(meta: Mapping[str, Any]) -> Optional[Log]:
 
 def _should_log(field: Attribute) -> Log:
     """
-    A field should NOT be logged if it explicitly marked as such,
-    or contains a word that implies it is sensitive (members of REDACT_WORDS).
+    Determine how a field should be logged: LOG, REDACT, or SKIP.
+
+    Explicitly marked fields use their configured value.
+    Private fields (starting with '_') are skipped entirely.
+    Fields with sensitive words (members of REDACT_WORDS) are redacted.
+    All other fields are logged normally.
     """
     should_log = _get_log_meta(field.metadata)
     if should_log is not None:

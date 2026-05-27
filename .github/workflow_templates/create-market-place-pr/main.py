@@ -1,7 +1,8 @@
 import logging
 
-from github import Github
-from pydantic import BaseSettings, SecretStr
+from github import Auth, Github
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -14,8 +15,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     try:
         settings = Settings()
-        logging.info(f"Loaded settings: {settings.json()}")
-        github_api = Github(settings.input_token.get_secret_value())
+        logging.info("Loaded settings: version=%s, fork_user=%s", settings.input_version, settings.input_fork_user)
+        github_api = Github(auth=Auth.Token(settings.input_token.get_secret_value()))
         repo = github_api.get_repo(
             "redhat-openshift-ecosystem/community-operators-prod"
         )
@@ -36,6 +37,6 @@ if __name__ == "__main__":
         )
         pull_request.as_issue().create_comment("/hold")
     except Exception as error:
-        logging.error(f"An error ocurred: {error}")
+        logging.error("An error occurred: %s: %s", type(error).__name__, error)
         raise SystemExit(1)
     logging.info("Finished successfully")
