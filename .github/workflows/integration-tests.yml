@@ -8,7 +8,6 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      branch_ref: ${{ steps.variables.outputs.branch_ref }}
       pr_type: ${{ steps.variables.outputs.pr_type }}
     steps:
       - name: Download trigger information
@@ -23,22 +22,24 @@ jobs:
       - name: Store variables
         id: variables
         run: |
-          echo branch_ref=$(cat trigger-information.json | jq -r '.branch_ref') >> "$GITHUB_OUTPUT"
           echo pr_type=$(cat trigger-information.json | jq -r '.pr_type') >> "$GITHUB_OUTPUT"
 
   integration-test:
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.outputs.pr_type != 'closed' }}
+    if: ${{ needs.setup.outputs.pr_type != 'closed' && github.event.workflow_run.head_repository.full_name == github.repository }}
     needs: setup
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.9', '3.10', '3.11']
     steps:
+      # Checkout the workflow_run event SHA, never an artifact-selected ref.
+      # Artifact SHAs can bypass actions/checkout's fork-PR guard.
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.setup.outputs.branch_ref }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
