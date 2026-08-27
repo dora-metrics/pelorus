@@ -60,7 +60,7 @@ jobs:
       # Checkout the workflow_run event SHA, never an artifact-selected ref.
       # Artifact SHAs can bypass actions/checkout's fork-PR guard.
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
